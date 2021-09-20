@@ -1,0 +1,5 @@
+FROM python:3-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gnuplot
+COPY scan2mp4.py /scan2mp4.py
+ENTRYPOINT ["python3", "/scan2mp4.py"]
+CMD [""]
