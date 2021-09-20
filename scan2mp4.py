@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import os
 import subprocess
 import sys
@@ -54,7 +53,7 @@ with tempfile.TemporaryDirectory() as tempdir:
             try:
                 ts, fq, pw = (float(x) for x in l.strip().split())
             except ValueError as err:
-                print(l, err) 
+                print(l, err)
                 continue
             if fq < MINF:
                 continue
