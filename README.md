@@ -26,4 +26,3 @@ If you see the following error:
 See the application notes for your device.
 ```
 Exit out of the container (`ctrl-c`, or `docker rm -f gamutrf`) and try running the container again.
-
