@@ -22,6 +22,8 @@ RUN make && make install
 RUN ln -s /usr/local/lib/python3/dist-packages/habets39 /usr/local/lib/python3.8/dist-packages
 RUN ldconfig -v
 
+# Do not edit ettus_scan.py directly - it is generated from ettus_scan.grc, by gnuradio-companion.
+# To update, run gnuradio-companion ettus_scan.grc, generate from F5 menu.
 COPY ettus_scan.py /root/ettus_scan.py
 
 ENTRYPOINT ["/root/ettus_scan.py"]
