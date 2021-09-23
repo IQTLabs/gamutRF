@@ -1,15 +1,27 @@
 #!/usr/bin/python3
+
 import os
 import subprocess
 import sys
 import tempfile
 import time
-from statistics import mean
+import numpy as np
+import pandas as pd
 
 MINF = 100e6
-FRAMETIME = 60
 FRAMERATE = 5
+XTICS = 40
 EXT = '.csv'
+
+GNUPLOT_CMDS_HEADER = [
+   'set terminal png truecolor rounded size 1920,720 enhanced',
+   'set ytics format "%.4f"',
+   'set xtics rotate by 90 right',
+   'set grid xtics',
+   'set grid mxtics',
+   'set grid ytics',
+   'set xlabel "freq (MHz)"',
+   'set ylabel "power (dB)"']
 
 if len(sys.argv) == 1:
     print('need CSV')
@@ -26,76 +38,52 @@ if not os.path.exists(CSV):
 
 MP4 = CSV.replace(EXT, '.mp4')
 
-GNUPLOT_HEADER = """
-set terminal png truecolor rounded size 1920,720 enhanced
-set xtics 20
-set ytics format "%.4f"
-set xtics rotate by 90 right
-set mxtics 5
-set grid xtics
-set grid mxtics
-set grid ytics
-"""
-
+df = pd.read_csv(CSV, header=None, delim_whitespace=True)
+print('read', CSV)
+df.columns = ['ts', 'freq', 'db']
+df = df[df['freq'] >= MINF]
+df['db'] = 20 * np.log10(df['db'])
+df['freq'] /= 1e6
+freqdiff = df['freq'].diff().abs()
+df['frame'] = 0
+df.loc[freqdiff > 100, ['frame']] = 1
+df['frame'] = df['frame'].cumsum().fillna(0).astype(np.uint64)
+df.set_index('frame', inplace=True)
+df['ts'] = df.groupby('frame', sort=False)['ts'].transform(min)
 
 with tempfile.TemporaryDirectory() as tempdir:
-    tses = []
-    min_freq = 10e9
-    max_freq = 0
-    peak_pws = []
-    lastframets = None
-    frames = 0
+    tsmap = []
 
-    with open(CSV) as f:
-        frame = {}
-        lastfq = None
-        for l in f:
-            try:
-                ts, fq, pw = (float(x) for x in l.strip().split())
-            except ValueError as err:
-                print(l, err)
-                continue
-            if fq < MINF:
-                continue
-            fq /= 1e6
-            min_freq = min(min_freq, fq)
-            max_freq = max(max_freq, fq)
-            if lastfq and abs(fq - lastfq) > 1e2 and (lastframets is None or ts - lastframets >= FRAMETIME):
-                frames += 1
-                lastframets = ts
-                frame_f = os.path.join(str(tempdir), str(ts))
-                frame_peak_pw = max(frame.values())
-                print(frames, ts, time.ctime(ts), frame_peak_pw)
-                tses.append(ts)
-                peak_pws.append(frame_peak_pw)
-                with open(frame_f, 'w') as w:
-                    for x, y in sorted(frame.items()):
-                        w.write('%u\t%f\n' % (x, y))
-                frame = {}
-            frame[fq] = pw
-            lastfq = fq
-
-    assert tses
+    for frame, frame_df in df.groupby('frame'):
+        ts = frame_df['ts'].iat[0]
+        tsc = time.ctime(ts)
+        print(frame, ts, tsc)
+        gnuplot_df = frame_df[['freq', 'db']]
+        frame_f = os.path.join(str(tempdir), str(ts))
+        tsmap.append((frame, ts, tsc, frame_f))
+        gnuplot_df.to_csv(frame_f, index=False, sep='\t')
 
     print('creating gnuplot commands')
-    plot_f = os.path.join(str(tempdir), 'plot.cmd')
-    threshold_95 = int(len(peak_pws) * 0.95)
-    try:
-        peak_pw_95 = sorted(peak_pws)[:threshold_95][-1]
-    except IndexError:
-        peak_pw_95 = max(peak_pws)
-    with open(plot_f, 'w') as cmd:
-        cmd.write(GNUPLOT_HEADER)
-        cmd.write('set yrange [0:%.4f]\n' % peak_pw_95)
-        cmd.write('set xrange [%f:%f]\n' % (min_freq, max_freq))
-        for i, ts in enumerate(tses, start=0):
-            f = os.path.join(str(tempdir), str(ts))
-            tsc = time.ctime(int(ts))
-            cmd.write(('''
+    db_min = df.db.min()
+    db_max = df.db.max()
+    freq_min = df.freq.min()
+    freq_max = df.freq.max()
+    xtics = (freq_max - freq_min) / XTICS
 
-set output "%s/%6.6u.png"
-plot [%u:%u] "%s" using 1:2 with points title "%s"
-''' % (str(tempdir), i, min_freq, max_freq, f, tsc)))
+    gnuplot_cmds = GNUPLOT_CMDS_HEADER
+    gnuplot_cmds.extend([
+        'set xtics %u' % xtics,
+        'set xrange [%f:%f]' % (freq_min, freq_max),
+        'set yrange [%f:%f]\n' % (db_min, db_max)])
+    for frame, ts, tsc, frame_f in tsmap:
+        gnuplot_cmds.extend([
+            'set output "%s/%6.6u.png"' % (str(tempdir), frame),
+            'plot [%u:%u] "%s" using 1:2 with linespoints title "%s"' % (
+                freq_min, freq_max, frame_f, tsc)])
+
+    plot_f = os.path.join(str(tempdir), 'plot.cmd')
+    with open(plot_f, 'w', encoding='utf8') as plot_c:
+        plot_c.write('\n'.join(gnuplot_cmds))
 
     print('running gnuplot')
     subprocess.check_call(['gnuplot', plot_f])
