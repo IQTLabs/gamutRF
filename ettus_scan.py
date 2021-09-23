@@ -22,7 +22,7 @@ from gnuradio.filter import firdes
 class ettus_scan(gr.top_block):
 
     def __init__(self, freq_end=1e9, freq_start=100e6, igain=0, logfile='/logs/ettus_scan.csv', samp_rate=4e6, sweep_sec=30):
-        gr.top_block.__init__(self, 'Broadband scan', catch_exceptions=True)
+        gr.top_block.__init__(self, 'ettus scan', catch_exceptions=True)
 
         ##################################################
         # Parameters
@@ -59,7 +59,7 @@ class ettus_scan(gr.top_block):
                         self.set_center_freq(val)
                 except AttributeError:
                     pass
-                time.sleep(1.0 / (100))
+                time.sleep(1.0 / (97))
         _center_freq_thread = threading.Thread(target=_center_freq_probe)
         _center_freq_thread.daemon = True
         _center_freq_thread.start()
@@ -212,6 +212,8 @@ def argument_parser():
 def main(top_block_cls=ettus_scan, options=None):
     if options is None:
         options = argument_parser().parse_args()
+    if gr.enable_realtime_scheduling() != gr.RT_OK:
+        print('Error: failed to enable real-time scheduling.')
     tb = top_block_cls(freq_end=options.freq_end, freq_start=options.freq_start,
                        logfile=options.logfile, samp_rate=options.samp_rate, sweep_sec=options.sweep_sec)
 
