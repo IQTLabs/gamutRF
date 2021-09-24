@@ -43,6 +43,7 @@ print('read', CSV)
 df.columns = ['ts', 'freq', 'db']
 df = df[df['freq'] >= MINF]
 df['db'] = 20 * np.log10(df['db'])
+df['diff'] = df['db'].rolling(5).mean().diff()
 df['freq'] /= 1e6
 freqdiff = df['freq'].diff().abs()
 df['frame'] = 0
@@ -59,14 +60,19 @@ with tempfile.TemporaryDirectory() as tempdir:
         ts = frame_df['ts'].iat[0]
         tsc = time.ctime(ts)
         print(frame, ts, tsc)
-        gnuplot_df = frame_df[['freq', 'db']]
+        gnuplot_df = frame_df[['freq', 'db', 'diff']].set_index('freq')
         frame_f = os.path.join(str(tempdir), str(ts))
         tsmap.append((frame, ts, tsc, frame_f))
-        gnuplot_df.to_csv(frame_f, index=False, sep='\t')
+        gnuplot_df.to_csv(frame_f, sep='\t')
+        print(gnuplot_df)
 
     print('creating gnuplot commands')
     db_min = df.db.min()
     db_max = df.db.max()
+    diff_min = df['diff'].min()
+    diff_max = df['diff'].max()
+    y_min = min(diff_min, db_min)
+    y_max = max(diff_max, db_max)
     freq_min = df.freq.min()
     freq_max = df.freq.max()
     xtics = (freq_max - freq_min) / XTICS
@@ -75,11 +81,11 @@ with tempfile.TemporaryDirectory() as tempdir:
     gnuplot_cmds.extend([
         f'set xtics {xtics}',
         f'set xrange [{freq_min}:{freq_max}]',
-        f'set yrange [{db_min}:{db_max}]'])
+        f'set yrange [{y_min}:{y_max}]'])
     for frame, ts, tsc, frame_f in tsmap:
         gnuplot_cmds.extend([
             f'set output "{tempdir}/{frame:06}.png"',
-            f'plot [{freq_min}:{freq_max}] "{frame_f}" using 1:2 with linespoints title "{tsc}"'])
+            (f'plot [{freq_min}:{freq_max}] "{frame_f}" using 1:2 with linespoints title "{tsc}", "{frame_f}" using 1:3 with linespoints title "diff"')])
 
     plot_f = os.path.join(str(tempdir), 'plot.cmd')
     with open(plot_f, 'w', encoding='utf8') as plot_c:
