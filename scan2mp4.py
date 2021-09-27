@@ -146,6 +146,7 @@ def main():
     parser.add_argument('--framerate', default=int(5), help='frame rate')
     parser.add_argument('--xtics', default=int(40), help='xtics')
     parser.add_argument('--nrows', default=int(1e7), help='number of rows to read at once')
+    parser.add_argument('--tmproot', default='', help='root of temporary directory')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
@@ -156,8 +157,11 @@ def main():
     if not os.path.exists(args.csv):
         logging.fatal(f'{args.csv} must exist')
     mp4 = args.csv.replace(ext, '.mp4')
+    tmproot = None
+    if args.tmproot:
+        tmproot = args.tmproot
 
-    with tempfile.TemporaryDirectory() as tempdir:
+    with tempfile.TemporaryDirectory(dir=tmproot) as tempdir:
         tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max = generate_frames(
             args, tempdir)
         run_gnuplot(
