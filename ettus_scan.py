@@ -204,6 +204,9 @@ def argument_parser():
         '--freq-start', dest='freq_start', type=eng_float, default=eng_notation.num_to_str(float(100e6)),
         help='Set freq_start [default=%(default)r]')
     parser.add_argument(
+        '--igain', dest='igain', type=intx, default=0,
+        help='Set igain[default=%(default)r]')
+    parser.add_argument(
         '--logfile', dest='logfile', type=str, default='/logs/ettus_scan.csv',
         help='Set logfile [default=%(default)r]')
     parser.add_argument(
@@ -220,7 +223,16 @@ def main(top_block_cls=ettus_scan, options=None):
         options = argument_parser().parse_args()
     if gr.enable_realtime_scheduling() != gr.RT_OK:
         print('Error: failed to enable real-time scheduling.')
-    tb = top_block_cls(freq_end=options.freq_end, freq_start=options.freq_start,
+
+    if options.freq_start <= options.freq_end:
+        print('Error: freq_start must be less than freq_end')
+        sys.exit(1)
+
+    if options.freq_end >= 6e9:
+        print('Error: freq_end must be less than 6GHz')
+        sys.exit(1)
+
+    tb = top_block_cls(freq_end=options.freq_end, freq_start=options.freq_start, igain=options.igain,
                        logfile=options.logfile, samp_rate=options.samp_rate, sweep_sec=options.sweep_sec)
 
     def sig_handler(sig=None, frame=None):
