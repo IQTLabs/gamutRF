@@ -2,12 +2,16 @@
 # -*- coding: utf-8 -*-
 # Derivative work from:
 # https://github.com/ThomasHabets/radiostuff/blob/922944c9a7c9c51a15e369ac07a7f8963b5f67bd/broadband-scan/broadband_scan.grc
+import functools
 import signal
 import sys
 import threading
 import time
 from argparse import ArgumentParser
 
+# TODO: add test/pylint coverage with gnuradio
+# pylint: disable=import-error
+# pytype: disable=import-error
 import habets39
 from gnuradio import analog
 from gnuradio import blocks
