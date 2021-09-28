@@ -6,7 +6,8 @@ import pandas as pd
 
 from sigwindows import find_sig_windows
 
-TESTDIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testdata')
+TESTDIR = os.path.join(os.path.dirname(
+    os.path.realpath(__file__)), 'tests/data')
 
 
 class WindowsTestCase(unittest.TestCase):

@@ -12,5 +12,5 @@ jobs:
     - name: static tests
       run: |
         sudo apt-get update && sudo apt-get install -qy python3-dev python3-pip && \
-        sudo pip3 install -r test-requirements.txt && \
+        sudo pip3 install -r tests/test-requirements.txt && \
         pylint --fail-under=6 *py && pytype *py && pytest
