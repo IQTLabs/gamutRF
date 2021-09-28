@@ -16,7 +16,8 @@ class FakeArgs:
 
 class Scan2MP4TestCase(unittest.TestCase):
 
-    def _test_samples(self, test_csv, test_freqs, test_ts):
+    @staticmethod
+    def _test_samples(test_csv, test_freqs, test_ts):
         with open(test_csv, 'w', encoding='utf-8') as f:
             samples = []
             for ts in test_ts:
@@ -55,7 +56,7 @@ class Scan2MP4TestCase(unittest.TestCase):
             self.assertEqual(tses, test_ts)
 
     def test_generate_frames(self):
-       with tempfile.TemporaryDirectory() as tempdir:
+        with tempfile.TemporaryDirectory() as tempdir:
             test_csv = os.path.join(str(tempdir), 'test.csv')
             test_freqs = [f * ROLLOVERHZ for f in range(1, 10)]
             test_ts = (0, 60, 120)
