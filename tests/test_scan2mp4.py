@@ -3,9 +3,9 @@ import os
 import tempfile
 import unittest
 
-from scan2mp4 import generate_frames
-from scan2mp4 import read_csv
-from scan2mp4 import ROLLOVERHZ
+from gamutrf.scan2mp4 import generate_frames
+from gamutrf.scan2mp4 import read_csv
+from gamutrf.scan2mp4 import ROLLOVERHZ
 
 
 class FakeArgs:
