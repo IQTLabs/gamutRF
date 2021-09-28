@@ -19,7 +19,6 @@ from gnuradio import uhd  # pytype: disable=import-error
 from gnuradio.eng_arg import eng_float  # pytype: disable=import-error
 from gnuradio.eng_arg import intx  # pytype: disable=import-error
 from gnuradio.fft import window  # pytype: disable=import-error
-from gnuradio.filter import firdes  # pytype: disable=import-error
 # TODO: add test/pylint coverage with gnuradio
 
 
