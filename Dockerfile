@@ -22,7 +22,7 @@ RUN make && make install
 RUN ln -s /usr/local/lib/python3/dist-packages/habets39 /usr/local/lib/python3.8/dist-packages
 RUN ldconfig -v
 
-COPY ettus_scan.py /root/ettus_scan.py
+COPY gamutrf/ettus_scan.py /root/ettus_scan.py
 
 ENTRYPOINT ["/root/ettus_scan.py"]
 CMD ["--help"]
