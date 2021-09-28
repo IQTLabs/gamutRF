@@ -7,7 +7,7 @@ import pandas as pd
 from gamutrf.sigwindows import find_sig_windows
 
 TESTDIR = os.path.join(os.path.dirname(
-    os.path.realpath(__file__)), 'tests/data')
+    os.path.realpath(__file__)), 'data')
 
 
 class WindowsTestCase(unittest.TestCase):
