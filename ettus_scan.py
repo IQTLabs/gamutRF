@@ -224,7 +224,7 @@ def main(top_block_cls=ettus_scan, options=None):
     if gr.enable_realtime_scheduling() != gr.RT_OK:
         print('Error: failed to enable real-time scheduling.')
 
-    if options.freq_start <= options.freq_end:
+    if options.freq_start > options.freq_end:
         print('Error: freq_start must be less than freq_end')
         sys.exit(1)
 
