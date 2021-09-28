@@ -1,12 +1,12 @@
 #!/usr/bin/python3
-
 import argparse
+import concurrent.futures
 import logging
 import os
 import subprocess
 import tempfile
 import time
-import concurrent.futures
+
 import numpy as np
 import pandas as pd
 
@@ -31,12 +31,15 @@ def read_csv(args):
         df['frame'] = 0
         # Detect tuning wraparound, where frequency changed by more than 100MHz
         df.loc[freqdiff > rolloverhz, ['frame']] = 1
-        df['frame'] = df['frame'].cumsum().fillna(0).astype(np.uint64)  # pylint: disable=unsupported-assignment-operation,disable=unsubscriptable-object
-        read_frames = df['frame'].max()  # pylint: disable=unsubscriptable-object
+        df['frame'] = df['frame'].cumsum().fillna(0).astype(
+            np.uint64)  # pylint: disable=unsupported-assignment-operation,disable=unsubscriptable-object
+        read_frames = df['frame'].max(
+        )  # pylint: disable=unsubscriptable-object
         if read_rows < args.nrows:
             frames_rows = read_rows
         else:
-            frames_rows = len(df[df['frame'] < read_frames])  # pylint: disable=unsubscriptable-object
+            frames_rows = len(df[df['frame'] < read_frames]
+                              )  # pylint: disable=unsubscriptable-object
             skiprows += frames_rows
             df = df[:frames_rows]  # pylint: disable=unsubscriptable-object
         logging.info(f'read {skiprows} total rows from {args.csv}')
@@ -65,7 +68,8 @@ def generate_frames(args, tempdir):
     lastts = None
 
     def write_frame(frame_f, frame_df):
-        frame_df.to_csv(frame_f, sep='\t', columns=['freq', 'db', 'rollingdiffdb'], index=False)
+        frame_df.to_csv(frame_f, sep='\t', columns=[
+                        'freq', 'db', 'rollingdiffdb'], index=False)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         for frame, frame_df in read_csv(args):
@@ -151,11 +155,14 @@ def main():
     parser = argparse.ArgumentParser(
         description='Convert an ettus_scan log to a timelapse graph')
     parser.add_argument('csv', help='log file to parse')
-    parser.add_argument('--minhz', default=int(70 * 1e6), help='minimum frequency to process')
+    parser.add_argument('--minhz', default=int(70 * 1e6),
+                        help='minimum frequency to process')
     parser.add_argument('--framerate', default=int(5), help='frame rate')
     parser.add_argument('--xtics', default=int(40), help='xtics')
-    parser.add_argument('--nrows', default=int(1e7), help='number of rows to read at once')
-    parser.add_argument('--tmproot', default='', help='root of temporary directory')
+    parser.add_argument('--nrows', default=int(1e7),
+                        help='number of rows to read at once')
+    parser.add_argument('--tmproot', default='',
+                        help='root of temporary directory')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')

@@ -1,11 +1,10 @@
 #!/usr/bin/python3
-
-
 import pandas as pd
 
 
 def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
-    window_df = df[(df['rollingdiffdb'].rolling(window).sum().abs() > (window * threshold))]
+    window_df = df[(df['rollingdiffdb'].rolling(
+        window).sum().abs() > (window * threshold))]
     freq_diff = window_df['freq'].diff().fillna(min_bw_mhz)
     signals = []
     in_signal = None
