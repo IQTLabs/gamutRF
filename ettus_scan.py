@@ -9,9 +9,6 @@ import threading
 import time
 from argparse import ArgumentParser
 
-# TODO: add test/pylint coverage with gnuradio
-# pylint: disable=import-error
-# pytype: disable=import-error
 import habets39
 from gnuradio import analog
 from gnuradio import blocks
@@ -23,6 +20,7 @@ from gnuradio.eng_arg import eng_float
 from gnuradio.eng_arg import intx
 from gnuradio.fft import window
 from gnuradio.filter import firdes
+# TODO: add test/pylint coverage with gnuradio
 
 
 class ettus_scan(gr.top_block):

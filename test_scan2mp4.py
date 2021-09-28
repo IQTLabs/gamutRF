@@ -1,9 +1,11 @@
 #!/usr/bin/python3
-
 import os
-import unittest
 import tempfile
-from scan2mp4 import read_csv, generate_frames, ROLLOVERHZ
+import unittest
+
+from scan2mp4 import generate_frames
+from scan2mp4 import read_csv
+from scan2mp4 import ROLLOVERHZ
 
 
 class FakeArgs:
@@ -50,7 +52,8 @@ class Scan2MP4TestCase(unittest.TestCase):
             for frame, frame_df in read_csv(args):
                 self.assertEqual(expected_frame, frame)
                 expected_frame += 1
-                self.assertEqual(list(frame_df['freq']), [f / 1e6 for f in test_freqs])
+                self.assertEqual(list(frame_df['freq']), [
+                                 f / 1e6 for f in test_freqs])
                 self.assertEqual(9, len(frame_df[frame_df['db'] != 0]))
                 tses.append(frame_df['ts'].iat[0])
             self.assertEqual(tses, test_ts)
