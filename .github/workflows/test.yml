@@ -13,4 +13,4 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -qy python3-dev python3-pip && \
         sudo pip3 install -r test-requirements.txt && \
-        pylint -E *py && pytype *py && pytest
+        pylint *py && pytype *py && pytest
