@@ -6,9 +6,11 @@ import os
 import subprocess
 import tempfile
 import time
+import concurrent.futures
 import numpy as np
 import pandas as pd
 
+MAX_WORKERS = 4
 ROLLOVERHZ = 100e6
 
 
@@ -62,33 +64,38 @@ def generate_frames(args, tempdir):
     freq_max = None
     lastts = None
 
-    for frame, frame_df in read_csv(args):
-        ts = frame_df['ts'].iat[0]
-        tsc = time.ctime(ts)
-        frame_f = os.path.join(str(tempdir), str(ts))
-        tsmap.append((frame, ts, tsc, frame_f))
+    def write_frame(frame_f, frame_df):
         frame_df.to_csv(frame_f, sep='\t', columns=['freq', 'db', 'rollingdiffdb'], index=False)
-        db = frame_df.db
-        rollingdiffdb = frame_df.rollingdiffdb
-        freq = frame_df.freq
-        if frame:
-            db_min = min(db_min, db.min())
-            db_max = max(db_max, db.max())
-            diff_min = min(diff_min, rollingdiffdb.min())
-            diff_max = max(diff_max, rollingdiffdb.max())
-            freq_min = min(freq_min, freq.min())
-            freq_max = max(freq_max, freq.max())
-        else:
-            db_min = db.min()
-            db_max = db.max()
-            diff_min = rollingdiffdb.min()
-            diff_max = rollingdiffdb.max()
-            freq_min = freq.min()
-            freq_max = freq.max()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        for frame, frame_df in read_csv(args):
+            ts = frame_df['ts'].iat[0]
+            tsc = time.ctime(ts)
+            frame_f = os.path.join(str(tempdir), str(ts))
+            tsmap.append((frame, ts, tsc, frame_f))
+            db = frame_df.db
+            rollingdiffdb = frame_df.rollingdiffdb
+            freq = frame_df.freq
+            if frame:
+                db_min = min(db_min, db.min())
+                db_max = max(db_max, db.max())
+                diff_min = min(diff_min, rollingdiffdb.min())
+                diff_max = max(diff_max, rollingdiffdb.max())
+                freq_min = min(freq_min, freq.min())
+                freq_max = max(freq_max, freq.max())
+            else:
+                db_min = db.min()
+                db_max = db.max()
+                diff_min = rollingdiffdb.min()
+                diff_max = rollingdiffdb.max()
+                freq_min = freq.min()
+                freq_max = freq.max()
+                lastts = ts
+            offset = ts - lastts
+            logging.info(f'frame {frame} offset {offset}s at {tsc}')
             lastts = ts
-        offset = ts - lastts
-        logging.info(f'frame {frame} offset {offset}s at {tsc}')
-        lastts = ts
+            executor.submit(write_frame, frame_f, frame_df)
+        executor.shutdown(wait=True)
 
     return (tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max)
 
@@ -97,6 +104,8 @@ def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, a
     logging.info('creating gunplot commands')
     y_min = min(diff_min, db_min)
     y_max = max(diff_max, db_max)
+    freq_min = int(freq_min / 100) * 100
+    freq_max = round(freq_max / 100) * 100
     xtics = (freq_max - freq_min) / args.xtics
 
     gnuplot_cmds = [
