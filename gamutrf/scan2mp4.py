@@ -12,6 +12,7 @@ import pandas as pd
 
 MAX_WORKERS = 4
 ROLLOVERHZ = 100e6
+CSV = '.csv'
 
 
 def read_csv(args):
@@ -19,7 +20,8 @@ def read_csv(args):
     skiprows = 0
     minmhz = args.minhz / 1e6
     rolloverhz = ROLLOVERHZ / 1e6
-    while True:
+    complete = False
+    while not complete:
         df = pd.read_csv(
             args.csv, header=None, delim_whitespace=True, skiprows=skiprows, nrows=args.nrows)
         read_rows = len(df)
@@ -31,15 +33,15 @@ def read_csv(args):
         df['frame'] = 0
         # Detect tuning wraparound, where frequency changed by more than 100MHz
         df.loc[freqdiff > rolloverhz, ['frame']] = 1
-        df['frame'] = df['frame'].cumsum().fillna(0).astype(
-            np.uint64)  # pylint: disable=unsupported-assignment-operation,disable=unsubscriptable-object
-        read_frames = df['frame'].max(
-        )  # pylint: disable=unsubscriptable-object
+        df['frame'] = (   # pylint: disable=unsupported-assignment-operation,disable=unsubscriptable-object
+                df['frame'].cumsum().fillna(0).astype(np.uint64))  # pylint: disable=unsubscriptable-object
+        read_frames = df['frame'].max()  # pylint: disable=unsubscriptable-object
         if read_rows < args.nrows:
             frames_rows = read_rows
+            skiprows += read_rows
         else:
-            frames_rows = len(df[df['frame'] < read_frames]
-                              )  # pylint: disable=unsubscriptable-object
+            frames_rows = len(
+                df[df['frame'] < read_frames])  # pylint: disable=unsubscriptable-object
             skiprows += frames_rows
             df = df[:frames_rows]  # pylint: disable=unsubscriptable-object
         logging.info(f'read {skiprows} total rows from {args.csv}')
@@ -52,9 +54,12 @@ def read_csv(args):
         df['ts'] = df.groupby('frame', sort=False)['ts'].transform(min)
         for _, frame_df in df.groupby('frame'):
             yield (frames, frame_df)
+            if args.maxframe and frames == args.maxframe:
+                complete = True
+                break
             frames += 1
         if read_rows < args.nrows:
-            break
+            complete = True
 
 
 def generate_frames(args, tempdir):
@@ -67,9 +72,14 @@ def generate_frames(args, tempdir):
     freq_max = None
     lastts = None
 
-    def write_frame(frame_f, frame_df):
-        frame_df.to_csv(frame_f, sep='\t', columns=[
-                        'freq', 'db', 'rollingdiffdb'], index=False)
+    def write_frame(frame, frame_f, frame_df):
+        frame_fs = [frame_f]
+        if frame in args.dumpframes:
+            dumpfile = args.csv.replace(CSV, f'-{frame}.csv')
+            frame_fs.append(dumpfile)
+        for f in frame_fs:
+            frame_df.to_csv(f, sep='\t', columns=[
+                            'freq', 'db', 'rollingdiffdb'], index=False)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         for frame, frame_df in read_csv(args):
@@ -98,7 +108,7 @@ def generate_frames(args, tempdir):
             offset = ts - lastts
             logging.info(f'frame {frame} offset {offset}s at {tsc}')
             lastts = ts
-            executor.submit(write_frame, frame_f, frame_df)
+            executor.submit(write_frame, frame, frame_f, frame_df.copy())
         executor.shutdown(wait=True)
 
     return (tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max)
@@ -127,10 +137,14 @@ def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, a
         f'set xrange [{freq_min}:{freq_max}]',
         f'set yrange [{y_min}:{y_max}]'])
     for frame, _ts, tsc, frame_f in tsmap:
+        db_plot = (
+            f'"{frame_f}" using 1:2 with linespoints title "dB"')
+        rolling_diff_plot = (
+            f'"{frame_f}" using 1:3 with linespoints title "rolling diff dB"')
         gnuplot_cmds.extend([
             f'set output "{tempdir}/{frame:06}.png"',
-            f'set title "{tsc}"',
-            f'plot "{frame_f}" using 1:2 with linespoints title "dB", "{frame_f}" using 1:3 with linespoints title "rolling diff dB"'])
+            f'set title "{tsc} frame {frame}"',
+            f'plot {db_plot}, {rolling_diff_plot}'])
 
     plot_f = os.path.join(str(tempdir), 'plot.cmd')
     with open(plot_f, 'w', encoding='utf8') as plot_c:
@@ -163,16 +177,19 @@ def main():
                         help='number of rows to read at once')
     parser.add_argument('--tmproot', default='',
                         help='root of temporary directory')
+    parser.add_argument('--maxframe', default=int(0), type=int,
+                        help='maximum frame number to process')
+    parser.add_argument('--dumpframes', default=[], nargs='+', type=int,
+                        help='list of frame numbers to dump as csvs')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
-    ext = '.csv'
-    if not args.csv.endswith(ext):
-        logging.fatal(f'{args.csv} must be {ext}')
+    if not args.csv.endswith(CSV):
+        logging.fatal(f'{args.csv} must be {CSV}')
     if not os.path.exists(args.csv):
         logging.fatal(f'{args.csv} must exist')
-    mp4 = args.csv.replace(ext, '.mp4')
+    mp4 = args.csv.replace(CSV, '.mp4')
     tmproot = None
     if args.tmproot:
         tmproot = args.tmproot

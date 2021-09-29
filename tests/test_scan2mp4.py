@@ -14,6 +14,7 @@ class FakeArgs:
         self.csv = csv
         self.minhz = minhz
         self.nrows = nrows
+        self.maxframe = 0
 
 
 class Scan2MP4TestCase(unittest.TestCase):
