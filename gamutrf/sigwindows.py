@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import pandas as pd
 
 
 def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
