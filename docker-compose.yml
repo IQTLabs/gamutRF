@@ -26,7 +26,7 @@ services:
     networks:
       - gamutrf
     volumes:
-      - '.:/logs'
+      - '${VOL_PREFIX}:/logs'
     command:
       - --logaddr=sigfinder
       - --log=/logs/ettus_scan.csv
