@@ -40,13 +40,20 @@ def process_fft(args, ts, fftbuffer, lastbins):
 def main():
     parser = argparse.ArgumentParser(
         description='watch an ettus scan UDP stream and find signals')
-    parser.add_argument('--log', default='ettus.log', type=str, help='base path for ettus logging')
-    parser.add_argument('--rotatesecs', default=3600, type=int, help='rotate ettus log after this many seconds')
-    parser.add_argument('--logaddr', default='127.0.0.1', type=str, help='UDP stream address')
-    parser.add_argument('--logport', default=8001, type=int, help='UDP stream port')
-    parser.add_argument('--bin_mhz', default=8, type=int, help='monitoring bin width in MHz')
-    parser.add_argument('--window', default=4, type=int, help='signal finding sample window size')
-    parser.add_argument('--threshold', default=1.5, type=float, help='signal finding threshold')
+    parser.add_argument('--log', default='ettus.log', type=str,
+                        help='base path for ettus logging')
+    parser.add_argument('--rotatesecs', default=3600, type=int,
+                        help='rotate ettus log after this many seconds')
+    parser.add_argument('--logaddr', default='127.0.0.1', type=str,
+                        help='UDP stream address')
+    parser.add_argument('--logport', default=8001, type=int,
+                        help='UDP stream port')
+    parser.add_argument('--bin_mhz', default=8, type=int,
+                        help='monitoring bin width in MHz')
+    parser.add_argument('--window', default=4, type=int,
+                        help='signal finding sample window size')
+    parser.add_argument('--threshold', default=1.5, type=float,
+                        help='signal finding threshold')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
@@ -57,16 +64,27 @@ def main():
         lastfreq = 0
         fftbuffer = []
         lastbins = set()
+        mode = 'wb'
+        if os.path.exists(args.log):
+            logging.info(f'{args.log} exists, will append first')
+            mode = 'ab'
 
         while True:
             logging.info(f'reopening {args.log}')
             openlogts = int(time.time())
-            with open(args.log, 'wb') as l:
+            with open(args.log, mode=mode) as l:
                 while True:
                     line = f.stdout.readline()
+                    now = int(time.time())
                     try:
                         ts, freq, pw = [float(x) for x in line.strip().split()]
                     except ValueError:
+                        continue
+                    if pw < 0 or pw > 1:
+                        continue
+                    if freq < 0 or freq > 10e9:
+                        continue
+                    if abs(now - ts) > 60:
                         continue
                     l.write(line)
                     rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
@@ -75,9 +93,10 @@ def main():
                     if rollover:
                         lastbins = process_fft(args, ts, fftbuffer, lastbins)
                         fftbuffer = []
-                        if int(time.time()) - openlogts > args.rotatesecs:
+                        if now - openlogts > args.rotatesecs:
                             break
             os.rename(args.log, f'{args.log}-{openlogts}')
+            mode = 'wb'
 
 
 if __name__ == '__main__':
