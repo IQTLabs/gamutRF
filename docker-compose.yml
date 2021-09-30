@@ -17,6 +17,8 @@ services:
     command:
       - --logaddr=sigfinder
       - --igain=30
+      - '--freq-start=${FREQ_START}'
+      - '--freq-end=${FREQ_END}'
   sigfinder:
     restart: on-failure
     image: iqtlabs/gamutrf-sigfinder:latest
