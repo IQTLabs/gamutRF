@@ -4,13 +4,12 @@ An SDR orchestrated scanner.
 
 # Quick Start
 
-Build and run the collection container (note: an Ettus b2XX will need to be attached over USB):
-```
-docker build -t gamut-rf:latest .
-docker run --cap-add SYS_NICE --cap-add SYS_RAWIO --device /dev/bus/usb:/dev/bus/usb -v "$PWD":/logs --name gamutrf -t gamut-rf:latest
-```
+Build and run the collection and signal finding containers (note: an Ettus b2XX will need to be attached over USB):
 
-When finished collecting, simply kill the container with `ctrl-c` or `docker rm -f gamutrf`.
+```
+docker-compose build
+docker-compose up
+```
 
 Finally build and run the container for generating the graph video (MP4) from the CSV file:
 ```

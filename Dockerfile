@@ -24,5 +24,5 @@ RUN ldconfig -v
 
 COPY gamutrf/ettus_scan.py /root/ettus_scan.py
 
-ENTRYPOINT ["/root/ettus_scan.py"]
+ENTRYPOINT ["/usr/bin/python3", "/root/ettus_scan.py"]
 CMD ["--help"]

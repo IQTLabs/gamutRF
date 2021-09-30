@@ -1,0 +1,9 @@
+FROM python:3-slim
+WORKDIR /root
+COPY requirements.txt /root/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends python3-pip netcat && pip3 install -r /root/requirements.txt
+COPY gamutrf/sigwindows.py /root/gamutrf/sigwindows.py
+COPY gamutrf/sigfinder.py /root/sigfinder.py
+ENV PYTHONPATH /root
+ENTRYPOINT ["python3", "/root/sigfinder.py"]
+CMD ["--help"]

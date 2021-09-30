@@ -5,11 +5,9 @@ import os
 import subprocess
 import time
 
-import numpy as np
 import pandas as pd
-from sigwindows import find_sig_windows
+from gamutrf.sigwindows import calc_db, find_sig_windows
 
-CSV = '.csv'
 ROLLOVERHZ = 100e6
 
 
@@ -18,19 +16,18 @@ def process_fft(args, ts, fftbuffer, lastbins):
     logging.info(f'new frame at {tsc}')
     df = pd.DataFrame(fftbuffer, columns=['ts', 'freq', 'db'])
     df['freq'] /= 1e6
-    df['db'] = 20 * np.log10(df['db'])
-    df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df['rollingdiffdb'] = df['db'].rolling(5).mean().diff()
-    df = df.dropna()
+    df = calc_db(df)
     monitor_bins = set()
+    peak_dbs = {}
     for signal in find_sig_windows(df, window=args.window, threshold=args.threshold):
         start_freq, end_freq = signal[:2]
+        peak_db = signal[-1]
         center_freq = start_freq + ((end_freq - start_freq) / 2)
         center_freq = int(center_freq / args.bin_mhz) * args.bin_mhz
         monitor_bins.add(center_freq)
-    peakrollingdiffdb = df['rollingdiffdb'].max()
-    logging.info('current bins %f to %f MHz peak dB %f peak rolling diff dB %f: %s',
-        df['freq'].min(), df['freq'].max(), df['db'].max(), peakrollingdiffdb, sorted(monitor_bins))
+        peak_dbs[center_freq] = peak_db
+    logging.info('current bins %f to %f MHz: %s',
+        df['freq'].min(), df['freq'].max(), sorted(peak_dbs.items()))
     new_bins = monitor_bins - lastbins
     if new_bins:
         logging.info('new bins: %s', sorted(new_bins))
@@ -42,8 +39,11 @@ def process_fft(args, ts, fftbuffer, lastbins):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='watch an ettus scan log and find signals')
-    parser.add_argument('csv', help='log file to parse')
+        description='watch an ettus scan UDP stream and find signals')
+    parser.add_argument('--log', default='ettus.log', type=str, help='base path for ettus logging')
+    parser.add_argument('--rotatesecs', default=3600, type=int, help='rotate ettus log after this many seconds')
+    parser.add_argument('--logaddr', default='127.0.0.1', type=str, help='UDP stream address')
+    parser.add_argument('--logport', default=8001, type=int, help='UDP stream port')
     parser.add_argument('--bin_mhz', default=8, type=int, help='monitoring bin width in MHz')
     parser.add_argument('--window', default=4, type=int, help='signal finding sample window size')
     parser.add_argument('--threshold', default=1.5, type=float, help='signal finding threshold')
@@ -51,25 +51,33 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
-    if not args.csv.endswith(CSV):
-        logging.fatal(f'{args.csv} must be {CSV}')
-    if not os.path.exists(args.csv):
-        logging.fatal(f'{args.csv} must exist')
-
     with subprocess.Popen(
-            ['tail', '-F', args.csv],
+            ['nc', '-u', '-l', args.logaddr, str(args.logport)],
             stdout=subprocess.PIPE,stderr=subprocess.PIPE) as f:
         lastfreq = 0
         fftbuffer = []
         lastbins = set()
+
         while True:
-            line = f.stdout.readline().strip()
-            ts, freq, pw = [float(x) for x in line.split()]
-            if abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer:
-                lastbins = process_fft(args, ts, fftbuffer, lastbins)
-                fftbuffer = []
-            fftbuffer.append((ts, freq, pw))
-            lastfreq = freq
+            logging.info(f'reopening {args.log}')
+            openlogts = int(time.time())
+            with open(args.log, 'wb') as l:
+                while True:
+                    line = f.stdout.readline()
+                    try:
+                        ts, freq, pw = [float(x) for x in line.strip().split()]
+                    except ValueError:
+                        continue
+                    l.write(line)
+                    rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
+                    fftbuffer.append((ts, freq, pw))
+                    lastfreq = freq
+                    if rollover:
+                        lastbins = process_fft(args, ts, fftbuffer, lastbins)
+                        fftbuffer = []
+                        if int(time.time()) - openlogts > args.rotatesecs:
+                            break
+            os.rename(args.log, f'{args.log}-{openlogts}')
 
 
 if __name__ == '__main__':

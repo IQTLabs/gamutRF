@@ -8,7 +8,13 @@ jobs:
     - name: docker build
       run: |
         docker build -f Dockerfile . -t gamutrf:latest && \
-        docker build -f Dockerfile.graph . -t gamutrf-graph:latest
+        docker run -t gamutrf:latest --help && \
+        docker build -f Dockerfile.graph . -t gamutrf-graph:latest && \
+        docker run -t gamutrf-graph:latest --help && \
+        docker build -f Dockerfile.sigfinder . -t gamutrf-sigfinder:latest && \
+        docker run -t gamutrf-sigfinder:latest --help && \
+        sudo apt-get update && sudo apt-get install -qy python3-pip && pip3 install docker-compose \
+        docker-compose build
     - name: static tests
       run: |
         sudo apt-get update && sudo apt-get install -qy python3-dev python3-pip && \
