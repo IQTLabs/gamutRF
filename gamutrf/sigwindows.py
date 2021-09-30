@@ -9,7 +9,10 @@ def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
     in_signal = None
     for row in window_df[freq_diff >= min_bw_mhz].itertuples():
         if in_signal is not None:
-            signals.append((in_signal.freq, row.freq, in_signal.db, row.db))
+            start_freq = in_signal.freq
+            end_freq = row.freq
+            signal_df = df[(df['freq'] >= start_freq) & (df['freq'] <= end_freq)]
+            signals.append((start_freq, end_freq, in_signal.db, row.db, signal_df['db'].max()))
             in_signal = None
         else:
             in_signal = row
