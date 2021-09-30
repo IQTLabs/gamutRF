@@ -58,6 +58,11 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
+    try:
+        ext = args.log[args.log.rindex('.'):]
+    except ValueError:
+        logging.fatal(f'cannot parse extension from {args.log}')
+
     with subprocess.Popen(
             ['nc', '-u', '-l', args.logaddr, str(args.logport)],
             stdout=subprocess.PIPE,stderr=subprocess.PIPE) as f:
@@ -95,7 +100,8 @@ def main():
                         fftbuffer = []
                         if now - openlogts > args.rotatesecs:
                             break
-            os.rename(args.log, f'{args.log}-{openlogts}')
+            new_log = args.log.replace(ext, f'{openlogts}{ext}')
+            os.rename(args.log, new_log)
             mode = 'wb'
 
 
