@@ -10,6 +10,8 @@ import time
 import numpy as np
 import pandas as pd
 
+from gamutrf.sigwindows import calc_db
+
 MAX_WORKERS = 4
 ROLLOVERHZ = 100e6
 CSV = '.csv'
@@ -46,10 +48,7 @@ def read_csv(args):
             df = df[:frames_rows]  # pylint: disable=unsubscriptable-object
         logging.info(f'read {skiprows} total rows from {args.csv}')
         df = df[df['freq'] >= minmhz]
-        df['db'] = 20 * np.log10(df['db'])
-        df.replace([np.inf, -np.inf], np.nan, inplace=True)
-        df = df.dropna()
-        df['rollingdiffdb'] = df['db'].rolling(5).mean().diff()
+        df = calc_db(df)
         df.set_index('frame', inplace=True)
         df['ts'] = df.groupby('frame', sort=False)['ts'].transform(min)
         for _, frame_df in df.groupby('frame'):

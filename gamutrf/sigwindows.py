@@ -1,6 +1,17 @@
 #!/usr/bin/python3
 
 
+import numpy as np
+
+
+def calc_db(df):
+    df['db'] = 20 * np.log10(df['db'])
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df = df.dropna()
+    df['rollingdiffdb'] = df['db'].rolling(5).mean().diff()
+    return df
+
+
 def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
     window_df = df[(df['rollingdiffdb'].rolling(
         window).sum().abs() > (window * threshold))]

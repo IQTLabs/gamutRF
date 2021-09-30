@@ -24,7 +24,8 @@ from gnuradio.fft import window  # pytype: disable=import-error
 
 class ettus_scan(gr.top_block):
 
-    def __init__(self, freq_end=1e9, freq_start=100e6, igain=0, logfile='/logs/ettus_scan.csv', samp_rate=4e6, sweep_sec=30):
+    def __init__(self, freq_end=1e9, freq_start=100e6, igain=0, samp_rate=4e6, sweep_sec=30,
+                 logaddr='127.0.0.1', logport=8001):
         gr.top_block.__init__(self, 'ettus scan', catch_exceptions=True)
 
         ##################################################
@@ -33,7 +34,6 @@ class ettus_scan(gr.top_block):
         self.freq_end = freq_end
         self.freq_start = freq_start
         self.igain = igain
-        self.logfile = logfile
         self.samp_rate = samp_rate
         self.sweep_sec = sweep_sec
 
@@ -91,9 +91,8 @@ class ettus_scan(gr.top_block):
             gr.sizeof_gr_complex*1, fft_size)
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(
             freq_end-freq_start)
-        self.blocks_file_sink_0 = blocks.file_sink(
-            gr.sizeof_char*1, logfile, False)
-        self.blocks_file_sink_0.set_unbuffered(False)
+        self.blocks_udp_sink_0 = blocks.udp_sink(
+            gr.sizeof_char*1, logaddr, logport, 1472, True)
         self.blocks_complex_to_mag_0 = blocks.complex_to_mag(fft_size)
         self.blocks_add_const_vxx_0 = blocks.add_const_ff(freq_start)
         self.analog_sig_source_x_0 = analog.sig_source_f(
@@ -115,7 +114,7 @@ class ettus_scan(gr.top_block):
                      (self.blocks_probe_signal_x_0, 0))
         self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_0, 0))
         self.connect((self.habets39_sweepsinkv_0, 0),
-                     (self.blocks_file_sink_0, 0))
+                     (self.blocks_udp_sink_0, 0))
         self.connect((self.uhd_usrp_source_0, 0),
                      (self.blocks_stream_to_vector_0, 0))
 
@@ -141,13 +140,6 @@ class ettus_scan(gr.top_block):
     def set_igain(self, igain):
         self.igain = igain
         self.uhd_usrp_source_0.set_gain(self.igain, 0)
-
-    def get_logfile(self):
-        return self.logfile
-
-    def set_logfile(self, logfile):
-        self.logfile = logfile
-        self.blocks_file_sink_0.open(self.logfile)
 
     def get_samp_rate(self):
         return self.samp_rate
@@ -204,14 +196,17 @@ def argument_parser():
         '--igain', dest='igain', type=intx, default=0,
         help='Set igain[default=%(default)r]')
     parser.add_argument(
-        '--logfile', dest='logfile', type=str, default='/logs/ettus_scan.csv',
-        help='Set logfile [default=%(default)r]')
-    parser.add_argument(
         '--samp-rate', dest='samp_rate', type=eng_float, default=eng_notation.num_to_str(float(4e6)),
         help='Set samp_rate [default=%(default)r]')
     parser.add_argument(
         '--sweep-sec', dest='sweep_sec', type=intx, default=30,
         help='Set sweep_sec [default=%(default)r]')
+    parser.add_argument(
+        '--logaddr', dest='logaddr', type=str, default='127.0.0.1',
+        help='Log UDP results to this address')
+    parser.add_argument(
+        '--logport', dest='logport', type=int, default=8001,
+        help='Log UDP results to this port')
     return parser
 
 
@@ -225,12 +220,14 @@ def main(top_block_cls=ettus_scan, options=None):
         print('Error: freq_start must be less than freq_end')
         sys.exit(1)
 
-    if options.freq_end >= 6e9:
+    if options.freq_end > 6e9:
         print('Error: freq_end must be less than 6GHz')
         sys.exit(1)
 
-    tb = top_block_cls(freq_end=options.freq_end, freq_start=options.freq_start, igain=options.igain,
-                       logfile=options.logfile, samp_rate=options.samp_rate, sweep_sec=options.sweep_sec)
+    tb = top_block_cls(freq_end=options.freq_end, freq_start=options.freq_start,
+                       igain=options.igain, samp_rate=options.samp_rate,
+                       sweep_sec=options.sweep_sec,
+                       logaddr=options.logaddr, logport=options.logport)
 
     def sig_handler(sig=None, frame=None):
         tb.stop()
