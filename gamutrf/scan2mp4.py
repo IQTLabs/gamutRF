@@ -81,8 +81,10 @@ def generate_frames(args, tempdir):
                             'freq', 'db', 'rollingdiffdb'], index=False)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        maxmhz = args.maxhz / 1e6
         for frame, frame_df in read_csv(args):
             ts = frame_df['ts'].iat[0]
+            frame_df = frame_df[frame_df['freq'] <= maxmhz]
             tsc = time.ctime(ts)
             frame_f = os.path.join(str(tempdir), str(ts))
             tsmap.append((frame, ts, tsc, frame_f))
@@ -108,12 +110,24 @@ def generate_frames(args, tempdir):
             logging.info(f'frame {frame} offset {offset}s at {tsc}')
             lastts = ts
             executor.submit(write_frame, frame, frame_f, frame_df.copy())
+            frame_df.to_csv(
+                os.path.join(str(tempdir), 'graph.csv') , sep='\t', mode='a',
+                columns=['ts', 'freq', 'db'], index=False, header=False)
         executor.shutdown(wait=True)
 
     return (tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max)
 
 
-def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir):
+def call_gnuplot(gnuplot_cmds, tempdir):
+    plot_f = os.path.join(str(tempdir), 'plot.cmd')
+    with open(plot_f, 'w', encoding='utf8') as plot_c:
+        plot_c.write('\n'.join(gnuplot_cmds))
+
+    logging.info('running gnuplot')
+    subprocess.check_call(['gnuplot', plot_f])
+
+
+def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir, graph, mindb):
     logging.info('creating gunplot commands')
     y_min = min(diff_min, db_min)
     y_max = max(diff_max, db_max)
@@ -121,13 +135,16 @@ def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, a
     freq_max = round(freq_max / 100) * 100
     xtics = (freq_max - freq_min) / args.xtics
 
-    gnuplot_cmds = [
+    common_gnuplot_cmds = [
         'set terminal png truecolor rounded size 1920,720 enhanced',
-        'set ytics format "%.4f"',
-        'set xtics rotate by 90 right',
         'set grid xtics',
         'set grid mxtics',
         'set grid ytics',
+    ]
+
+    gnuplot_cmds = common_gnuplot_cmds + [
+        'set ytics format "%.4f"',
+        'set xtics rotate by 90 right',
         'set xlabel "freq (MHz)"',
         'set ylabel "power (dB)"']
 
@@ -145,12 +162,21 @@ def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, a
             f'set title "{tsc} frame {frame}"',
             f'plot {db_plot}, {rolling_diff_plot}'])
 
-    plot_f = os.path.join(str(tempdir), 'plot.cmd')
-    with open(plot_f, 'w', encoding='utf8') as plot_c:
-        plot_c.write('\n'.join(gnuplot_cmds))
+    call_gnuplot(gnuplot_cmds, tempdir)
 
-    logging.info('running gnuplot')
-    subprocess.check_call(['gnuplot', plot_f])
+    gnuplot_cmds = common_gnuplot_cmds + [
+        'set xdata time',
+        'set timefmt "%s"',
+        'set view 0,270',
+        'set xlabel "time"',
+        'set ylabel "freq (MHz)"',
+        'set palette negative',
+        'set pm3d map',
+        f'set output "{graph}"',
+        f'splot "{tempdir}/graph.csv" using 1:2:($3>{mindb}?$3:(1/0)) palette with circles title "dB"',
+    ]
+
+    call_gnuplot(gnuplot_cmds, tempdir)
 
 
 def run_ffmpeg(args, tempdir, mp4):
@@ -166,10 +192,12 @@ def run_ffmpeg(args, tempdir, mp4):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Convert an ettus_scan log to a timelapse graph')
+        description='Convert an ettus_scan log to a timelapse graph/video')
     parser.add_argument('csv', help='log file to parse')
-    parser.add_argument('--minhz', default=int(70 * 1e6),
+    parser.add_argument('--minhz', default=int(70 * 1e6), type=int,
                         help='minimum frequency to process')
+    parser.add_argument('--maxhz', default=int(6 * 1e9), type=int,
+                        help='maximum frequency to process')
     parser.add_argument('--framerate', default=int(5), help='frame rate')
     parser.add_argument('--xtics', default=int(40), help='xtics')
     parser.add_argument('--nrows', default=int(1e7),
@@ -189,6 +217,8 @@ def main():
     if not os.path.exists(args.csv):
         logging.fatal(f'{args.csv} must exist')
     mp4 = args.csv.replace(CSV, '.mp4')
+    graph = args.csv.replace(CSV, '.png')
+
     tmproot = None
     if args.tmproot:
         tmproot = args.tmproot
@@ -197,7 +227,7 @@ def main():
         tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max = generate_frames(
             args, tempdir)
         run_gnuplot(
-            tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir)
+            tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir, graph, -40)
         run_ffmpeg(args, tempdir, mp4)
 
 
