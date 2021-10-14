@@ -1,4 +1,5 @@
 FROM ubuntu:20.04
+# TODO: workaround for pybind11-dev mismatch, https://github.com/gnuradio/gnuradio/issues/4841
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     add-apt-repository -y ppa:gnuradio/gnuradio-releases && \
     apt-get -y --no-install-recommends install \
@@ -9,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     gnuradio-dev \
     make \
     uhd-host && \
+    apt-get install -y --allow-downgrades pybind11-dev=2.4.3-2build2 && \
     apt -y autoremove --purge && rm -rf /var/cache/* /root/.cache/*
 
 RUN /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
