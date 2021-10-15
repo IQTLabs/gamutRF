@@ -10,11 +10,12 @@ from gamutrf.scan2mp4 import ROLLOVERHZ
 
 class FakeArgs:
 
-    def __init__(self, csv, minhz, maxhz, nrows):
+    def __init__(self, csv, minhz, maxhz, nrows, mindb):
         self.csv = csv
         self.minhz = minhz
         self.maxhz = maxhz
         self.nrows = nrows
+        self.mindb = mindb
         self.maxframe = 0
 
 
@@ -37,7 +38,7 @@ class Scan2MP4TestCase(unittest.TestCase):
                 f.write('1 1 1\n')
                 f.write('1 2\n')
                 f.write('1\n')
-            args = FakeArgs(test_csv, 0, 1e3, 10e3)
+            args = FakeArgs(test_csv, 0, 1e3, 10e3, -40)
             for frame, frame_df in read_csv(args):
                 self.assertEqual(0, frame)
                 self.assertEqual(1, len(frame_df))
@@ -48,7 +49,7 @@ class Scan2MP4TestCase(unittest.TestCase):
             test_freqs = [f * ROLLOVERHZ for f in range(1, 10)]
             test_ts = [0, 60, 120]
             self._test_samples(test_csv, test_freqs, test_ts)
-            args = FakeArgs(test_csv, 0, 1e3, 10e3)
+            args = FakeArgs(test_csv, 0, 1e3, 10e3, -40)
             expected_frame = 0
             tses = []
             for frame, frame_df in read_csv(args):
@@ -66,7 +67,7 @@ class Scan2MP4TestCase(unittest.TestCase):
             test_freqs = [f * ROLLOVERHZ for f in range(1, 10)]
             test_ts = (0, 60, 120)
             self._test_samples(test_csv, test_freqs, test_ts)
-            args = FakeArgs(test_csv, 0, 1e3, 10e3)
+            args = FakeArgs(test_csv, 0, 1e3, 10e3, -40)
             self.assertTrue(generate_frames(args, tempdir))
 
 

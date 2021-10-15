@@ -5,10 +5,9 @@ import numpy as np
 
 
 def calc_db(df):
-    df['db'] = 20 * np.log10(df['db'])
+    df['db'] = 20 * np.log10(df[df['db'] != 0]['db'])
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df = df.dropna()
-    df['rollingdiffdb'] = df['db'].rolling(5).mean().diff()
+    df['rollingdiffdb'] = df[df['db'].notna()]['db'].rolling(5).mean().diff()
     return df
 
 
