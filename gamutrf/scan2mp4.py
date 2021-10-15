@@ -51,6 +51,7 @@ def read_csv_chunks(args):
             leftover_df = df[df['frame'] == read_frames][CSVCOLS]  # pylint: disable=unsubscriptable-object
             df = df[(df['frame'] < read_frames) & (df['freq'] >= minmhz)]  # pylint: disable=unsubscriptable-object
             df = calc_db(df)
+            df = df[df['db'] >= args.mindb]
             preprocess_frames(df)
             yield df
 
@@ -59,6 +60,7 @@ def read_csv_chunks(args):
         detect_frames(df)
         df = df[(df['frame'] < read_frames) & (df['freq'] >= minmhz)]  # pylint: disable=unsubscriptable-object
         df = calc_db(df)
+        df = df[df['db'] >= args.mindb]
         preprocess_frames(df)
         yield df
 
@@ -139,7 +141,7 @@ def call_gnuplot(gnuplot_cmds, tempdir):
     subprocess.check_call(['gnuplot', plot_f])
 
 
-def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir, graph, mindb):
+def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir, graph):
     logging.info('creating gunplot commands')
     y_min = min(diff_min, db_min)
     y_max = max(diff_max, db_max)
@@ -152,11 +154,11 @@ def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, a
         'set grid xtics',
         'set grid mxtics',
         'set grid ytics',
+        'set xtics rotate by 90 right'
     ]
 
     gnuplot_cmds = common_gnuplot_cmds + [
         'set ytics format "%.4f"',
-        'set xtics rotate by 90 right',
         'set xlabel "freq (MHz)"',
         'set ylabel "power (dB)"']
 
@@ -179,13 +181,14 @@ def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, a
     gnuplot_cmds = common_gnuplot_cmds + [
         'set xdata time',
         'set timefmt "%s"',
+        'set format x "%H:%M %d%m%y"',
         'set view 0,270',
         'set xlabel "time"',
         'set ylabel "freq (MHz)"',
         'set palette negative',
         'set pm3d map',
         f'set output "{graph}"',
-        f'splot "{tempdir}/graph.csv" using 1:2:($3>{mindb}?$3:(1/0)) palette with circles title "dB"',
+        f'splot "{tempdir}/graph.csv" using 1:2:($3>{args.mindb}?$3:(1/0)) palette with circles title "dB"',
     ]
 
     call_gnuplot(gnuplot_cmds, tempdir)
@@ -210,6 +213,8 @@ def main():
                         help='minimum frequency to process')
     parser.add_argument('--maxhz', default=int(6 * 1e9), type=int,
                         help='maximum frequency to process')
+    parser.add_argument('--mindb', default=int(-40), type=int,
+                        help='minimum dB to process')
     parser.add_argument('--framerate', default=int(5), type=int, help='frame rate')
     parser.add_argument('--xtics', default=int(40), type=int, help='xtics')
     parser.add_argument('--nrows', default=int(1e7), type=int,
@@ -239,7 +244,7 @@ def main():
         tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max = generate_frames(
             args, tempdir)
         run_gnuplot(
-            tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir, graph, -40)
+            tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir, graph)
         run_ffmpeg(args, tempdir, mp4)
 
 
