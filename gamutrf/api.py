@@ -83,7 +83,7 @@ class API:
 
     def __init__(self):
         cors = CORS(allow_all_origins=True)
-        self.api = application = falcon.App(middleware=[cors.middleware])
+        self.app = falcon.App(middleware=[cors.middleware])
         self.main()
 
     @staticmethod
@@ -99,7 +99,8 @@ class API:
         return subprocess.check_call(
             ['sox'] + raw_args + ['-b', str(in_file_bits), '-e', in_file_fmt, in_file] + raw_args + ['-e', 'float', gr_file])
 
-    def record(self, center_freq, sample_count, sample_rate=1e6, sample_bw=1e6, gain=0, agc=True):
+    @staticmethod
+    def record(center_freq, sample_count, sample_rate=1e6, sample_bw=1e6, gain=0, agc=True):
         epoch_time = str(int(time.time()))
         sample_file = os.path.join(
             arguments.path, f'gamutrf_recording{epoch_time}.raw')
@@ -159,7 +160,7 @@ class API:
 
         r = self.routes()
         for route in r:
-            self.api.add_route(self.version()+route, r[route])
+            self.app.add_route(self.version()+route, r[route])
 
-        bjoern.run(self.api, '0.0.0.0', arguments.port)
+        bjoern.run(self.app, '0.0.0.0', arguments.port)
         recorder_thread.join()
