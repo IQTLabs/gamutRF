@@ -12,7 +12,7 @@ jobs:
         pip3 install codecov && \
         sudo python3 setup.py sdist install && \
         pylint --fail-under=6 *py tests/*py gamutrf/*py && pytype && \
-        PATH=/home/runner/.local/bin:$PATH py.test -v -vv --cov-report term-missing --cov=gamutrf -c .coveragerc && \
+        PATH=/home/runner/.local/bin:$PATH py.test -v -vv --cov-report term-missing --cov=. -c .coveragerc && \
         PATH=/home/runner/.local/bin:$PATH coverage report && \
         PATH=/home/runner/.local/bin:$PATH coverage xml
     - name: Upload coverage to Codecov
