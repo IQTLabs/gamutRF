@@ -9,6 +9,7 @@ import threading
 import time
 from argparse import ArgumentParser
 
+import bladerf  # pytype: disable=import-error
 import habets39  # pytype: disable=import-error
 from gnuradio import analog  # pytype: disable=import-error
 from gnuradio import blocks  # pytype: disable=import-error
@@ -22,11 +23,11 @@ from gnuradio.fft import window  # pytype: disable=import-error
 # TODO: add test/pylint coverage with gnuradio
 
 
-class ettus_scan(gr.top_block):
+class scan(gr.top_block):
 
     def __init__(self, freq_end=1e9, freq_start=100e6, igain=0, samp_rate=4e6, sweep_sec=30,
-                 logaddr='127.0.0.1', logport=8001):
-        gr.top_block.__init__(self, 'ettus scan', catch_exceptions=True)
+                 logaddr='127.0.0.1', logport=8001, sdr='ettus'):
+        gr.top_block.__init__(self, 'scan', catch_exceptions=True)
 
         ##################################################
         # Parameters
@@ -63,24 +64,59 @@ class ettus_scan(gr.top_block):
                 except AttributeError:
                     pass
                 time.sleep(1.0 / (97))
+
+        self.source = None
+        if sdr == 'ettus':
+            self.source = uhd.usrp_source(
+                ','.join(('', '')),
+                uhd.stream_args(
+                    cpu_format='fc32',
+                    args='',
+                    channels=list(range(0, 1)),
+                ),
+            )
+            self.source.set_time_now(
+                uhd.time_spec(time.time()), uhd.ALL_MBOARDS)
+            self.source.set_antenna('TX/RX', 0)
+        elif sdr == 'bladerf':
+            self.source = bladerf.source(
+                args="numchan=" + str(1)
+                     + ",metadata=" + 'True'
+                     + ",bladerf=" +  str('0')
+                     + ",verbosity=" + 'verbose'
+                     + ",fpga=" + str('')
+                     + ",fpga-reload=" + 'False'
+                     + ",ref_clk=" + str(int())
+                     + ",in_clk=" + 'ONBOARD'
+                     + ",out_clk=" + str(False)
+                     + ",use_dac=" + 'False'
+                     + ",dac=" + str(10000)
+                     + ",xb200=" + 'none'
+                     + ",tamer=" + 'internal'
+                     + ",sampling=" + 'internal'
+                     + ",lpf_mode="+'disabled'
+                     + ",smb="+str(int(0))
+                     + ",dc_calibration="+'LPF_TUNING'
+                     + ",trigger0="+'False'
+                     + ",trigger_role0="+'master'
+                     + ",trigger_signal0="+'J51_1'
+                     + ",trigger1="+'False'
+                     + ",trigger_role1="+'master'
+                     + ",trigger_signal1="+'J51_1'
+                     + ",bias_tee0="+'False'
+                     + ",bias_tee1="+'False'
+            )
+            self.source.set_dc_offset_mode(0, 0)
+            self.source.set_iq_balance_mode(0, 0)
+            self.source.set_gain_mode(False, 0)
+
         _center_freq_thread = threading.Thread(target=_center_freq_probe)
         _center_freq_thread.daemon = True
         _center_freq_thread.start()
-        self.uhd_usrp_source_0 = uhd.usrp_source(
-            ','.join(('', '')),
-            uhd.stream_args(
-                cpu_format='fc32',
-                args='',
-                channels=list(range(0, 1)),
-            ),
-        )
-        self.uhd_usrp_source_0.set_samp_rate(samp_rate)
-        self.uhd_usrp_source_0.set_time_now(
-            uhd.time_spec(time.time()), uhd.ALL_MBOARDS)
 
-        self.uhd_usrp_source_0.set_center_freq(center_freq, 0)
-        self.uhd_usrp_source_0.set_antenna('TX/RX', 0)
-        self.uhd_usrp_source_0.set_gain(igain, 0)
+        self.source.set_center_freq(center_freq, 0)
+        self.set_samp_rate(samp_rate)
+        self.set_igain(igain)
         self.habets39_sweepsinkv_0 = habets39.sweepsinkv(
             'rx_freq', fft_size, samp_rate)
         self.fft_vxx_0 = fft.fft_vcc(
@@ -115,7 +151,7 @@ class ettus_scan(gr.top_block):
         self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_0, 0))
         self.connect((self.habets39_sweepsinkv_0, 0),
                      (self.blocks_udp_sink_0, 0))
-        self.connect((self.uhd_usrp_source_0, 0),
+        self.connect((self.source, 0),
                      (self.blocks_stream_to_vector_0, 0))
 
     def get_freq_end(self):
@@ -139,14 +175,14 @@ class ettus_scan(gr.top_block):
 
     def set_igain(self, igain):
         self.igain = igain
-        self.uhd_usrp_source_0.set_gain(self.igain, 0)
+        self.source.set_gain(self.igain, 0)
 
     def get_samp_rate(self):
         return self.samp_rate
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.uhd_usrp_source_0.set_samp_rate(self.samp_rate)
+        self.source.set_samp_rate(self.samp_rate)
 
     def get_sweep_sec(self):
         return self.sweep_sec
@@ -181,7 +217,7 @@ class ettus_scan(gr.top_block):
 
     def set_center_freq(self, center_freq):
         self.center_freq = center_freq
-        self.uhd_usrp_source_0.set_center_freq(self.center_freq, 0)
+        self.source.set_center_freq(self.center_freq, 0)
 
 
 def argument_parser():
@@ -207,10 +243,13 @@ def argument_parser():
     parser.add_argument(
         '--logport', dest='logport', type=int, default=8001,
         help='Log UDP results to this port')
+    parser.add_argument(
+        '--sdr', dest='sdr', type=str, default='ettus',
+        help='SDR to use (ettus or bladerf)')
     return parser
 
 
-def main(top_block_cls=ettus_scan, options=None):
+def main(top_block_cls=scan, options=None):
     if options is None:
         options = argument_parser().parse_args()
     if gr.enable_realtime_scheduling() != gr.RT_OK:
@@ -227,7 +266,8 @@ def main(top_block_cls=ettus_scan, options=None):
     tb = top_block_cls(freq_end=options.freq_end, freq_start=options.freq_start,
                        igain=options.igain, samp_rate=options.samp_rate,
                        sweep_sec=options.sweep_sec,
-                       logaddr=options.logaddr, logport=options.logport)
+                       logaddr=options.logaddr, logport=options.logport,
+                       sdr=options.sdr)
 
     def sig_handler(sig=None, frame=None):
         tb.stop()

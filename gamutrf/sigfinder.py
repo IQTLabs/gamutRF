@@ -39,11 +39,11 @@ def process_fft(args, ts, fftbuffer, lastbins):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='watch an ettus scan UDP stream and find signals')
-    parser.add_argument('--log', default='ettus.log', type=str,
-                        help='base path for ettus logging')
+        description='watch an scan UDP stream and find signals')
+    parser.add_argument('--log', default='scan.log', type=str,
+                        help='base path for scan logging')
     parser.add_argument('--rotatesecs', default=3600, type=int,
-                        help='rotate ettus log after this many seconds')
+                        help='rotate scan log after this many seconds')
     parser.add_argument('--logaddr', default='127.0.0.1', type=str,
                         help='UDP stream address')
     parser.add_argument('--logport', default=8001, type=int,

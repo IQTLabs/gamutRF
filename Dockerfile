@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     gnuradio \
     gnuradio-dev \
     make \
-    uhd-host && \
+    uhd-host \
+    python3-bladerf && \
     apt-get install -y --allow-downgrades pybind11-dev=2.4.3-2build2 && \
     apt -y autoremove --purge && rm -rf /var/cache/* /root/.cache/*
 
@@ -24,7 +25,7 @@ RUN make && make install
 RUN ln -s /usr/local/lib/python3/dist-packages/habets39 /usr/local/lib/python3.8/dist-packages
 RUN ldconfig -v
 
-COPY gamutrf/ettus_scan.py /root/ettus_scan.py
+COPY gamutrf/scan.py /root/scan.py
 
-ENTRYPOINT ["/usr/bin/python3", "/root/ettus_scan.py"]
+ENTRYPOINT ["/usr/bin/python3", "/root/scan.py"]
 CMD ["--help"]

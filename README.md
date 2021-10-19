@@ -14,7 +14,7 @@ docker-compose up
 Finally build and run the container for generating the graph video (MP4) from the CSV file:
 ```
 docker build -t gamut-graph:latest -f Dockerfile.graph .
-docker run -it --rm -v "$PWD":/data gamut-graph:latest /data/ettus_scan.csv
+docker run -it --rm -v "$PWD":/data gamut-graph:latest /data/scan.csv
 ```
 
 # FAQ

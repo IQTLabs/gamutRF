@@ -31,4 +31,4 @@ services:
       - '${VOL_PREFIX}:/logs'
     command:
       - --logaddr=sigfinder
-      - --log=/logs/ettus_scan.csv
+      - --log=/logs/scan.csv
