@@ -1,6 +1,15 @@
 #!/usr/bin/python3
 
+
+# call with HTTP POST:
+# e.g.
+#   wget --post-data='{"sample_file": "blah.out", "center_freq": 1000000000, "sample_count": 10000000}' -O- 127.0.0.1:5000/record
+
+
+import queue
 import subprocess
+import threading
+from flask import Flask, json, request
 
 
 # Convert I/Q sample recording to "gnuradio" I/Q format (float)
@@ -50,3 +59,36 @@ def uhd_record(sample_file, center_freq, sample_count, sample_rate=1e6, sample_b
         '--freq', str(center_freq),
         '--gain', str(gain)]
     return subprocess.check_call(args)
+
+
+def run_recorder(record_func, q):
+    while True:
+        record_args = q.get()
+        record_func(**record_args)
+
+
+if __name__ == '__main__':
+    # TODO: set record function from CLI arg.
+    record_func = uhd_record
+    q = queue.Queue()
+    recorder_thread = threading.Thread(target=run_recorder, args=(record_func, q))
+    recorder_thread.start()
+    # TODO: set listening port from CLI arg.
+    api = Flask(__name__)
+
+    @api.route('/record', methods=['POST'])
+    def record():
+        record_args = request.get_json(force=True)
+        required_args = {'sample_file', 'center_freq', 'sample_count'}
+        if not record_args or not required_args.issubset(set(record_args.keys())):
+            return (json.dumps({'error': 'missing required args'}), 501)
+        allowed_args = required_args.union({'sample_rate', 'sample_bw', 'gain'})
+        if set(record_args) - allowed_args:
+            return (json.dumps({'error': 'unknown args'}), 501)
+        if not q.empty():
+            return (json.dumps({'error': 'recorder busy'}), 501)
+        q.put(record_args)
+        return (json.dumps(record_args), 201)
+
+    api.run()
+    recorder_thread.join()
