@@ -80,31 +80,31 @@ class scan(gr.top_block):
             self.source.set_antenna('TX/RX', 0)
         elif sdr == 'bladerf':
             self.source = bladerf.source(
-                args="numchan=" + str(1)
-                     + ",metadata=" + 'True'
-                     + ",bladerf=" +  str('0')
-                     + ",verbosity=" + 'verbose'
-                     + ",fpga=" + str('')
-                     + ",fpga-reload=" + 'False'
-                     + ",ref_clk=" + str(int())
-                     + ",in_clk=" + 'ONBOARD'
-                     + ",out_clk=" + str(False)
-                     + ",use_dac=" + 'False'
-                     + ",dac=" + str(10000)
-                     + ",xb200=" + 'none'
-                     + ",tamer=" + 'internal'
-                     + ",sampling=" + 'internal'
-                     + ",lpf_mode="+'disabled'
-                     + ",smb="+str(int(0))
-                     + ",dc_calibration="+'LPF_TUNING'
-                     + ",trigger0="+'False'
-                     + ",trigger_role0="+'master'
-                     + ",trigger_signal0="+'J51_1'
-                     + ",trigger1="+'False'
-                     + ",trigger_role1="+'master'
-                     + ",trigger_signal1="+'J51_1'
-                     + ",bias_tee0="+'False'
-                     + ",bias_tee1="+'False'
+                args='numchan=' + str(1)
+                     + ',metadata=' + 'True'
+                     + ',bladerf=' + str('0')
+                     + ',verbosity=' + 'verbose'
+                     + ',fpga=' + str('')
+                     + ',fpga-reload=' + 'False'
+                     + ',ref_clk=' + str(int())
+                     + ',in_clk=' + 'ONBOARD'
+                     + ',out_clk=' + str(False)
+                     + ',use_dac=' + 'False'
+                     + ',dac=' + str(10000)
+                     + ',xb200=' + 'none'
+                     + ',tamer=' + 'internal'
+                     + ',sampling=' + 'internal'
+                     + ',lpf_mode='+'disabled'
+                     + ',smb='+str(int(0))
+                     + ',dc_calibration='+'LPF_TUNING'
+                     + ',trigger0='+'False'
+                     + ',trigger_role0='+'master'
+                     + ',trigger_signal0='+'J51_1'
+                     + ',trigger1='+'False'
+                     + ',trigger_role1='+'master'
+                     + ',trigger_signal1='+'J51_1'
+                     + ',bias_tee0='+'False'
+                     + ',bias_tee1='+'False'
             )
             self.source.set_dc_offset_mode(0, 0)
             self.source.set_iq_balance_mode(0, 0)
