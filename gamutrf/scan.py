@@ -114,6 +114,7 @@ class scan(gr.top_block):
         _center_freq_thread.daemon = True
         _center_freq_thread.start()
 
+        # pytype: disable=attribute-error
         self.source.set_center_freq(center_freq, 0)
         self.set_samp_rate(samp_rate)
         self.set_igain(igain)
@@ -175,13 +176,14 @@ class scan(gr.top_block):
 
     def set_igain(self, igain):
         self.igain = igain
-        self.source.set_gain(self.igain, 0)
+        self.source.set_gain(self.igain, 0)  # pytype: disable=attribute-error
 
     def get_samp_rate(self):
         return self.samp_rate
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
+        # pytype: disable=attribute-error
         self.source.set_samp_rate(self.samp_rate)
 
     def get_sweep_sec(self):

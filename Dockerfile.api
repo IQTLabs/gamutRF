@@ -1,0 +1,8 @@
+FROM python:3.9-slim
+COPY requirements.txt /root/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends gcc git g++ libev-dev netcat python3-pip && pip3 install -r /root/requirements.txt
+COPY . /root/gamutrf
+WORKDIR /root/gamutrf
+RUN pip3 install .
+EXPOSE 8000
+ENTRYPOINT ["gamutrf-api"]

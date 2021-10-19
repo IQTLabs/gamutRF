@@ -81,7 +81,7 @@ def main():
             openlogts = int(time.time())
             with open(args.log, mode=mode) as l:
                 while True:
-                    line = f.stdout.readline()
+                    line = f.stdout.readline()  # pytype: disable=attribute-error
                     now = int(time.time())
                     try:
                         ts, freq, pw = [float(x) for x in line.strip().split()]
