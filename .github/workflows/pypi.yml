@@ -1,0 +1,31 @@
+name: release
+
+on:
+  push:
+    branches: main
+    tags: 'v*'
+
+jobs:
+  release:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Build core package
+      id: build_core_package
+      run: |
+        sudo apt-get update && \
+        sudo apt-get install -yq --no-install-recommends python3-pip python3.8 python3.8-dev python3-setuptools && \
+        pip3 install wheel && \
+        cd src/core && python3 setup.py sdist bdist_wheel --universal
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+    - name: Publish package
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        user: ${{ secrets.PYPI_USERNAME }}
+        password: ${{ secrets.PYPI_TOKEN }}
+        packages_dir: dist
