@@ -18,7 +18,6 @@ CSV = '.csv'
 CSVCOLS = ['ts', 'freq', 'db']
 
 
-
 def read_csv_chunks(args):
     minmhz = args.minhz / 1e6
     leftover_df = pd.DataFrame()
@@ -43,13 +42,17 @@ def read_csv_chunks(args):
             chunk['freq'] /= 1e6
             df = pd.concat([leftover_df, chunk])
             detect_frames(df)
-            read_frames = df['frame'].max()  # pylint: disable=unsubscriptable-object
+            read_frames = df['frame'].max(
+            )  # pylint: disable=unsubscriptable-object
             if read_frames == 0 and len(chunk) == args.nrows:
                 leftover_df = leftover_df.append(chunk[CSVCOLS])
-                logging.info(f'buffering incomplete frame - {args.nrows} too small?')
+                logging.info(
+                    f'buffering incomplete frame - {args.nrows} too small?')
                 continue
-            leftover_df = df[df['frame'] == read_frames][CSVCOLS]  # pylint: disable=unsubscriptable-object
-            df = df[(df['frame'] < read_frames) & (df['freq'] >= minmhz)]  # pylint: disable=unsubscriptable-object
+            leftover_df = df[df['frame'] ==
+                             read_frames][CSVCOLS]  # pylint: disable=unsubscriptable-object
+            df = df[(df['frame'] < read_frames) & (df['freq'] >= minmhz)
+                    ]  # pylint: disable=unsubscriptable-object
             df = calc_db(df)
             df = df[df['db'] >= args.mindb]
             preprocess_frames(df)
@@ -58,7 +61,8 @@ def read_csv_chunks(args):
     if len(leftover_df):
         df = leftover_df
         detect_frames(df)
-        df = df[(df['frame'] < read_frames) & (df['freq'] >= minmhz)]  # pylint: disable=unsubscriptable-object
+        df = df[(df['frame'] < read_frames) & (df['freq'] >= minmhz)
+                ]  # pylint: disable=unsubscriptable-object
         df = calc_db(df)
         df = df[df['db'] >= args.mindb]
         preprocess_frames(df)
@@ -74,6 +78,7 @@ def read_csv(args):
             if args.maxframe and frames == args.maxframe:
                 return
             frames += 1
+
 
 def generate_frames(args, tempdir):
     tsmap = []
@@ -125,7 +130,7 @@ def generate_frames(args, tempdir):
             lastts = ts
             executor.submit(write_frame, frame, frame_f, frame_df.copy())
             frame_df.to_csv(
-                os.path.join(str(tempdir), 'graph.csv') , sep='\t', mode='a',
+                os.path.join(str(tempdir), 'graph.csv'), sep='\t', mode='a',
                 columns=['ts', 'freq', 'db'], index=False, header=False)
         executor.shutdown(wait=True)
 
@@ -207,7 +212,7 @@ def run_ffmpeg(args, tempdir, mp4):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Convert an scan log to a timelapse graph/video')
+        description='Convert a scan log to a timelapse graph/video')
     parser.add_argument('csv', help='log file to parse')
     parser.add_argument('--minhz', default=int(70 * 1e6), type=int,
                         help='minimum frequency to process')
@@ -215,7 +220,8 @@ def main():
                         help='maximum frequency to process')
     parser.add_argument('--mindb', default=int(-40), type=int,
                         help='minimum dB to process')
-    parser.add_argument('--framerate', default=int(5), type=int, help='frame rate')
+    parser.add_argument('--framerate', default=int(5),
+                        type=int, help='frame rate')
     parser.add_argument('--xtics', default=int(40), type=int, help='xtics')
     parser.add_argument('--nrows', default=int(1e7), type=int,
                         help='number of rows to read at once')

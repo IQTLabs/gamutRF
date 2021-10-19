@@ -6,7 +6,9 @@ import subprocess
 import time
 
 import pandas as pd
-from gamutrf.sigwindows import calc_db, find_sig_windows
+
+from gamutrf.sigwindows import calc_db
+from gamutrf.sigwindows import find_sig_windows
 
 ROLLOVERHZ = 100e6
 
@@ -27,7 +29,7 @@ def process_fft(args, ts, fftbuffer, lastbins):
         monitor_bins.add(center_freq)
         peak_dbs[center_freq] = peak_db
     logging.info('current bins %f to %f MHz: %s',
-        df['freq'].min(), df['freq'].max(), sorted(peak_dbs.items()))
+                 df['freq'].min(), df['freq'].max(), sorted(peak_dbs.items()))
     new_bins = monitor_bins - lastbins
     if new_bins:
         logging.info('new bins: %s', sorted(new_bins))
@@ -39,7 +41,7 @@ def process_fft(args, ts, fftbuffer, lastbins):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='watch an scan UDP stream and find signals')
+        description='watch a scan UDP stream and find signals')
     parser.add_argument('--log', default='scan.log', type=str,
                         help='base path for scan logging')
     parser.add_argument('--rotatesecs', default=3600, type=int,
@@ -65,7 +67,7 @@ def main():
 
     with subprocess.Popen(
             ['nc', '-u', '-l', args.logaddr, str(args.logport)],
-            stdout=subprocess.PIPE,stderr=subprocess.PIPE) as f:
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE) as f:
         lastfreq = 0
         fftbuffer = []
         lastbins = set()
