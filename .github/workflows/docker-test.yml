@@ -1,0 +1,17 @@
+name: test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: docker build
+      run: |
+        docker build -f Dockerfile . -t gamutrf:latest && \
+        docker run -t gamutrf:latest --help && \
+        docker build -f Dockerfile.graph . -t gamutrf-graph:latest && \
+        docker run -t gamutrf-graph:latest --help && \
+        docker build -f Dockerfile.sigfinder . -t gamutrf-sigfinder:latest && \
+        docker run -t gamutrf-sigfinder:latest --help && \
+        sudo apt-get update && sudo apt-get install -qy python3-pip && pip3 install docker-compose \
+        docker-compose build
