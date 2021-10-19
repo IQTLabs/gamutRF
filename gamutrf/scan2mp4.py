@@ -207,7 +207,7 @@ def run_ffmpeg(args, tempdir, mp4):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Convert an ettus_scan log to a timelapse graph/video')
+        description='Convert an scan log to a timelapse graph/video')
     parser.add_argument('csv', help='log file to parse')
     parser.add_argument('--minhz', default=int(70 * 1e6), type=int,
                         help='minimum frequency to process')
