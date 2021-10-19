@@ -51,5 +51,9 @@ jobs:
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
+          -t iqtlabs/gamutrf-api:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.api . && \
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --push \
           -t iqtlabs/gamutrf-sigfinder:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.sigfinder .
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
