@@ -9,7 +9,6 @@ import threading
 import time
 from argparse import ArgumentParser
 
-import bladerf  # pytype: disable=import-error
 import habets39  # pytype: disable=import-error
 from gnuradio import analog  # pytype: disable=import-error
 from gnuradio import blocks  # pytype: disable=import-error
@@ -20,6 +19,7 @@ from gnuradio import uhd  # pytype: disable=import-error
 from gnuradio.eng_arg import eng_float  # pytype: disable=import-error
 from gnuradio.eng_arg import intx  # pytype: disable=import-error
 from gnuradio.fft import window  # pytype: disable=import-error
+from gnuradio import soapy  # pytype: disable=import-error
 # TODO: add test/pylint coverage with gnuradio
 
 
@@ -65,6 +65,7 @@ class scan(gr.top_block):
                     pass
                 time.sleep(1.0 / (97))
 
+        self.freq_setter = None
         self.source = None
         if sdr == 'ettus':
             self.source = uhd.usrp_source(
@@ -78,46 +79,26 @@ class scan(gr.top_block):
             self.source.set_time_now(
                 uhd.time_spec(time.time()), uhd.ALL_MBOARDS)
             self.source.set_antenna('TX/RX', 0)
+            self.set_samp_rate(samp_rate)
+            self.set_igain(igain)
+            self.freq_setter = lambda x: self.source.set_center_freq(x, 0)
         elif sdr == 'bladerf':
-            self.source = bladerf.source(
-                args='numchan=' + str(1)
-                     + ',metadata=' + 'True'
-                     + ',bladerf=' + str('0')
-                     + ',verbosity=' + 'verbose'
-                     + ',fpga=' + str('')
-                     + ',fpga-reload=' + 'False'
-                     + ',ref_clk=' + str(int())
-                     + ',in_clk=' + 'ONBOARD'
-                     + ',out_clk=' + str(False)
-                     + ',use_dac=' + 'False'
-                     + ',dac=' + str(10000)
-                     + ',xb200=' + 'none'
-                     + ',tamer=' + 'internal'
-                     + ',sampling=' + 'internal'
-                     + ',lpf_mode='+'disabled'
-                     + ',smb='+str(int(0))
-                     + ',dc_calibration='+'LPF_TUNING'
-                     + ',trigger0='+'False'
-                     + ',trigger_role0='+'master'
-                     + ',trigger_signal0='+'J51_1'
-                     + ',trigger1='+'False'
-                     + ',trigger_role1='+'master'
-                     + ',trigger_signal1='+'J51_1'
-                     + ',bias_tee0='+'False'
-                     + ',bias_tee1='+'False'
-            )
-            self.source.set_dc_offset_mode(0, 0)
-            self.source.set_iq_balance_mode(0, 0)
-            self.source.set_gain_mode(False, 0)
+            dev = 'driver=bladerf'
+            stream_args = ''
+            tune_args = ['']
+            settings = ['']
+            self.source = soapy.source(dev, "fc32", 1, '',
+                stream_args, tune_args, settings)
+            self.source.set_sample_rate(0, samp_rate)
+            self.source.set_bandwidth(0, 0.0)
+            self.source.set_frequency_correction(0, 0)
+            self.source.set_gain(0, igain)
+            self.freq_setter = lambda x: self.source.set_frequency(0, x)
 
         _center_freq_thread = threading.Thread(target=_center_freq_probe)
         _center_freq_thread.daemon = True
         _center_freq_thread.start()
 
-        # pytype: disable=attribute-error
-        self.source.set_center_freq(center_freq, 0)
-        self.set_samp_rate(samp_rate)
-        self.set_igain(igain)
         self.habets39_sweepsinkv_0 = habets39.sweepsinkv(
             'rx_freq', fft_size, samp_rate)
         self.fft_vxx_0 = fft.fft_vcc(
@@ -219,7 +200,8 @@ class scan(gr.top_block):
 
     def set_center_freq(self, center_freq):
         self.center_freq = center_freq
-        self.source.set_center_freq(self.center_freq, 0)
+        if self.center_freq:
+            self.freq_setter(self.center_freq)
 
 
 def argument_parser():
