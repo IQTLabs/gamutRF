@@ -42,13 +42,13 @@ WORKDIR /root/pybind11-2.5.0/build
 RUN cmake .. && make && make install
 WORKDIR /root/volk/build
 RUN git submodule update --init
-RUN cmake .. && make -j `nproc` && make install
+RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/SoapySDR/build
-RUN cmake .. && make -j `nproc` && make install
+RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/SoapyBladeRF/build
-RUN cmake .. && make -j `nproc` && make install
+RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/gnuradio/build
-RUN cmake .. && make -j `nproc` && make install && ldconfig -v
+RUN cmake .. && make -j "$(nproc)" && make install && ldconfig -v
 WORKDIR /root/gr-habets39
 RUN git checkout 9961d0b8644bacbc932e46042a34b4871ba627f8
 WORKDIR /root/gr-habets39/build
