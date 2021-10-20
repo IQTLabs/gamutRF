@@ -1,8 +1,10 @@
 FROM python:3.10-slim
 COPY requirements.txt /root/requirements.txt
-RUN apt-get update && apt-get install -y --no-install-recommends gcc git g++ libev-dev netcat python3-pip && pip3 install -r /root/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends gcc git g++ libev-dev netcat python3-pip uhd-host && pip3 install -r /root/requirements.txt
+RUN /usr/lib/uhd/utils/uhd_images_downloader.py  -t "b2|usb"
 COPY . /root/gamutrf
 WORKDIR /root/gamutrf
 RUN pip3 install .
 EXPOSE 8000
+ENV UHD_IMAGES_DIR /usr/share/uhd/images
 ENTRYPOINT ["gamutrf-api"]
