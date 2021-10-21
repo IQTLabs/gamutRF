@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-from gamutrf.sigwindows import find_sig_windows
+from gamutrf.sigwindows import find_sig_windows, choose_record_signal
 
 TESTDIR = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), 'data')
@@ -31,6 +31,16 @@ class WindowsTestCase(unittest.TestCase):
         df = pd.read_csv(self._get_data('wifi24.csv'), delim_whitespace=True)
         self.assertEqual(
             [(2420.422912, 2437.485056, -32.40808890037803, -44.99829069187393, -13.27136572108361)], find_sig_windows(df))
+
+    def test_choose_record_signal(self):
+        # One signal, one recorder.
+        self.assertEqual([16], choose_record_signal([20], 1, 8))
+        # One signal reported multiple times, two recorders, but we only need to record it once.
+        self.assertEqual([16], choose_record_signal([20, 20, 20, 20], 2, 8))
+        # One signal received less often, so record that, since we have only one recorder.
+        self.assertEqual([112], choose_record_signal([20, 20, 20, 20, 110], 1, 8))
+        # We have two recorders so can afford to record the more common one as well.
+        self.assertEqual([112, 16], choose_record_signal([20, 20, 20, 20, 110], 2, 8))
 
 
 if __name__ == '__main__':
