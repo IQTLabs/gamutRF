@@ -1,6 +1,11 @@
-FROM python:3.10-slim
+FROM iqtlabs/gamutrf:latest
+WORKDIR /root
+RUN mkdir -p /data/gamutrf
 COPY requirements.txt /root/requirements.txt
-RUN apt-get update && apt-get install -y --no-install-recommends gcc git g++ libev-dev netcat python3-pip && pip3 install -r /root/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends libusb-1.0-0-dev libusb-1.0-0 build-essential libncurses5-dev libtecla1 pkg-config gcc libev-dev netcat && pip3 install -r /root/requirements.txt
+RUN git clone https://github.com/Nuand/bladeRF.git -b 2021.10
+WORKDIR /root/bladeRF/host/build
+RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_UDEV_RULES=ON -DENABLE_BACKEND_LIBUSB=TRUE .. && make -j "$(nproc)" && make install && ldconfig -v
 COPY . /root/gamutrf
 WORKDIR /root/gamutrf
 RUN pip3 install .
