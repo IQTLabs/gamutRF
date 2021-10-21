@@ -2,6 +2,7 @@
 import argparse
 import logging
 import os
+import requests
 import subprocess
 import time
 
@@ -50,7 +51,7 @@ def main():
                         help='UDP stream address')
     parser.add_argument('--logport', default=8001, type=int,
                         help='UDP stream port')
-    parser.add_argument('--bin_mhz', default=8, type=int,
+    parser.add_argument('--bin_mhz', default=20, type=int,
                         help='monitoring bin width in MHz')
     parser.add_argument('--window', default=4, type=int,
                         help='signal finding sample window size')
@@ -58,10 +59,12 @@ def main():
                         help='signal finding threshold')
     parser.add_argument('--history', default=50, type=int,
                         help='number of frames of signal history to keep')
-    parser.add_argument('--recorders', default=1, type=int,
-                        help='number of SDR recorders')
-    parser.add_argument('--record_bw_mbps', default=4, type=int,
+    parser.add_argument('--recorders', default=[], type=str, nargs='*',
+                        help='list of SDR recorder base URLs (e.g. http://host:port/)')
+    parser.add_argument('--record_bw_mbps', default=20, type=int,
                         help='record bandwidth in mbps')
+    parser.add_argument('--record_secs', default=10, type=int,
+                        help='record time duration in seconds')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
@@ -113,9 +116,19 @@ def main():
                             signals = []
                             for bins in lastbins_history:
                                 signals.extend(list(bins))
-                            record_signals = choose_record_signal(signals, args.recorders, args.record_bw_mbps)
-                            logging.debug(f'will record {record_signals} on {args.recorders} recorders')
-                            # TODO: add recorder calls
+                            recorder_count = len(args.recorders)
+                            record_signals = choose_record_signal(signals, recorder_count, args.record_bw_mbps)
+                            for signal, recorder in zip(record_signals, args.recorders):
+                                signal_hz = int(signal * 1e6)
+                                record_bps = int(args.record_bw_mbps * 1e6)
+                                record_samples = int(record_bps * args.record_secs)
+                                url = f'{recorder}/v1/record/{signal_hz}/{record_samples}/{record_bps}'
+                                logging.debug('requesting %s (center %f MHz)', url, signal)
+                                try:
+                                    req = requests.get(url, timeout=args.record_secs)
+                                    logging.debug(str(req))
+                                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as err:
+                                    logging.debug(str(err))
                         fftbuffer = []
                         if now - openlogts > args.rotatesecs:
                             break
