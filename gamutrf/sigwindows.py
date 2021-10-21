@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+
+import random
+from collections import defaultdict, Counter
 import numpy as np
 
 
@@ -27,3 +30,28 @@ def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
         else:
             in_signal = row
     return signals
+
+
+def choose_record_signal(signals, recorders, record_bw):
+    recorder_buckets = Counter()
+
+    # Convert signals into buckets of record_bw size, count how many of each size
+    for center_freq in signals:
+        bucket = round(center_freq / record_bw) * record_bw
+        recorder_buckets[bucket] += 1
+
+    # Now count number of buckets of each count.
+    buckets_by_count = defaultdict(set)
+    for bucket, count in recorder_buckets.items():
+        buckets_by_count[count].add(bucket)
+
+    recorder_freqs = []
+    # From least occuring bucket to most occurring, choose a random bucket for each recorder.
+    for _count, buckets in sorted(buckets_by_count.items()):
+        while buckets and len(recorder_freqs) < recorders:
+            bucket = random.choice(list(buckets))  # nosec
+            buckets = buckets.remove(bucket)
+            recorder_freqs.append(bucket)
+        if len(recorder_freqs) == recorders:
+            break
+    return recorder_freqs
