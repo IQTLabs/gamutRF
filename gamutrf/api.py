@@ -63,17 +63,16 @@ class Info:
 class Record:
 
     @staticmethod
-    def on_get(_req, resp, center_freq, sample_count):
+    def on_get(_req, resp, center_freq, sample_count, sample_rate):
         # TODO check if chosen SDR can do the supplied center_freq/sample_count
-        try:
-            int(center_freq)
-            int(sample_count)
-        except ValueError:
-            resp.text = json.dumps({'status': 'Invalid values in request'})
-            resp.content_type = falcon.MEDIA_JSON
-            resp.status = falcon.HTTP_400
-            return
-        q.put({'center_freq': center_freq, 'sample_count': sample_count})
+        for arg in [center_freq, sample_count, sample_rate]:
+            if not isinstance(arg, float) and not isinstance(arg, int):
+                resp.text = json.dumps({'status': 'Invalid values in request'})
+                resp.content_type = falcon.MEDIA_JSON
+                resp.status = falcon.HTTP_400
+                return
+        q.put({'center_freq': center_freq,
+              'sample_count': sample_count, 'sample_rate': sample_rate})
         resp.text = json.dumps({'status': 'Requested recording'}, indent=2)
         resp.content_type = falcon.MEDIA_JSON
         resp.status = falcon.HTTP_200
@@ -100,7 +99,7 @@ class API:
             ['sox'] + raw_args + ['-b', str(in_file_bits), '-e', in_file_fmt, in_file] + raw_args + ['-e', 'float', gr_file])
 
     @staticmethod
-    def record(center_freq, sample_count, sample_rate=1e6, sample_bw=1e6, gain=0, agc=True):
+    def record(center_freq, sample_count, sample_rate=20e6, gain=0, agc=True):
         epoch_time = str(int(time.time()))
         sample_file = os.path.join(
             arguments.path, f'gamutrf_recording{epoch_time}.raw')
@@ -109,7 +108,7 @@ class API:
                 '/usr/lib/uhd/examples/rx_samples_to_file',
                 '--file', sample_file,
                 '--rate', str(sample_rate),
-                '--bw', str(sample_bw),
+                '--bw', str(sample_rate),
                 '--nsamps', str(int(sample_count)),
                 '--freq', str(center_freq),
                 '--gain', str(gain)]
@@ -126,7 +125,7 @@ class API:
                 'bladeRF-cli',
             ] + gain_args + [
                 '-e', f'set samplerate rx {sample_rate}',
-                '-e', f'set bandwidth rx {sample_bw}',
+                '-e', f'set bandwidth rx {sample_rate}',
                 '-e', f'set frequency rx {center_freq}',
                 '-e', f'rx config file={sample_file} format=bin n={sample_count}',
                 '-e', 'rx start',
@@ -138,7 +137,7 @@ class API:
 
     @staticmethod
     def paths():
-        return ['', '/info', '/record/{center_freq}/{sample_count}']
+        return ['', '/info', '/record/{center_freq}/{sample_count}/{sample_rate}']
 
     @staticmethod
     def version():
