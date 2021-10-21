@@ -8,7 +8,7 @@ import time
 import pandas as pd
 
 from gamutrf.sigwindows import calc_db
-from gamutrf.sigwindows import find_sig_windows
+from gamutrf.sigwindows import find_sig_windows, choose_record_signal
 
 ROLLOVERHZ = 100e6
 
@@ -56,6 +56,12 @@ def main():
                         help='signal finding sample window size')
     parser.add_argument('--threshold', default=1.5, type=float,
                         help='signal finding threshold')
+    parser.add_argument('--history', default=50, type=int,
+                        help='number of frames of signal history to keep')
+    parser.add_argument('--recorders', default=1, type=int,
+                        help='number of SDR recorders')
+    parser.add_argument('--record_bw_mbps', default=4, type=int,
+                        help='record bandwidth in mbps')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
@@ -70,6 +76,7 @@ def main():
             stdout=subprocess.PIPE, stderr=subprocess.PIPE) as f:
         lastfreq = 0
         fftbuffer = []
+        lastbins_history = []
         lastbins = set()
         mode = 'wb'
         if os.path.exists(args.log):
@@ -99,6 +106,16 @@ def main():
                     lastfreq = freq
                     if rollover:
                         lastbins = process_fft(args, ts, fftbuffer, lastbins)
+                        if lastbins:
+                            lastbins_history.append(lastbins)
+                            lastbins_history = lastbins_history[:args.history]
+                        if lastbins_history:
+                            signals = []
+                            for bins in lastbins_history:
+                                signals.extend(list(bins))
+                            record_signals = choose_record_signal(signals, args.recorders, args.record_bw_mbps)
+                            logging.debug(f'will record {record_signals} on {args.recorders} recorders')
+                            # TODO: add recorder calls
                         fftbuffer = []
                         if now - openlogts > args.rotatesecs:
                             break
