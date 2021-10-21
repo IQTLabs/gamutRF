@@ -66,7 +66,9 @@ class Record:
     def on_get(_req, resp, center_freq, sample_count, sample_rate):
         # TODO check if chosen SDR can do the supplied center_freq/sample_count
         for arg in [center_freq, sample_count, sample_rate]:
-            if not isinstance(arg, float) and not isinstance(arg, int):
+            try:
+                int(float(arg))
+            except ValueError:
                 resp.text = json.dumps({'status': 'Invalid values in request'})
                 resp.content_type = falcon.MEDIA_JSON
                 resp.status = falcon.HTTP_400
