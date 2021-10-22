@@ -104,7 +104,7 @@ class API:
     def record(center_freq, sample_count, sample_rate=20e6, gain=0, agc=True):
         epoch_time = str(int(time.time()))
         sample_file = os.path.join(
-            arguments.path, f'gamutrf_recording{epoch_time}.raw')
+            arguments.path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.raw')
         if arguments.sdr == 'ettus':
             args = [
                 '/usr/lib/uhd/examples/rx_samples_to_file',
