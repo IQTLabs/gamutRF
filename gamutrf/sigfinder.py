@@ -110,7 +110,7 @@ def main():
                     if rollover:
                         lastbins = process_fft(args, ts, fftbuffer, lastbins)
                         if lastbins:
-                            lastbins_history.append(lastbins)
+                            lastbins_history = [lastbins] + lastbins_history
                             lastbins_history = lastbins_history[:args.history]
                         if lastbins_history:
                             signals = []
