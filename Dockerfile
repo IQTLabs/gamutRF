@@ -1,22 +1,30 @@
 FROM ubuntu:20.04
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     apt-get -y --no-install-recommends install \
+    build-essential \
     cmake \
     g++ \
+    gcc \
     git \
     libbladerf-dev \
     libboost-all-dev \
+    libev-dev \
     libfftw3-dev \
     libgmp-dev \
     libgsl-dev \
     liblog4cpp5-dev \
     libpython3-dev \
+    libncurses5-dev \
     libsndfile1-dev \
+    libtecla1 \
     libthrift-dev \
     libuhd-dev \
     libunwind-dev \
+    libusb-1.0-0-dev \
+    libusb-1.0-0 \
     libvolk2-dev \
     make \
+    netcat \
     pkg-config \
     python3-bladerf \
     python3-mako \
