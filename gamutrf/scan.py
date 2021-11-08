@@ -82,8 +82,8 @@ class scan(gr.top_block):
             self.set_samp_rate(samp_rate)
             self.set_igain(igain)
             self.freq_setter = lambda x: self.source.set_center_freq(x, 0)
-        elif sdr == 'bladerf':
-            dev = 'driver=bladerf'
+        elif sdr in ('bladerf', 'lime'):
+            dev = f'driver={sdr}'
             stream_args = ''
             tune_args = ['']
             settings = ['']
@@ -229,7 +229,7 @@ def argument_parser():
         help='Log UDP results to this port')
     parser.add_argument(
         '--sdr', dest='sdr', type=str, default='ettus',
-        help='SDR to use (ettus or bladerf)')
+        help='SDR to use (ettus, bladerf, or lime)')
     return parser
 
 
