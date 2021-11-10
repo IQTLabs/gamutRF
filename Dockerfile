@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     libfftw3-dev \
     libgmp-dev \
     libgsl-dev \
+    liblimesuite-dev \
     liblog4cpp5-dev \
     libpython3-dev \
     libncurses5-dev \
