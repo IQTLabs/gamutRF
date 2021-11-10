@@ -27,8 +27,8 @@ parser.add_argument(
     '--port', '-p', help='Port to run the API webserver on', type=int,
     default=8000)
 parser.add_argument(
-    '--sdr', '-s', help='Specify SDR to record with (ettus or bladerf)',
-    choices=['bladerf', 'ettus'], default='ettus')
+    '--sdr', '-s', help='Specify SDR to record with (ettus, lime or bladerf)',
+    choices=['bladerf', 'ettus', 'lime'], default='ettus')
 arguments = parser.parse_args()
 
 level_int = {'CRITICAL': 50, 'ERROR': 40, 'WARNING': 30, 'INFO': 20,
@@ -95,6 +95,7 @@ class API:
 
     # Convert I/Q sample recording to "gnuradio" I/Q format (float)
     # Default input format is signed, 16 bit I/Q (bladeRF-cli default)
+    @staticmethod
     def raw2grraw(in_file, gr_file, sample_rate, in_file_bits=16, in_file_fmt='signed-integer'):
         raw_args = ['-t', 'raw', '-r', str(sample_rate), '-c', str(1)]
         return subprocess.check_call(
@@ -132,6 +133,20 @@ class API:
                 '-e', f'rx config file={sample_file} format=bin n={sample_count}',
                 '-e', 'rx start',
                 '-e', 'rx wait']
+        elif arguments.sdr == 'lime':
+            gain_args = []
+            if gain:
+                gain_args = [
+                    '-g', f'{gain}',
+                ]
+            args = [
+                '/usr/local/bin/LimeStream',
+            ] + gain_args + [
+                '-f', f'{center_freq}',
+                '-s', f'{sample_rate}',
+                '-C', f'{sample_count}',
+                '-r', f'{sample_file}',
+            ]
         else:
             logging.error('Invalid SDR, not recording')
             return -1
@@ -154,7 +169,6 @@ class API:
         return dict(zip(p, funcs))
 
     def main(self):
-
         recorder_thread = threading.Thread(
             target=self.run_recorder, args=(self.record, q))
         recorder_thread.start()
