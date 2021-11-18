@@ -1,15 +1,15 @@
 #!/usr/bin/python3
 import argparse
+import json
 import logging
 import os
-import requests
 import subprocess
 import time
+import requests
 
 import pandas as pd
 
-from gamutrf.sigwindows import calc_db
-from gamutrf.sigwindows import find_sig_windows, choose_record_signal
+from gamutrf.sigwindows import calc_db, find_sig_windows, choose_record_signal, parse_freq_excluded, choose_recorders
 
 ROLLOVERHZ = 100e6
 
@@ -38,6 +38,17 @@ def process_fft(args, ts, fftbuffer, lastbins):
     if old_bins:
         logging.info('old bins: %s', sorted(old_bins))
     return monitor_bins
+
+
+def recorder_req(recorder, recorder_args, timeout):
+    url = f'{recorder}/v1/{recorder_args}'
+    try:
+        req = requests.get(url, timeout=timeout)
+        logging.debug(str(req))
+        return req
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as err:
+        logging.debug(str(err))
+        return None
 
 
 def main():
@@ -86,6 +97,16 @@ def main():
             logging.info(f'{args.log} exists, will append first')
             mode = 'ab'
 
+        recorder_freq_exclusions = {}
+        recorder_count = 0
+        for recorder in args.recorders:
+            req = recorder_req(recorder, 'info', args.record_secs)
+            if req is None or req.status_code != 200:
+                continue
+            excluded = json.loads(req.text)['freq_excluded']
+            recorder_freq_exclusions[recorder] = parse_freq_excluded(excluded)
+            recorder_count += 1
+
         while True:
             logging.info(f'reopening {args.log}')
             openlogts = int(time.time())
@@ -116,19 +137,13 @@ def main():
                             signals = []
                             for bins in lastbins_history:
                                 signals.extend(list(bins))
-                            recorder_count = len(args.recorders)
                             record_signals = choose_record_signal(signals, recorder_count, args.record_bw_mbps)
-                            for signal, recorder in zip(record_signals, args.recorders):
+                            for signal, recorder in choose_recorders(record_signals, recorder_freq_exclusions):
                                 signal_hz = int(signal * 1e6)
                                 record_bps = int(args.record_bw_mbps * 1e6)
                                 record_samples = int(record_bps * args.record_secs)
-                                url = f'{recorder}/v1/record/{signal_hz}/{record_samples}/{record_bps}'
-                                logging.debug('requesting %s (center %f MHz)', url, signal)
-                                try:
-                                    req = requests.get(url, timeout=args.record_secs)
-                                    logging.debug(str(req))
-                                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as err:
-                                    logging.debug(str(err))
+                                recorder_args = f'record/{signal_hz}/{record_samples}/{record_bps}'
+                                recorder_req(recorder, recorder_args, args.record_secs)
                         fftbuffer = []
                         if now - openlogts > args.rotatesecs:
                             break
