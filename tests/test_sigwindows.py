@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-from gamutrf.sigwindows import find_sig_windows, choose_record_signal
+from gamutrf.sigwindows import find_sig_windows, choose_record_signal, freq_excluded, parse_freq_excluded, choose_recorders
 
 TESTDIR = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), 'data')
@@ -15,6 +15,31 @@ class WindowsTestCase(unittest.TestCase):
     @staticmethod
     def _get_data(data):
         return os.path.join(TESTDIR, data)
+
+    def test_choose_recorders(self):
+        recorder_freq_exclusions = {
+            'c1': ((100, 199),),
+            'c2': ((300, 399),)}
+        self.assertEqual(
+            [(100, 'c2'), (200, 'c1')],
+            choose_recorders([100, 200], recorder_freq_exclusions))
+        recorder_freq_exclusions = {
+            'c1': (),
+            'c2': ((100, 199),)}
+        self.assertEqual(
+            [(100, 'c1'), (200, 'c2')],
+        choose_recorders([100, 200], recorder_freq_exclusions))
+
+    def test_freq_excluded(self):
+        self.assertTrue(freq_excluded(100, ((100, 200),)))
+        self.assertFalse(freq_excluded(99, ((100, 200),)))
+        self.assertTrue(freq_excluded(1e9, ((1e6, None),)))
+        self.assertFalse(freq_excluded(1e6, ((1e9, None),)))
+        self.assertFalse(freq_excluded(1e9, ((None, 1e6),)))
+
+    def test_parse_excluded(self):
+        self.assertEqual(((100, 200), (200, None), (None, 100)),
+            parse_freq_excluded(['100-200', '200-', '-100']))
 
     def test_verybusy1g1(self):
         df = pd.read_csv(self._get_data('verybusy1g1.csv'),

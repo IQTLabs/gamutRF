@@ -12,6 +12,7 @@ import falcon
 from falcon_cors import CORS
 
 from gamutrf.__init__ import __version__
+from gamutrf.sigwindows import parse_freq_excluded, freq_excluded
 
 
 q = queue.Queue()
@@ -29,6 +30,10 @@ parser.add_argument(
 parser.add_argument(
     '--sdr', '-s', help='Specify SDR to record with (ettus, lime or bladerf)',
     choices=['bladerf', 'ettus', 'lime'], default='ettus')
+parser.add_argument(
+    '--freq_excluded', '-e', help='Freq range to exclude in MHz (e.g. "100-200")',
+    action='append', default=[])
+
 arguments = parser.parse_args()
 
 level_int = {'CRITICAL': 50, 'ERROR': 40, 'WARNING': 30, 'INFO': 20,
@@ -55,7 +60,8 @@ class Info:
     @staticmethod
     def on_get(_req, resp):
         resp.text = json.dumps(
-            {'version': __version__, 'sdr': arguments.sdr, 'path_prefix': arguments.path})
+                {'version': __version__, 'sdr': arguments.sdr,
+                    'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded})
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
 
@@ -64,19 +70,22 @@ class Record:
 
     @staticmethod
     def on_get(_req, resp, center_freq, sample_count, sample_rate):
-        # TODO check if chosen SDR can do the supplied center_freq/sample_count
+        # TODO check if chosen SDR can do the supplied sample_count
+        resp.content_type = falcon.MEDIA_JSON
+        resp.status = falcon.HTTP_400
+
         for arg in [center_freq, sample_count, sample_rate]:
             try:
                 int(float(arg))
             except ValueError:
                 resp.text = json.dumps({'status': 'Invalid values in request'})
-                resp.content_type = falcon.MEDIA_JSON
-                resp.status = falcon.HTTP_400
                 return
+        if freq_excluded(center_freq, parse_freq_excluded(arguments.freq_excluded)):
+            resp.text = json.dumps({'status': 'Requested frequency is excluded'})
+            return
         q.put({'center_freq': center_freq,
               'sample_count': sample_count, 'sample_rate': sample_rate})
         resp.text = json.dumps({'status': 'Requested recording'}, indent=2)
-        resp.content_type = falcon.MEDIA_JSON
         resp.status = falcon.HTTP_200
 
 
