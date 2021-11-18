@@ -5,6 +5,57 @@ from collections import defaultdict, Counter
 import numpy as np
 
 
+def choose_recorders(signals, recorder_freq_exclusions):
+    suitable_recorders = defaultdict(set)
+    for signal in sorted(signals):
+        for recorder, excluded in sorted(recorder_freq_exclusions.items()):
+            if not freq_excluded(signal, excluded):
+                suitable_recorders[signal].add(recorder)
+    recorder_assignments = []
+    busy_recorders = set()
+    for signal, recorders in sorted(suitable_recorders.items(), key=lambda x: x[1]):
+        if not recorders:
+            continue
+        free_recorders = recorders - busy_recorders
+        if not free_recorders:
+            continue
+        recorder = random.choice(list(free_recorders))  # nosec
+        busy_recorders.add(recorder)
+        recorder_assignments.append((signal, recorder))
+    return recorder_assignments
+
+
+def parse_freq_excluded(freq_exclusions_raw):
+    freq_exclusions = []
+    for pair in freq_exclusions_raw:
+        freq_min, freq_max = pair.split('-')
+        if len(freq_min):
+            freq_min = int(freq_min)
+        else:
+            freq_min = None
+        if len(freq_max):
+            freq_max = int(freq_max)
+        else:
+            freq_max = None
+        freq_exclusions.append((freq_min, freq_max))
+    return tuple(freq_exclusions)
+
+
+def freq_excluded(freq, freq_exclusions):
+    for freq_min, freq_max in freq_exclusions:
+        if freq_min is not None and freq_max is not None:
+            if freq >= freq_min and freq <= freq_max:
+                return True
+            continue
+        if freq_min is None:
+            if freq <= freq_max:
+                return True
+            continue
+        if freq >= freq_min:
+            return True
+    return False
+
+
 def calc_db(df):
     df['db'] = 20 * np.log10(df[df['db'] != 0]['db'])
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
