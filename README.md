@@ -7,7 +7,6 @@ An SDR orchestrated scanner.
 Build and run the collection and signal finding containers (note: an Ettus b2XX will need to be attached over USB):
 
 ```
-docker-compose build
 docker-compose up
 ```
 
