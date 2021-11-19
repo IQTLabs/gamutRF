@@ -9,6 +9,8 @@ jobs:
       run: |
         docker build -f Dockerfile . -t gamutrf:latest && \
         docker run -t gamutrf:latest --help && \
+        docker build -f Dockerfile.api . -t gamutrf-api:latest && \
+        docker run -t gamutrf-api:latest --help && \
         docker build -f Dockerfile.graph . -t gamutrf-graph:latest && \
         docker run -t gamutrf-graph:latest --help && \
         docker build -f Dockerfile.sigfinder . -t gamutrf-sigfinder:latest && \
