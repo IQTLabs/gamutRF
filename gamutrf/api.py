@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import json
 import logging
 import os
@@ -10,6 +11,7 @@ import time
 import bjoern
 import falcon
 from falcon_cors import CORS
+import sigmf
 
 from gamutrf.__init__ import __version__
 from gamutrf.sigwindows import parse_freq_excluded, freq_excluded
@@ -33,6 +35,10 @@ parser.add_argument(
 parser.add_argument(
     '--freq_excluded', '-e', help='Freq range to exclude in MHz (e.g. "100-200")',
     action='append', default=[])
+sigmf_parser = parser.add_mutually_exclusive_group(required=False)
+sigmf_parser.add_argument('--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
+sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
+parser.set_defaults(feature=True)
 
 arguments = parser.parse_args()
 
@@ -113,8 +119,10 @@ class API:
     @staticmethod
     def record(center_freq, sample_count, sample_rate=20e6, gain=0, agc=True):
         epoch_time = str(int(time.time()))
+        meta_time = datetime.datetime.utcnow().isoformat() + 'Z'
+        sample_type = 's16'
         sample_file = os.path.join(
-            arguments.path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.raw')
+            arguments.path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.{sample_type}')
         if arguments.sdr == 'ettus':
             args = [
                 '/usr/lib/uhd/examples/rx_samples_to_file',
@@ -159,7 +167,21 @@ class API:
         else:
             logging.error('Invalid SDR, not recording')
             return -1
-        return subprocess.check_call(args)
+        record_status = subprocess.check_call(args)
+        if arguments.sigmf:
+            meta = sigmf.SigMFFile(
+                data_file = sample_file,
+                global_info = {
+                    sigmf.SigMFFile.DATATYPE_KEY: sample_type,
+                    sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
+                    sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
+                })
+            meta.add_capture(0, metadata={
+                sigmf.SigMFFile.FREQUENCY_KEY: center_freq,
+                sigmf.SigMFFile.DATETIME_KEY: meta_time,
+            })
+            meta.tofile(sample_file + '.sigmf-meta')
+        return record_status
 
     @staticmethod
     def paths():

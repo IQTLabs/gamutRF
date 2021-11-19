@@ -6,3 +6,4 @@ numpy==1.21.4
 pandas==1.3.4
 pbr==5.8.0
 requests==2.26.0
+git+git://github.com/gnuradio/sigmf
