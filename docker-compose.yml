@@ -4,6 +4,9 @@ networks:
 services:
   gamutrf:
     image: iqtlabs/gamutrf:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       sigfinder:
         condition: service_started
@@ -22,6 +25,9 @@ services:
   sigfinder:
     restart: on-failure
     image: iqtlabs/gamutrf-sigfinder:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.sigfinder
     networks:
       - gamutrf
     volumes:

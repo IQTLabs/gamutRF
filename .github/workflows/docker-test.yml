@@ -7,8 +7,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: docker build
       run: |
-        docker build -f Dockerfile . -t gamutrf:latest && \
-        docker run -t gamutrf:latest --help && \
         docker build -f Dockerfile.api . -t gamutrf-api:latest && \
         docker run -t gamutrf-api:latest --help && \
         docker build -f Dockerfile.graph . -t gamutrf-graph:latest && \
