@@ -71,14 +71,14 @@ RUN cmake .. && make install
 RUN ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
 RUN ldconfig -v
 
-FROM ubuntu:20.04
+#FROM ubuntu:20.04
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
-ENV DEBIAN_FRONTEND noninteractive
+#ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
-COPY --from=builder /usr/local /usr/local
-COPY --from=builder /usr/lib/*-linux-gnu /usr/lib/
-RUN apt-get update && apt-get install --no-install-recommends -yq \
-    python3-pip
+#COPY --from=builder /usr/local /usr/local
+#COPY --from=builder /usr/lib/*-linux-gnu /usr/lib/
+#RUN apt-get update && apt-get install --no-install-recommends -yq \
+#    python3-pip
 
 COPY gamutrf/scan.py /root/scan.py
 
