@@ -59,7 +59,7 @@ RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/SoapyBladeRF/build
 RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/gnuradio/build
-RUN cmake .. && make -j "$(nproc)" && make install && ldconfig -v
+RUN cmake -DENABLE_POSTINSTALL=OFF -DENABLE_GR_FEC=OFF -DENABLE_GR_CTRLPORT=OFF -DENABLE_GR_DIGITAL=OFF -DENABLE_GR_AUDIO=OFF -DENABLE_GR_CHANNELS=OFF -DENABLE_GR_TRELLIS=OFF -DENABLE_GR_UTILS=OFF -DENABLE_GR_BLOCKTOOL=OFF -DENABLE_GR_VOCODER=OFF -DENABLE_GR_WAVELET=OFF -DENABLE_GR_NETWORK=OFF .. && make -j "$(nproc)" && make install && ldconfig -v
 WORKDIR /root/gr-habets39
 RUN git checkout 9961d0b8644bacbc932e46042a34b4871ba627f8
 WORKDIR /root/gr-habets39/build
