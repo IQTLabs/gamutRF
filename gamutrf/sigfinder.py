@@ -51,6 +51,19 @@ def recorder_req(recorder, recorder_args, timeout):
         return None
 
 
+def get_freq_exclusions(args):
+    recorder_freq_exclusions = {}
+    for recorder in args.recorders:
+        req = recorder_req(recorder, 'info', args.record_secs)
+        if req is None or req.status_code != 200:
+            continue
+        excluded = json.loads(req.text).get('freq_excluded', None)
+        if excluded is None:
+            continue
+        recorder_freq_exclusions[recorder] = parse_freq_excluded(excluded)
+    return recorder_freq_exclusions
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='watch a scan UDP stream and find signals')
@@ -97,16 +110,6 @@ def main():
             logging.info(f'{args.log} exists, will append first')
             mode = 'ab'
 
-        recorder_freq_exclusions = {}
-        recorder_count = 0
-        for recorder in args.recorders:
-            req = recorder_req(recorder, 'info', args.record_secs)
-            if req is None or req.status_code != 200:
-                continue
-            excluded = json.loads(req.text)['freq_excluded']
-            recorder_freq_exclusions[recorder] = parse_freq_excluded(excluded)
-            recorder_count += 1
-
         while True:
             logging.info(f'reopening {args.log}')
             openlogts = int(time.time())
@@ -137,6 +140,8 @@ def main():
                             signals = []
                             for bins in lastbins_history:
                                 signals.extend(list(bins))
+                            recorder_freq_exclusions = get_freq_exclusions(args)
+                            recorder_count = len(recorder_freq_exclusions)
                             record_signals = choose_record_signal(signals, recorder_count, args.record_bw_mbps)
                             for signal, recorder in choose_recorders(record_signals, recorder_freq_exclusions):
                                 signal_hz = int(signal * 1e6)
