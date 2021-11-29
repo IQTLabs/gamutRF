@@ -20,7 +20,7 @@ def read_recording(filename):
     return x
 
 
-def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap='cividis'):
+def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
     plt.xlabel('time (s)')
     plt.ylabel('freq (Hz)')
     # overlap must be 0, for maximum detail.
@@ -52,12 +52,18 @@ def main():
                         help='filename of recording')
     parser.add_argument('--nfft', default=int(65536), type=int,
                         help='number of FFT points')
+    parser.add_argument('--cmap', default='twilight_r', type=str,
+                        help='pyplot colormap (see https://matplotlib.org/stable/tutorials/colors/colormaps.html)')
     args = parser.parse_args()
     freq_center, sample_rate = parse_filename(args.recording)
     samples = read_recording(args.recording)
     plot_spectrogram(
-        samples, replace_ext(args.recording, 'jpg'), args.nfft,
-        sample_rate, freq_center)
+        samples,
+        replace_ext(args.recording, 'jpg'),
+        args.nfft,
+        sample_rate,
+        freq_center,
+        cmap=args.cmap)
 
 
 if __name__ == '__main__':
