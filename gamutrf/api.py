@@ -17,6 +17,66 @@ from gamutrf.__init__ import __version__
 from gamutrf.sigwindows import parse_freq_excluded, freq_excluded
 
 
+class SDRRecorder:
+
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+        raise NotImplementedError
+
+
+class EttusRecorder(SDRRecorder):
+
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc):
+        return [
+            '/usr/lib/uhd/examples/rx_samples_to_file',
+            '--file', sample_file,
+            '--rate', str(sample_rate),
+            '--bw', str(sample_rate),
+            '--nsamps', str(int(sample_count)),
+            '--freq', str(center_freq),
+            '--gain', str(gain)]
+
+
+class BladeRecorder(SDRRecorder):
+
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+        gain_args = [
+           '-e', 'set agc rx off',
+           '-e', f'set gain rx {gain}',
+        ]
+        if agc:
+            gain_args = [
+                '-e', 'set agc rx on',
+            ]
+        return ['bladeRF-cli' ] + gain_args + [
+            '-e', f'set samplerate rx {sample_rate}',
+            '-e', f'set bandwidth rx {sample_rate}',
+            '-e', f'set frequency rx {center_freq}',
+            '-e', f'rx config file={sample_file} format=bin n={sample_count}',
+            '-e', 'rx start',
+            '-e', 'rx wait']
+
+
+class LimeRecorder(SDRRecorder):
+
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+        gain_args = []
+        if gain:
+            gain_args = [
+                '-g', f'{gain}',
+            ]
+        return ['/usr/local/bin/LimeStream'] + gain_args + [
+            '-f', f'{center_freq}',
+            '-s', f'{sample_rate}',
+            '-C', f'{sample_count}',
+            '-r', f'{sample_file}',
+        ]
+
+RECORDER_MAP = {
+    'ettus': EttusRecorder,
+    'bladerf': BladeRecorder,
+    'lime': LimeRecorder,
+}
+
 q = queue.Queue()
 
 parser = argparse.ArgumentParser()
@@ -31,16 +91,23 @@ parser.add_argument(
     default=8000)
 parser.add_argument(
     '--sdr', '-s', help='Specify SDR to record with (ettus, lime or bladerf)',
-    choices=['bladerf', 'ettus', 'lime'], default='ettus')
+    choices=list(RECORDER_MAP.keys()), default='ettus')
 parser.add_argument(
     '--freq_excluded', '-e', help='Freq range to exclude in MHz (e.g. "100-200")',
     action='append', default=[])
+parser.add_argument(
+    '--gain', '-g', help='Gain in dB',
+    default=0, type=int)
+arg_parser = parser.add_mutually_exclusive_group(required=False)
+arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
+arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
 sigmf_parser = parser.add_mutually_exclusive_group(required=False)
 sigmf_parser.add_argument('--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
 sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
 parser.set_defaults(feature=True)
 
 arguments = parser.parse_args()
+sdr_recorder = RECORDER_MAP[arguments.sdr]()
 
 level_int = {'CRITICAL': 50, 'ERROR': 40, 'WARNING': 30, 'INFO': 20,
              'DEBUG': 10}
@@ -117,56 +184,16 @@ class API:
             ['sox'] + raw_args + ['-b', str(in_file_bits), '-e', in_file_fmt, in_file] + raw_args + ['-e', 'float', gr_file])
 
     @staticmethod
-    def record(center_freq, sample_count, sample_rate=20e6, gain=0, agc=True):
+    def record(center_freq, sample_count, sample_rate=20e6):
+        agc = arguments.agc
+        gain = arguments.gain
         epoch_time = str(int(time.time()))
         meta_time = datetime.datetime.utcnow().isoformat() + 'Z'
         sample_type = 's16'
         sample_file = os.path.join(
             arguments.path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.{sample_type}')
-        if arguments.sdr == 'ettus':
-            args = [
-                '/usr/lib/uhd/examples/rx_samples_to_file',
-                '--file', sample_file,
-                '--rate', str(sample_rate),
-                '--bw', str(sample_rate),
-                '--nsamps', str(int(sample_count)),
-                '--freq', str(center_freq),
-                '--gain', str(gain)]
-        elif arguments.sdr == 'bladerf':
-            gain_args = [
-                '-e', 'set agc rx off',
-                '-e', f'set gain rx {gain}',
-            ]
-            if agc:
-                gain_args = [
-                    '-e', 'set agc rx on',
-                ]
-            args = [
-                'bladeRF-cli',
-            ] + gain_args + [
-                '-e', f'set samplerate rx {sample_rate}',
-                '-e', f'set bandwidth rx {sample_rate}',
-                '-e', f'set frequency rx {center_freq}',
-                '-e', f'rx config file={sample_file} format=bin n={sample_count}',
-                '-e', 'rx start',
-                '-e', 'rx wait']
-        elif arguments.sdr == 'lime':
-            gain_args = []
-            if gain:
-                gain_args = [
-                    '-g', f'{gain}',
-                ]
-            args = [
-                '/usr/local/bin/LimeStream',
-            ] + gain_args + [
-                '-f', f'{center_freq}',
-                '-s', f'{sample_rate}',
-                '-C', f'{sample_count}',
-                '-r', f'{sample_file}',
-            ]
-        else:
-            logging.error('Invalid SDR, not recording')
-            return -1
+        args = sdr_recorder.record_args(sample_file, sample_rate, sample_count, center_freq, gain, agc)
+        logging.info('starting recording: %s', args)
         record_status = subprocess.check_call(args)
         if arguments.sigmf:
             meta = sigmf.SigMFFile(
@@ -181,6 +208,7 @@ class API:
                 sigmf.SigMFFile.DATETIME_KEY: meta_time,
             })
             meta.tofile(sample_file + '.sigmf-meta')
+        logging.info('record status: %d', record_status)
         return record_status
 
     @staticmethod
