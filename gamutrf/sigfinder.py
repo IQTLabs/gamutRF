@@ -5,11 +5,15 @@ import logging
 import os
 import subprocess
 import time
-import requests
 
 import pandas as pd
+import requests
 
-from gamutrf.sigwindows import calc_db, find_sig_windows, choose_record_signal, parse_freq_excluded, choose_recorders
+from gamutrf.sigwindows import calc_db
+from gamutrf.sigwindows import choose_record_signal
+from gamutrf.sigwindows import choose_recorders
+from gamutrf.sigwindows import find_sig_windows
+from gamutrf.sigwindows import parse_freq_excluded
 
 ROLLOVERHZ = 100e6
 
@@ -53,7 +57,7 @@ def recorder_req(recorder, recorder_args, timeout):
 
 def get_freq_exclusions(args):
     recorder_freq_exclusions = {}
-    for recorder in args.recorders:
+    for recorder in args.recorder:
         req = recorder_req(recorder, 'info', args.record_secs)
         if req is None or req.status_code != 200:
             continue
@@ -83,8 +87,8 @@ def main():
                         help='signal finding threshold')
     parser.add_argument('--history', default=50, type=int,
                         help='number of frames of signal history to keep')
-    parser.add_argument('--recorders', default=[], type=str, nargs='*',
-                        help='list of SDR recorder base URLs (e.g. http://host:port/)')
+    parser.add_argument('--recorder', action='append',
+                        help='SDR recorder base URLs (e.g. http://host:port/, multiples can be specified)')
     parser.add_argument('--record_bw_mbps', default=20, type=int,
                         help='record bandwidth in mbps')
     parser.add_argument('--record_secs', default=10, type=int,
@@ -140,15 +144,19 @@ def main():
                             signals = []
                             for bins in lastbins_history:
                                 signals.extend(list(bins))
-                            recorder_freq_exclusions = get_freq_exclusions(args)
+                            recorder_freq_exclusions = get_freq_exclusions(
+                                args)
                             recorder_count = len(recorder_freq_exclusions)
-                            record_signals = choose_record_signal(signals, recorder_count, args.record_bw_mbps)
+                            record_signals = choose_record_signal(
+                                signals, recorder_count, args.record_bw_mbps)
                             for signal, recorder in choose_recorders(record_signals, recorder_freq_exclusions):
                                 signal_hz = int(signal * 1e6)
                                 record_bps = int(args.record_bw_mbps * 1e6)
-                                record_samples = int(record_bps * args.record_secs)
+                                record_samples = int(
+                                    record_bps * args.record_secs)
                                 recorder_args = f'record/{signal_hz}/{record_samples}/{record_bps}'
-                                recorder_req(recorder, recorder_args, args.record_secs)
+                                recorder_req(
+                                    recorder, recorder_args, args.record_secs)
                         fftbuffer = []
                         if now - openlogts > args.rotatesecs:
                             break
