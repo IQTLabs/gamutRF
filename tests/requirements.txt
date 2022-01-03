@@ -1,4 +1,4 @@
-pylint==2.12.1
+pylint==2.12.2
 pytest==6.2.5
 pytest-cov==3.0.0
-pytype==2021.11.29
+pytype==2021.12.15

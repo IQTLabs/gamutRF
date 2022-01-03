@@ -1,9 +1,9 @@
 bjoern==3.1.0
 falcon==3.0.1
 falcon-cors==1.1.7
-matplotlib==3.5.0
-numpy==1.21.4
-pandas==1.3.4
+matplotlib==3.5.1
+numpy==1.22.0
+pandas==1.3.5
 pbr==5.8.0
-requests==2.26.0
+requests==2.27.0
 git+git://github.com/gnuradio/sigmf
