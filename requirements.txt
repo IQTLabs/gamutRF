@@ -5,5 +5,5 @@ matplotlib==3.5.1
 numpy==1.22.0
 pandas==1.3.5
 pbr==5.8.0
-requests==2.26.0
+requests==2.27.0
 git+git://github.com/gnuradio/sigmf
