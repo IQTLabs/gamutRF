@@ -1,0 +1,16 @@
+# Git
+.github
+.gitignore
+
+# Docker
+Dockerfile
+Dockerfile.api
+Dockerfile.graph
+docker-compose.yml
+.env
+
+# Documentation, etc.
+LICENSE
+renovate.json
+*.md
+.coveragerc
