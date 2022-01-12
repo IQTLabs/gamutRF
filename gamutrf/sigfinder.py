@@ -1,8 +1,10 @@
 #!/usr/bin/python3
+
 import argparse
 import json
 import logging
 import os
+import socket
 import subprocess
 import time
 
@@ -102,12 +104,13 @@ def record_signals(args, lastbins_history):
                 recorder, recorder_args, args.record_secs)
 
 
-def process_fft_lines(args, prom_vars, f, ext):
+def process_fft_lines(args, prom_vars, sock, ext):
     lastfreq = 0
     fftbuffer = []
     lastbins_history = []
     lastbins = set()
     frame_counter = prom_vars['frame_counter']
+    txt_buf = ''
 
     while True:
         if os.path.exists(args.log):
@@ -119,32 +122,41 @@ def process_fft_lines(args, prom_vars, f, ext):
         openlogts = int(time.time())
         with open(args.log, mode=mode) as l:
             while True:
-                line = f.stdout.readline()  # pytype: disable=attribute-error
-                try:
-                    ts, freq, pw = [float(x) for x in line.strip().split()]
-                except ValueError:
-                    continue
-                if pw < 0 or pw > 1:
-                    continue
-                if freq < 0 or freq > 10e9:
-                    continue
+                sock_txt, _ = sock.recvfrom(2048)
+                txt_buf += sock_txt.decode('utf-8')
+                lines = txt_buf.splitlines()
+                if not txt_buf.endswith('\n'):
+                    txt_buf = lines[-1]
+                    lines = lines[:-1]
+                rotatelognow = False
                 now = int(time.time())
-                if abs(now - ts) > 60:
-                    continue
-                l.write(line)
-                rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
-                fftbuffer.append((ts, freq, pw))
-                lastfreq = freq
-                if rollover:
-                    frame_counter.inc()
-                    lastbins = process_fft(args, prom_vars, ts, fftbuffer, lastbins)
-                    if lastbins:
-                        lastbins_history = [lastbins] + lastbins_history
-                        lastbins_history = lastbins_history[:args.history]
-                    fftbuffer = []
-                    record_signals(args, lastbins_history)
-                    if now - openlogts > args.rotatesecs:
-                        break
+                for line in lines:
+                    try:
+                        ts, freq, pw = [float(x) for x in line.strip().split()]
+                    except ValueError:
+                        continue
+                    if pw < 0 or pw > 1:
+                        continue
+                    if freq < 0 or freq > 10e9:
+                        continue
+                    if abs(now - ts) > 60:
+                        continue
+                    l.write(line.encode('utf-8'))
+                    rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
+                    fftbuffer.append((ts, freq, pw))
+                    lastfreq = freq
+                    if rollover:
+                        frame_counter.inc()
+                        lastbins = process_fft(args, prom_vars, ts, fftbuffer, lastbins)
+                        if lastbins:
+                            lastbins_history = [lastbins] + lastbins_history
+                            lastbins_history = lastbins_history[:args.history]
+                        fftbuffer = []
+                        record_signals(args, lastbins_history)
+                        if now - openlogts > args.rotatesecs:
+                            rotatelognow = True
+                if rotatelognow:
+                    break
         new_log = args.log.replace(ext, f'{openlogts}{ext}')
         os.rename(args.log, new_log)
 
@@ -155,10 +167,9 @@ def find_signals(args, prom_vars):
     except ValueError:
         logging.fatal(f'cannot parse extension from {args.log}')
 
-    with subprocess.Popen(
-            ['nc', '-u', '-l', args.logaddr, str(args.logport)],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE) as f:
-        process_fft_lines(args, prom_vars, f, ext)
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.bind((args.logaddr, args.logport))
+        process_fft_lines(args, prom_vars, sock, ext)
 
 
 def main():
