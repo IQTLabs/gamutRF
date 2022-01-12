@@ -29,7 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     pkg-config \
     python3-bladerf \
     python3-mako \
-    python3-numpy \
     python3-pip \
     python3-pygccxml \
     python3-pytest \
@@ -68,22 +67,21 @@ WORKDIR /root/bladeRF/host/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_UDEV_RULES=ON -DENABLE_BACKEND_LIBUSB=TRUE .. && make -j "$(nproc)" && make install && ldconfig -v
 WORKDIR /root/lime-tools/build
 RUN cmake .. && make install
-RUN ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
-RUN ldconfig -v
 
-#FROM ubuntu:20.04
+FROM ubuntu:20.04
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
-#ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
-#COPY --from=builder /usr/local /usr/local
-#COPY --from=builder /usr/lib/*-linux-gnu /usr/lib/
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install --no-install-recommends -yq \
-    python3-pip && apt-get clean && rm -rf /var/lib/apt/lists/*
+    python3-numpy python3-pip && apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /usr/lib/*-linux-gnu /usr/lib/
+COPY --from=builder /usr/share/uhd/images /usr/share/uhd/images
+RUN ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
+RUN ldconfig -v
 COPY scan-requirements.txt /root/scan-requirements.txt
 RUN pip3 install -r /root/scan-requirements.txt
-
 COPY gamutrf/scan.py /root/scan.py
-
 ENTRYPOINT ["/usr/bin/python3", "/root/scan.py"]
 CMD ["--help"]
