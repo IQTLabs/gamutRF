@@ -125,7 +125,9 @@ def process_fft_lines(args, prom_vars, sock, ext):
                 sock_txt, _ = sock.recvfrom(2048)
                 txt_buf += sock_txt.decode('utf-8')
                 lines = txt_buf.splitlines()
-                if not txt_buf.endswith('\n'):
+                if txt_buf.endswith('\n'):
+                    txt_buf = ''
+                else:
                     txt_buf = lines[-1]
                     lines = lines[:-1]
                 rotatelognow = False
