@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 from argparse import ArgumentParser
+from prometheus_client import start_http_server, Gauge
 
 import habets39  # pytype: disable=import-error
 from gnuradio import analog  # pytype: disable=import-error
@@ -21,6 +22,15 @@ from gnuradio.eng_arg import intx  # pytype: disable=import-error
 from gnuradio.fft import window  # pytype: disable=import-error
 from gnuradio import soapy  # pytype: disable=import-error
 # TODO: add test/pylint coverage with gnuradio
+
+
+def init_prom_vars():
+    prom_vars = {
+        'freq_start_hz': Gauge('freq_start_hz', 'start of scanning range in Hz'),
+        'freq_end_hz': Gauge('freq_end_hz', 'end of scanning range in Hz'),
+        'sweep_sec': Gauge('sweep_sec', 'scan sweep rate in seconds'),
+    }
+    return prom_vars
 
 
 class scan(gr.top_block):
@@ -164,8 +174,7 @@ class scan(gr.top_block):
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        # pytype: disable=attribute-error
-        self.source.set_samp_rate(self.samp_rate)
+        self.source.set_samp_rate(self.samp_rate)  # pytype: disable=attribute-error
 
     def get_sweep_sec(self):
         return self.sweep_sec
@@ -228,6 +237,9 @@ def argument_parser():
         '--logport', dest='logport', type=int, default=8001,
         help='Log UDP results to this port')
     parser.add_argument(
+        '--promport', dest='promport', type=int, default=9000,
+        help='Prometheus client port')
+    parser.add_argument(
         '--sdr', dest='sdr', type=str, default='ettus',
         help='SDR to use (ettus, bladerf, or lime)')
     return parser
@@ -237,7 +249,7 @@ def main(top_block_cls=scan, options=None):
     if options is None:
         options = argument_parser().parse_args()
     if gr.enable_realtime_scheduling() != gr.RT_OK:
-        print('Error: failed to enable real-time scheduling.')
+        print('Warning: failed to enable real-time scheduling.')
 
     if options.freq_start > options.freq_end:
         print('Error: freq_start must be less than freq_end')
@@ -246,6 +258,12 @@ def main(top_block_cls=scan, options=None):
     if options.freq_end > 6e9:
         print('Error: freq_end must be less than 6GHz')
         sys.exit(1)
+
+    prom_vars = init_prom_vars()
+    prom_vars['freq_start_hz'].set(options.freq_start)
+    prom_vars['freq_end_hz'].set(options.freq_end)
+    prom_vars['sweep_sec'].set(options.sweep_sec)
+    start_http_server(options.promport)
 
     tb = top_block_cls(freq_end=options.freq_end, freq_start=options.freq_start,
                        igain=options.igain, samp_rate=options.samp_rate,

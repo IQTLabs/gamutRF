@@ -12,6 +12,8 @@ services:
         condition: service_started
     networks:
       - gamutrf
+    ports:
+      - '9001:9000'
     cap_add:
       - SYS_NICE
       - SYS_RAWIO
@@ -30,6 +32,8 @@ services:
       dockerfile: Dockerfile.sigfinder
     networks:
       - gamutrf
+    ports:
+      - '9002:9000'
     volumes:
       - '${VOL_PREFIX}:/logs'
     command:

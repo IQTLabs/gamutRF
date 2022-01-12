@@ -77,8 +77,11 @@ LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
 #COPY --from=builder /usr/local /usr/local
 #COPY --from=builder /usr/lib/*-linux-gnu /usr/lib/
-#RUN apt-get update && apt-get install --no-install-recommends -yq \
-#    python3-pip
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install --no-install-recommends -yq \
+    python3-pip && apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY scan-requirements.txt /root/scan-requirements.txt
+RUN pip3 install -r /root/scan-requirements.txt
 
 COPY gamutrf/scan.py /root/scan.py
 
