@@ -79,8 +79,8 @@ ENV UHD_IMAGES_DIR /usr/share/uhd/images
 #COPY --from=builder /usr/lib/*-linux-gnu /usr/lib/
 RUN apt-get update && apt-get install --no-install-recommends -yq \
     python3-pip
-ADD scan-requirements.txt scan-requirements.txt
-RUN pip3 install -r scan-requirements.txt
+COPY scan-requirements.txt /root/scan-requirements.txt
+RUN pip3 install -r /root/scan-requirements.txt
 
 COPY gamutrf/scan.py /root/scan.py
 
