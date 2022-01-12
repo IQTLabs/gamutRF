@@ -123,9 +123,13 @@ def process_fft_lines(args, prom_vars, sock, ext):
         with open(args.log, mode=mode) as l:
             while True:
                 sock_txt, _ = sock.recvfrom(2048)
-                txt_buf += sock_txt.decode('utf-8')
+                if not len(sock_txt):
+                    return
+                txt_buf += sock_txt.decode('utf8')
                 lines = txt_buf.splitlines()
-                if not txt_buf.endswith('\n'):
+                if txt_buf.endswith('\n'):
+                    txt_buf = ''
+                else:
                     txt_buf = lines[-1]
                     lines = lines[:-1]
                 rotatelognow = False
@@ -141,7 +145,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
                         continue
                     if abs(now - ts) > 60:
                         continue
-                    l.write(line.encode('utf-8'))
+                    l.write(line.encode('utf8'))
                     rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
                     fftbuffer.append((ts, freq, pw))
                     lastfreq = freq
