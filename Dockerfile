@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as builder
+FROM --platform=$BUILDPLATFORM ubuntu:20.04 AS build
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     apt-get -y --no-install-recommends install \
     build-essential \
@@ -69,15 +69,15 @@ WORKDIR /root/lime-tools/build
 RUN cmake .. && make install
 
 FROM ubuntu:20.04
+COPY --from=build /usr/local /usr/local
+COPY --from=build /usr/lib/*-linux-gnu /usr/lib/
+COPY --from=build /usr/share/uhd/images /usr/share/uhd/images
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install --no-install-recommends -yq \
     python3-numpy python3-pip && apt-get clean && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /usr/local /usr/local
-COPY --from=builder /usr/lib/*-linux-gnu /usr/lib/
-COPY --from=builder /usr/share/uhd/images /usr/share/uhd/images
 RUN ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
 RUN ldconfig -v
 COPY scan-requirements.txt /root/scan-requirements.txt
