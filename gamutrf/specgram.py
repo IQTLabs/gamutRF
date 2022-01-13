@@ -4,7 +4,6 @@ import argparse
 import gzip
 import os
 import re
-import sys
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from matplotlib.mlab import detrend, detrend_none, window_hanning, stride_windows
