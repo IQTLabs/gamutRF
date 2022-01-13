@@ -182,6 +182,7 @@ def read_recording(filename):
 
 
 def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
+    mlab._spectral_helper = _gamutrf_spectral_helper
     plt.xlabel('time (s)')
     plt.ylabel('freq (Hz)')
     # overlap must be 0, for maximum detail.
@@ -207,7 +208,6 @@ def parse_filename(filename):
 
 
 def main():
-    mlab._spectral_helper = _gamutrf_spectral_helper
     parser = argparse.ArgumentParser(
         description='draw spectogram from recording')
     parser.add_argument('recording', default='', type=str,
