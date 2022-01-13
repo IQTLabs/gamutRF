@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM ubuntu:20.04 AS build
+FROM ubuntu:20.04 AS build
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     apt-get -y --no-install-recommends install \
     build-essential \
@@ -70,7 +70,7 @@ RUN cmake .. && make install
 
 FROM ubuntu:20.04
 COPY --from=build /usr/local /usr/local
-COPY --from=build /usr/lib/*-linux-gnu /usr/lib/
+COPY --from=build /usr/lib /usr/lib
 COPY --from=build /usr/share/uhd/images /usr/share/uhd/images
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND noninteractive
