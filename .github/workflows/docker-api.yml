@@ -6,7 +6,43 @@ on:
     tags: 'v*'
 
 jobs:
+  buildx-gnuradio:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+    - name: Change for main
+      id: change_version
+      run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
+    - name: Set up qemu
+      uses: docker/setup-qemu-action@v1
+      with:
+        platforms: all
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Docker Login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+
+    - name: Build and push platforms
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: Dockerfile.gnuradio
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-gnuradio:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
   buildx-base:
+    needs: [buildx-gnuradio]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
