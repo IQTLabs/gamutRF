@@ -1,0 +1,52 @@
+FROM ubuntu:20.04
+RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
+    apt-get -y --no-install-recommends install \
+    build-essential \
+    cmake \
+    g++ \
+    gcc \
+    git \
+    libbladerf-dev \
+    libboost-all-dev \
+    libev-dev \
+    libfftw3-dev \
+    libgmp-dev \
+    libgsl-dev \
+    liblimesuite-dev \
+    liblog4cpp5-dev \
+    libpython3-dev \
+    libncurses5-dev \
+    libsndfile1-dev \
+    libtecla1 \
+    libthrift-dev \
+    libuhd-dev \
+    libunwind-dev \
+    libusb-1.0-0-dev \
+    libusb-1.0-0 \
+    libvolk2-dev \
+    make \
+    netcat \
+    pkg-config \
+    python3-bladerf \
+    python3-mako \
+    python3-pip \
+    python3-pygccxml \
+    python3-pytest \
+    python3-scipy \
+    python3-uhd \
+    swig \
+    uhd-host \
+    wget
+RUN /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
+WORKDIR /root
+# https://wiki.gnuradio.org/index.php/GNU_Radio_3.9_OOT_Module_Porting_Guide
+RUN wget -q -O- https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz |tar -zxvf -
+RUN git clone https://github.com/gnuradio/volk -b v2.5.0
+RUN git clone https://github.com/anarkiwi/gnuradio -b st2
+WORKDIR /root/pybind11-2.5.0/build
+RUN cmake .. && make && make install
+WORKDIR /root/volk/build
+RUN git submodule update --init
+RUN cmake .. && make -j "$(nproc)" && make install
+WORKDIR /root/gnuradio/build
+RUN cmake -DENABLE_POSTINSTALL=OFF -DENABLE_GR_FEC=OFF -DENABLE_GR_CTRLPORT=OFF -DENABLE_GR_DIGITAL=OFF -DENABLE_GR_AUDIO=OFF -DENABLE_GR_CHANNELS=OFF -DENABLE_GR_TRELLIS=OFF -DENABLE_GR_UTILS=OFF -DENABLE_GR_BLOCKTOOL=OFF -DENABLE_GR_VOCODER=OFF -DENABLE_GR_WAVELET=OFF -DENABLE_GR_NETWORK=OFF -DENABLE_GRC=OFF .. && make -j "$(nproc)" && make install
