@@ -15,9 +15,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     liblimesuite-dev \
     liblog4cpp5-dev \
     libpython3-dev \
-    libncurses5-dev \
-    libsndfile1-dev \
-    libtecla1 \
     libthrift-dev \
     libuhd-dev \
     libunwind-dev \
@@ -29,10 +26,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     pkg-config \
     python3-bladerf \
     python3-mako \
+    python3-numpy \
     python3-pip \
     python3-pygccxml \
-    python3-pytest \
-    python3-scipy \
     python3-uhd \
     swig \
     uhd-host \
@@ -43,10 +39,16 @@ WORKDIR /root
 RUN wget -q -O- https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz |tar -zxvf -
 RUN git clone https://github.com/gnuradio/volk -b v2.5.0
 RUN git clone https://github.com/anarkiwi/gnuradio -b st2
+RUN git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
 WORKDIR /root/pybind11-2.5.0/build
-RUN cmake .. && make && make install
+RUN cmake -DPYBIND11_TEST="" .. && make -j "$(nproc)" && make install
 WORKDIR /root/volk/build
 RUN git submodule update --init
 RUN cmake .. && make -j "$(nproc)" && make install
+WORKDIR /root/SoapySDR/build
+RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/gnuradio/build
-RUN cmake -DENABLE_POSTINSTALL=OFF -DENABLE_GR_FEC=OFF -DENABLE_GR_CTRLPORT=OFF -DENABLE_GR_DIGITAL=OFF -DENABLE_GR_AUDIO=OFF -DENABLE_GR_CHANNELS=OFF -DENABLE_GR_TRELLIS=OFF -DENABLE_GR_UTILS=OFF -DENABLE_GR_BLOCKTOOL=OFF -DENABLE_GR_VOCODER=OFF -DENABLE_GR_WAVELET=OFF -DENABLE_GR_NETWORK=OFF -DENABLE_GRC=OFF .. && make -j "$(nproc)" && make install
+RUN cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_SOAPY=ON .. && make -j "$(nproc)" && make install
+RUN ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
+RUN ldconfig -v
+RUN python3 -c "from gnuradio import soapy"
