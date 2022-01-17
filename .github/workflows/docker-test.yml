@@ -7,10 +7,10 @@ jobs:
     - uses: actions/checkout@v2
     - name: docker build
       run: |
-        docker build -f Dockerfile.gnuradio-deps . -t gamutrf-gnuradio-deps:latest && \
-        docker build -f Dockerfile.gnuradio . -t gamutrf-gnuradio:latest && \
-        docker build -f Dockerfile.base . -t gamutrf-base:latest && \
-        docker build -f Dockerfile . -t gamutrf:latest && \
+        docker build -f Dockerfile.gnuradio-deps . -t iqtlabs/gamutrf-gnuradio-deps:latest && \
+        docker build -f Dockerfile.gnuradio . -t iqtlabs/gamutrf-gnuradio:latest && \
+        docker build -f Dockerfile.base . -t iqtlabs/gamutrf-base:latest && \
+        docker build -f Dockerfile . -t iqtlabs/gamutrf:latest && \
         docker build -f Dockerfile.api . -t gamutrf-api:latest && \
         docker run -t gamutrf-api:latest --help && \
         docker build -f Dockerfile.graph . -t gamutrf-graph:latest && \
