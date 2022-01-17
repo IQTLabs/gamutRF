@@ -1,11 +1,9 @@
 FROM iqtlabs/gamutrf-gnuradio:latest
-RUN git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
+WORKDIR /root
 RUN git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
 RUN git clone https://github.com/ThomasHabets/gr-habets39
 RUN git clone https://github.com/Nuand/bladeRF.git -b 2021.10
 RUN git clone https://github.com/anarkiwi/lime-tools -b samples
-WORKDIR /root/SoapySDR/build
-RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/SoapyBladeRF/build
 RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/gr-habets39
@@ -16,3 +14,7 @@ WORKDIR /root/bladeRF/host/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_UDEV_RULES=ON -DENABLE_BACKEND_LIBUSB=TRUE .. && make -j "$(nproc)" && make install
 WORKDIR /root/lime-tools/build
 RUN cmake .. && make install
+RUN ldconfig -v
+RUN ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
+RUN python3 -c "from gnuradio import soapy"
+RUN python3 -c "import habets39"
