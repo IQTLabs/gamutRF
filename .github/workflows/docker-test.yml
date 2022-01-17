@@ -9,7 +9,7 @@ jobs:
       run: |
         docker build -f Dockerfile.gnuradio-deps . -t gamutrf-gnuradio-deps:latest && \
         docker build -f Dockerfile.gnuradio . -t gamutrf-gnuradio:latest && \
-        docker build -f Dockerfile.base . -t gamutrf:latest && \
+        docker build -f Dockerfile.base . -t gamutrf-base:latest && \
         docker build -f Dockerfile . -t gamutrf:latest && \
         docker build -f Dockerfile.api . -t gamutrf-api:latest && \
         docker run -t gamutrf-api:latest --help && \
