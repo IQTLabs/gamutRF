@@ -41,6 +41,7 @@ jobs:
         tags: iqtlabs/gamutrf-gnuradio-deps:${{ steps.change_version.outputs.VERSION }}
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
   buildx-gnuradio:
+    needs: [buildx-gnuradio-deps]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -76,7 +77,6 @@ jobs:
         tags: iqtlabs/gamutrf-gnuradio:${{ steps.change_version.outputs.VERSION }}
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
   buildx-base:
-    needs: [buildx-gnuradio]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
