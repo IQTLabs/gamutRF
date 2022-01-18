@@ -19,13 +19,13 @@ from gamutrf.sigwindows import parse_freq_excluded, freq_excluded
 
 class SDRRecorder:
 
-    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb):
         raise NotImplementedError
 
 
 class EttusRecorder(SDRRecorder):
 
-    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc):
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb):
         return [
             '/usr/lib/uhd/examples/rx_samples_to_file',
             '--file', sample_file,
@@ -33,12 +33,13 @@ class EttusRecorder(SDRRecorder):
             '--bw', str(sample_rate),
             '--nsamps', str(int(sample_count)),
             '--freq', str(center_freq),
-            '--gain', str(gain)]
+            '--gain', str(gain),
+            '--spb', str(rxb)]
 
 
 class BladeRecorder(SDRRecorder):
 
-    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, _rxb):
         gain_args = [
            '-e', 'set agc rx off',
            '-e', f'set gain rx {gain}',
@@ -58,7 +59,7 @@ class BladeRecorder(SDRRecorder):
 
 class LimeRecorder(SDRRecorder):
 
-    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, _rxb):
         gain_args = []
         if gain:
             gain_args = [
@@ -98,6 +99,9 @@ parser.add_argument(
 parser.add_argument(
     '--gain', '-g', help='Gain in dB',
     default=0, type=int)
+parser.add_argument(
+    '--rxb', help='Receive buffer size',
+    default=int(1e6 * 4), type=int)
 arg_parser = parser.add_mutually_exclusive_group(required=False)
 arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
 arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
@@ -187,12 +191,13 @@ class API:
     def record(center_freq, sample_count, sample_rate=20e6):
         agc = arguments.agc
         gain = arguments.gain
+        rxb = arguments.rxb
         epoch_time = str(int(time.time()))
         meta_time = datetime.datetime.utcnow().isoformat() + 'Z'
         sample_type = 's16'
         sample_file = os.path.join(
             arguments.path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.{sample_type}')
-        args = sdr_recorder.record_args(sample_file, sample_rate, sample_count, center_freq, gain, agc)
+        args = sdr_recorder.record_args(sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb)
         logging.info('starting recording: %s', args)
         record_status = subprocess.check_call(args)
         if arguments.sigmf:
