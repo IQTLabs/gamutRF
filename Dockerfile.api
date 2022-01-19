@@ -1,6 +1,13 @@
-FROM iqtlabs/gamutrf:latest
-RUN apt-get update && apt-get install --no-install-recommends -yq python3-dev build-essential gcc libev-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
+FROM iqtlabs/gamutrf:latest as gamutrf-builder
+RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
+    apt-get -y --no-install-recommends install build-essential cmake g++ gcc git libboost-all-dev libusb-1.0-0-dev libusb-1.0-0 zlib1g-dev make pkg-config python3-numpy
 WORKDIR /root
+RUN git clone https://github.com/anarkiwi/uhd -b gzip
+WORKDIR /root/uhd/host/build
+RUN cmake .. && make -j "$(nproc)" && make install
+FROM iqtlabs/gamutrf:latest
+COPY --from=gamutrf-builder /usr/local /usr/local
+RUN apt-get update && apt-get install --no-install-recommends -yq python3-dev build-essential gcc libev-dev libusb-1.0-0 libboost-all-dev zlib1g && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /data/gamutrf
 COPY requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/requirements.txt

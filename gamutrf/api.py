@@ -27,8 +27,8 @@ class EttusRecorder(SDRRecorder):
 
     def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb):
         return [
-            '/usr/lib/uhd/examples/rx_samples_to_file',
-            '--file', sample_file,
+            '/usr/local/lib/uhd/examples/rx_samples_to_file',
+            '--file', sample_file + '.gz',
             '--rate', str(sample_rate),
             '--bw', str(sample_rate),
             '--nsamps', str(int(sample_count)),
