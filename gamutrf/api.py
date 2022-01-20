@@ -31,7 +31,7 @@ class EttusRecorder(SDRRecorder):
         # https://files.ettus.com/manual/page_transport.html
         # https://github.com/EttusResearch/uhd/blob/master/host/lib/usrp/b200/b200_impl.hpp
         # Should result in no overflows:
-        # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=64,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 10000000
+        # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=64,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
         return [
             '/usr/local/lib/uhd/examples/rx_samples_to_file',
             '--file', sample_file + '.gz',
@@ -108,7 +108,7 @@ parser.add_argument(
     default=0, type=int)
 parser.add_argument(
     '--rxb', help='Receive buffer size',
-    default=int(10000000), type=int)
+    default=int(20000000), type=int)
 arg_parser = parser.add_mutually_exclusive_group(required=False)
 arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
 arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
