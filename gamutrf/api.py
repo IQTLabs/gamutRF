@@ -26,6 +26,12 @@ class SDRRecorder:
 class EttusRecorder(SDRRecorder):
 
     def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb):
+        # Use max recv_frame_size for USB - because we don't mind latency,
+        # we are optimizing for lower CPU.
+        # https://files.ettus.com/manual/page_transport.html
+        # https://github.com/EttusResearch/uhd/blob/master/host/lib/usrp/b200/b200_impl.hpp
+        # Should result in no overflows:
+        # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=64,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
         return [
             '/usr/local/lib/uhd/examples/rx_samples_to_file',
             '--file', sample_file + '.gz',
@@ -34,6 +40,7 @@ class EttusRecorder(SDRRecorder):
             '--nsamps', str(int(sample_count)),
             '--freq', str(center_freq),
             '--gain', str(gain),
+            '--args', 'num_recv_frames=64,recv_frame_size=16360',
             '--spb', str(rxb)]
 
 
@@ -101,7 +108,7 @@ parser.add_argument(
     default=0, type=int)
 parser.add_argument(
     '--rxb', help='Receive buffer size',
-    default=int(1e6 * 4), type=int)
+    default=int(20000000), type=int)
 arg_parser = parser.add_mutually_exclusive_group(required=False)
 arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
 arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
