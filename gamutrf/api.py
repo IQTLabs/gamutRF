@@ -33,7 +33,7 @@ class EttusRecorder(SDRRecorder):
         # Should result in no overflows:
         # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=64,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
         return [
-            '/usr/local/lib/uhd/examples/rx_samples_to_file',
+            '/usr/local/bin/mt_rx_samples_to_file',
             '--file', sample_file + '.gz',
             '--rate', str(sample_rate),
             '--bw', str(sample_rate),
