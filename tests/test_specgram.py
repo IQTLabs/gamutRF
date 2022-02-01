@@ -18,7 +18,7 @@ class SpecgramTestCase(unittest.TestCase):
             samples = chr(0) * int(4 * sample_rate)
             with open(recording, 'wb') as f:
                 f.write(samples.encode('utf8'))
-            samples = read_recording(recording)
+            samples = read_recording(recording, len(samples))
             plot_spectrogram(
                 samples,
                 replace_ext(recording, 'jpg'),
