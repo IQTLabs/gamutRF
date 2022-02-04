@@ -105,7 +105,7 @@ parser.add_argument(
     action='append', default=[])
 parser.add_argument(
     '--gain', '-g', help='Gain in dB',
-    default=0, type=int)
+    default=30, type=int)
 parser.add_argument(
     '--rxb', help='Receive buffer size',
     default=int(20000000), type=int)
@@ -206,20 +206,24 @@ class API:
             arguments.path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.{sample_type}')
         args = sdr_recorder.record_args(sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb)
         logging.info('starting recording: %s', args)
-        record_status = subprocess.check_call(args)
-        if arguments.sigmf:
-            meta = sigmf.SigMFFile(
-                data_file = sample_file,
-                global_info = {
-                    sigmf.SigMFFile.DATATYPE_KEY: sample_type,
-                    sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
-                    sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
+        record_status = -1
+        try:
+            record_status = subprocess.check_call(args)
+            if arguments.sigmf:
+                meta = sigmf.SigMFFile(
+                    data_file = sample_file,
+                    global_info = {
+                        sigmf.SigMFFile.DATATYPE_KEY: sample_type,
+                        sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
+                        sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
+                    })
+                meta.add_capture(0, metadata={
+                    sigmf.SigMFFile.FREQUENCY_KEY: center_freq,
+                    sigmf.SigMFFile.DATETIME_KEY: meta_time,
                 })
-            meta.add_capture(0, metadata={
-                sigmf.SigMFFile.FREQUENCY_KEY: center_freq,
-                sigmf.SigMFFile.DATETIME_KEY: meta_time,
-            })
-            meta.tofile(sample_file + '.sigmf-meta')
+                meta.tofile(sample_file + '.sigmf-meta')
+        except subprocess.CalledProcessError as err:
+            logging.debug('record failed: %s', err)
         logging.info('record status: %d', record_status)
         return record_status
 
