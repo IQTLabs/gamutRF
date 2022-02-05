@@ -1,13 +1,17 @@
-#!/usr/bin/python3
-
+#!/usr/bin/env python3
 import argparse
 import gzip
 import os
 import re
+
 import matplotlib.pyplot as plt
-from matplotlib.mlab import detrend, detrend_none, window_hanning, stride_windows
 import numpy as np
-from scipy.fft import fft, fftfreq
+from matplotlib.mlab import detrend
+from matplotlib.mlab import detrend_none
+from matplotlib.mlab import stride_windows
+from matplotlib.mlab import window_hanning
+from scipy.fft import fft
+from scipy.fft import fftfreq
 
 
 def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
@@ -166,7 +170,7 @@ def specgram(self, x, NFFT=None, Fs=None, Fc=None, detrend=None,
     extent = xmin, xmax, freqs[0], freqs[-1]
 
     if 'origin' in kwargs:
-        raise TypeError("specgram() got an unexpected keyword argument "
+        raise TypeError('specgram() got an unexpected keyword argument '
                         "'origin'")
 
     im = self.imshow(Z, cmap, extent=extent, vmin=vmin, vmax=vmax,
@@ -178,12 +182,12 @@ def specgram(self, x, NFFT=None, Fs=None, Fc=None, detrend=None,
 
 def read_recording(filename, sample_rate):
     # TODO: assume int16.int16 (parse from sigmf).
-    dtype = np.dtype([('i','<i2'), ('q','<i2')])
+    dtype = np.dtype([('i', '<i2'), ('q', '<i2')])
     dtype_size = 4
 
-    reader = lambda x: open(x, 'rb')
+    def reader(x): return open(x, 'rb')
     if filename.endswith('.gz'):
-        reader = lambda x: gzip.open(x, 'rb')
+        def reader(x): return gzip.open(x, 'rb')
 
     with reader(filename) as infile:
         while True:
@@ -191,7 +195,8 @@ def read_recording(filename, sample_rate):
             buffered_samples = int(len(sample_buffer) / dtype_size)
             if buffered_samples == 0:
                 break
-            x1d = np.frombuffer(sample_buffer, dtype=dtype, count=buffered_samples)
+            x1d = np.frombuffer(sample_buffer, dtype=dtype,
+                                count=buffered_samples)
             yield x1d['i'] + np.csingle(1j) * x1d['q']
 
 
@@ -199,7 +204,8 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
     plt.xlabel('time (s)')
     plt.ylabel('freq (Hz)')
     # overlap must be 0, for maximum detail.
-    _spec, _freqs, _t, im = specgram(plt.gca(), x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=0)
+    _spec, _freqs, _t, im = specgram(
+        plt.gca(), x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=0)
     plt.sci(im)
     plt.gcf().set_size_inches(11, 8)
     plt.savefig(spectrogram_filename)
