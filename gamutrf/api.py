@@ -19,26 +19,34 @@ from gamutrf.sigwindows import parse_freq_excluded, freq_excluded
 
 class SDRRecorder:
 
-    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb):
         raise NotImplementedError
 
 
 class EttusRecorder(SDRRecorder):
 
-    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc):
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb):
+        # Use max recv_frame_size for USB - because we don't mind latency,
+        # we are optimizing for lower CPU.
+        # https://files.ettus.com/manual/page_transport.html
+        # https://github.com/EttusResearch/uhd/blob/master/host/lib/usrp/b200/b200_impl.hpp
+        # Should result in no overflows:
+        # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=64,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
         return [
-            '/usr/lib/uhd/examples/rx_samples_to_file',
-            '--file', sample_file,
+            '/usr/local/bin/mt_rx_samples_to_file',
+            '--file', sample_file + '.gz',
             '--rate', str(sample_rate),
             '--bw', str(sample_rate),
             '--nsamps', str(int(sample_count)),
             '--freq', str(center_freq),
-            '--gain', str(gain)]
+            '--gain', str(gain),
+            '--args', 'num_recv_frames=64,recv_frame_size=16360',
+            '--spb', str(rxb)]
 
 
 class BladeRecorder(SDRRecorder):
 
-    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, _rxb):
         gain_args = [
            '-e', 'set agc rx off',
            '-e', f'set gain rx {gain}',
@@ -58,7 +66,7 @@ class BladeRecorder(SDRRecorder):
 
 class LimeRecorder(SDRRecorder):
 
-    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc):
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, _rxb):
         gain_args = []
         if gain:
             gain_args = [
@@ -97,7 +105,10 @@ parser.add_argument(
     action='append', default=[])
 parser.add_argument(
     '--gain', '-g', help='Gain in dB',
-    default=0, type=int)
+    default=30, type=int)
+parser.add_argument(
+    '--rxb', help='Receive buffer size',
+    default=int(20000000), type=int)
 arg_parser = parser.add_mutually_exclusive_group(required=False)
 arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
 arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
@@ -187,27 +198,32 @@ class API:
     def record(center_freq, sample_count, sample_rate=20e6):
         agc = arguments.agc
         gain = arguments.gain
+        rxb = arguments.rxb
         epoch_time = str(int(time.time()))
         meta_time = datetime.datetime.utcnow().isoformat() + 'Z'
         sample_type = 's16'
         sample_file = os.path.join(
             arguments.path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.{sample_type}')
-        args = sdr_recorder.record_args(sample_file, sample_rate, sample_count, center_freq, gain, agc)
+        args = sdr_recorder.record_args(sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb)
         logging.info('starting recording: %s', args)
-        record_status = subprocess.check_call(args)
-        if arguments.sigmf:
-            meta = sigmf.SigMFFile(
-                data_file = sample_file,
-                global_info = {
-                    sigmf.SigMFFile.DATATYPE_KEY: sample_type,
-                    sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
-                    sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
+        record_status = -1
+        try:
+            record_status = subprocess.check_call(args)
+            if arguments.sigmf:
+                meta = sigmf.SigMFFile(
+                    data_file = sample_file,
+                    global_info = {
+                        sigmf.SigMFFile.DATATYPE_KEY: sample_type,
+                        sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
+                        sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
+                    })
+                meta.add_capture(0, metadata={
+                    sigmf.SigMFFile.FREQUENCY_KEY: center_freq,
+                    sigmf.SigMFFile.DATETIME_KEY: meta_time,
                 })
-            meta.add_capture(0, metadata={
-                sigmf.SigMFFile.FREQUENCY_KEY: center_freq,
-                sigmf.SigMFFile.DATETIME_KEY: meta_time,
-            })
-            meta.tofile(sample_file + '.sigmf-meta')
+                meta.tofile(sample_file + '.sigmf-meta')
+        except subprocess.CalledProcessError as err:
+            logging.debug('record failed: %s', err)
         logging.info('record status: %d', record_status)
         return record_status
 
