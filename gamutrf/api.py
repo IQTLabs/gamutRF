@@ -25,13 +25,16 @@ class SDRRecorder:
 
 class EttusRecorder(SDRRecorder):
 
+    # Use max recv_frame_size for USB - because we don't mind latency,
+    # we are optimizing for lower CPU.
+    # https://files.ettus.com/manual/page_transport.html
+    # https://github.com/EttusResearch/uhd/blob/master/host/lib/usrp/b200/b200_impl.hpp
+    # Should result in no overflows:
+    # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=128,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
+    ETTUS_ARGS = 'num_recv_frames=128,recv_frame_size=16360'
+    ETTUS_ANT = 'TX/RX'
+
     def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb):
-        # Use max recv_frame_size for USB - because we don't mind latency,
-        # we are optimizing for lower CPU.
-        # https://files.ettus.com/manual/page_transport.html
-        # https://github.com/EttusResearch/uhd/blob/master/host/lib/usrp/b200/b200_impl.hpp
-        # Should result in no overflows:
-        # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=64,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
         return [
             '/usr/local/bin/mt_rx_samples_to_file',
             '--file', sample_file + '.gz',
@@ -40,7 +43,8 @@ class EttusRecorder(SDRRecorder):
             '--nsamps', str(int(sample_count)),
             '--freq', str(center_freq),
             '--gain', str(gain),
-            '--args', 'num_recv_frames=64,recv_frame_size=16360',
+            '--args', self.ETTUS_ARGS,
+            '--ant', self.ETTUS_ANT,
             '--spb', str(rxb)]
 
 
