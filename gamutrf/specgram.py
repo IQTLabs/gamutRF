@@ -3,6 +3,7 @@ import argparse
 import gzip
 import os
 import re
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,6 +13,11 @@ from matplotlib.mlab import stride_windows
 from matplotlib.mlab import window_hanning
 from scipy.fft import fft
 from scipy.fft import fftfreq
+
+
+def get_nondot_files(filedir, glob='*.s*.*'):
+    return [str(path) for path in Path(filedir).rglob(glob)
+            if not os.path.basename(path).startswith('.')]
 
 
 def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
@@ -227,25 +233,36 @@ def parse_filename(filename):
     return (freq_center, sample_rate)
 
 
+def process_recording(args, recording):
+    print(f'processing {recording}')
+    freq_center, sample_rate = parse_filename(recording)
+    samples = read_recording(recording, sample_rate)
+    plot_spectrogram(
+        samples,
+        replace_ext(recording, 'jpg'),
+        args.nfft,
+        sample_rate,
+        freq_center,
+        cmap=args.cmap)
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='draw spectogram from recording')
+        description='draw spectrogram from recording')
     parser.add_argument('recording', default='', type=str,
-                        help='filename of recording')
+                        help='filename of recording, or directory')
     parser.add_argument('--nfft', default=int(65536), type=int,
                         help='number of FFT points')
     parser.add_argument('--cmap', default='twilight_r', type=str,
                         help='pyplot colormap (see https://matplotlib.org/stable/tutorials/colors/colormaps.html)')
     args = parser.parse_args()
-    freq_center, sample_rate = parse_filename(args.recording)
-    samples = read_recording(args.recording, sample_rate)
-    plot_spectrogram(
-        samples,
-        replace_ext(args.recording, 'jpg'),
-        args.nfft,
-        sample_rate,
-        freq_center,
-        cmap=args.cmap)
+
+    if os.path.isdir(args.recording):
+        recordings = get_nondot_files(args.recording)
+    else:
+        recordings = [args.recording]
+    for recording in recordings:
+        process_recording(args, recording)
 
 
 if __name__ == '__main__':
