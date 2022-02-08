@@ -215,6 +215,7 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
     plt.sci(im)
     plt.gcf().set_size_inches(11, 8)
     plt.savefig(spectrogram_filename)
+    plt.clf()
 
 
 def replace_ext(filename, ext):
