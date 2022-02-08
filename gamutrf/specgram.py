@@ -5,7 +5,6 @@ import os
 import re
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.mlab import detrend
 from matplotlib.mlab import detrend_none
@@ -207,6 +206,9 @@ def read_recording(filename, sample_rate):
 
 
 def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
+    # TODO: workaround memory leak in plt
+    import matplotlib.pyplot as plt
+
     plt.xlabel('time (s)')
     plt.ylabel('freq (Hz)')
     # overlap must be 0, for maximum detail.
