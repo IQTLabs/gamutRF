@@ -89,8 +89,6 @@ RECORDER_MAP = {
     'lime': LimeRecorder,
 }
 
-q = queue.Queue()
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--loglevel', '-l', help='Set logging level',
@@ -113,6 +111,9 @@ parser.add_argument(
 parser.add_argument(
     '--rxb', help='Receive buffer size',
     default=int(20000000), type=int)
+parser.add_argument(
+    '--qsize', help='Max request queue size',
+    default=int(2), type=int)
 arg_parser = parser.add_mutually_exclusive_group(required=False)
 arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
 arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
@@ -122,6 +123,8 @@ sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help
 parser.set_defaults(feature=True)
 
 arguments = parser.parse_args()
+q = queue.Queue(args.qsize)
+
 sdr_recorder = RECORDER_MAP[arguments.sdr]()
 
 level_int = {'CRITICAL': 50, 'ERROR': 40, 'WARNING': 30, 'INFO': 20,
@@ -170,6 +173,9 @@ class Record:
                 return
         if freq_excluded(center_freq, parse_freq_excluded(arguments.freq_excluded)):
             resp.text = json.dumps({'status': 'Requested frequency is excluded'})
+            return
+        if q.full():
+            resp.text = json.dumps({'status': 'Request queue is full'})
             return
         q.put({'center_freq': center_freq,
               'sample_count': sample_count, 'sample_rate': sample_rate})
