@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+from multiprocessing import Process
 import gzip
 import os
 import re
@@ -265,7 +266,9 @@ def main():
     else:
         recordings = [args.recording]
     for recording in recordings:
-        process_recording(args, recording)
+        p = Process(target=process_recording, args=(args, recording))
+        p.start()
+        p.join()
 
 
 if __name__ == '__main__':
