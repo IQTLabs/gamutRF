@@ -123,7 +123,7 @@ sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help
 parser.set_defaults(feature=True)
 
 arguments = parser.parse_args()
-q = queue.Queue(args.qsize)
+q = queue.Queue(arguments.qsize)
 
 sdr_recorder = RECORDER_MAP[arguments.sdr]()
 
