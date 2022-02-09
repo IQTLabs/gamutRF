@@ -211,12 +211,7 @@ def read_recording(filename, sample_rate):
     dtype = np.dtype([('i', '<i2'), ('q', '<i2')])
     dtype_size = 4
 
-    def reader(x): return open(x, 'rb')
-    if filename.endswith('.gz'):
-        def reader(x): return gzip.open(x, 'rb')
-    elif filename.endswith('.zst'):
-        def reader(x): return zstandard.ZstdDecompressor().stream_reader(open(x, 'rb'))
-
+    reader = get_reader(filename)
     with reader(filename) as infile:
         while True:
             sample_buffer = infile.read(sample_rate * dtype_size)
