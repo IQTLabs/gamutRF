@@ -187,6 +187,25 @@ def specgram(self, x, NFFT=None, Fs=None, Fc=None, detrend=None,
     return spec, freqs, t, im
 
 
+def get_reader(filename):
+
+    def gzip_reader(x):
+        return gzip.open(x, 'rb')
+
+    def zst_reader(x):
+        return zstandard.ZstdDecompressor().stream_reader(open(x, 'rb'))
+
+    def default_reader(x):
+        return open(x, 'rb')
+
+    if filename.endswith('.gz'):
+        return gzip_reader
+    if filename.endswith('.zst'):
+        return zst_reader
+
+    return default_reader
+
+
 def read_recording(filename, sample_rate):
     # TODO: assume int16.int16 (parse from sigmf).
     dtype = np.dtype([('i', '<i2'), ('q', '<i2')])
