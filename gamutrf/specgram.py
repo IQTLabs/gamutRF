@@ -13,6 +13,7 @@ from matplotlib.mlab import stride_windows
 from matplotlib.mlab import window_hanning
 from scipy.fft import fft
 from scipy.fft import fftfreq
+import zstandard
 
 
 def get_nondot_files(filedir, glob='*.s*.*'):
@@ -186,15 +187,31 @@ def specgram(self, x, NFFT=None, Fs=None, Fc=None, detrend=None,
     return spec, freqs, t, im
 
 
+def get_reader(filename):
+
+    def gzip_reader(x):
+        return gzip.open(x, 'rb')
+
+    def zst_reader(x):
+        return zstandard.ZstdDecompressor().stream_reader(open(x, 'rb'))
+
+    def default_reader(x):
+        return open(x, 'rb')
+
+    if filename.endswith('.gz'):
+        return gzip_reader
+    if filename.endswith('.zst'):
+        return zst_reader
+
+    return default_reader
+
+
 def read_recording(filename, sample_rate):
     # TODO: assume int16.int16 (parse from sigmf).
     dtype = np.dtype([('i', '<i2'), ('q', '<i2')])
     dtype_size = 4
 
-    def reader(x): return open(x, 'rb')
-    if filename.endswith('.gz'):
-        def reader(x): return gzip.open(x, 'rb')
-
+    reader = get_reader(filename)
     with reader(filename) as infile:
         while True:
             sample_buffer = infile.read(sample_rate * dtype_size)
