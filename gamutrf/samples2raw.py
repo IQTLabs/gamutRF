@@ -8,7 +8,7 @@ from gamutrf.utils import replace_ext, parse_filename
 def make_procs_args(sample_filename):
     procs_args = []
     out_filename = sample_filename
-    
+
     if sample_filename.endswith('.gz'):
         procs_args.append(['gunzip', '-c', sample_filename])
         out_filename = replace_ext(out_filename, '')
@@ -49,7 +49,7 @@ def main():
     parser.add_argument('samplefile', default='', help='sample file to read')
     args = parser.parse_args()
     procs_args = make_procs_args(args.samplefile)
-    run_procs(procs_args) 
+    run_procs(procs_args)
 
 
 if __name__ == '__main__':
