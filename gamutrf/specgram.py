@@ -15,10 +15,7 @@ from scipy.fft import fft
 from scipy.fft import fftfreq
 import zstandard
 
-
-def get_nondot_files(filedir, glob='*.s*.*'):
-    return [str(path) for path in Path(filedir).rglob(glob)
-            if not os.path.basename(path).startswith('.')]
+from gamutrf.utils import replace_ext, parse_filename, get_nondot_files
 
 
 def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
@@ -236,22 +233,6 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
     plt.gcf().set_size_inches(11, 8)
     plt.savefig(spectrogram_filename)
     plt.clf()
-
-
-def replace_ext(filename, ext):
-    basename = os.path.basename(filename)
-    dot = basename.index('.')
-    new_basename = basename[:(dot + 1)] + ext
-    return filename.replace(basename, new_basename)
-
-
-def parse_filename(filename):
-    # TODO: parse from sigmf.
-    filename_re = re.compile('^.+_([0-9]+)Hz_([0-9]+)sps.+$')
-    match = filename_re.match(filename)
-    freq_center = int(match.group(1))
-    sample_rate = int(match.group(2))
-    return (freq_center, sample_rate)
 
 
 def process_recording(args, recording):

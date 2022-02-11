@@ -5,7 +5,8 @@ import tempfile
 import time
 import unittest
 
-from gamutrf.specgram import read_recording, plot_spectrogram, replace_ext
+from gamutrf.utils import replace_ext
+from gamutrf.specgram import read_recording, plot_spectrogram
 
 
 class SpecgramTestCase(unittest.TestCase):
