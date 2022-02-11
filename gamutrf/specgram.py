@@ -4,7 +4,6 @@ from multiprocessing import Process
 import gzip
 import os
 import re
-from pathlib import Path
 
 import numpy as np
 from matplotlib.mlab import detrend
