@@ -38,7 +38,8 @@ def run_procs(procs_args):
             stdin = procs[-1].stdout
         procs.append(subprocess.Popen(proc_args, stdout=subprocess.PIPE, stdin=stdin))
     for proc in procs[:-1]:
-        proc.stdout.close()
+        if proc.stdout is not None:
+            proc.stdout.close()
     procs[-1].communicate()
 
 
