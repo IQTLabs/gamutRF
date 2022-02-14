@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 import argparse
-from multiprocessing import Process
 import gzip
 import os
-import re
 
 import numpy as np
 from matplotlib.mlab import detrend
 from matplotlib.mlab import detrend_none
 from matplotlib.mlab import stride_windows
 from matplotlib.mlab import window_hanning
-from scipy.fft import fft
-from scipy.fft import fftfreq
+import matplotlib.pyplot as plt
+from scipy.fft import fft  # pylint disable=no-name-in-module
+from scipy.fft import fftfreq  # pylint disable=no-name-in-module
 import zstandard
 
 from gamutrf.utils import replace_ext, parse_filename, get_nondot_files
@@ -60,7 +59,7 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
     for i in x:
         result = stride_windows(i, NFFT, noverlap, axis=0)
         result = detrend(result, detrend_func, axis=0)
-        result = fft(result, n=pad_to, axis=0)[:numFreqs, :]
+        result = fft(result, n=pad_to, axis=0)[:numFreqs, :]  # pylint: disable=invalid-sequence-index
         if not np.iterable(window):
             window = window(np.ones(NFFT, i.dtype))
         if len(window) != NFFT:
@@ -121,11 +120,11 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
     return lastresult, freqs, t
 
 
-def specgram(self, x, NFFT=None, Fs=None, Fc=None, detrend=None,
+def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
              window=None, noverlap=None,
-             cmap=None, xextent=None, pad_to=None,
+             xextent=None, pad_to=None,
              scale_by_freq=None, mode=None, scale=None,
-             vmin=None, vmax=None, **kwargs):
+             **kwargs):
     if NFFT is None:
         NFFT = 256  # same default as in mlab.specgram()
     if Fc is None:
@@ -176,11 +175,7 @@ def specgram(self, x, NFFT=None, Fs=None, Fc=None, detrend=None,
         raise TypeError('specgram() got an unexpected keyword argument '
                         "'origin'")
 
-    im = self.imshow(Z, cmap, extent=extent, vmin=vmin, vmax=vmax,
-                     origin='upper', **kwargs)
-    self.axis('auto')
-
-    return spec, freqs, t, im
+    return Z, extent
 
 
 def get_reader(filename):
@@ -220,17 +215,23 @@ def read_recording(filename, sample_rate):
 
 
 def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
-    # TODO: workaround memory leak in plt
-    import matplotlib.pyplot as plt
-
-    plt.xlabel('time (s)')
-    plt.ylabel('freq (Hz)')
+    fig = plt.figure()
+    fig.set_size_inches(11, 8)
+    axes = fig.add_subplot(111)
+    axes.axis('auto')
+    axes.set_xlabel('time (s)')
+    axes.set_ylabel('freq (Hz)')
     # overlap must be 0, for maximum detail.
-    _spec, _freqs, _t, im = specgram(
-        plt.gca(), x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=0)
+    Z, extent = specgram(
+        x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=0)
+    im = axes.imshow(Z, cmap=cmap, extent=extent, origin='upper')
     plt.sci(im)
-    plt.gcf().set_size_inches(11, 8)
-    plt.savefig(spectrogram_filename)
+    fig.savefig(spectrogram_filename)
+    # must call this in specific order to avoid pyplot leak
+    axes.images.remove(im)
+    fig.clear()
+    plt.close()
+    plt.cla()
     plt.clf()
 
 
@@ -263,9 +264,7 @@ def main():
     else:
         recordings = [args.recording]
     for recording in recordings:
-        p = Process(target=process_recording, args=(args, recording))
-        p.start()
-        p.join()
+        process_recording(args, recording)
 
 
 if __name__ == '__main__':
