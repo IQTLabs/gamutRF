@@ -23,6 +23,8 @@ from gnuradio.fft import window  # pytype: disable=import-error
 from gnuradio import soapy  # pytype: disable=import-error
 # TODO: add test/pylint coverage with gnuradio
 
+from gamutrf.utils import ETTUS_ARGS, ETTUS_ANT
+
 
 def init_prom_vars():
     prom_vars = {
@@ -36,7 +38,7 @@ def init_prom_vars():
 class scan(gr.top_block):
 
     def __init__(self, freq_end=1e9, freq_start=100e6, igain=0, samp_rate=4e6, sweep_sec=30,
-                 logaddr='127.0.0.1', logport=8001, sdr='ettus'):
+                 logaddr='127.0.0.1', logport=8001, sdr='ettus', ettusargs=''):
         gr.top_block.__init__(self, 'scan', catch_exceptions=True)
 
         ##################################################
@@ -82,13 +84,13 @@ class scan(gr.top_block):
                 ','.join(('', '')),
                 uhd.stream_args(
                     cpu_format='fc32',
-                    args='',
+                    args=ettusargs,
                     channels=list(range(0, 1)),
                 ),
             )
             self.source.set_time_now(
                 uhd.time_spec(time.time()), uhd.ALL_MBOARDS)
-            self.source.set_antenna('TX/RX', 0)
+            self.source.set_antenna(ETTUS_ANT, 0)
             self.set_samp_rate(samp_rate)
             self.set_igain(igain)
             self.freq_setter = lambda x: self.source.set_center_freq(x, 0)
@@ -242,6 +244,9 @@ def argument_parser():
     parser.add_argument(
         '--sdr', dest='sdr', type=str, default='ettus',
         help='SDR to use (ettus, bladerf, or lime)')
+    parser.add_argument(
+        '--ettusargs', dest='ettusargs', type=str, default=ETTUS_ARGS,
+        help='extra args to pass to Ettus driver')
     return parser
 
 
@@ -269,7 +274,7 @@ def main(top_block_cls=scan, options=None):
                        igain=options.igain, samp_rate=options.samp_rate,
                        sweep_sec=options.sweep_sec,
                        logaddr=options.logaddr, logport=options.logport,
-                       sdr=options.sdr)
+                       sdr=options.sdr, ettusargs=options.ettusargs)
 
     def sig_handler(sig=None, frame=None):
         tb.stop()
