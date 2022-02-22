@@ -2,6 +2,7 @@ FROM python:3.10-slim
 WORKDIR /root
 COPY specgram-requirements.txt /root/specgram-requirements.txt
 RUN apt-get update && apt-get install -y --no-install-recommends python3-pip && pip3 install -r /root/specgram-requirements.txt
+COPY gamutrf/utils.py /root/gamutrf/utils.py
 COPY gamutrf/specgram.py /root/gamutrf/specgram.py
 ENV PYTHONPATH /root
 ENTRYPOINT ["/root/gamutrf/specgram.py"]
