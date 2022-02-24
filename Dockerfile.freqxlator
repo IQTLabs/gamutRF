@@ -1,0 +1,14 @@
+FROM ubuntu:20.04
+COPY --from=iqtlabs/gamutrf-gnuradio:latest /usr/local /usr/local
+LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
+    apt-get -y --no-install-recommends install \
+    python3 libpython3.8 python3-pip liblog4cpp5v5 libunwind8 libfftw3-bin \
+    libboost-thread1.71.0 libboost-program-options1.71.0 libboost-filesystem1.71.0
+COPY freqxlator-requirements.txt freqxlator-requirements.txt
+RUN pip3 install -r freqxlator-requirements.txt
+COPY gamutrf/freqxlator.py /root/freqxlator.py
+RUN /root/freqxlator.py --help
+ENTRYPOINT ["/usr/bin/python3", "/root/freqxlator.py"]
+CMD ["--help"]

@@ -218,15 +218,15 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
     fig = plt.figure()
     fig.set_size_inches(11, 8)
     axes = fig.add_subplot(111)
-    axes.axis('auto')
     axes.set_xlabel('time (s)')
     axes.set_ylabel('freq (Hz)')
     # overlap must be 0, for maximum detail.
     Z, extent = specgram(
         x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=0)
     im = axes.imshow(Z, cmap=cmap, extent=extent, origin='upper')
+    axes.axis('auto')
     plt.sci(im)
-    fig.savefig(spectrogram_filename)
+    plt.savefig(spectrogram_filename)
     # must call this in specific order to avoid pyplot leak
     axes.images.remove(im)
     fig.clear()
