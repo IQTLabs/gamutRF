@@ -3,6 +3,7 @@ networks:
   gamutrf:
 services:
   gamutrf:
+    restart: always
     image: iqtlabs/gamutrf:latest
     build:
       context: .
@@ -25,7 +26,7 @@ services:
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
   sigfinder:
-    restart: on-failure
+    restart: always
     image: iqtlabs/gamutrf-sigfinder:latest
     build:
       context: .
@@ -39,3 +40,14 @@ services:
     command:
       - --logaddr=sigfinder
       - --log=/logs/scan.csv
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: always
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - "WATCHTOWER_POLL_INTERVAL=3600"
+      - "WATCHTOWER_CLEANUP=true"
+      - "WATCHTOWER_INCLUDE_RESTARTING=true"
+      - "WATCHTOWER_INCLUDE_STOPPED=true"
+      - "WATCHTOWER_REVIVE_STOPPED=true"
