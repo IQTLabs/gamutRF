@@ -5,7 +5,7 @@ import tempfile
 import time
 import unittest
 
-from gamutrf.utils import replace_ext
+from gamutrf.utils import replace_ext, parse_filename
 from gamutrf.specgram import read_recording, plot_spectrogram
 
 
@@ -13,20 +13,20 @@ class SpecgramTestCase(unittest.TestCase):
 
     def test_process_fft_lines(self):
         with tempfile.TemporaryDirectory() as tempdir:
-            freq_center = 1e2
-            sample_rate = 1e3
-            recording = os.path.join(str(tempdir), 'test.raw')
-            samples = chr(0) * int(4 * sample_rate)
+            recording = os.path.join(str(tempdir), 'testrecording_100Hz_1000sps.raw')
+            freq_center, sample_rate, sample_dtype, sample_len, _sample_type, _sample_bits = parse_filename(recording)
+            samples = chr(0) * int(sample_len * sample_rate)
             with open(recording, 'wb') as f:
                 f.write(samples.encode('utf8'))
-            samples = read_recording(recording, len(samples))
+            samples = read_recording(recording, len(samples), sample_dtype, sample_len)
             plot_spectrogram(
                 samples,
                 replace_ext(recording, 'jpg'),
                 256,
                 sample_rate,
                 freq_center,
-                cmap='twilight_r')
+                'turbo',
+                10)
 
 
 if __name__ == '__main__':

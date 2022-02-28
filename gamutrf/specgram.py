@@ -155,9 +155,9 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
         Z = spec
     elif scale == 'dB':
         if mode is None or mode == 'default' or mode == 'psd':
-            Z = 10. * np.log10(spec)
+            Z = 10. / np.log10(spec)
         else:
-            Z = 20. * np.log10(spec)
+            Z = 20. / np.log10(spec)
     else:
         raise ValueError(f'Unknown scale {scale!r}')
 
@@ -169,6 +169,7 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
         xextent = np.min(t) - pad_xextent, np.max(t) + pad_xextent
     xmin, xmax = xextent
     freqs += Fc
+    freqs /= 1e6
     extent = xmin, xmax, freqs[0], freqs[-1]
 
     if 'origin' in kwargs:
@@ -197,34 +198,32 @@ def get_reader(filename):
     return default_reader
 
 
-def read_recording(filename, sample_rate):
-    # TODO: assume int16.int16 (parse from sigmf).
-    dtype = np.dtype([('i', '<i2'), ('q', '<i2')])
-    dtype_size = 4
-
+def read_recording(filename, sample_rate, sample_dtype, sample_len):
     reader = get_reader(filename)
     with reader(filename) as infile:
         while True:
-            sample_buffer = infile.read(sample_rate * dtype_size)
-            buffered_samples = int(len(sample_buffer) / dtype_size)
+            sample_buffer = infile.read(sample_rate * sample_len)
+            buffered_samples = int(len(sample_buffer) / sample_len)
             if buffered_samples == 0:
                 break
-            x1d = np.frombuffer(sample_buffer, dtype=dtype,
+            x1d = np.frombuffer(sample_buffer, dtype=sample_dtype,
                                 count=buffered_samples)
             yield x1d['i'] + np.csingle(1j) * x1d['q']
 
 
-def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
+def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics):
     fig = plt.figure()
     fig.set_size_inches(11, 8)
     axes = fig.add_subplot(111)
     axes.set_xlabel('time (s)')
-    axes.set_ylabel('freq (Hz)')
+    axes.set_ylabel('freq (MHz)')
     # overlap must be 0, for maximum detail.
     Z, extent = specgram(
         x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=0)
     im = axes.imshow(Z, cmap=cmap, extent=extent, origin='upper')
     axes.axis('auto')
+    axes.minorticks_on()
+    plt.locator_params(axis='y', nbins=ytics)
     plt.sci(im)
     plt.savefig(spectrogram_filename)
     # must call this in specific order to avoid pyplot leak
@@ -237,15 +236,16 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap):
 
 def process_recording(args, recording):
     print(f'processing {recording}')
-    freq_center, sample_rate = parse_filename(recording)
-    samples = read_recording(recording, sample_rate)
+    freq_center, sample_rate, sample_dtype, sample_len, _sample_type, _sample_bits = parse_filename(recording)
+    samples = read_recording(recording, sample_rate, sample_dtype, sample_len)
     plot_spectrogram(
         samples,
-        replace_ext(recording, 'jpg'),
+        replace_ext(recording, 'jpg', all_ext=True),
         args.nfft,
         sample_rate,
         freq_center,
-        cmap=args.cmap)
+        args.cmap,
+        args.ytics)
 
 
 def main():
@@ -255,7 +255,11 @@ def main():
                         help='filename of recording, or directory')
     parser.add_argument('--nfft', default=int(65536), type=int,
                         help='number of FFT points')
-    parser.add_argument('--cmap', default='twilight_r', type=str,
+    parser.add_argument('--ytics', default=20, type=int,
+                        help='number of y tics')
+    # https://ai.googleblog.com/2019/08/turbo-improved-rainbow-colormap-for.html (turbo scheme suggested for ML).
+    # yellow signal > blue signal.
+    parser.add_argument('--cmap', default='turbo_r', type=str,
                         help='pyplot colormap (see https://matplotlib.org/stable/tutorials/colors/colormaps.html)')
     args = parser.parse_args()
 
