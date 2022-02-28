@@ -16,11 +16,8 @@ def make_procs_args(sample_filename):
         procs_args.append(['zstdcat', sample_filename])
         out_filename = replace_ext(out_filename, '')
 
-    _, sample_rate = parse_filename(out_filename)
-    out_filename = replace_ext(out_filename, 'raw')
-    # TODO: parse sample format
-    in_bits = 16
-    in_format = 'signed-integer'
+    _, sample_rate, _sample_dtype, _sample_len, in_format, in_bits = parse_filename(out_filename)
+    out_filename = replace_ext(out_filename, 'raw', all_ext=True)
     sox_in = sample_filename
     if procs_args:
         sox_in = '-'

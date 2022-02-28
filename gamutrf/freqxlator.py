@@ -53,10 +53,10 @@ class FreqXLator(gr.top_block):
 def main():
     parser = argparse.ArgumentParser('Extract and decimate narrowband signal from wideband signal')
     parser.add_argument(
-        '--infile', dest='infile', type=str,
+        'infile', type=str,
         help='Input file (complex I/Q format)')
     parser.add_argument(
-        '--outfile', dest='outfile', type=str,
+        'outfile', type=str,
         help='Output file (complex I/Q format)')
     parser.add_argument(
         '--samp-rate', dest='samp_rate', type=eng_float, default=eng_notation.num_to_str(float(20e6)),
