@@ -1,0 +1,30 @@
+version: "3.3"
+networks:
+  gamutrf:
+services:
+  gamutrf-api:
+    restart: always
+    image: iqtlabs/gamutrf-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    networks:
+      - gamutrf
+    ports:
+      - '8000:8000'
+    cap_add:
+      - SYS_NICE
+      - SYS_RAWIO
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: always
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - "WATCHTOWER_POLL_INTERVAL=3600"
+      - "WATCHTOWER_CLEANUP=true"
+      - "WATCHTOWER_INCLUDE_RESTARTING=true"
+      - "WATCHTOWER_INCLUDE_STOPPED=true"
+      - "WATCHTOWER_REVIVE_STOPPED=true"
