@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# Derivative work from:
-# https://github.com/ThomasHabets/radiostuff/blob/922944c9a7c9c51a15e369ac07a7f8963b5f67bd/broadband-scan/broadband_scan.grc
 import signal
+import time
 import sys
 from argparse import ArgumentParser
 from prometheus_client import start_http_server, Gauge
@@ -21,6 +19,7 @@ def init_prom_vars():
         'freq_start_hz': Gauge('freq_start_hz', 'start of scanning range in Hz'),
         'freq_end_hz': Gauge('freq_end_hz', 'end of scanning range in Hz'),
         'sweep_sec': Gauge('sweep_sec', 'scan sweep rate in seconds'),
+        'last_freq_update': Gauge('last_freq_update', 'last frequency update time'),
     }
     return prom_vars
 
@@ -57,6 +56,9 @@ def argument_parser():
     parser.add_argument(
         '--ettusargs', dest='ettusargs', type=str, default=ETTUS_ARGS,
         help='extra args to pass to Ettus driver')
+    parser.add_argument(
+        '--updatetimeout', dest='updatetimeout', type=int, default=10,
+        help='seconds to wait for healthy freq updates')
     return parser
 
 
@@ -89,13 +91,18 @@ def main():
     def sig_handler(_sig=None, _frame=None):
         tb.stop()
         tb.wait()
-
         sys.exit(0)
 
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
     tb.start()
+    while True:
+        prom_vars['last_freq_update'].set(tb.freq_update)
+        time.sleep(1)
+        if not tb.freq_updated(options.updatetimeout):
+            tb.stop()
+            break
 
     tb.wait()
 

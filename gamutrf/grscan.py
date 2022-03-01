@@ -31,6 +31,8 @@ class grscan(gr.top_block):
         self.igain = igain
         self.samp_rate = samp_rate
         self.sweep_sec = sweep_sec
+        self.freq_update = 0
+        self.no_freq_updates = 0
 
         ##################################################
         # Variables
@@ -47,7 +49,6 @@ class grscan(gr.top_block):
 
         def _center_freq_probe():
             while True:
-
                 val = self.blocks_probe_signal_x_0.level()
                 try:
                     try:
@@ -147,3 +148,11 @@ class grscan(gr.top_block):
         self.center_freq = center_freq
         if self.center_freq:
             self.freq_setter(self.center_freq)
+            self.freq_update = time.time()
+            self.no_freq_updates = 0
+
+    def freq_updated(self, timeout):
+        if (time.time() - self.freq_update) < timeout:
+            return True
+        self.no_freq_updates += 1
+        return self.no_freq_updates < timeout
