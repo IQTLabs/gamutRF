@@ -25,6 +25,11 @@ services:
       - --igain=30
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
+    healthcheck:
+      test: [CMD, "/root/scanhc.sh", "9000"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
   sigfinder:
     restart: always
     image: iqtlabs/gamutrf-sigfinder:latest
