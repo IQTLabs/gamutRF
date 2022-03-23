@@ -26,7 +26,8 @@ class SpecgramTestCase(unittest.TestCase):
                 sample_rate,
                 freq_center,
                 'turbo',
-                10)
+                10,
+                True)
 
 
 if __name__ == '__main__':

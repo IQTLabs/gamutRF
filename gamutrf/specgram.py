@@ -211,7 +211,7 @@ def read_recording(filename, sample_rate, sample_dtype, sample_len):
             yield x1d['i'] + np.csingle(1j) * x1d['q']
 
 
-def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics):
+def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare):
     fig = plt.figure()
     fig.set_size_inches(11, 8)
     axes = fig.add_subplot(111)
@@ -224,6 +224,14 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics):
     axes.axis('auto')
     axes.minorticks_on()
     plt.locator_params(axis='y', nbins=ytics)
+
+    if bare:
+        axes.set_axis_off()
+        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+        plt.margins(0,0)
+        axes.xaxis.set_major_locator(plt.NullLocator())
+        axes.yaxis.set_major_locator(plt.NullLocator())
+
     plt.sci(im)
     plt.savefig(spectrogram_filename)
     # must call this in specific order to avoid pyplot leak
@@ -245,7 +253,8 @@ def process_recording(args, recording):
         sample_rate,
         freq_center,
         args.cmap,
-        args.ytics)
+        args.ytics,
+        args.bare)
 
 
 def main():
@@ -261,6 +270,9 @@ def main():
     # yellow signal > blue signal.
     parser.add_argument('--cmap', default='turbo_r', type=str,
                         help='pyplot colormap (see https://matplotlib.org/stable/tutorials/colors/colormaps.html)')
+    parser.add_argument('--bare', dest='bare', action='store_true')
+    parser.add_argument('--no-bare', dest='bare', action='store_false')
+    parser.set_defaults(bare=False)
     args = parser.parse_args()
 
     if os.path.isdir(args.recording):
