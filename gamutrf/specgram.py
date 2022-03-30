@@ -248,7 +248,7 @@ def process_recording(args, recording):
     samples = read_recording(recording, sample_rate, sample_dtype, sample_len)
     plot_spectrogram(
         samples,
-        replace_ext(recording, 'jpg', all_ext=True),
+        replace_ext(recording, args.iext, all_ext=True),
         args.nfft,
         sample_rate,
         freq_center,
@@ -272,6 +272,8 @@ def main():
                         help='pyplot colormap (see https://matplotlib.org/stable/tutorials/colors/colormaps.html)')
     parser.add_argument('--bare', dest='bare', action='store_true')
     parser.add_argument('--no-bare', dest='bare', action='store_false')
+    parser.add_argument('--iext', dest='iext', default='jpg', type=str,
+                        help='extension (image type) to use for spectrogram')
     parser.set_defaults(bare=False)
     args = parser.parse_args()
 
