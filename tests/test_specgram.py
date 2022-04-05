@@ -21,7 +21,7 @@ class SpecgramTestCase(unittest.TestCase):
             samples = read_recording(recording, len(samples), sample_dtype, sample_len)
             plot_spectrogram(
                 samples,
-                replace_ext(recording, 'jpg'),
+                replace_ext(recording, 'png'),
                 256,
                 sample_rate,
                 freq_center,

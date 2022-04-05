@@ -272,7 +272,7 @@ def main():
                         help='pyplot colormap (see https://matplotlib.org/stable/tutorials/colors/colormaps.html)')
     parser.add_argument('--bare', dest='bare', action='store_true')
     parser.add_argument('--no-bare', dest='bare', action='store_false')
-    parser.add_argument('--iext', dest='iext', default='jpg', type=str,
+    parser.add_argument('--iext', dest='iext', default='png', type=str,
                         help='extension (image type) to use for spectrogram')
     parser.set_defaults(bare=False)
     args = parser.parse_args()
