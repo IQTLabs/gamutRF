@@ -211,15 +211,14 @@ def read_recording(filename, sample_rate, sample_dtype, sample_len):
             yield x1d['i'] + np.csingle(1j) * x1d['q']
 
 
-def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare):
+def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, noverlap):
     fig = plt.figure()
     fig.set_size_inches(11, 8)
     axes = fig.add_subplot(111)
     axes.set_xlabel('time (s)')
     axes.set_ylabel('freq (MHz)')
-    # overlap must be 0, for maximum detail.
     Z, extent = specgram(
-        x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=0)
+        x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=noverlap)
     im = axes.imshow(Z, cmap=cmap, extent=extent, origin='upper')
     axes.axis('auto')
     axes.minorticks_on()
@@ -254,7 +253,8 @@ def process_recording(args, recording):
         freq_center,
         args.cmap,
         args.ytics,
-        args.bare)
+        args.bare,
+        args.noverlap)
 
 
 def main():
@@ -274,6 +274,8 @@ def main():
     parser.add_argument('--no-bare', dest='bare', action='store_false')
     parser.add_argument('--iext', dest='iext', default='png', type=str,
                         help='extension (image type) to use for spectrogram')
+    parser.add_argument('--noverlap', dest='noverlap', default=0, type=int,
+                        help='number of overlapping FFT windows')
     parser.set_defaults(bare=False)
     args = parser.parse_args()
 
