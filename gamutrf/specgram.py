@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import concurrent.futures
 import gzip
 import os
 
@@ -242,12 +243,16 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, n
 
 
 def process_recording(args, recording):
-    print(f'processing {recording}')
     freq_center, sample_rate, sample_dtype, sample_len, _sample_type, _sample_bits = parse_filename(recording)
+    spectrogram_filename = replace_ext(recording, args.iext, all_ext=True)
+    if args.skip_exist and os.path.exists(spectrogram_filename):
+        print(f'skipping {recording}')
+        return
+    print(f'processing {recording}')
     samples = read_recording(recording, sample_rate, sample_dtype, sample_len)
     plot_spectrogram(
         samples,
-        replace_ext(recording, args.iext, all_ext=True),
+        spectrogram_filename,
         args.nfft,
         sample_rate,
         freq_center,
@@ -255,6 +260,21 @@ def process_recording(args, recording):
         args.ytics,
         args.bare,
         args.noverlap)
+
+
+def process_all_recordings(args):
+    if os.path.isdir(args.recording):
+        recordings = get_nondot_files(args.recording)
+    else:
+        recordings = [args.recording]
+    if args.workers == 1:
+        for recording in sorted(recordings):
+            process_recording(args, recording)
+    else:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=args.workers) as executor:
+            for recording in sorted(recordings):
+                executor.submit(process_recording, args, recording)
+            executor.shutdown(wait=True)
 
 
 def main():
@@ -276,15 +296,15 @@ def main():
                         help='extension (image type) to use for spectrogram')
     parser.add_argument('--noverlap', dest='noverlap', default=0, type=int,
                         help='number of overlapping FFT windows')
-    parser.set_defaults(bare=False)
+    parser.add_argument('--workers', dest='workers', default=1, type=int,
+                        help='number of parallel workers')
+    parser.add_argument('--skip-exist', dest='skip_exist', action='store_true',
+                        help='skip existing images')
+    parser.add_argument('--no-skip-exist', dest='skip_exist', action='store_false',
+                        help='overwrite existing images')
+    parser.set_defaults(bare=False, skip_exist=False)
     args = parser.parse_args()
-
-    if os.path.isdir(args.recording):
-        recordings = get_nondot_files(args.recording)
-    else:
-        recordings = [args.recording]
-    for recording in recordings:
-        process_recording(args, recording)
+    process_all_recordings(args)
 
 
 if __name__ == '__main__':
