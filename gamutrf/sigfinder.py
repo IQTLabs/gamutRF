@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import socket
-import subprocess
 import time
 
 import pandas as pd
@@ -86,7 +85,7 @@ def get_freq_exclusions(args):
     return recorder_freq_exclusions
 
 
-def record_signals(args, lastbins_history):
+def call_record_signals(args, lastbins_history):
     if lastbins_history:
         signals = []
         for bins in lastbins_history:
@@ -158,7 +157,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
                             lastbins_history = [lastbins] + lastbins_history
                             lastbins_history = lastbins_history[:args.history]
                         fftbuffer = []
-                        record_signals(args, lastbins_history)
+                        call_record_signals(args, lastbins_history)
                         if now - openlogts > args.rotatesecs:
                             rotatelognow = True
                 if rotatelognow:
