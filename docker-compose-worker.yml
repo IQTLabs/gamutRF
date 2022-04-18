@@ -19,7 +19,6 @@ services:
       - /dev/bus/usb:/dev/bus/usb
     command:
       - --no-agc
-      - --sigmf
   watchtower:
     image: containrrr/watchtower:latest
     restart: always
