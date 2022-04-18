@@ -44,6 +44,8 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         start_freq, end_freq = signal[:2]
         peak_db = signal[-1]
         center_freq = start_freq + ((end_freq - start_freq) / 2)
+        if center_freq < args.freq_start or center_freq > args.freq_end:
+            continue
         center_freq = int(center_freq / args.bin_mhz) * args.bin_mhz
         bin_freq_count.labels(bin_mhz=center_freq).inc()
         last_bin_freq_time.labels(bin_mhz=ts).set(ts)
@@ -203,6 +205,12 @@ def main():
                         help='record time duration in seconds')
     parser.add_argument('--promport', dest='promport', type=int, default=9000,
                         help='Prometheus client port')
+    parser.add_argument(
+        '--freq-end', dest='freq_end', type=float, default=float(1e9),
+        help='Set freq_end [default=%(default)r]')
+    parser.add_argument(
+        '--freq-start', dest='freq_start', type=float, default=float(100e6),
+        help='Set freq_start [default=%(default)r]')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
