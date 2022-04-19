@@ -43,7 +43,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         start_freq, end_freq = signal[:2]
         peak_db = signal[-1]
         center_freq = start_freq + ((end_freq - start_freq) / 2)
-        if center_freq < args.freq_start or center_freq > args.freq_end:
+        if (center_freq * 1e6) < args.freq_start or (center_freq * 1e6) > args.freq_end:
             continue
         center_freq = int(center_freq / args.bin_mhz) * args.bin_mhz
         bin_freq_count.labels(bin_mhz=center_freq).inc()
