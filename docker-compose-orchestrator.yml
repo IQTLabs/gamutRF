@@ -45,6 +45,9 @@ services:
     command:
       - --logaddr=sigfinder
       - --log=/logs/scan.csv
+      - --recorder=http://rfworkerpi.finf:8000/
+      - '--freq-start=${FREQ_START}'
+      - '--freq-end=${FREQ_END}'
   watchtower:
     image: containrrr/watchtower:latest
     restart: always

@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import socket
-import subprocess
 import time
 
 import pandas as pd
@@ -44,6 +43,8 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         start_freq, end_freq = signal[:2]
         peak_db = signal[-1]
         center_freq = start_freq + ((end_freq - start_freq) / 2)
+        if (center_freq * 1e6) < args.freq_start or (center_freq * 1e6) > args.freq_end:
+            continue
         center_freq = int(center_freq / args.bin_mhz) * args.bin_mhz
         bin_freq_count.labels(bin_mhz=center_freq).inc()
         last_bin_freq_time.labels(bin_mhz=ts).set(ts)
@@ -84,7 +85,7 @@ def get_freq_exclusions(args):
     return recorder_freq_exclusions
 
 
-def record_signals(args, lastbins_history):
+def call_record_signals(args, lastbins_history):
     if lastbins_history:
         signals = []
         for bins in lastbins_history:
@@ -156,7 +157,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
                             lastbins_history = [lastbins] + lastbins_history
                             lastbins_history = lastbins_history[:args.history]
                         fftbuffer = []
-                        record_signals(args, lastbins_history)
+                        call_record_signals(args, lastbins_history)
                         if now - openlogts > args.rotatesecs:
                             rotatelognow = True
                 if rotatelognow:
@@ -203,6 +204,12 @@ def main():
                         help='record time duration in seconds')
     parser.add_argument('--promport', dest='promport', type=int, default=9000,
                         help='Prometheus client port')
+    parser.add_argument(
+        '--freq-end', dest='freq_end', type=float, default=float(1e9),
+        help='Set freq_end [default=%(default)r]')
+    parser.add_argument(
+        '--freq-start', dest='freq_start', type=float, default=float(100e6),
+        help='Set freq_start [default=%(default)r]')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
