@@ -156,9 +156,9 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
         Z = spec
     elif scale == 'dB':
         if mode is None or mode == 'default' or mode == 'psd':
-            Z = 10. / np.log10(spec)
+            Z = 10. * np.log10(spec)
         else:
-            Z = 20. / np.log10(spec)
+            Z = 20. * np.log10(spec)
     else:
         raise ValueError(f'Unknown scale {scale!r}')
 
