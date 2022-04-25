@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-base:latest /usr/lib /usr/lib
 COPY --from=iqtlabs/gamutrf-base:latest /usr/share/uhd/images /usr/share/uhd/images
