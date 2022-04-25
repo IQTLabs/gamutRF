@@ -7,4 +7,4 @@ pandas==1.4.2
 pbr==5.8.1
 prometheus_client==0.14.1
 requests==2.27.1
-git+https://github.com/gnuradio/sigmf
+sigmf==1.0.0

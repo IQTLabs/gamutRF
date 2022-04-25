@@ -15,6 +15,6 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL
 WORKDIR /root/lime-tools/build
 RUN cmake .. && make install
 RUN ldconfig -v
-RUN ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
+RUN ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
 RUN python3 -c "from gnuradio import soapy"
 RUN python3 -c "import habets39"

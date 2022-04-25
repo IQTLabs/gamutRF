@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as builder
+FROM ubuntu:22.04 as builder
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     apt-get -y --no-install-recommends install \
     build-essential \
@@ -16,7 +16,7 @@ WORKDIR /root/airspyhf/build
 RUN cmake .. && make && make install
 WORKDIR /root/airspy-fmradion/build
 RUN cmake .. && make && make install
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libportaudio2 libsoxr0 libusb-1.0-0 libairspy0 libsndfile1 librtlsdr0
 COPY --from=builder /usr/local /usr/local

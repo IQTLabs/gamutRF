@@ -17,12 +17,12 @@
 # $ airspy-fmradion -t filesource -c srate=1000000,raw,format=FLOAT,filename=fm.raw -W fm.wav
 
 import argparse
-import pmt  # pytype: disable=import-error
 from gnuradio import blocks  # pytype: disable=import-error
+from gnuradio import eng_notation  # pytype: disable=import-error
 from gnuradio import gr  # pytype: disable=import-error
+from pmt import PMT_NIL  # pytype: disable=import-error
 from gnuradio.filter import firdes, freq_xlating_fir_filter_ccc  # pylint: disable=no-name-in-module  # pytype: disable=import-error
 from gnuradio.eng_arg import eng_float  # pytype: disable=import-error
-from gnuradio import eng_notation  # pytype: disable=import-error
 
 
 class FreqXLator(gr.top_block):
@@ -39,7 +39,7 @@ class FreqXLator(gr.top_block):
 
         self.freq_xlating_fir_filter_xxx_0 = freq_xlating_fir_filter_ccc(self.dec, self._get_taps(), self.center, self.samp_rate)
         self.blocks_file_source_0 = blocks.file_source(gr.sizeof_gr_complex, self.infile, False, 0, 0)  # pylint: disable=no-member
-        self.blocks_file_source_0.set_begin_tag(pmt.PMT_NIL)
+        self.blocks_file_source_0.set_begin_tag(PMT_NIL)
         self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_gr_complex, self.outfile, False)  # pylint: disable=no-member
         self.blocks_file_sink_0.set_unbuffered(False)
 
