@@ -19,7 +19,7 @@ from gamutrf.utils import replace_ext, parse_filename, get_nondot_files
 
 def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
                     window=None, noverlap=None, pad_to=None,
-                    scale_by_freq=None, mode=None):
+                    scale_by_freq=None, mode=None, skip_fft=False):
     if Fs is None:
         Fs = 2
     if noverlap is None:
@@ -58,9 +58,13 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
     lastresult = None
 
     for i in x:
-        result = stride_windows(i, NFFT, noverlap, axis=0)
-        result = detrend(result, detrend_func, axis=0)
-        result = fft(result, n=pad_to, axis=0)[:numFreqs, :]  # pylint: disable=invalid-sequence-index
+        if skip_fft:
+            # TODO: assume NFFT is factor of sps.
+            result = np.reshape(i, (NFFT, int(len(i) / NFFT)))
+        else:
+            result = stride_windows(i, NFFT, noverlap, axis=0)
+            result = detrend(result, detrend_func, axis=0)
+            result = fft(result, n=pad_to, axis=0)[:numFreqs, :]  # pylint: disable=invalid-sequence-index
         if not np.iterable(window):
             window = window(np.ones(NFFT, i.dtype))
         if len(window) != NFFT:
@@ -125,6 +129,7 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
              window=None, noverlap=None,
              xextent=None, pad_to=None,
              scale_by_freq=None, mode=None, scale=None,
+             skip_fft=False,
              **kwargs):
     if NFFT is None:
         NFFT = 256  # same default as in mlab.specgram()
@@ -150,7 +155,7 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
                                      detrend_func=detrend, window=window,
                                      noverlap=noverlap, pad_to=pad_to,
                                      scale_by_freq=scale_by_freq,
-                                     mode=mode)
+                                     mode=mode, skip_fft=skip_fft)
 
     if scale == 'linear':
         Z = spec
@@ -212,14 +217,14 @@ def read_recording(filename, sample_rate, sample_dtype, sample_len):
             yield x1d['i'] + np.csingle(1j) * x1d['q']
 
 
-def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, noverlap):
+def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, noverlap, skip_fft):
     fig = plt.figure()
     fig.set_size_inches(11, 8)
     axes = fig.add_subplot(111)
     axes.set_xlabel('time (s)')
     axes.set_ylabel('freq (MHz)')
     Z, extent = specgram(
-        x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=noverlap)
+        x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=noverlap, skip_fft=skip_fft)
     im = axes.imshow(Z, cmap=cmap, extent=extent, origin='upper')
     axes.axis('auto')
     axes.minorticks_on()
@@ -259,7 +264,8 @@ def process_recording(args, recording):
         args.cmap,
         args.ytics,
         args.bare,
-        args.noverlap)
+        args.noverlap,
+        args.skip_fft)
 
 
 def process_all_recordings(args):
@@ -302,7 +308,11 @@ def main():
                         help='skip existing images')
     parser.add_argument('--no-skip-exist', dest='skip_exist', action='store_false',
                         help='overwrite existing images')
-    parser.set_defaults(bare=False, skip_exist=False)
+    parser.add_argument('--skip-fft', dest='skip_fft', action='store_true',
+                        help='skip FFT')
+    parser.add_argument('--no-skip-fft', dest='skip_fft', action='store_false',
+                        help='calculate FFT')
+    parser.set_defaults(bare=False, skip_exist=False, skip_fft=False)
     args = parser.parse_args()
     process_all_recordings(args)
 
