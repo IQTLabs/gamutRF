@@ -10,7 +10,7 @@ from gamutrf.utils import parse_filename
 
 class FakeArgs:
 
-    def __init__(self, nfft, cmap, ytics, bare, noverlap, iext, skip_test, recording, workers):
+    def __init__(self, nfft, cmap, ytics, bare, noverlap, iext, skip_test, recording, workers, skip_fft):
         self.nfft = nfft
         self.cmap = cmap
         self.ytics = ytics
@@ -20,6 +20,7 @@ class FakeArgs:
         self.skip_exist = True
         self.recording = recording
         self.workers = workers
+        self.skip_fft = skip_fft
 
 
 class SpecgramTestCase(unittest.TestCase):
@@ -31,10 +32,11 @@ class SpecgramTestCase(unittest.TestCase):
             samples = chr(0) * int(sample_len * sample_rate)
             with open(recording, 'wb') as f:
                 f.write(samples.encode('utf8'))
-            fakeargs = FakeArgs(256, 'turbo', 1, True, 0, 'png', False, recording, 2)
+            fakeargs = FakeArgs(256, 'turbo', 1, True, 0, 'png', False, recording, 2, True)
             process_all_recordings(fakeargs)
             fakeargs.workers = 1
             fakeargs.skip_exist = False
+            fakeargs.skip_fft = False
             process_all_recordings(fakeargs)
 
 
