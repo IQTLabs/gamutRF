@@ -15,8 +15,11 @@ services:
     cap_add:
       - SYS_NICE
       - SYS_RAWIO
+    privileged: true
     devices:
       - /dev/bus/usb:/dev/bus/usb
+    volumes:
+      - '${VOL_PREFIX}:/data'
     command:
       - --no-agc
   watchtower:
