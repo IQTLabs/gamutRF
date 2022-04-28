@@ -10,7 +10,7 @@ An SDR orchestrated scanner.
 - git
 - [Docker](https://docs.docker.com/engine/install/ubuntu/)
 - docker-compose (`pip3 install docker-compose`)
-- UHD (if using Ettus)
+- UHD (if using Ettus):
 ```
 sudo apt-get install uhd-host
 /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
