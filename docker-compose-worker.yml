@@ -5,9 +5,6 @@ services:
   gamutrf-api:
     restart: always
     image: iqtlabs/gamutrf-api:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.api
     networks:
       - gamutrf
     ports:

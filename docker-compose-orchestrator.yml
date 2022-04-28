@@ -5,9 +5,6 @@ services:
   gamutrf:
     restart: always
     image: iqtlabs/gamutrf:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
     depends_on:
       sigfinder:
         condition: service_started
@@ -33,9 +30,6 @@ services:
   sigfinder:
     restart: always
     image: iqtlabs/gamutrf-sigfinder:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.sigfinder
     networks:
       - gamutrf
     ports:
