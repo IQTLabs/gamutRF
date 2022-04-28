@@ -102,7 +102,7 @@ parser.add_argument(
     default=30, type=int)
 parser.add_argument(
     '--rxb', help='Receive buffer size',
-    default=int(20000000), type=int)
+    default=int(1024 * 1024 * 10), type=int)
 parser.add_argument(
     '--qsize', help='Max request queue size',
     default=int(2), type=int)
