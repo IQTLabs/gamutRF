@@ -60,7 +60,7 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
     for i in x:
         if skip_fft:
             # TODO: assume NFFT is factor of sps.
-            result = np.reshape(i, (NFFT, int(len(i) / NFFT)))
+            result = np.reshape(i, (NFFT, int(len(i) / NFFT)), order='F')
         else:
             result = stride_windows(i, NFFT, noverlap, axis=0)
             result = detrend(result, detrend_func, axis=0)
