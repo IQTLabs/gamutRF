@@ -2,18 +2,61 @@
 
 An SDR orchestrated scanner.
 
+# Prerequisites
+
+- Linux (Ubuntu 20.04+)
+- Docker
+- docker-compose (`pip3 install docker-compose`)
+- git
+- UHD (If using Ettus)
+  - ```
+sudo apt-get install uhd-host
+/usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
+```
+
 # Quick Start
 
-Build and run the collection and signal finding containers (note: an Ettus b2XX will need to be attached over USB):
+This project is designed to run across several machines, one `orchestrator` and `n` number of `workers`.
 
+Clone the project on the `orchestrator`:
 ```
-docker-compose up
+git clone https://github.com/IQTLabs/gamutRF.git
+cd gamutRF
 ```
 
-Finally build and run the container for generating the graph video (MP4) from the CSV file:
+Change the example `recorder` line under sigfinder in `docker-compose-orchestrator.yml` to match the IP or name of the `worker`. Add additional `recorder` lines for multiple `workers`. Here's an example with two workers:
 ```
-docker build -t gamut-graph:latest -f Dockerfile.graph .
-docker run -it --rm -v "$PWD":/data gamut-graph:latest /data/scan.csv
+  sigfinder:
+    restart: always
+    image: iqtlabs/gamutrf-sigfinder:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.sigfinder
+    networks:
+      - gamutrf
+    ports:
+      - '9002:9000'
+    volumes:
+      - '${VOL_PREFIX}:/logs'
+    command:
+      - --logaddr=sigfinder
+      - --log=/logs/scan.csv
+      - --recorder=http://192.168.111.11:8000
+      - --recorder=http://192.168.111.12:8000
+      - '--freq-start=${FREQ_START}'
+      - '--freq-end=${FREQ_END}'
+```
+
+Build and run the collection and signal finding containers (note: an Ettus b2XX will need to be attached over USB) on the `orchestrator` (optionally override the `VOL_PREFIX` for where data will be stored and the `FREQ_START` and `FREQ_END` to change the spectrum range that gets scanned:
+```
+VOL_PREFIX=/flash/gamutrf/ FREQ_START=70e6 FREQ_END=6e9 docker-compose -f docker-compose-orchestrator.yml up -d
+```
+
+Finally build and run the collection containers on each of the workers:
+```
+git clone https://github.com/IQTLabs/gamutRF.git
+cd gamutRF
+VOL_PREFIX=/flash/ docker-compose -f docker-compose-worker.yml up -d
 ```
 
 # FAQ
