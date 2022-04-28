@@ -36,6 +36,10 @@ def replace_ext(filename, ext, all_ext=False):
     return filename.replace(basename, new_basename)
 
 
+def is_fft(filename):
+    return os.path.basename(filename).startswith('fft_')
+
+
 def parse_filename(filename):
     # TODO: parse from sigmf.
     match = SAMPLE_FILENAME_RE.match(filename)
@@ -48,7 +52,7 @@ def parse_filename(filename):
         sample_rate = None
         sample_type = None
     # FFT is always float not matter the original sample type.
-    if os.path.basename(filename).startswith('fft_'):
+    if is_fft(filename):
         sample_type = 'raw'
     sample_dtype, sample_type = SAMPLE_DTYPES.get(sample_type, (None, None))
     sample_bits = None

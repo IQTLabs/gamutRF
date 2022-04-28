@@ -14,7 +14,7 @@ from scipy.fft import fft  # pylint disable=no-name-in-module
 from scipy.fft import fftfreq  # pylint disable=no-name-in-module
 import zstandard
 
-from gamutrf.utils import replace_ext, parse_filename, get_nondot_files
+from gamutrf.utils import replace_ext, parse_filename, get_nondot_files, is_fft
 
 
 def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
@@ -253,6 +253,14 @@ def process_recording(args, recording):
     if args.skip_exist and os.path.exists(spectrogram_filename):
         print(f'skipping {recording}')
         return
+    if is_fft(recording):
+        if not args.skip_fft:
+            print(f'skipping precomputed FFT {recording}')
+            return
+    else:
+        if args.skip_fft:
+            print(f'{recording} not a precomputed FFT, skipping')
+            return
     print(f'processing {recording}')
     samples = read_recording(recording, sample_rate, sample_dtype, sample_len)
     plot_spectrogram(
@@ -288,7 +296,7 @@ def main():
         description='draw spectrogram from recording')
     parser.add_argument('recording', default='', type=str,
                         help='filename of recording, or directory')
-    parser.add_argument('--nfft', default=int(65536), type=int,
+    parser.add_argument('--nfft', default=int(2048), type=int,
                         help='number of FFT points')
     parser.add_argument('--ytics', default=20, type=int,
                         help='number of y tics')
