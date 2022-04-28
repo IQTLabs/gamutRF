@@ -47,6 +47,9 @@ def parse_filename(filename):
         freq_center = None
         sample_rate = None
         sample_type = None
+    # FFT is always float not matter the original sample type.
+    if os.path.basename(filename).startswith('fft_'):
+        sample_type = 'raw'
     sample_dtype, sample_type = SAMPLE_DTYPES.get(sample_type, (None, None))
     sample_bits = None
     sample_len = None
