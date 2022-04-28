@@ -97,7 +97,7 @@ def call_record_signals(args, lastbins_history):
             signals, recorder_count, args.record_bw_mbps)
         for signal, recorder in choose_recorders(record_signals, recorder_freq_exclusions):
             signal_hz = int(signal * 1e6)
-            record_bps = int(args.record_bw_mbps * 1e6)
+            record_bps = int(args.record_bw_mbps * (1024 * 1024))
             record_samples = int(
                 record_bps * args.record_secs)
             recorder_args = f'record/{signal_hz}/{record_samples}/{record_bps}'
