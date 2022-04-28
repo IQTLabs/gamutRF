@@ -13,7 +13,7 @@ An SDR orchestrated scanner.
 - UHD (if using Ettus):
 ```
 sudo apt-get install uhd-host
-/usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
+sudo /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
 ```
 
 # Quick Start
