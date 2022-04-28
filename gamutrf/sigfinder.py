@@ -39,13 +39,16 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
     peak_dbs = {}
     bin_freq_count = prom_vars['bin_freq_count']
     last_bin_freq_time = prom_vars['last_bin_freq_time']
+    freq_start_mhz = args.freq_start / 1e6
+    freq_end_mhz = args.freq_end / 1e6
     for signal in find_sig_windows(df, window=args.window, threshold=args.threshold):
         start_freq, end_freq = signal[:2]
         peak_db = signal[-1]
         center_freq = start_freq + ((end_freq - start_freq) / 2)
-        if (center_freq * 1e6) < args.freq_start or (center_freq * 1e6) > args.freq_end:
+        if center_freq < freq_start_mhz or center_freq > freq_end_mhz:
+            print(f'ignoring {center_freq}')
             continue
-        center_freq = int(center_freq / args.bin_mhz) * args.bin_mhz
+        center_freq = int(int((center_freq - freq_start_mhz) / args.bin_mhz) * args.bin_mhz + freq_start_mhz)
         bin_freq_count.labels(bin_mhz=center_freq).inc()
         last_bin_freq_time.labels(bin_mhz=ts).set(ts)
         monitor_bins.add(center_freq)
