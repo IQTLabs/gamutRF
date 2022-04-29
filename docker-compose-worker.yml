@@ -9,7 +9,7 @@ services:
       - '${VOL_PREFIX}:/data'
     command:
       - '--loop=10'
-      - '--skip_exist'
+      - '--skip-exist'
       - '/data/gamutrf'
   gamutrf-api:
     restart: always
