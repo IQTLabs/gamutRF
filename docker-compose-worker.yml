@@ -2,6 +2,15 @@ version: "3.3"
 networks:
   gamutrf:
 services:
+  worker:
+    restart: always
+    image: iqtlabs/gamutrf-specgram:latest
+    volumes:
+      - '${VOL_PREFIX}:/data'
+    command:
+      - '--loop=10'
+      - '--skip_exist'
+      - '/data/gamutrf'
   gamutrf-api:
     restart: always
     image: iqtlabs/gamutrf-api:latest
