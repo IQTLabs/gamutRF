@@ -3,6 +3,7 @@ import argparse
 import concurrent.futures
 import gzip
 import os
+import time
 
 import numpy as np
 from matplotlib.mlab import detrend
@@ -320,9 +321,15 @@ def main():
                         help='skip FFT')
     parser.add_argument('--no-skip-fft', dest='skip_fft', action='store_false',
                         help='calculate FFT')
+    parser.add_argument('--loop', dest='loop', default=0, type=int,
+                        help='if > 0, run in a loop')
     parser.set_defaults(bare=False, skip_exist=False, skip_fft=False)
     args = parser.parse_args()
-    process_all_recordings(args)
+    while True:
+        process_all_recordings(args)
+        if not args.loop:
+            break
+        time.sleep(args.loop)
 
 
 if __name__ == '__main__':
