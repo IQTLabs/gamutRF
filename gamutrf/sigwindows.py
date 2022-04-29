@@ -152,12 +152,15 @@ def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
     return signals
 
 
-def choose_record_signal(signals, recorders, record_bw):
+def get_center(signal_mhz, freq_start_mhz, bin_mhz, record_bw):
+    return int(int((signal_mhz - freq_start_mhz) / record_bw) * bin_mhz + freq_start_mhz)
+
+
+def choose_record_signal(signals, recorders):
     recorder_buckets = Counter()
 
     # Convert signals into buckets of record_bw size, count how many of each size
-    for center_freq in signals:
-        bucket = round(center_freq / record_bw) * record_bw
+    for bucket in signals:
         recorder_buckets[bucket] += 1
 
     # Now count number of buckets of each count.
