@@ -16,6 +16,7 @@ from gamutrf.sigwindows import choose_record_signal
 from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import parse_freq_excluded
+from gamutrf.sigwindows import get_center
 
 ROLLOVERHZ = 100e6
 
@@ -48,7 +49,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         if center_freq < freq_start_mhz or center_freq > freq_end_mhz:
             print(f'ignoring {center_freq}')
             continue
-        center_freq = int(int((center_freq - freq_start_mhz) / args.bin_mhz) * args.bin_mhz + freq_start_mhz)
+        center_freq = get_center(center_freq, freq_start_mhz, args.bin_mhz, args.record_bw_mbps)
         bin_freq_count.labels(bin_mhz=center_freq).inc()
         last_bin_freq_time.labels(bin_mhz=ts).set(ts)
         monitor_bins.add(center_freq)
@@ -97,7 +98,7 @@ def call_record_signals(args, lastbins_history):
             args)
         recorder_count = len(recorder_freq_exclusions)
         record_signals = choose_record_signal(
-            signals, recorder_count, args.record_bw_mbps)
+            signals, recorder_count)
         for signal, recorder in choose_recorders(record_signals, recorder_freq_exclusions):
             signal_hz = int(signal * 1e6)
             record_bps = int(args.record_bw_mbps * (1024 * 1024))

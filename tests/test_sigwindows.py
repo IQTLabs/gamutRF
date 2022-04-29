@@ -112,13 +112,13 @@ class WindowsTestCase(unittest.TestCase):
 
     def test_choose_record_signal(self):
         # One signal, one recorder.
-        self.assertEqual([16], choose_record_signal([20], 1, 8))
+        self.assertEqual([16], choose_record_signal([16], 1))
         # One signal reported multiple times, two recorders, but we only need to record it once.
-        self.assertEqual([16], choose_record_signal([20, 20, 20, 20], 2, 8))
+        self.assertEqual([16], choose_record_signal([16, 16, 16, 16], 2))
         # One signal received less often, so record that, since we have only one recorder.
-        self.assertEqual([112], choose_record_signal([20, 20, 20, 20, 110], 1, 8))
+        self.assertEqual([110], choose_record_signal([20, 20, 20, 20, 110], 1))
         # We have two recorders so can afford to record the more common one as well.
-        self.assertEqual([112, 16], choose_record_signal([20, 20, 20, 20, 110], 2, 8))
+        self.assertEqual([110, 20], choose_record_signal([20, 20, 20, 20, 110], 2))
 
 
 if __name__ == '__main__':
