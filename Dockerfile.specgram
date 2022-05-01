@@ -5,5 +5,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3-pip && 
 COPY gamutrf/utils.py /root/gamutrf/utils.py
 COPY gamutrf/specgram.py /root/gamutrf/specgram.py
 ENV PYTHONPATH /root
-ENTRYPOINT ["/root/gamutrf/specgram.py"]
+ENTRYPOINT ["nice", "-n", "19", "/root/gamutrf/specgram.py"]
 CMD ["--help"]

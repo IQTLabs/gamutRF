@@ -12,5 +12,5 @@ COPY . /root/gamutrf
 WORKDIR /root/gamutrf
 RUN pip3 install .
 EXPOSE 8000
-ENTRYPOINT ["gamutrf-api"]
+ENTRYPOINT ["nice", "-n", "-19", "gamutrf-api"]
 CMD ["--help"]
