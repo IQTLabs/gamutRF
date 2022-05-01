@@ -14,7 +14,7 @@ services:
         # we would prefer "reservations", but this works only in "swarm" mode.
         # see https://github.com/docker/compose/pull/5684
         limits:
-          cpus: '0.8'
+          cpus: '0.5'
     command:
       - '--loop=10'
       - '--skip-exist'
