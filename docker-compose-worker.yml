@@ -37,7 +37,7 @@ services:
       - '${VOL_PREFIX}:/data'
     command:
       - --no-agc
-      - --rxb=83886080
+      - --rxb=62914560
   watchtower:
     image: containrrr/watchtower:latest
     restart: always
