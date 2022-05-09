@@ -26,8 +26,8 @@ def init_prom_vars():
         'last_bin_freq_time': Gauge('last_bin_freq_time', 'epoch time last signal in each bin', labelnames=('bin_mhz',)),
         'worker_record_request': Gauge('worker_record_request', 'record requests made to workers', labelnames=('worker',)),
         'freq_power': Gauge('freq_power', 'bin frequencies and db over time', labelnames=('bin_freq',)),
-        'new_bins': Counter('new_bins', 'frequencies of new bins', labelnames=('bin',)),
-        'old_bins': Counter('old_bins', 'frequencies of old bins', labelnames=('bin',)),
+        'new_bins': Counter('new_bins', 'frequencies of new bins', labelnames=('bin_freq',)),
+        'old_bins': Counter('old_bins', 'frequencies of old bins', labelnames=('bin_freq',)),
         'bin_freq_count': Counter('bin_freq_count', 'count of signals in each bin', labelnames=('bin_mhz',)),
         'frame_counter': Counter('frame_counter', 'number of frames processed'),
     }
@@ -40,10 +40,10 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
     old_bins_prom = prom_vars['old_bins']
     for freq in peak_dbs:
         freq_power.labels(bin_freq=freq[0]).set(freq[1])
-    for bin in new_bins:
-        new_bins_prom.labels(bin=bin).inc()
-    for bin in old_bins:
-        old_bins_prom.labels(bin=bin).inc()
+    for nbin in new_bins:
+        new_bins_prom.labels(bin_freq=nbin).inc()
+    for obin in old_bins:
+        old_bins_prom.labels(bin_freq=obin).inc()
 
 
 def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
