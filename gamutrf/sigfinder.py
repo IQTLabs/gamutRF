@@ -122,7 +122,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
             logging.info(f'{args.log} exists, will append first')
             mode = 'ab'
         else:
-            logging.info(f'reopening {args.log}')
+            logging.info(f'opening {args.log}')
             mode = 'wb'
         openlogts = int(time.time())
         with open(args.log, mode=mode) as l:
