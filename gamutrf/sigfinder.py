@@ -39,7 +39,7 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
     new_bins_prom = prom_vars['new_bins']
     old_bins_prom = prom_vars['old_bins']
     for freq in peak_dbs:
-        freq_power.labels(bin_freq=freq[0]).set(freq[1])
+        freq_power.labels(bin_freq=freq).set(peak_dbs[freq])
     for nbin in new_bins:
         new_bins_prom.labels(bin_freq=nbin).inc()
     for obin in old_bins:
