@@ -83,7 +83,7 @@ RECORDER_MAP = {
     'lime': LimeRecorder,
 }
 
-WORKER_NAME = os.getenv(WORKER_NAME, socket.gethostbyname(socket.gethostname()))
+WORKER_NAME = os.getenv('WORKER_NAME', socket.gethostbyname(socket.gethostname()))
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
