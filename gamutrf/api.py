@@ -4,7 +4,9 @@ import json
 import logging
 import os
 import queue
+import socket
 import subprocess
+import sys
 import threading
 import time
 
@@ -81,10 +83,15 @@ RECORDER_MAP = {
     'lime': LimeRecorder,
 }
 
+WORKER_NAME = os.getenv(WORKER_NAME, socket.gethostbyname(socket.gethostname()))
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--loglevel', '-l', help='Set logging level',
     choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
+parser.add_argument(
+    '--name', '-n', help='Name for the worker',
+    type=str, default=WORKER_NAME)
 parser.add_argument(
     '--path', '-P', help='Path prefix for writing out samples to',
     type=str, default='/data/gamutrf')
@@ -186,7 +193,9 @@ class API:
     def run_recorder(record_func, q):
         while True:
             record_args = q.get()
-            record_func(**record_args)
+            record_status = record_func(**record_args)
+            if record_status == -1:
+                sys.exit(1)
 
     # Convert I/Q sample recording to "gnuradio" I/Q format (float)
     # Default input format is signed, 16 bit I/Q (bladeRF-cli default)
