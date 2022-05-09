@@ -122,7 +122,7 @@ sdr_recorder = RECORDER_MAP[arguments.sdr]()
 level_int = {'CRITICAL': 50, 'ERROR': 40, 'WARNING': 30, 'INFO': 20,
              'DEBUG': 10}
 level = level_int.get(arguments.loglevel.upper(), 0)
-logging.basicConfig(level=level)
+logging.basicConfig(level=level, format='%(asctime)s %(message)s')
 
 
 class Endpoints:
