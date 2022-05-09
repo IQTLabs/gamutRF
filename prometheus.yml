@@ -1,0 +1,11 @@
+---
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+scrape_configs:
+  - job_name: 'gamutrf'
+    static_configs:
+      - targets: ['gamutrf:9001']
+  - job_name: 'sigfinder'
+    static_configs:
+      - targets: ['sigfinder:9002']

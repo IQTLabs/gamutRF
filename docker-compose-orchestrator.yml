@@ -42,6 +42,22 @@ services:
       - --recorder=http://rfworkerpi.finf:8000/
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
+  prometheus:
+    restart: always
+    image: 'prom/prometheus:v2.35.0'
+    ports:
+      - '9090:9090'
+    volumes:
+      - '${VOL_PREFIX}/opt/prometheus/:/prometheus'
+      - './prometheus.yml:/etc/prometheus/prometheus.yml'
+  grafana:
+    restart: always
+    image: 'grafana/grafana:8.5.2'
+    ports:
+      - '3000:3000'
+    volumes:
+      - '${VOL_PREFIX}/opt/grafana:/var/lib/grafana'
+      - '${VOL_PREFIX}/opt/grafana/provisioning:/etc/grafana/provisioning'
   watchtower:
     image: containrrr/watchtower:latest
     restart: always
