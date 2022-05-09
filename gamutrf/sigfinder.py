@@ -24,10 +24,26 @@ ROLLOVERHZ = 100e6
 def init_prom_vars():
     prom_vars = {
         'last_bin_freq_time': Gauge('last_bin_freq_time', 'epoch time last signal in each bin', labelnames=('bin_mhz',)),
+        'worker_record_request': Gauge('worker_record_request', 'record requests made to workers', labelnames=('worker',)),
+        'freq_power': Gauge('freq_power', 'bin frequencies and db over time', labelnames=('bin_freq',)),
+        'new_bins': Counter('new_bins', 'frequencies of new bins', labelnames=('bin',)),
+        'old_bins': Counter('old_bins', 'frequencies of old bins', labelnames=('bin',)),
         'bin_freq_count': Counter('bin_freq_count', 'count of signals in each bin', labelnames=('bin_mhz',)),
         'frame_counter': Counter('frame_counter', 'number of frames processed'),
     }
     return prom_vars
+
+
+def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
+    freq_power = prom_vars['freq_power']
+    new_bins_prom = prom_vars['new_bins']
+    old_bins_prom = prom_vars['old_bins']
+    for freq, db in peak_dbs:
+        freq_power.labels(bin_freq=freq).set(db)
+    for bin in new_bins:
+        new_bins_prom.labels(bin=bin).inc()
+    for bin in old_bins:
+        old_bins_prom.labels(bin=bin).inc()
 
 
 def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
@@ -62,6 +78,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
     old_bins = lastbins - monitor_bins
     if old_bins:
         logging.info('old bins: %s', sorted(old_bins))
+    update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars)
     return monitor_bins
 
 
@@ -105,8 +122,11 @@ def call_record_signals(args, lastbins_history):
             record_samples = int(
                 record_bps * args.record_secs)
             recorder_args = f'record/{signal_hz}/{record_samples}/{record_bps}'
-            recorder_req(
+            resp = recorder_req(
                 recorder, recorder_args, args.record_secs)
+            if resp:
+                worker_record_request = prom_vars['worker_record_request']
+                worker_record_request.labels(worker=recorder).set(signal_hz)
 
 
 def process_fft_lines(args, prom_vars, sock, ext):
