@@ -38,8 +38,8 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
     freq_power = prom_vars['freq_power']
     new_bins_prom = prom_vars['new_bins']
     old_bins_prom = prom_vars['old_bins']
-    for freq, db in peak_dbs:
-        freq_power.labels(bin_freq=freq).set(db)
+    for freq in peak_dbs:
+        freq_power.labels(bin_freq=freq[0]).set(freq[1])
     for bin in new_bins:
         new_bins_prom.labels(bin=bin).inc()
     for bin in old_bins:
@@ -106,7 +106,7 @@ def get_freq_exclusions(args):
     return recorder_freq_exclusions
 
 
-def call_record_signals(args, lastbins_history):
+def call_record_signals(args, lastbins_history, prom_vars):
     if lastbins_history:
         signals = []
         for bins in lastbins_history:
@@ -181,7 +181,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
                             lastbins_history = [lastbins] + lastbins_history
                             lastbins_history = lastbins_history[:args.history]
                         fftbuffer = []
-                        call_record_signals(args, lastbins_history)
+                        call_record_signals(args, lastbins_history, prom_vars)
                         if now - openlogts > args.rotatesecs:
                             rotatelognow = True
                 if rotatelognow:
