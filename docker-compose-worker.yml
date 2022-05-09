@@ -35,6 +35,8 @@ services:
       - /dev/bus/usb:/dev/bus/usb
     volumes:
       - '${VOL_PREFIX}:/data'
+    environment:
+      - 'WORKER_NAME=${WORKER_NAME}'
     command:
       - --no-agc
       - --rxb=62914560
