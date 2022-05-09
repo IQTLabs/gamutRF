@@ -45,6 +45,7 @@ services:
   prometheus:
     restart: always
     image: 'prom/prometheus:v2.35.0'
+    user: 'root'
     ports:
       - '9090:9090'
     volumes:
@@ -53,6 +54,7 @@ services:
   grafana:
     restart: always
     image: 'grafana/grafana:8.5.2'
+    user: 'root'
     ports:
       - '3000:3000'
     volumes:
