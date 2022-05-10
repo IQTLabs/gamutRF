@@ -5,8 +5,12 @@ import json
 import logging
 import os
 import socket
+import threading
 import time
 
+import bjoern
+import falcon
+import jinja2
 import pandas as pd
 from prometheus_client import start_http_server, Counter, Gauge
 import requests
@@ -19,6 +23,39 @@ from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import get_center
 
 ROLLOVERHZ = 100e6
+PEAK_DBS = {}
+
+
+def load_template(name):
+    path = os.path.join('templates', name)
+    with open(os.path.abspath(path), 'r') as fp:
+        return jinja2.Template(fp.read())
+
+
+class ActiveRequests:
+    def on_get(self, req, resp):
+        # TODO get active requests and provide a form to stop them (specifically for the case of repeat==-1)
+        resp.status = falcon.HTTP_200
+        resp.content_type = 'text/html'
+        resp.text = 'Not Implemented...yet.'
+
+
+class ScannerForm:
+    def on_get(self, req, resp):
+        template = load_template('scanner_form.html')
+        resp.status = falcon.HTTP_200
+        resp.content_type = 'text/html'
+        resp.text = template.render(bins=PEAK_DBS)
+
+
+class Result:
+    def on_post(self, req, resp):
+        # TODO validate input
+        # TODO make the worker request with the values
+        print(req.media)
+        resp.status = falcon.HTTP_200
+        resp.content_type = 'text/html'
+        resp.text = 'Ok!'
 
 
 def init_prom_vars():
@@ -47,6 +84,7 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
 
 
 def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
+    global PEAK_DBS
     tsc = time.ctime(ts)
     logging.info(f'new frame at {tsc}')
     df = pd.DataFrame(fftbuffer, columns=['ts', 'freq', 'db'])
@@ -72,6 +110,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         peak_dbs[center_freq] = peak_db
     logging.info('current bins %f to %f MHz: %s',
                  df['freq'].min(), df['freq'].max(), sorted(peak_dbs.items()))
+    PEAK_DBS = sorted(peak_dbs.items())
     new_bins = monitor_bins - lastbins
     if new_bins:
         logging.info('new bins: %s', sorted(new_bins))
@@ -239,7 +278,14 @@ def main():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
     prom_vars = init_prom_vars()
     start_http_server(args.promport)
-    find_signals(args, prom_vars)
+    x = threading.Thread(target=find_signals, args=(args, prom_vars,))
+    x.start()
+    app = falcon.App()
+    scanner_form = ScannerForm()
+    result = Result()
+    app.add_route('/', scanner_form)
+    app.add_route('/result', result)
+    bjoern.run(app, '0.0.0.0', 80)
 
 
 if __name__ == '__main__':

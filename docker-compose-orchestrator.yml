@@ -33,6 +33,7 @@ services:
     networks:
       - gamutrf
     ports:
+      - '80:80'
       - '9002:9000'
     volumes:
       - '${VOL_PREFIX}:/logs'

@@ -1,0 +1,9 @@
+<form action = "/result" method = "POST">
+   <p>Current signals: {{ bins }}</p><br />
+   <p>Make a request to record below:</p>
+   <p>Frequency <input type = "text" name = "frequency" /></p>
+   <p>Bandwidth in Mhz (20 max) <input type = "text" name = "bandwidth" /></p>
+   <p>Duration in seconds <input type = "text" name = "duration" /></p>
+   <p>Repeat (-1 to repeat forever) <input type ="text" name = "repeat" /></p>
+   <p><input type = "submit" value = "submit" /></p>
+</form>
