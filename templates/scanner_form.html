@@ -1,9 +1,12 @@
 <form action = "/result" method = "POST">
-   <p>Current signals: {{ bins }}</p><br />
+   <p>Current signals: </p>
+   {% for bin in bins %}
+   <p>{{ bin }}, {{ bins[bin] }}</p>
+   {% endfor %}
    <p>Make a request to record below:</p>
-   <p>Frequency <input type = "text" name = "frequency" /></p>
-   <p>Bandwidth in Mhz (20 max) <input type = "text" name = "bandwidth" /></p>
-   <p>Duration in seconds <input type = "text" name = "duration" /></p>
-   <p>Repeat (-1 to repeat forever) <input type ="text" name = "repeat" /></p>
-   <p><input type = "submit" value = "submit" /></p>
+   <p><input type="text" name="frequency"/> Frequency</p>
+   <p><input type="text" name="bandwidth" value="20"/> Bandwidth in Mhz (20 max)</p>
+   <p><input type="text" name="duration" value="10"/> Duration in seconds</p>
+   <p><input type="text" name="repeat" value="0"/> Repeat (-1 to repeat forever)</p>
+   <p><input type="submit" value="submit"/></p>
 </form>
