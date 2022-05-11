@@ -74,11 +74,11 @@ class Result:
                     resp.content_type = 'text/html'
                     resp.text = 'Ok!'
                 else:
-                    resp.status.falcon.HTTP_200
+                    resp.status = falcon.HTTP_200
                     resp.content_type = 'text/html'
                     resp.text = f'Request failed because: {response}'
         except Exception as e:
-            resp.status.falcon.HTTP_500
+            resp.status = falcon.HTTP_500
             resp.content_type = 'text/html'
             resp.text = f'{e}'
 
