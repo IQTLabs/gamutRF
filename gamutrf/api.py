@@ -13,6 +13,7 @@ import time
 import bjoern
 import falcon
 from falcon_cors import CORS
+import gpsd
 import sigmf
 
 from gamutrf.__init__ import __version__
@@ -84,6 +85,7 @@ RECORDER_MAP = {
 }
 
 WORKER_NAME = os.getenv('WORKER_NAME', socket.gethostbyname(socket.gethostname()))
+ORCHESTRATOR = os.getenv('ORCHESTRATOR', 'orchestrator')
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -149,9 +151,14 @@ class Info:
 
     @staticmethod
     def on_get(_req, resp):
+        gpsd.connect(host=ORCHESTRATOR, port=2947)
+        packet = gpsd.get_current()
         resp.text = json.dumps(
                 {'version': __version__, 'sdr': arguments.sdr,
-                    'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded})
+                    'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded,
+                    'position': packet.position(), 'time_local': packet.time_local(),
+                    'altitude': packet.altitude(), 'time_utc': packet.time_utc(),
+                    'map_url': packet.map_url()})
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
 
