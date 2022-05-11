@@ -87,8 +87,8 @@ def record(recorder, recorder_args, timeout):
     recorder_req(recorder, recorder_args, timeout)
 
 
-def run_threaded(job_func):
-    job_thread = threading.Thread(target=job_func)
+def run_threaded(job_func, recorder, recorder_args, timeout):
+    job_thread = threading.Thread(target=job_func, args=(recorder, recorder_args, timeout,))
     job_thread.start()
 
 
