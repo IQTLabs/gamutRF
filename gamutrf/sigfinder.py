@@ -14,6 +14,7 @@ import jinja2
 import pandas as pd
 from prometheus_client import start_http_server, Counter, Gauge
 import requests
+import schedule
 
 from gamutrf.sigwindows import calc_db
 from gamutrf.sigwindows import choose_record_signal
@@ -34,10 +35,10 @@ def load_template(name):
 
 class ActiveRequests:
     def on_get(self, req, resp):
-        # TODO get active requests and provide a form to stop them (specifically for the case of repeat==-1)
+        all_jobs = schedule.get_jobs()
         resp.status = falcon.HTTP_200
         resp.content_type = 'text/html'
-        resp.text = 'Not Implemented...yet.'
+        resp.text = f'{all_jobs}'
 
 
 class ScannerForm:
@@ -51,11 +52,44 @@ class ScannerForm:
 class Result:
     def on_post(self, req, resp):
         # TODO validate input
-        # TODO make the worker request with the values
-        print(req.media)
-        resp.status = falcon.HTTP_200
-        resp.content_type = 'text/html'
-        resp.text = 'Ok!'
+        try:
+            recorder = f'http://{req.media["worker"]}:8000/'
+            signal_hz = int(int(req.media['frequency']) * 1e6)
+            record_bps = int(int(req.media['bandwidth']) * (1024 * 1024))
+            record_samples = int(record_bps * int(req.media['duration']))
+            recorder_args = f'record/{signal_hz}/{record_samples}/{record_bps}'
+            timeout = int(req.media['duration'])
+            response = None
+            if int(req.media['repeat']) == -1:
+                schedule.every(timeout).seconds.do(run_threaded, record, recorder=recorder, recorder_args=recorder_args, timeout=timeout).tag(f'{recorder}{recorder_args}-{timeout}')
+                resp.status = falcon.HTTP_200
+                resp.content_type = 'text/html'
+                resp.text = 'Ok!'
+            else:
+                for i in range(int(req.media['repeat'])):
+                    response = recorder_req(recorder, recorder_args, timeout)
+                    time.sleep(timeout)
+                if response:
+                    resp.status = falcon.HTTP_200
+                    resp.content_type = 'text/html'
+                    resp.text = 'Ok!'
+                else:
+                    resp.status = falcon.HTTP_200
+                    resp.content_type = 'text/html'
+                    resp.text = f'Request failed because: {response}'
+        except Exception as e:
+            resp.status = falcon.HTTP_500
+            resp.content_type = 'text/html'
+            resp.text = f'{e}'
+
+
+def record(recorder, recorder_args, timeout):
+    recorder_req(recorder, recorder_args, timeout)
+
+
+def run_threaded(job_func):
+    job_thread = threading.Thread(target=job_func)
+    job_thread.start()
 
 
 def init_prom_vars():
@@ -227,6 +261,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
                     break
         new_log = args.log.replace(ext, f'{openlogts}{ext}')
         os.rename(args.log, new_log)
+        schedule.run_pending()
 
 
 def find_signals(args, prom_vars):
@@ -283,8 +318,10 @@ def main():
     app = falcon.App()
     scanner_form = ScannerForm()
     result = Result()
+    active_requests = ActiveRequests()
     app.add_route('/', scanner_form)
     app.add_route('/result', result)
+    app.addroute('/requests', active_requests)
     bjoern.run(app, '0.0.0.0', 80)
 
 
