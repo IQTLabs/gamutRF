@@ -8,4 +8,5 @@ pandas==1.4.2
 pbr==5.9.0
 prometheus_client==0.14.1
 requests==2.27.1
+schedule==1.1.0
 sigmf==1.0.0
