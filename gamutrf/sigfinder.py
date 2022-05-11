@@ -321,7 +321,7 @@ def main():
     active_requests = ActiveRequests()
     app.add_route('/', scanner_form)
     app.add_route('/result', result)
-    app.addroute('/requests', active_requests)
+    app.add_route('/requests', active_requests)
     bjoern.run(app, '0.0.0.0', 80)
 
 
