@@ -260,6 +260,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
                     break
         new_log = args.log.replace(ext, f'{openlogts}{ext}')
         os.rename(args.log, new_log)
+        schedule.run_pending()
 
 
 def find_signals(args, prom_vars):
