@@ -35,10 +35,10 @@ def load_template(name):
 
 class ActiveRequests:
     def on_get(self, req, resp):
-        # TODO get active requests and provide a form to stop them (specifically for the case of repeat==-1)
+        all_jobs = schedule.get_jobs()
         resp.status = falcon.HTTP_200
         resp.content_type = 'text/html'
-        resp.text = 'Not Implemented...yet.'
+        resp.text = f'{all_jobs}'
 
 
 class ScannerForm:
@@ -61,7 +61,7 @@ class Result:
             timeout = int(req.media['duration'])
             response = None
             if int(req.media['repeat']) == -1:
-                schedule.every(timeout).seconds.do(run_threaded, record, recorder=recorder, recorder_args=recorder_args, timeout=timeout)
+                schedule.every(timeout).seconds.do(run_threaded, record, recorder=recorder, recorder_args=recorder_args, timeout=timeout).tag(f'{recorder}{recorder_args}-{timeout}')
                 resp.status = falcon.HTTP_200
                 resp.content_type = 'text/html'
                 resp.text = 'Ok!'
@@ -317,8 +317,10 @@ def main():
     app = falcon.App()
     scanner_form = ScannerForm()
     result = Result()
+    active_requests = ActiveRequests()
     app.add_route('/', scanner_form)
     app.add_route('/result', result)
+    app.addroute('/requests', active_requests)
     bjoern.run(app, '0.0.0.0', 80)
 
 
