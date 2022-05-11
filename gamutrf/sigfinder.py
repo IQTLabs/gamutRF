@@ -150,7 +150,8 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         logging.info('new bins: %s', sorted(new_bins))
     old_bins = lastbins - monitor_bins
     if old_bins:
-
+        logging.info('old bins: %s', sorted(old_bins))
+    update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars)
     return monitor_bins
 
 
