@@ -220,6 +220,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
         openlogts = int(time.time())
         with open(args.log, mode=mode) as l:
             while True:
+                schedule.run_pending()
                 sock_txt, _ = sock.recvfrom(2048)
                 if not len(sock_txt):
                     return
@@ -261,7 +262,6 @@ def process_fft_lines(args, prom_vars, sock, ext):
                     break
         new_log = args.log.replace(ext, f'{openlogts}{ext}')
         os.rename(args.log, new_log)
-        schedule.run_pending()
 
 
 def find_signals(args, prom_vars):
