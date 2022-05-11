@@ -1,7 +1,7 @@
 <form action = "/result" method = "POST">
    <p>Current signals: </p>
    {% for bin in bins %}
-   <p>{{ bin }}, {{ bins[bin] }}</p>
+   <p>{{ bin[0] }}, {{ bin[1] }}</p>
    {% endfor %}
    <p>Make a request to record below:</p>
    <p><input type="text" name="frequency"/> Frequency</p>
