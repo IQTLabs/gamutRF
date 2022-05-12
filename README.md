@@ -8,6 +8,7 @@ An SDR orchestrated scanner.
 - Python3
 - pip3
 - git
+- gpsd and a GPS module on the orchestrator
 - [Docker](https://docs.docker.com/engine/install/ubuntu/)
 - docker-compose (`pip3 install docker-compose`)
 - UHD (if using Ettus):
@@ -58,7 +59,7 @@ Finally build and run the collection containers on each of the workers:
 ```
 git clone https://github.com/IQTLabs/gamutRF.git
 cd gamutRF
-VOL_PREFIX=/flash/ docker-compose -f docker-compose-worker.yml up -d
+VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 docker-compose -f docker-compose-worker.yml up -d
 ```
 
 # FAQ
