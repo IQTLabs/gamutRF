@@ -194,25 +194,26 @@ class API:
 
     @staticmethod
     def run_recorder(record_func, q):
-        try:
-            mqttc = mqtt.Client()
-            mqttc.connect(ORCHESTRATOR)
-            mqttc.loop_start()
-            gpsd.connect(host=ORCHESTRATOR, port=2947)
-            while True:
-                record_args = q.get()
-                record_status = record_func(**record_args)
-                if record_status == -1:
-                    # TODO this only kills the thread, not the main process
-                    sys.exit(1)
-                packet = gpsd.get_current()
-                record_args["position"] = packet.position()
-                record_args["altitude"] = packet.altitude()
-                record_args["time_epoch"] = packet.get_time().timestamp()
-                record_args["map_url"] = packet.map_url()
-                mqttc.publish("gamutrf/record", json.dumps(record_args))
-        except Exception as e:
-            logging.error(f'failed to record because: {e}')
+        while True:
+            try:
+                mqttc = mqtt.Client()
+                mqttc.connect(ORCHESTRATOR)
+                mqttc.loop_start()
+                gpsd.connect(host=ORCHESTRATOR, port=2947)
+                while True:
+                    record_args = q.get()
+                    record_status = record_func(**record_args)
+                    if record_status == -1:
+                        # TODO this only kills the thread, not the main process
+                        break
+                    packet = gpsd.get_current()
+                    record_args["position"] = packet.position()
+                    record_args["altitude"] = packet.altitude()
+                    record_args["time_epoch"] = packet.get_time().timestamp()
+                    record_args["map_url"] = packet.map_url()
+                    mqttc.publish("gamutrf/record", json.dumps(record_args))
+            except Exception as e:
+                logging.error(f'failed to record because: {e}')
 
     # Convert I/Q sample recording to "gnuradio" I/Q format (float)
     # Default input format is signed, 16 bit I/Q (bladeRF-cli default)
