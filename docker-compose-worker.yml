@@ -37,6 +37,7 @@ services:
       - '${VOL_PREFIX}:/data'
     environment:
       - 'WORKER_NAME=${WORKER_NAME}'
+      - 'ORCHESTRATOR=${ORCHESTRATOR}'
     command:
       - --no-agc
       - --rxb=62914560
