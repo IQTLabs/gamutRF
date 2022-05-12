@@ -14,6 +14,7 @@ import bjoern
 import falcon
 from falcon_cors import CORS
 import gpsd
+import paho.mqtt.client as mqtt            
 import sigmf
 
 from gamutrf.__init__ import __version__
@@ -151,14 +152,9 @@ class Info:
 
     @staticmethod
     def on_get(_req, resp):
-        gpsd.connect(host=ORCHESTRATOR, port=2947)
-        packet = gpsd.get_current()
         resp.text = json.dumps(
                 {'version': __version__, 'sdr': arguments.sdr,
-                    'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded,
-                    'position': packet.position(), 'time_local': packet.time_local(),
-                    'altitude': packet.altitude(), 'time_utc': packet.time_utc(),
-                    'map_url': packet.map_url()})
+                    'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded})
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
 
@@ -198,11 +194,22 @@ class API:
 
     @staticmethod
     def run_recorder(record_func, q):
+        mqttc = mqtt.Client()
+        mqttc.connect(ORCHESTRATOR)
+        mqttc.loop_start()
+        gpsd.connect(host=ORCHESTRATOR, port=2947)
         while True:
             record_args = q.get()
             record_status = record_func(**record_args)
             if record_status == -1:
                 sys.exit(1)
+            packet = gpsd.get_current()
+            record_args["position"] = packet_position()
+            record_args["time_local"] = packet.time_local()
+            record_args["altitude"] = packet.altitude()
+            record_args["time_utc"] = packet.time_utc()
+            record_args["map_url"] = packet.map_url()
+            mqttc.publish("gamutrf/record", json.dumps(record_args))
 
     # Convert I/Q sample recording to "gnuradio" I/Q format (float)
     # Default input format is signed, 16 bit I/Q (bladeRF-cli default)
