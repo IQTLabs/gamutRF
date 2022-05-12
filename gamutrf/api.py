@@ -14,7 +14,7 @@ import bjoern
 import falcon
 from falcon_cors import CORS
 import gpsd
-import paho.mqtt.client as mqtt            
+import paho.mqtt.client as mqtt
 import sigmf
 
 from gamutrf.__init__ import __version__
