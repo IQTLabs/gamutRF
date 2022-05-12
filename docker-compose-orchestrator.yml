@@ -2,6 +2,13 @@ version: "3.3"
 networks:
   gamutrf:
 services:
+  mqtt:
+    restart: always
+    image: iqtlabs/gamutrf-mqtt:latest
+    networks:
+      - gamutrf
+    ports:
+      - '1883:1883'
   gamutrf:
     restart: always
     image: iqtlabs/gamutrf:latest
