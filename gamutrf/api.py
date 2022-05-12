@@ -214,6 +214,7 @@ class API:
                     mqttc.publish("gamutrf/record", json.dumps(record_args))
             except Exception as e:
                 logging.error(f'failed to record because: {e}')
+            time.sleep(5)
 
     # Convert I/Q sample recording to "gnuradio" I/Q format (float)
     # Default input format is signed, 16 bit I/Q (bladeRF-cli default)
