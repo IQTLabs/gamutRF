@@ -204,7 +204,7 @@ class API:
             if record_status == -1:
                 sys.exit(1)
             packet = gpsd.get_current()
-            record_args["position"] = packet_position()
+            record_args["position"] = packet.position()
             record_args["time_local"] = packet.time_local()
             record_args["altitude"] = packet.altitude()
             record_args["time_utc"] = packet.time_utc()
