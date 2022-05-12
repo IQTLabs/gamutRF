@@ -21,5 +21,7 @@ jobs:
         docker run -t gamutrf-airspyfm:latest --help && \
         docker build -f Dockerfile.freqxlator . -t gamutrf-freqxlator:latest && \
         docker run -t gamutrf-freqxlator:latest --help
+        docker build -f Dockerfile.rssi . -t gamutrf-rssi:latest && \
+        docker run -t gamutrf-rssi:latest --help
         sudo apt-get update && sudo apt-get install -qy python3-pip && pip3 install docker-compose \
         docker-compose build

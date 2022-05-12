@@ -64,4 +64,8 @@ jobs:
           --platform linux/amd64,linux/arm64 \
           --push \
           -t iqtlabs/gamutrf-freqxlator:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.freqxlator .
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --push \
+          -t iqtlabs/gamutrf-rssi:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.rssi .
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
