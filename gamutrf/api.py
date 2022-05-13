@@ -5,6 +5,7 @@ import logging
 import os
 import queue
 import socket
+import struct
 import subprocess
 import sys
 import threading
@@ -13,6 +14,7 @@ import time
 import bjoern
 import falcon
 from falcon_cors import CORS
+from gnuradio import analog, blocks, gr, network, soapy
 import gpsd
 import paho.mqtt.client as mqtt
 import sigmf
@@ -20,6 +22,45 @@ import sigmf
 from gamutrf.__init__ import __version__
 from gamutrf.utils import ETTUS_ARGS, ETTUS_ANT
 from gamutrf.sigwindows import parse_freq_excluded, freq_excluded
+
+
+class BirdsEyeRSSI(gr.top_block):
+
+    def __init__(self, args, samp_rate, center_freq):
+        gr.top_block.__init__(self, 'BirdsEyeRSSI', catch_exceptions=True)
+
+        self.threshold = args.rssi_threshold
+        self.samp_rate = samp_rate
+        self.gain = args.gain
+        self.center_freq = center_freq
+
+        # TODO: support osmocom if needed
+        dev = f'driver={args.sdr}'
+        stream_args = ''
+        tune_args = ['']
+        settings = ['']
+        self.source_0 = soapy.source(dev, 'fc32', 1, '', stream_args, tune_args, settings)
+        self.source_0.set_sample_rate(0, self.samp_rate)
+        self.source_0.set_bandwidth(0, 0.0)
+        self.source_0.set_frequency(0, self.center_freq)
+        self.source_0.set_frequency_correction(0, 0)
+        self.source_0.set_gain(0, min(max(self.gain, -1.0), 60.0))
+
+        self.network_udp_sink_0 = network.udp_sink(gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 1472, False)
+        self.blocks_nlog10_ff_0 = blocks.nlog10_ff(1, 1, 0)
+        self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(10)
+        self.blocks_moving_average_xx_0 = blocks.moving_average_ff(256, 1, 4000, 1)
+        self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(1)
+        self.blocks_add_const_vxx_0 = blocks.add_const_ff(-60)
+        self.analog_pwr_squelch_xx_0 = analog.pwr_squelch_cc(self.threshold, 5e-4, 1000, True)
+
+        self.connect((self.analog_pwr_squelch_xx_0, 0), (self.blocks_complex_to_mag_squared_0, 0))
+        self.connect((self.blocks_add_const_vxx_0, 0), (self.network_udp_sink_0, 0))
+        self.connect((self.blocks_complex_to_mag_squared_0, 0), (self.blocks_moving_average_xx_0, 0))
+        self.connect((self.blocks_moving_average_xx_0, 0), (self.blocks_nlog10_ff_0, 0))
+        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.blocks_add_const_vxx_0, 0))
+        self.connect((self.blocks_nlog10_ff_0, 0), (self.blocks_multiply_const_vxx_0, 0))
+        self.connect((self.source_0, 0), (self.analog_pwr_squelch_xx_0, 0))
 
 
 class SDRRecorder:
@@ -85,6 +126,12 @@ RECORDER_MAP = {
     'lime': LimeRecorder,
 }
 
+FLOAT_SIZE = 4
+RSSI_UDP_ADDR = '127.0.0.1'
+RSSI_UDP_PORT = 2001
+MIN_RSSI = -100
+MAX_RSSI = 100
+
 WORKER_NAME = os.getenv('WORKER_NAME', socket.gethostbyname(socket.gethostname()))
 ORCHESTRATOR = os.getenv('ORCHESTRATOR', 'orchestrator')
 
@@ -116,12 +163,21 @@ parser.add_argument(
 parser.add_argument(
     '--qsize', help='Max request queue size',
     default=int(2), type=int)
+parser.add_argument('--mqtt_server', default=ORCHESTRATOR, type=str,
+                     help='MQTT server to report RSSI')
+parser.add_argument('--rssi_interval', default=1.0, type=float,
+                     help='rate limit in seconds for RSSI updates')
+parser.add_argument('--rssi_threshold', default=-45, type=float,
+                     help='RSSI reporting threshold')
 arg_parser = parser.add_mutually_exclusive_group(required=False)
 arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
 arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
 sigmf_parser = parser.add_mutually_exclusive_group(required=False)
 sigmf_parser.add_argument('--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
 sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
+rssi_parser = parser.add_mutually_exclusive_group(required=False)
+rssi_parser.add_argument('--rssi', dest='rssi', action='store_true', help='get RSSI values')
+rssi_parser.add_argument('--no-rssi', dest='rssi', action='store_false', help='do not get RSSI values')
 parser.set_defaults(feature=True)
 
 arguments = parser.parse_args()
@@ -192,26 +248,32 @@ class API:
         self.app = falcon.App(middleware=[cors.middleware])
         self.main()
 
-    @staticmethod
-    def run_recorder(record_func, q):
+    def run_recorder(self, record_func, q):
         while True:
             try:
-                mqttc = mqtt.Client()
-                mqttc.connect(ORCHESTRATOR)
-                mqttc.loop_start()
-                gpsd.connect(host=ORCHESTRATOR, port=2947)
-                while True:
+                if rssi:
+                    # TODO this is only get called the first time then be stuck in a loop, ignoring the rest of the queue
                     record_args = q.get()
-                    record_status = record_func(**record_args)
-                    if record_status == -1:
-                        # TODO this only kills the thread, not the main process
-                        break
-                    packet = gpsd.get_current()
-                    record_args["position"] = packet.position()
-                    record_args["altitude"] = packet.altitude()
-                    record_args["time_epoch"] = packet.get_time().timestamp()
-                    record_args["map_url"] = packet.map_url()
-                    mqttc.publish("gamutrf/record", json.dumps(record_args))
+                    rssi_server = BirdsEyeRSSI(arguments, record_args['sample_rate'], record_args['center_freq'])
+                    rssi_server.start()
+                    self.serve_rssi(arguments, record_args)
+                else:
+                    mqttc = mqtt.Client()
+                    mqttc.connect(arguments.mqtt)
+                    mqttc.loop_start()
+                    gpsd.connect(host=ORCHESTRATOR, port=2947)
+                    while True:
+                        record_args = q.get()
+                        record_status = record_func(**record_args)
+                        if record_status == -1:
+                            # TODO this only kills the thread, not the main process
+                            break
+                        packet = gpsd.get_current()
+                        record_args["position"] = packet.position()
+                        record_args["altitude"] = packet.altitude()
+                        record_args["gps_time"] = packet.get_time().timestamp()
+                        record_args["map_url"] = packet.map_url()
+                        mqttc.publish("gamutrf/record", json.dumps(record_args))
             except Exception as e:
                 logging.error(f'failed to record because: {e}')
             time.sleep(5)
@@ -256,6 +318,45 @@ class API:
             logging.debug('record failed: %s', err)
         logging.info('record status: %d', record_status)
         return record_status
+
+    @staticmethod
+    def report_rssi(record_args, reported_rssi, reported_time, gpsd, mqttc):
+        logging.info(f'reporting RSSI {reported_rssi}')
+        try:
+            packet = gpsd.get_current()
+            record_args["position"] = packet.position()
+            record_args["altitude"] = packet.altitude()
+            record_args["gps_time"] = packet.get_time().timestamp()
+            record_args["map_url"] = packet.map_url()
+            record_args["time"] = reported_time
+            record_args["rssi"] = reported_rssi
+            mqttc.publish('gamutrf/record', json.dumps(record_args))
+            mqttc.loop_stop()
+        except (ConnectionRefusedError, mqtt.WebsocketConnectionError, ValueError) as err:
+            logging.error(f'failed to report RSSI to MQQT: {err}')
+
+    def process_rssi(self, args, record_args, sock):
+        last_rssi_time = 0
+        mqttc = mqtt.Client()
+        mqttc.connect(args.mqtt)
+        mqttc.loop_start()
+        gpsd.connect(host=ORCHESTRATOR, port=2947)
+        while True:
+            rssi_raw, _ = sock.recvfrom(FLOAT_SIZE)
+            rssi = struct.unpack('f', rssi_raw)[0]
+            if rssi < MIN_RSSI or rssi > MAX_RSSI:
+                continue
+            now = time.time()
+            now_diff = now - last_rssi_time
+            if now_diff < args.rssi_interval:
+                continue
+            self.report_rssi(record_args, rssi, now, gpsd, mqttc)
+            last_rssi_time = now
+
+    def serve_rssi(self, args, record_args):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.bind((RSSI_UDP_ADDR, RSSI_UDP_PORT))
+            self.process_rssi(args, record_args, sock)
 
     @staticmethod
     def paths():
