@@ -101,7 +101,7 @@ def main():
                         help='gain in dB')
     parser.add_argument('--center_freq', default=int(5745000000), type=int,
                         help='center frequency in Hz')
-    parser.add_argument('--mqqt_server', default='127.0.0.01', type=str,
+    parser.add_argument('--mqqt_server', default='127.0.0.1', type=str,
                          help='MQQT server to report RSSI')
     parser.add_argument('--rssi_interval', default=1.0, type=float,
                          help='rate limit in seconds for RSSI updates')
