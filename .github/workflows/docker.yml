@@ -43,11 +43,11 @@ jobs:
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
-          -t iqtlabs/gamutrf-mqtt:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.mqtt .
+          -t iqtlabs/gamutrf-mqtt:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.mqtt . && \
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
-          -t iqtlabs/gamutrf-sigfinder:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.sigfinder .
+          -t iqtlabs/gamutrf-sigfinder:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.sigfinder . && \
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
@@ -59,13 +59,9 @@ jobs:
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
-          -t iqtlabs/gamutrf-airspyfm:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.airspyfm .
+          -t iqtlabs/gamutrf-airspyfm:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.airspyfm . && \
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
           -t iqtlabs/gamutrf-freqxlator:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.freqxlator .
-        docker buildx build \
-          --platform linux/amd64,linux/arm64 \
-          --push \
-          -t iqtlabs/gamutrf-rssi:${{ steps.change_version.outputs.VERSION }} -f Dockerfile.rssi .
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
