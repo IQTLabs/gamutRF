@@ -251,7 +251,7 @@ class API:
     def run_recorder(self, record_func, q):
         while True:
             try:
-                if rssi:
+                if arguments.rssi:
                     # TODO this is only get called the first time then be stuck in a loop, ignoring the rest of the queue
                     record_args = q.get()
                     rssi_server = BirdsEyeRSSI(arguments, record_args['sample_rate'], record_args['center_freq'])
