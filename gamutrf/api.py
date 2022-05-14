@@ -72,12 +72,14 @@ class SDRRecorder:
 class EttusRecorder(SDRRecorder):
 
     def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb):
+        # Ettus "nsamps" API has an internal limit, so translate "stream for druation".
+        duration = sample_count / sample_rate 
         return [
             '/usr/local/bin/mt_rx_samples_to_file',
             '--file', sample_file + '.zst',
             '--rate', str(sample_rate),
             '--bw', str(sample_rate),
-            '--nsamps', str(int(sample_count)),
+            '--duration', str(duration),
             '--freq', str(center_freq),
             '--gain', str(gain),
             '--args', ETTUS_ARGS,
@@ -277,14 +279,6 @@ class API:
             except Exception as e:
                 logging.error(f'failed to record because: {e}')
             time.sleep(5)
-
-    # Convert I/Q sample recording to "gnuradio" I/Q format (float)
-    # Default input format is signed, 16 bit I/Q (bladeRF-cli default)
-    @staticmethod
-    def raw2grraw(in_file, gr_file, sample_rate, in_file_bits=16, in_file_fmt='signed-integer'):
-        raw_args = ['-t', 'raw', '-r', str(sample_rate), '-c', str(1)]
-        return subprocess.check_call(
-            ['sox'] + raw_args + ['-b', str(in_file_bits), '-e', in_file_fmt, in_file] + raw_args + ['-e', 'float', gr_file])
 
     @staticmethod
     def record(center_freq, sample_count, sample_rate=20e6):
