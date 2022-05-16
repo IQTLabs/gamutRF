@@ -7,14 +7,13 @@ import queue
 import socket
 import struct
 import subprocess
-import sys
 import threading
 import time
 
 import bjoern
 import falcon
 from falcon_cors import CORS
-from gnuradio import analog, blocks, gr, network, soapy
+from gnuradio import analog, blocks, gr, network, soapy, uhd
 import gpsd
 import paho.mqtt.client as mqtt
 import sigmf
@@ -34,16 +33,32 @@ class BirdsEyeRSSI(gr.top_block):
         self.gain = args.gain
         self.center_freq = center_freq
 
-        # TODO: support osmocom if needed
         dev = f'driver={args.sdr}'
         stream_args = ''
         tune_args = ['']
         settings = ['']
-        self.source_0 = soapy.source(dev, 'fc32', 1, '', stream_args, tune_args, settings)
-        self.source_0.set_sample_rate(0, self.samp_rate)
-        self.source_0.set_bandwidth(0, 0.0)
-        self.source_0.set_frequency(0, self.center_freq)
-        self.source_0.set_frequency_correction(0, 0)
+
+        # TODO: use common code with grscan.py
+        if args.sdr == 'ettus':
+            self.source_0 = uhd.usrp_source(
+                    ','.join(('', '')),
+                    uhd.stream_args(
+                        cpu_format='fc32',
+                        args=ETTUS_ARGS,
+                        channels=list(range(0, 1)),
+                    ),
+            )
+            self.source_0.set_time_now(
+                uhd.time_spec(time.time()), uhd.ALL_MBOARDS)
+            self.source_0.set_antenna(ETTUS_ANT, 0)
+            self.source_0.set_samp_rate(self.samp_rate)
+        else:
+            self.source_0 = soapy.source(dev, 'fc32', 1, '', stream_args, tune_args, settings)
+            self.source_0.set_sample_rate(0, self.samp_rate)
+            self.source_0.set_bandwidth(0, 0.0)
+            self.source_0.set_frequency(0, self.center_freq)
+            self.source_0.set_frequency_correction(0, 0)
+
         self.source_0.set_gain(0, min(max(self.gain, -1.0), 60.0))
 
         self.network_udp_sink_0 = network.udp_sink(gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 1472, False)
@@ -73,7 +88,7 @@ class EttusRecorder(SDRRecorder):
 
     def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb):
         # Ettus "nsamps" API has an internal limit, so translate "stream for druation".
-        duration = sample_count / sample_rate 
+        duration = round(sample_count / sample_rate)
         return [
             '/usr/local/bin/mt_rx_samples_to_file',
             '--file', sample_file + '.zst',
@@ -133,6 +148,8 @@ RSSI_UDP_ADDR = '127.0.0.1'
 RSSI_UDP_PORT = 2001
 MIN_RSSI = -100
 MAX_RSSI = 100
+MIN_SAMPLE_RATE = int(1e6)
+MAX_SAMPLE_RATE = int(30 * 1e6)
 
 WORKER_NAME = os.getenv('WORKER_NAME', socket.gethostbyname(socket.gethostname()))
 ORCHESTRATOR = os.getenv('ORCHESTRATOR', 'orchestrator')
@@ -234,11 +251,20 @@ class Record:
         if freq_excluded(center_freq, parse_freq_excluded(arguments.freq_excluded)):
             resp.text = json.dumps({'status': 'Requested frequency is excluded'})
             return
+        if int(sample_rate) < MIN_SAMPLE_RATE or int(sample_rate) > MAX_SAMPLE_RATE:
+            resp.text = json.dumps({'status': f'sample rate {sample_rate} out of range {MIN_SAMPLE_RATE} to {MAX_SAMPLE_RATE}'})
+            return
+        duration_sec = int(sample_count) / int(sample_rate)
+        if duration_sec < 1:
+           resp.text = json.dumps({'status': 'cannot record for less than 1 second'})
+           return
         if q.full():
             resp.text = json.dumps({'status': 'Request queue is full'})
             return
-        q.put({'center_freq': center_freq,
-              'sample_count': sample_count, 'sample_rate': sample_rate})
+        q.put({
+            'center_freq': int(center_freq),
+            'sample_count': int(sample_count),
+            'sample_rate': int(sample_rate)})
         resp.text = json.dumps({'status': 'Requested recording'}, indent=2)
         resp.status = falcon.HTTP_200
 
@@ -248,36 +274,22 @@ class API:
     def __init__(self):
         cors = CORS(allow_all_origins=True)
         self.app = falcon.App(middleware=[cors.middleware])
+        self.mqttc = None
         self.main()
 
     def run_recorder(self, record_func, q):
+        logging.info('run recorder')
         while True:
-            try:
-                if arguments.rssi:
-                    # TODO this is only get called the first time then be stuck in a loop, ignoring the rest of the queue
-                    record_args = q.get()
-                    rssi_server = BirdsEyeRSSI(arguments, record_args['sample_rate'], record_args['center_freq'])
-                    rssi_server.start()
-                    self.serve_rssi(arguments, record_args)
-                else:
-                    mqttc = mqtt.Client()
-                    mqttc.connect(arguments.mqtt)
-                    mqttc.loop_start()
-                    gpsd.connect(host=ORCHESTRATOR, port=2947)
-                    while True:
-                        record_args = q.get()
-                        record_status = record_func(**record_args)
-                        if record_status == -1:
-                            # TODO this only kills the thread, not the main process
-                            break
-                        packet = gpsd.get_current()
-                        record_args["position"] = packet.position()
-                        record_args["altitude"] = packet.altitude()
-                        record_args["gps_time"] = packet.get_time().timestamp()
-                        record_args["map_url"] = packet.map_url()
-                        mqttc.publish("gamutrf/record", json.dumps(record_args))
-            except Exception as e:
-                logging.error(f'failed to record because: {e}')
+            if arguments.rssi:
+                # TODO: this is only get called the first time then be stuck in a loop, ignoring the rest of the queue
+                # TODO: may have to run in subprocess to avoid overruns.
+                record_args = q.get()
+                logging.info(f'got request {record_args}')
+                rssi_server = BirdsEyeRSSI(arguments, record_args['sample_rate'], record_args['center_freq'])
+                rssi_server.start()
+                self.serve_rssi(arguments, record_args)
+            else:
+                self.serve_recording(arguments, record_func, q)
             time.sleep(5)
 
     @staticmethod
@@ -313,28 +325,55 @@ class API:
         logging.info('record status: %d', record_status)
         return record_status
 
-    @staticmethod
-    def report_rssi(record_args, reported_rssi, reported_time, gpsd, mqttc):
-        logging.info(f'reporting RSSI {reported_rssi}')
+    def connect_mqtt(self, args):
+        if args.mqtt_server:
+            logging.info(f'connecting to {args.mqtt_server}')
+            self.mqttc = mqtt.Client()
+            self.mqttc.connect(args.mqtt_server)
+            self.mqttc.loop_start()
+            gpsd.connect(host=ORCHESTRATOR, port=2947)
+
+    def make_record_packet(self, record_args):
+        packet = gpsd.get_current()
+        record_args["position"] = packet.position()
+        record_args["altitude"] = packet.altitude()
+        record_args["gps_time"] = packet.get_time().timestamp()
+        record_args["map_url"] = packet.map_url()
+        return json.dumps(record_args)
+
+    def serve_recording(self, arguments, record_func, q):
+        logging.info('serving recordings')
         try:
-            packet = gpsd.get_current()
-            record_args["position"] = packet.position()
-            record_args["altitude"] = packet.altitude()
-            record_args["gps_time"] = packet.get_time().timestamp()
-            record_args["map_url"] = packet.map_url()
-            record_args["time"] = reported_time
-            record_args["rssi"] = reported_rssi
-            mqttc.publish('gamutrf/record', json.dumps(record_args))
-            mqttc.loop_stop()
+            self.connect_mqtt(arguments)
+            while True:
+                logging.info('awaiting request')
+                record_args = q.get()
+                logging.info(f'got a request: {record_args}')
+                record_status = record_func(**record_args)
+                if record_status == -1:
+                    # TODO this only kills the thread, not the main process
+                    break
+                if self.mqttc:
+                    record_args = self.make_record_packet(record_args)
+                    self.mqttc.publish("gamutrf/record", record_args)
+        except (ConnectionRefusedError, mqtt.WebsocketConnectionError, ValueError) as e:
+            logging.error(f'failed to report to MQTT {arguments.mqtt_server}: {e}')
+
+    def report_rssi(self, args, record_args, reported_rssi):
+        logging.info(f'reporting RSSI {reported_rssi}')
+        if not self.mqttc:
+            return
+        try:
+            self.connect_mqtt(args)
+            record_args = self.make_record_packet({'rssi': reported_rssi})
+            self.mqttc.publish('gamutrf/record', record_args)
+            self.mqttc.loop_stop()
         except (ConnectionRefusedError, mqtt.WebsocketConnectionError, ValueError) as err:
-            logging.error(f'failed to report RSSI to MQQT: {err}')
+            logging.error(f'failed to report RSSI to MQTT {arguments.mqtt_server}: {err}')
 
     def process_rssi(self, args, record_args, sock):
         last_rssi_time = 0
-        mqttc = mqtt.Client()
-        mqttc.connect(args.mqtt)
-        mqttc.loop_start()
-        gpsd.connect(host=ORCHESTRATOR, port=2947)
+        self.connect_mqtt(args)
         while True:
             rssi_raw, _ = sock.recvfrom(FLOAT_SIZE)
             rssi = struct.unpack('f', rssi_raw)[0]
@@ -344,10 +383,11 @@ class API:
             now_diff = now - last_rssi_time
             if now_diff < args.rssi_interval:
                 continue
-            self.report_rssi(record_args, rssi, now, gpsd, mqttc)
+            self.report_rssi(args, record_args, rssi)
             last_rssi_time = now
 
     def serve_rssi(self, args, record_args):
+        logging.info('serving RSSI')
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind((RSSI_UDP_ADDR, RSSI_UDP_PORT))
             self.process_rssi(args, record_args, sock)
@@ -369,13 +409,16 @@ class API:
         return dict(zip(p, funcs))
 
     def main(self):
+        logging.info('starting recorder thread')
         recorder_thread = threading.Thread(
             target=self.run_recorder, args=(self.record, q))
         recorder_thread.start()
 
+        logging.info('adding API routes')
         r = self.routes()
         for route in r:
             self.app.add_route(self.version()+route, r[route])
 
+        logging.info('starting API thread')
         bjoern.run(self.app, '0.0.0.0', arguments.port)
         recorder_thread.join()

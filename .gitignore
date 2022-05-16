@@ -134,3 +134,5 @@ dmypy.json
 # Temporary files
 *.swo
 *.swp
+
+\#*
