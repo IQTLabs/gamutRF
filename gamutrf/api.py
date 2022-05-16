@@ -365,7 +365,8 @@ class API:
             return
         try:
             self.connect_mqtt(args)
-            record_args = self.make_record_packet({'rssi': reported_rssi})
+            record_args['rssi'] = reported_rssi
+            record_args = self.make_record_packet(record_args)
             self.mqttc.publish('gamutrf/record', record_args)
             self.mqttc.loop_stop()
         except (ConnectionRefusedError, mqtt.WebsocketConnectionError, ValueError) as err:
