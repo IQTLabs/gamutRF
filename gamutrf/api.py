@@ -256,6 +256,7 @@ class API:
                 if arguments.rssi:
                     # TODO this is only get called the first time then be stuck in a loop, ignoring the rest of the queue
                     record_args = q.get()
+                    record_args["name"] = arguments.name
                     rssi_server = BirdsEyeRSSI(arguments, record_args['sample_rate'], record_args['center_freq'])
                     rssi_server.start()
                     self.serve_rssi(arguments, record_args)
@@ -266,6 +267,7 @@ class API:
                     gpsd.connect(host=ORCHESTRATOR, port=2947)
                     while True:
                         record_args = q.get()
+                        record_args["name"] = arguments.name
                         record_status = record_func(**record_args)
                         if record_status == -1:
                             # TODO this only kills the thread, not the main process
