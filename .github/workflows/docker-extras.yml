@@ -1,4 +1,4 @@
-name: buildx-api
+name: buildx-extras
 
 on:
   push:
