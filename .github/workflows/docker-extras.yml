@@ -1,0 +1,218 @@
+name: buildx-api
+
+on:
+  push:
+    branches: main
+    tags: 'v*'
+
+jobs:
+  buildx-mqtt:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+    - name: Change for main
+      id: change_version
+      run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
+    - name: Set up qemu
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: all
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Docker Login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+    - name: Build and push platforms
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: Dockerfile.mqtt
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-mqtt:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+  buildx-sigfinder:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+    - name: Change for main
+      id: change_version
+      run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
+    - name: Set up qemu
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: all
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Docker Login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+
+    - name: Build and push platforms
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: Dockerfile.sigfinder
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-sigfinder:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+  buildx-specgram:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+    - name: Change for main
+      id: change_version
+      run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
+    - name: Set up qemu
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: all
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Docker Login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+
+    - name: Build and push platforms
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: Dockerfile.specgram
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-specgram:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+  buildx-graph:
+    needs: [buildx-graph]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+    - name: Change for main
+      id: change_version
+      run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
+    - name: Set up qemu
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: all
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Docker Login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+
+    - name: Build and push platforms
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: Dockerfile.graph
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-graph:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+  buildx-airspyfm:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+    - name: Change for main
+      id: change_version
+      run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
+    - name: Set up qemu
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: all
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Docker Login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+
+    - name: Build and push platforms
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: Dockerfile.airspyfm
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-airspyfm:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+  buildx-freqxlator:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+    - name: Change for main
+      id: change_version
+      run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
+    - name: Set up qemu
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: all
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Docker Login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+
+    - name: Build and push platforms
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: Dockerfile.freqxlator
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-freqxlator:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
