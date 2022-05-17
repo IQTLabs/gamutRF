@@ -149,7 +149,6 @@ RECORDER_MAP = {
 FLOAT_SIZE = 4
 RSSI_UDP_ADDR = '127.0.0.1'
 RSSI_UDP_PORT = 2001
-MIN_RSSI = -100
 MAX_RSSI = 100
 MIN_SAMPLE_RATE = int(1e6)
 MAX_SAMPLE_RATE = int(30 * 1e6)
@@ -391,7 +390,9 @@ class API:
         while True:
             rssi_raw, _ = sock.recvfrom(FLOAT_SIZE)
             rssi = struct.unpack('f', rssi_raw)[0]
-            if rssi < MIN_RSSI or rssi > MAX_RSSI:
+            if rssi < args.rssi_threshold:
+                continue
+            if rssi > MAX_RSSI:
                 continue
             now = time.time()
             now_diff = now - last_rssi_time
