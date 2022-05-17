@@ -335,10 +335,18 @@ class API:
 
     def make_record_packet(self, record_args):
         packet = gpsd.get_current()
-        record_args["position"] = packet.position()
-        record_args["altitude"] = packet.altitude()
-        record_args["gps_time"] = packet.get_time().timestamp()
-        record_args["map_url"] = packet.map_url()
+        record_args["position"] = [0,0]
+        record_args["altitude"] = None
+        record_args["gps_time"] = None
+        record_args["map_url"] = None
+        try:
+            record_args["position"] = packet.position()
+            record_args["altitude"] = packet.altitude()
+            record_args["gps_time"] = packet.get_time().timestamp()
+            record_args["map_url"] = packet.map_url()
+            record_args["gps"] = "fix"
+        except NoFixError:
+            record_args["gps"] = "no fix"
         return json.dumps(record_args)
 
     def serve_recording(self, arguments, record_func, q):
@@ -359,13 +367,14 @@ class API:
         except (ConnectionRefusedError, mqtt.WebsocketConnectionError, ValueError) as e:
             logging.error(f'failed to report to MQTT {arguments.mqtt_server}: {e}')
 
-    def report_rssi(self, args, record_args, reported_rssi):
+    def report_rssi(self, args, record_args, reported_rssi, reported_time):
         logging.info(f'reporting RSSI {reported_rssi}')
         if not self.mqttc:
             return
         try:
             self.connect_mqtt(args)
             record_args['rssi'] = reported_rssi
+            record_args['time'] = reported_time
             record_args = self.make_record_packet(record_args)
             self.mqttc.publish('gamutrf/record', record_args)
             self.mqttc.loop_stop()
@@ -384,7 +393,7 @@ class API:
             now_diff = now - last_rssi_time
             if now_diff < args.rssi_interval:
                 continue
-            self.report_rssi(args, record_args, rssi)
+            self.report_rssi(args, record_args, rssi, now)
             last_rssi_time = now
 
     def serve_rssi(self, args, record_args):
