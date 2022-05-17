@@ -14,6 +14,7 @@ import bjoern
 import falcon
 from falcon_cors import CORS
 from gnuradio import analog, blocks, gr, network, soapy, uhd
+from gpsd import NoFixError
 import gpsd
 import paho.mqtt.client as mqtt
 import sigmf
