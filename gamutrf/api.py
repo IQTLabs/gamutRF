@@ -26,13 +26,14 @@ from gamutrf.sigwindows import parse_freq_excluded, freq_excluded
 
 class BirdsEyeRSSI(gr.top_block):
 
-    def __init__(self, args, samp_rate, center_freq):
+    def __init__(self, args, samp_rate, center_freq, send_throttle=1e3):
         gr.top_block.__init__(self, 'BirdsEyeRSSI', catch_exceptions=True)
 
         self.threshold = args.rssi_threshold
         self.samp_rate = samp_rate
         self.gain = args.gain
         self.center_freq = center_freq
+        self.send_throttle = send_throttle
 
         dev = f'driver={args.sdr}'
         stream_args = ''
@@ -62,6 +63,7 @@ class BirdsEyeRSSI(gr.top_block):
 
         self.source_0.set_gain(0, min(max(self.gain, -1.0), 60.0))
 
+        self.blocks_throttle_0 = blocks.throttle(gr.sizeof_float*1, self.send_throttle, True)
         self.network_udp_sink_0 = network.udp_sink(gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 1472, False)
         self.blocks_nlog10_ff_0 = blocks.nlog10_ff(1, 1, 0)
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(10)
@@ -71,7 +73,8 @@ class BirdsEyeRSSI(gr.top_block):
         self.analog_pwr_squelch_xx_0 = analog.pwr_squelch_cc(self.threshold, 5e-4, 1000, True)
 
         self.connect((self.analog_pwr_squelch_xx_0, 0), (self.blocks_complex_to_mag_squared_0, 0))
-        self.connect((self.blocks_add_const_vxx_0, 0), (self.network_udp_sink_0, 0))
+        self.connect((self.blocks_add_const_vxx_0, 0), (self.blocks_throttle_0, 0))
+        self.connect((self.blocks_throttle_0, 0), (self.network_udp_sink_0, 0))
         self.connect((self.blocks_complex_to_mag_squared_0, 0), (self.blocks_moving_average_xx_0, 0))
         self.connect((self.blocks_moving_average_xx_0, 0), (self.blocks_nlog10_ff_0, 0))
         self.connect((self.blocks_multiply_const_vxx_0, 0), (self.blocks_add_const_vxx_0, 0))
@@ -283,7 +286,6 @@ class API:
         while True:
             if arguments.rssi:
                 # TODO: this is only get called the first time then be stuck in a loop, ignoring the rest of the queue
-                # TODO: may have to run in subprocess to avoid overruns.
                 record_args = q.get()
                 logging.info(f'got request {record_args}')
                 rssi_server = BirdsEyeRSSI(arguments, record_args['sample_rate'], record_args['center_freq'])
