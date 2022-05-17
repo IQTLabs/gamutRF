@@ -285,7 +285,7 @@ class API:
         logging.info('run recorder')
         while True:
             if arguments.rssi:
-                # TODO: this is only get called the first time then be stuck in a loop, ignoring the rest of the queue
+                # TODO: this only gets called the first time then will be stuck in a loop, ignoring the rest of the queue
                 record_args = q.get()
                 logging.info(f'got request {record_args}')
                 rssi_server = BirdsEyeRSSI(arguments, record_args['sample_rate'], record_args['center_freq'])
@@ -359,6 +359,7 @@ class API:
             while True:
                 logging.info('awaiting request')
                 record_args = q.get()
+                record_args["name"] = arguments.name
                 logging.info(f'got a request: {record_args}')
                 record_status = record_func(**record_args)
                 if record_status == -1:
@@ -377,6 +378,7 @@ class API:
         try:
             self.connect_mqtt(args)
             record_args['rssi'] = reported_rssi
+            record_args["name"] = args.name
             record_args['time'] = reported_time
             record_args = self.make_record_packet(record_args)
             self.mqttc.publish('gamutrf/record', record_args)
