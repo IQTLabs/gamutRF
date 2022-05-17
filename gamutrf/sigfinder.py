@@ -66,6 +66,8 @@ class Result:
                 resp.content_type = 'text/html'
                 resp.text = 'Ok!'
             else:
+                response = recorder_req(recorder, recorder_args, timeout)
+                time.sleep(timeout)
                 for i in range(int(req.media['repeat'])):
                     response = recorder_req(recorder, recorder_args, timeout)
                     time.sleep(timeout)
@@ -76,7 +78,7 @@ class Result:
                 else:
                     resp.status = falcon.HTTP_200
                     resp.content_type = 'text/html'
-                    resp.text = f'Request failed because: {response}'
+                    resp.text = f'Request {recorder} {recorder_args} failed.'
         except Exception as e:
             resp.status = falcon.HTTP_500
             resp.content_type = 'text/html'
