@@ -372,7 +372,7 @@ class API:
             logging.error(f'failed to report to MQTT {arguments.mqtt_server}: {e}')
 
     def report_rssi(self, args, record_args, reported_rssi, reported_time):
-        logging.info(f'reporting RSSI {reported_rssi}')
+        logging.info(f'reporting RSSI {reported_rssi} for {record_args["center_freq"]}')
         if not self.mqttc:
             return
         try:
