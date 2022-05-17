@@ -43,10 +43,9 @@ class BirdsEyeRSSI(gr.top_block):
         # TODO: use common code with grscan.py
         if args.sdr == 'ettus':
             self.source_0 = uhd.usrp_source(
-                    ','.join(('', '')),
+                    ','.join(('', ETTUS_ARGS)),
                     uhd.stream_args(
                         cpu_format='fc32',
-                        args=ETTUS_ARGS,
                         channels=list(range(0, 1)),
                     ),
             )
