@@ -154,6 +154,7 @@ class API:
 
     def serve_recording(self, arguments, record_func, q):
         logging.info('serving recordings')
+        start_time = time.time()
         while True:
             logging.info('awaiting request')
             record_args = q.get()
@@ -163,16 +164,21 @@ class API:
                 # TODO this only kills the thread, not the main process
                 break
             self.mqtt_reporter.publish('gamutrf/record', record_args)
+            with open(os.path.join(arguments.path, f'mqtt-record-{start_time}.log'), 'a') as f:
+                f.write(f'{json.dumps(record_args)}\n')
 
-    def report_rssi(self, args, record_args, reported_rssi, reported_time):
+    def report_rssi(self, args, record_args, reported_rssi, reported_time, start_time):
         logging.info(f'reporting RSSI {reported_rssi} for {record_args["center_freq"]}')
         record_args.update({
             'rssi': reported_rssi,
             'time': reported_time})
         self.mqtt_reporter.publish('gamutrf/rssi', record_args)
+        with open(os.path.join(args.path, f'mqtt-rssi-{start_time}.log'), 'a') as f:
+            f.write(f'{json.dumps(record_args)}\n')
 
     def process_rssi(self, args, record_args, sock):
         last_rssi_time = 0
+        start_time = time.time()
         while True:
             rssi_raw, _ = sock.recvfrom(FLOAT_SIZE)
             rssi = struct.unpack('f', rssi_raw)[0]
@@ -184,7 +190,7 @@ class API:
             now_diff = now - last_rssi_time
             if now_diff < args.rssi_interval:
                 continue
-            self.report_rssi(args, record_args, rssi, now)
+            self.report_rssi(args, record_args, rssi, now, start_time)
             last_rssi_time = now
 
     def serve_rssi(self, args, record_args):
