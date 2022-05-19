@@ -38,6 +38,7 @@ services:
     environment:
       - 'WORKER_NAME=${WORKER_NAME}'
       - 'ORCHESTRATOR=${ORCHESTRATOR}'
+      - 'ANTENNA=${ANTENNA}'
     command:
       - --no-agc
       - --rxb=62914560

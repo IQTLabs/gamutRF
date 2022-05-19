@@ -65,8 +65,8 @@ sigmf_parser = parser.add_mutually_exclusive_group(required=False)
 sigmf_parser.add_argument('--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
 sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
 rssi_parser = parser.add_mutually_exclusive_group(required=False)
-rssi_parser.add_argument('--rssi', dest='rssi', action='store_true', help='get RSSI values')
-rssi_parser.add_argument('--no-rssi', dest='rssi', action='store_false', help='do not get RSSI values')
+rssi_parser.add_argument('--rssi', dest='enable_rssi', action='store_true', help='get RSSI values')
+rssi_parser.add_argument('--no-rssi', dest='enable_rssi', action='store_false', help='do not get RSSI values')
 
 arguments = parser.parse_args()
 q = queue.Queue(arguments.qsize)
@@ -139,7 +139,7 @@ class API:
     def run_recorder(self, record_func, q):
         logging.info('run recorder')
         while True:
-            if arguments.rssi:
+            if arguments.enable_rssi:
                 # TODO: this only gets called the first time then will be stuck in a loop, ignoring the rest of the queue
                 record_args = q.get()
                 logging.info(f'got request {record_args}')
