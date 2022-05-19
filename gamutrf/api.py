@@ -67,7 +67,6 @@ sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help
 rssi_parser = parser.add_mutually_exclusive_group(required=False)
 rssi_parser.add_argument('--rssi', dest='rssi', action='store_true', help='get RSSI values')
 rssi_parser.add_argument('--no-rssi', dest='rssi', action='store_false', help='do not get RSSI values')
-parser.set_defaults(feature=True)
 
 arguments = parser.parse_args()
 q = queue.Queue(arguments.qsize)
@@ -167,7 +166,7 @@ class API:
             if record_status == -1:
                 # TODO this only kills the thread, not the main process
                 break
-            record_args.update(arguments)
+            record_args.update(vars(arguments))
             self.mqtt_reporter.publish('gamutrf/record', record_args)
             with open(os.path.join(arguments.path, f'mqtt-record-{start_time}.log'), 'a') as f:
                 f.write(f'{json.dumps(record_args)}\n')
@@ -177,7 +176,7 @@ class API:
         record_args.update({
             'rssi': reported_rssi,
             'time': reported_time})
-        record_args.update(args)
+        record_args.update(vars(args))
         self.mqtt_reporter.publish('gamutrf/rssi', record_args)
         with open(os.path.join(args.path, f'mqtt-rssi-{start_time}.log'), 'a') as f:
             f.write(f'{json.dumps(record_args)}\n')
