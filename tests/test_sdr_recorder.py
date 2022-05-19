@@ -24,6 +24,8 @@ class SDRRecorderTestCase(unittest.TestCase):
             self.assertTrue(os.path.exists(sample_file))
             self.assertGreater(os.path.getsize(sample_file), 0)
             self.assertTrue(os.path.exists(sample_file + '.sigmf-meta'))
+            self.assertNotEqual(None, sdr_recorder.validate_request([], 1e6, 0, 0))
+            self.assertEqual(None, sdr_recorder.validate_request([], 1e6, 1e6, 1e6))
             sdr_recorder.tmpdir.cleanup()
 
 
