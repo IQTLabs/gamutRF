@@ -64,9 +64,10 @@ class grscan(gr.top_block):
         self.source = None
         if sdr == 'ettus':
             self.source = uhd.usrp_source(
-                ','.join(('', ettusargs)),
+                ','.join((ettusargs, '')),
                 uhd.stream_args(
                     cpu_format='fc32',
+                    args='',
                     channels=list(range(0, 1)),
                 ),
             )
