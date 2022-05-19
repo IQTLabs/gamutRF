@@ -63,7 +63,7 @@ services:
       - './prometheus.yml:/etc/prometheus/prometheus.yml'
   grafana:
     restart: always
-    image: 'grafana/grafana:8.5.2'
+    image: 'grafana/grafana:8.5.3'
     user: 'root'
     networks:
       - gamutrf
