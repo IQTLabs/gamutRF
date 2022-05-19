@@ -173,7 +173,7 @@ class API:
             'rssi': reported_rssi,
             'time': reported_time})
         self.mqtt_reporter.publish('gamutrf/rssi', record_args)
-        with open(os.path.join(arguments.path, f'mqtt-rssi-{start_time}.log'), 'a') as f:
+        with open(os.path.join(args.path, f'mqtt-rssi-{start_time}.log'), 'a') as f:
             f.write(f'{json.dumps(record_args)}\n')
 
     def process_rssi(self, args, record_args, sock):
