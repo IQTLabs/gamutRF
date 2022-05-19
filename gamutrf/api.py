@@ -19,11 +19,15 @@ from gamutrf.mqtt_reporter import MQTTReporter
 
 WORKER_NAME = os.getenv('WORKER_NAME', socket.gethostbyname(socket.gethostname()))
 ORCHESTRATOR = os.getenv('ORCHESTRATOR', 'orchestrator')
+ANTENNA = os.getenv('ANTENNA', '')
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--loglevel', '-l', help='Set logging level',
     choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
+parser.add_argument(
+    '--antenna', '-a', help='Antenna make/model',
+    type=str, default=ANTENNA)
 parser.add_argument(
     '--name', '-n', help='Name for the worker',
     type=str, default=WORKER_NAME)
