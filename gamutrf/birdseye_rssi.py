@@ -1,4 +1,3 @@
-import logging
 import time
 from gnuradio import analog, blocks, gr, network, soapy, uhd
 from gamutrf.utils import ETTUS_ARGS, ETTUS_ANT

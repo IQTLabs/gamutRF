@@ -23,7 +23,8 @@ class SDRRecorder:
         self.zst_fifo = os.path.join(self.tmpdir.name, 'zstfifo')
         os.mkfifo(self.zst_fifo)
 
-    def validate_request(self, freqs_excluded, center_freq, sample_count, sample_rate):
+    @staticmethod
+    def validate_request(freqs_excluded, center_freq, sample_count, sample_rate):
         for arg in [center_freq, sample_count, sample_rate]:
             try:
                 int(float(arg))
@@ -38,7 +39,8 @@ class SDRRecorder:
             return 'cannot record for less than 1 second'
         return None
 
-    def get_sample_file(self, path, epoch_time, center_freq, sample_rate):
+    @staticmethod
+    def get_sample_file(path, epoch_time, center_freq, sample_rate):
         return os.path.join(
             path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.{SAMPLE_TYPE}.zst')
 
