@@ -13,7 +13,7 @@ jobs:
         sudo pip3 install -r requirements.txt -r scan-requirements.txt -r tests/requirements.txt -r specgram-requirements.txt && \
         pip3 install codecov && \
         export PYTHONPATH=$PWD/gamutrf:$PYTHONPATH && \
-        pylint --fail-under=6 *py tests/*py gamutrf/*py && pytype && \
+        pylint --fail-under=5 *py tests/*py gamutrf/*py && pytype && \
         PATH=/home/runner/.local/bin:$PATH py.test -v -vv --cov-report term-missing --cov=. --cov=gamutrf -c .coveragerc && \
         PATH=/home/runner/.local/bin:$PATH coverage report && \
         PATH=/home/runner/.local/bin:$PATH coverage xml
