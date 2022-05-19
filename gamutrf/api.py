@@ -153,7 +153,7 @@ class API:
     @staticmethod
     def record(center_freq, sample_count, sample_rate=20e6):
         return sdr_recorder.run_recording(
-            arguments.path, sample_rate, sample_count, center_freq, arguments.gain, arguments.agc, arguments.rxb, arguments.sigmf)
+            arguments.path, sample_rate, sample_count, center_freq, arguments.gain, arguments.agc, arguments.rxb, arguments.sigmf, arguments.sdr, arguments.antenna)
 
     def serve_recording(self, arguments, record_func, q):
         logging.info('serving recordings')

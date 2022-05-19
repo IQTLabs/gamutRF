@@ -40,9 +40,9 @@ class SDRRecorder:
         return None
 
     @staticmethod
-    def get_sample_file(path, epoch_time, center_freq, sample_rate):
+    def get_sample_file(path, epoch_time, center_freq, sample_rate, sdr, antenna, gain):
         return os.path.join(
-            path, f'gamutrf_recording{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.{SAMPLE_TYPE}.zst')
+            path, f'gamutrf_recording_{sdr}_{antenna}_gain{gain}_{epoch_time}_{int(center_freq)}Hz_{int(sample_rate)}sps.{SAMPLE_TYPE}.zst')
 
     def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb):
         raise NotImplementedError
@@ -60,10 +60,10 @@ class SDRRecorder:
             os.rename(dotfile, sample_file)
         return record_status
 
-    def run_recording(self, path, sample_rate, sample_count, center_freq, gain, agc, rxb, sigmf_):
+    def run_recording(self, path, sample_rate, sample_count, center_freq, gain, agc, rxb, sigmf_, sdr, antenna):
         epoch_time = str(int(time.time()))
         meta_time = datetime.datetime.utcnow().isoformat() + 'Z'
-        sample_file = self.get_sample_file(path, epoch_time, center_freq, sample_rate)
+        sample_file = self.get_sample_file(path, epoch_time, center_freq, sample_rate, sdr, antenna, gain)
         record_status = -1
         try:
             record_status = self.write_recording(
