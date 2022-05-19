@@ -24,7 +24,7 @@ class MQTTReporter:
 
     def add_gps(self, publish_args):
         if not self.gps_server:
-            return
+            return publish_args
         publish_args.update({
             'position': [0, 0],
             'altitude': None,
