@@ -163,6 +163,7 @@ class API:
             if record_status == -1:
                 # TODO this only kills the thread, not the main process
                 break
+            record_args.update(arguments)
             self.mqtt_reporter.publish('gamutrf/record', record_args)
             with open(os.path.join(arguments.path, f'mqtt-record-{start_time}.log'), 'a') as f:
                 f.write(f'{json.dumps(record_args)}\n')
@@ -172,6 +173,7 @@ class API:
         record_args.update({
             'rssi': reported_rssi,
             'time': reported_time})
+        record_args.update(args)
         self.mqtt_reporter.publish('gamutrf/rssi', record_args)
         with open(os.path.join(args.path, f'mqtt-rssi-{start_time}.log'), 'a') as f:
             f.write(f'{json.dumps(record_args)}\n')
