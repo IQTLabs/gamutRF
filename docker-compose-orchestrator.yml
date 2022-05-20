@@ -50,6 +50,14 @@ services:
       - --recorder=http://rfworkerpi.finf:8000/
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
+  birdseye:
+    restart: always
+    image: iqtlabs/birdseye:latest
+    network_mode: host
+    volumes:
+      - '${VOL_PREFIX}:/BirdsEye/runs'
+    command:
+      - sigscan.py
   prometheus:
     restart: always
     image: 'prom/prometheus:v2.35.0'
