@@ -1,0 +1,12 @@
+FROM iqtlabs/gamutrf:latest as gamutrf-builder
+RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
+    apt-get -y --no-install-recommends install build-essential cmake g++ gcc git libboost-all-dev libusb-1.0-0-dev libusb-1.0-0 zlib1g-dev make libev-dev zlib1g pkg-config python3-numpy libuhd-dev libjpeg-dev zstd uhd-host && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /data/gamutrf
+COPY requirements.txt /root/requirements.txt
+RUN pip3 install -r /root/requirements.txt
+COPY . /root/gamutrf
+WORKDIR /root/gamutrf
+RUN pip3 install .
+EXPOSE 8000
+ENTRYPOINT ["nice", "-n", "-19", "gamutrf-compass"]
+CMD [""]
