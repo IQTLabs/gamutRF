@@ -14,6 +14,7 @@ class BirdsEyeRSSI(gr.top_block):
         gr.top_block.__init__(self, 'BirdsEyeRSSI', catch_exceptions=True)
 
         self.threshold = args.rssi_threshold
+        self.mean_window = args.mean_window
         self.samp_rate = samp_rate
         self.gain = args.gain
         self.center_freq = center_freq
@@ -45,7 +46,7 @@ class BirdsEyeRSSI(gr.top_block):
             self.source_0.set_bandwidth(0, 0.0)
             self.source_0.set_frequency(0, self.center_freq)
             self.source_0.set_frequency_correction(0, 0)
-            self.source_0.set_gain_mode(agc, 0)
+            self.source_0.set_gain_mode(0, agc)
 
         self.source_0.set_gain(0, min(max(self.gain, -1.0), 60.0))
 
@@ -53,7 +54,7 @@ class BirdsEyeRSSI(gr.top_block):
         self.network_udp_sink_0 = network.udp_sink(gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 1472, False)
         self.blocks_nlog10_ff_0 = blocks.nlog10_ff(1, 1, 0)
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(10)
-        self.blocks_moving_average_xx_0 = blocks.moving_average_ff(256, 1, 4000, 1)
+        self.blocks_moving_average_xx_0 = blocks.moving_average_ff(self.mean_window, 1, 4000, 1)
         self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(1)
         self.blocks_add_const_vxx_0 = blocks.add_const_ff(-60)
         self.analog_pwr_squelch_xx_0 = analog.pwr_squelch_cc(self.threshold, 5e-4, 1000, True)
