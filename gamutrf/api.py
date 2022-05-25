@@ -136,7 +136,7 @@ class API:
     def __init__(self):
         cors = CORS(allow_all_origins=True)
         self.app = falcon.App(middleware=[cors.middleware])
-        self.mqtt_reporter = MQTTReporter(arguments.name, arguments.mqtt_server, ORCHESTRATOR)
+        self.mqtt_reporter = MQTTReporter(arguments.name, arguments.mqtt_server, ORCHESTRATOR, True)
         self.main()
 
     def run_recorder(self, record_func, q):
