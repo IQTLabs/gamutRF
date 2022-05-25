@@ -16,6 +16,8 @@ class MQTTReporter:
         self.gps_server = gps_server
         self.mqttc = None
         self.bearing = 'no bearing'
+        self.bus = smbus2.SMBus(1)
+        self.address = 0x0d
 
     def connect(self):
         logging.info(f'connecting to {self.mqtt_server}')
@@ -26,8 +28,6 @@ class MQTTReporter:
             gpsd.connect(host=self.gps_server, port=2947)
 
     def get_bearing(self):
-        bus = smbus2.SMBus(1)
-        address = 0x0d
         self.write_byte(11, 0b00000001)
         self.write_byte(10, 0b00100000)
         self.write_byte(9, 0xD)
@@ -36,17 +36,17 @@ class MQTTReporter:
         y_offset = 10
         x_out = (self.read_word_2c(0)- x_offset+2) * scale  # calculating x,y,z coordinates
         y_out = (self.read_word_2c(2)- y_offset+2)* scale
-        z_out = self.read_word_2c(4) * scale
+        #z_out = self.read_word_2c(4) * scale
         self.bearing = math.atan2(y_out, x_out)+.48  # 0.48 is correction value
         if(self.bearing < 0):
             self.bearing += 2* math.pi
 
     def read_byte(self, adr): # communicate with compass
-        return bus.read_byte_data(address, adr)
+        return self.bus.read_byte_data(self.address, adr)
 
     def read_word(self, adr):
-        low = bus.read_byte_data(address, adr)
-        high = bus.read_byte_data(address, adr+1)
+        low = self.bus.read_byte_data(self.address, adr)
+        high = self.bus.read_byte_data(self.address, adr+1)
         val = (high<< 8) + low
         return val
 
@@ -58,7 +58,7 @@ class MQTTReporter:
             return val
 
     def write_byte(self, adr, value):
-        bus.write_byte_data(address, adr, value)
+        self.bus.write_byte_data(self.address, adr, value)
 
     def add_gps(self, publish_args):
         if not self.gps_server:
