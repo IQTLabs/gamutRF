@@ -58,7 +58,9 @@ parser.add_argument(
 parser.add_argument('--mqtt_server', default=ORCHESTRATOR, type=str,
                      help='MQTT server to report RSSI')
 parser.add_argument('--rssi_interval', default=1.0, type=float,
-                     help='rate limit in seconds for RSSI updates')
+                     help='rate limit in seconds for RSSI updates to MQTT')
+parser.add_argument('--rssi_throttle', default=10, type=int,
+                     help='rate limit RSSI calculations to 1 in n')
 parser.add_argument('--rssi_threshold', default=-45, type=float,
                      help='RSSI reporting threshold')
 arg_parser = parser.add_mutually_exclusive_group(required=False)
@@ -146,7 +148,9 @@ class API:
                 # TODO: this only gets called the first time then will be stuck in a loop, ignoring the rest of the queue
                 record_args = q.get()
                 logging.info(f'got request {record_args}')
-                rssi_server = BirdsEyeRSSI(arguments, record_args['sample_rate'], record_args['center_freq'], agc=arguments.agc)
+                rssi_server = BirdsEyeRSSI(
+                    arguments, record_args['sample_rate'], record_args['center_freq'],
+                    agc=arguments.agc, rssi_throttle=arguments.rssi_throttle)
                 rssi_server.start()
                 self.serve_rssi(arguments, record_args)
             else:
