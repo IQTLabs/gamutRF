@@ -57,7 +57,7 @@ class BirdsEyeRSSI(gr.top_block):
         self.blocks_moving_average_xx_0 = blocks.moving_average_ff(self.mean_window, 1, 4000, 1)
         self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(1)
         self.blocks_add_const_vxx_0 = blocks.add_const_ff(-60)
-        self.analog_pwr_squelch_xx_0 = analog.pwr_squelch_cc(self.threshold, 5e-4, 1000, True)
+        self.analog_pwr_squelch_xx_0 = analog.pwr_squelch_cc(-95, 5e-4, 1000, True)
 
         self.connect((self.analog_pwr_squelch_xx_0, 0), (self.blocks_complex_to_mag_squared_0, 0))
         self.connect((self.blocks_add_const_vxx_0, 0), (self.blocks_throttle_0, 0))
