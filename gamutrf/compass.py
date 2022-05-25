@@ -81,4 +81,3 @@ class CompassAPI:
 
         logging.info('starting API thread')
         bjoern.run(self.app, '0.0.0.0', 8000)
-        recorder_thread.join()
