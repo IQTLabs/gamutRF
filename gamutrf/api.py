@@ -47,6 +47,9 @@ parser.add_argument(
     '--gain', '-g', help='Gain in dB',
     default=30, type=int)
 parser.add_argument(
+    '--mean_window', '-m', help='birdseye mean window size',
+    default=128, type=int)
+parser.add_argument(
     '--rxb', help='Receive buffer size',
     default=int(1024 * 1024 * 10), type=int)
 parser.add_argument(
