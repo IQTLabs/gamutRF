@@ -2,6 +2,13 @@ version: "3.3"
 networks:
   gamutrf:
 services:
+  gamutrf-compass:
+    restart: always
+    image: iqtlabs/gamutrf-compass:latest
+    networks:
+      - gamutrf
+    ports:
+      - '8000:8000'
   mqtt:
     restart: always
     image: iqtlabs/gamutrf-mqtt:latest
