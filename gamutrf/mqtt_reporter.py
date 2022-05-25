@@ -16,8 +16,11 @@ class MQTTReporter:
         self.gps_server = gps_server
         self.mqttc = None
         self.bearing = 'no bearing'
-        self.bus = smbus2.SMBus(1)
         self.address = 0x0d
+        if compass:
+            self.bus = smbus2.SMBus(1)
+        else:
+            self.bus = None
 
     def connect(self):
         logging.info(f'connecting to {self.mqtt_server}')
