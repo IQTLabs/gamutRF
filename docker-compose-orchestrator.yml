@@ -67,7 +67,7 @@ services:
       - sigscan.py
   prometheus:
     restart: always
-    image: 'prom/prometheus:v2.35.0'
+    image: 'prom/prometheus:v2.36.0'
     user: 'root'
     networks:
       - gamutrf
