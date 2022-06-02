@@ -30,6 +30,9 @@ class FakeSock:
             self.txt = ''.encode('utf8')
         return result
 
+    def settimeout(self, _):
+        return
+
 
 class SigFinderTestCase(unittest.TestCase):
 
