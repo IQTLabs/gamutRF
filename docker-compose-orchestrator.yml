@@ -2,11 +2,13 @@ version: "3.3"
 networks:
   gamutrf:
 services:
-  gamutrf-compass:
+  compass:
     restart: always
     image: iqtlabs/gamutrf-compass:latest
     networks:
       - gamutrf
+    cap_add:
+      - SYS_NICE
     ports:
       - '8000:8000'
   mqtt:
@@ -54,7 +56,6 @@ services:
     command:
       - --logaddr=sigfinder
       - --log=/logs/scan.csv
-      - --recorder=http://rfworkerpi.finf:8000/
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
   birdseye:
