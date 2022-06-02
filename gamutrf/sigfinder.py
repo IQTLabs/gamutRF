@@ -23,8 +23,23 @@ from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import get_center
 
+SOCKET_TIMEOUT = 1.0
 ROLLOVERHZ = 100e6
 PEAK_DBS = {}
+
+
+def falcon_response(resp, text, status):
+    resp.status = status
+    resp.text = text
+    resp.content_type = 'text/html'
+
+
+def ok_response(resp, text='ok!'):
+    falcon_response(resp, text=text, status=falcon.HTTP_200)
+
+
+def error_response(resp, text='error!'):
+    falcon_response(resp, text=text, status=falcon.HTTP_500)
 
 
 def load_template(name):
@@ -36,17 +51,13 @@ def load_template(name):
 class ActiveRequests:
     def on_get(self, req, resp):
         all_jobs = schedule.get_jobs()
-        resp.status = falcon.HTTP_200
-        resp.content_type = 'text/html'
-        resp.text = f'{all_jobs}'
+        ok_response(resp, f'{all_jobs}')
 
 
 class ScannerForm:
     def on_get(self, req, resp):
         template = load_template('scanner_form.html')
-        resp.status = falcon.HTTP_200
-        resp.content_type = 'text/html'
-        resp.text = template.render(bins=PEAK_DBS)
+        ok_response(resp, template.render(bins=PEAK_DBS))
 
 
 class Result:
@@ -62,27 +73,19 @@ class Result:
             response = None
             if int(req.media['repeat']) == -1:
                 schedule.every(timeout).seconds.do(run_threaded, record, recorder=recorder, recorder_args=recorder_args, timeout=timeout).tag(f'{recorder}{recorder_args}-{timeout}')
-                resp.status = falcon.HTTP_200
-                resp.content_type = 'text/html'
-                resp.text = 'Ok!'
+                ok_response(resp)
             else:
                 response = recorder_req(recorder, recorder_args, timeout)
                 time.sleep(timeout)
-                for i in range(int(req.media['repeat'])):
+                for _ in range(int(req.media['repeat'])):
                     response = recorder_req(recorder, recorder_args, timeout)
                     time.sleep(timeout)
                 if response:
-                    resp.status = falcon.HTTP_200
-                    resp.content_type = 'text/html'
-                    resp.text = 'Ok!'
+                    ok_response(resp)
                 else:
-                    resp.status = falcon.HTTP_200
-                    resp.content_type = 'text/html'
-                    resp.text = f'Request {recorder} {recorder_args} failed.'
+                    ok_response(resp, f'Request {recorder} {recorder_args} failed.')
         except Exception as e:
-            resp.status = falcon.HTTP_500
-            resp.content_type = 'text/html'
-            resp.text = f'{e}'
+            error_response(resp, f'{e}')
 
 
 def record(recorder, recorder_args, timeout):
@@ -223,7 +226,12 @@ def process_fft_lines(args, prom_vars, sock, ext):
         with open(args.log, mode=mode) as l:
             while True:
                 schedule.run_pending()
-                sock_txt, _ = sock.recvfrom(2048)
+                try:
+                    sock.settimeout(SOCKET_TIMEOUT)
+                    sock_txt, _ = sock.recvfrom(2048)
+                except socket.timeout:
+                    logging.info('timeout receiving FFT from scanner - retrying')
+                    continue
                 if not len(sock_txt):
                     return
                 txt_buf += sock_txt.decode('utf8')
@@ -273,6 +281,7 @@ def find_signals(args, prom_vars):
         logging.fatal(f'cannot parse extension from {args.log}')
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.setblocking(0)
         sock.bind((args.logaddr, args.logport))
         process_fft_lines(args, prom_vars, sock, ext)
 
