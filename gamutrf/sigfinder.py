@@ -281,7 +281,7 @@ def find_signals(args, prom_vars):
         logging.fatal(f'cannot parse extension from {args.log}')
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.setblocking(0)
+        sock.setblocking(False)
         sock.bind((args.logaddr, args.logport))
         process_fft_lines(args, prom_vars, sock, ext)
 
