@@ -26,7 +26,7 @@ class MQTTReporter:
             gpsd.connect(host=self.gps_server, port=2947)
 
     def get_bearing(self):
-        return httpx.get(f'http://{self.gps_server}:8000/v1/')
+        self.bearing = httpx.get(f'http://{self.gps_server}:8000/v1/')
 
     def add_gps(self, publish_args):
         if not self.gps_server:
