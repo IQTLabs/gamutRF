@@ -7,6 +7,8 @@ import smbus2
 from falcon_cors import CORS
 
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+
 class Bearing:
 
     def get_bearing(self):
@@ -21,7 +23,7 @@ class Bearing:
         y_offset = 10
         x_out = (self.read_word_2c(0)- x_offset+2) * scale  # calculating x,y,z coordinates
         y_out = (self.read_word_2c(2)- y_offset+2)* scale
-        #z_out = self.read_word_2c(4) * scale
+        z_out = self.read_word_2c(4) * scale
         self.bearing_reading = math.atan2(y_out, x_out)+.48  # 0.48 is correction value
         if(self.bearing_reading < 0):
             self.bearing_reading += 2* math.pi
@@ -47,7 +49,7 @@ class Bearing:
 
     def on_get(self, _req, resp):
         self.get_bearing()
-        resp.text = self.bearing_reading
+        resp.text = str(self.bearing_reading)
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
 
@@ -61,7 +63,7 @@ class CompassAPI:
 
     @staticmethod
     def paths():
-        return ['']
+        return ['/']
 
     @staticmethod
     def version():
