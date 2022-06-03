@@ -64,8 +64,11 @@ services:
     restart: always
     image: iqtlabs/birdseye:latest
     network_mode: host
+    environment:
+      - "DISPLAY=:0"
     volumes:
       - '${VOL_PREFIX}:/BirdsEye/runs'
+      - '/tmp/.X11-unix:/tmp/.X11-unix:rw'
     command:
       - sigscan.py
   prometheus:

@@ -26,7 +26,10 @@ class MQTTReporter:
             gpsd.connect(host=self.gps_server, port=2947)
 
     def get_bearing(self):
-        return httpx.get(f'http://{self.gps_server}:8000/v1/')
+        try:
+            self.bearing = str(float(httpx.get(f'http://{self.gps_server}:8000/v1/').text))
+        except Exception as err:
+            logging.error('could not update bearing: %s', err)
 
     def add_gps(self, publish_args):
         if not self.gps_server:
