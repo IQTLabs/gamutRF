@@ -9,6 +9,8 @@ services:
       - gamutrf
     cap_add:
       - SYS_NICE
+    devices:
+      - "/dev/i2c-1:/dev/i2c-1"
     ports:
       - '8000:8000'
   mqtt:
