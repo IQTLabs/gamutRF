@@ -254,7 +254,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
                         continue
                     if abs(now - ts) > 60:
                         continue
-                    l.write(line.encode('utf8'))
+                    l.write(line.encode('utf8')+'\n')
                     rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
                     fftbuffer.append((ts, freq, pw))
                     lastfreq = freq
