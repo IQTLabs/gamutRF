@@ -4,6 +4,7 @@ from falcon import testing
 import pytest
 
 sys.argv = [sys.argv[0]]
+from gamutrf import api
 from gamutrf.api.API import create_app
 
 
