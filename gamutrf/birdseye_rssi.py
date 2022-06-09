@@ -25,8 +25,12 @@ class BirdsEyeRSSI(gr.top_block):
         tune_args = ['']
         settings = ['']
 
+        if args.birdseye_test_recording:
+            self.recording_source_0 = blocks.file_source(gr.sizeof_gr_complex, args.birdseye_test_recording, True, 0, 0)
+            self.source_0 = blocks.throttle(gr.sizeof_gr_complex, samp_rate, True)
+            self.connect((self.recording_source_0, 0), (self.source_0, 0))
         # TODO: use common code with grscan.py
-        if args.sdr == 'ettus':
+        elif args.sdr == 'ettus':
             self.source_0 = uhd.usrp_source(
                     ','.join((ETTUS_ARGS, '')),
                     uhd.stream_args(

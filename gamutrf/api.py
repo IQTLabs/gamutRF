@@ -55,23 +55,36 @@ parser.add_argument(
 parser.add_argument(
     '--qsize', help='Max request queue size',
     default=int(2), type=int)
-parser.add_argument('--mqtt_server', default=ORCHESTRATOR, type=str,
-                     help='MQTT server to report RSSI')
-parser.add_argument('--rssi_interval', default=1.0, type=float,
-                     help='rate limit in seconds for RSSI updates to MQTT')
-parser.add_argument('--rssi_throttle', default=10, type=int,
-                     help='rate limit RSSI calculations to 1 in n')
-parser.add_argument('--rssi_threshold', default=-45, type=float,
-                     help='RSSI reporting threshold')
+parser.add_argument(
+    '--birdseye_test_recording', help='continuously spool I/Q samples from this file',
+    default='', type=str)
+parser.add_argument(
+    '--mqtt_server', help='MQTT server to report RSSI',
+    default=ORCHESTRATOR, type=str)
+parser.add_argument(
+    '--rssi_interval', help='rate limit in seconds for RSSI updates to MQTT',
+    default=1.0, type=float)
+parser.add_argument(
+    '--rssi_throttle', help='rate limit RSSI calculations to 1 in n',
+    default=10, type=int)
+parser.add_argument(
+    '--rssi_threshold', help='RSSI reporting threshold',
+    default=-45, type=float)
 arg_parser = parser.add_mutually_exclusive_group(required=False)
-arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
-arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
+arg_parser.add_argument(
+    '--agc', dest='agc', action='store_true', default=True, help='use AGC')
+arg_parser.add_argument(
+    '--no-agc', dest='agc', action='store_false', help='do not use AGC')
 sigmf_parser = parser.add_mutually_exclusive_group(required=False)
-sigmf_parser.add_argument('--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
-sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
+sigmf_parser.add_argument(
+    '--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
+sigmf_parser.add_argument(
+    '--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
 rssi_parser = parser.add_mutually_exclusive_group(required=False)
-rssi_parser.add_argument('--rssi', dest='enable_rssi', action='store_true', help='get RSSI values')
-rssi_parser.add_argument('--no-rssi', dest='enable_rssi', action='store_false', help='do not get RSSI values')
+rssi_parser.add_argument(
+    '--rssi', dest='enable_rssi', action='store_true', help='get RSSI values')
+rssi_parser.add_argument(
+    '--no-rssi', dest='enable_rssi', action='store_false', help='do not get RSSI values')
 
 arguments = parser.parse_args()
 q = queue.Queue(arguments.qsize)
