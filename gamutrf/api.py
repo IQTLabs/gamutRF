@@ -235,14 +235,15 @@ class API:
             self.app.add_route(self.version()+route, r[route])
 
     def main(self, start_app):
-        logging.info('starting recorder thread')
-        recorder_thread = threading.Thread(
-            target=self.run_recorder, args=(self.record, q))
-        recorder_thread.start()
-
         if start_app:
+            logging.info('starting recorder thread')
+            recorder_thread = threading.Thread(
+                target=self.run_recorder, args=(self.record, q))
+            recorder_thread.start()
+
             self.create_app()
+
             logging.info('starting API thread')
             bjoern.run(self.app, '0.0.0.0', arguments.port)
 
-        recorder_thread.join()
+            recorder_thread.join()
