@@ -135,11 +135,9 @@ class Record:
 
 class API:
 
-    def __init__(self):
-        cors = CORS(allow_all_origins=True)
-        self.app = falcon.App(middleware=[cors.middleware])
+    def __init__(self, start_app=True):
         self.mqtt_reporter = MQTTReporter(arguments.name, arguments.mqtt_server, ORCHESTRATOR, True)
-        self.main()
+        self.main(start_app)
 
     def run_recorder(self, record_func, q):
         logging.info('run recorder')
@@ -228,17 +226,23 @@ class API:
         funcs = [endpoints, info, record]
         return dict(zip(p, funcs))
 
-    def main(self):
-        logging.info('starting recorder thread')
-        recorder_thread = threading.Thread(
-            target=self.run_recorder, args=(self.record, q))
-        recorder_thread.start()
-
+    def create_app(self):
+        cors = CORS(allow_all_origins=True)
+        self.app = falcon.App(middleware=[cors.middleware])
         logging.info('adding API routes')
         r = self.routes()
         for route in r:
             self.app.add_route(self.version()+route, r[route])
 
-        logging.info('starting API thread')
-        bjoern.run(self.app, '0.0.0.0', arguments.port)
+    def main(self, start_app):
+        logging.info('starting recorder thread')
+        recorder_thread = threading.Thread(
+            target=self.run_recorder, args=(self.record, q))
+        recorder_thread.start()
+
+        if start_app:
+            self.create_app()
+            logging.info('starting API thread')
+            bjoern.run(self.app, '0.0.0.0', arguments.port)
+
         recorder_thread.join()
