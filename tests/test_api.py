@@ -2,16 +2,14 @@ import sys
 
 from falcon import testing
 import pytest
+
+sys.argv = [sys.argv[0]]
 from gamutrf.api.API import create_app
 
 
 @pytest.fixture(scope='module')
 def client():
     return testing.TestClient(create_app())
-
-def test_api():
-    sys.argv = [sys.argv[0]]
-    from gamutrf import api
 
 def test_app():
     app = api.API(start_app=False)
