@@ -1,7 +1,7 @@
 import sys
 import fake_rpi
 
-sys.modules['smbus'] = fake_rpi.smbus
+sys.modules['smbus2'] = fake_rpi.smbus
 
 from gamutrf import compass
 
