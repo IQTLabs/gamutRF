@@ -1,6 +1,6 @@
 import time
-from gnuradio import blocks, gr, network, soapy, uhd
-from gamutrf.utils import ETTUS_ARGS, ETTUS_ANT
+from gnuradio import blocks, gr, network
+from gamutrf.grsource import get_source
 
 FLOAT_SIZE = 4
 RSSI_UDP_ADDR = '127.0.0.1'
@@ -15,43 +15,14 @@ class BirdsEyeRSSI(gr.top_block):
 
         self.threshold = args.rssi_threshold
         self.mean_window = args.mean_window
-        self.samp_rate = samp_rate
-        self.gain = args.gain
-        self.center_freq = center_freq
         self.rssi_throttle = rssi_throttle
-
-        dev = f'driver={args.sdr}'
-        stream_args = ''
-        tune_args = ['']
-        settings = ['']
 
         if args.birdseye_test_recording:
             self.recording_source_0 = blocks.file_source(gr.sizeof_gr_complex, args.birdseye_test_recording, True, 0, 0)
             self.source_0 = blocks.throttle(gr.sizeof_gr_complex, samp_rate, True)
             self.connect((self.recording_source_0, 0), (self.source_0, 0))
-        # TODO: use common code with grscan.py
-        elif args.sdr == 'ettus':
-            self.source_0 = uhd.usrp_source(
-                    ','.join((ETTUS_ARGS, '')),
-                    uhd.stream_args(
-                        cpu_format='fc32',
-                        args='',
-                        channels=list(range(0, 1)),
-                    ),
-            )
-            self.source_0.set_antenna(ETTUS_ANT, 0)
-            self.source_0.set_samp_rate(self.samp_rate)
-            self.source_0.set_center_freq(self.center_freq)
-            self.source_0.set_gain(self.gain, 0)
-            self.source_0.set_rx_agc(agc, 0)
         else:
-            self.source_0 = soapy.source(dev, 'fc32', 1, '', stream_args, tune_args, settings)
-            self.source_0.set_sample_rate(0, self.samp_rate)
-            self.source_0.set_bandwidth(0, 0.0)
-            self.source_0.set_frequency(0, self.center_freq)
-            self.source_0.set_frequency_correction(0, 0)
-            self.source_0.set_gain_mode(0, agc)
-            self.source_0.set_gain(0, self.gain)
+            self.source_0, _ = get_source(args.sdr, samp_rate, args.gain, agc, center_freq)
 
         self.network_udp_sink_0 = network.udp_sink(gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 32768, False)
         self.blocks_nlog10_ff_0 = blocks.nlog10_ff(10, 1, 0)
