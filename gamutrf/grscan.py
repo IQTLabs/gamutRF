@@ -4,17 +4,16 @@
 # https://github.com/ThomasHabets/radiostuff/blob/922944c9a7c9c51a15e369ac07a7f8963b5f67bd/broadband-scan/broadband_scan.grc
 
 import functools
+import logging
 import threading
 import time
 from gnuradio import analog  # pytype: disable=import-error
 from gnuradio import blocks  # pytype: disable=import-error
 from gnuradio import fft  # pytype: disable=import-error
 from gnuradio import gr  # pytype: disable=import-error
-from gnuradio import uhd  # pytype: disable=import-error
 from gnuradio.fft import window  # pytype: disable=import-error
-from gnuradio import soapy  # pytype: disable=import-error
 
-from gamutrf.utils import ETTUS_ANT
+from gamutrf.grsource import get_source
 
 
 class grscan(gr.top_block):
@@ -28,8 +27,6 @@ class grscan(gr.top_block):
         ##################################################
         self.freq_end = freq_end
         self.freq_start = freq_start
-        self.igain = igain
-        self.samp_rate = samp_rate
         self.sweep_sec = sweep_sec
         self.freq_update = 0
         self.no_freq_updates = 0
@@ -60,35 +57,9 @@ class grscan(gr.top_block):
                     pass
                 time.sleep(1.0 / (97))
 
-        self.freq_setter = None
-        self.source = None
-        if sdr == 'ettus':
-            self.source = uhd.usrp_source(
-                ','.join((ettusargs, '')),
-                uhd.stream_args(
-                    cpu_format='fc32',
-                    args='',
-                    channels=list(range(0, 1)),
-                ),
-            )
-            self.source.set_time_now(
-                uhd.time_spec(time.time()), uhd.ALL_MBOARDS)
-            self.source.set_antenna(ETTUS_ANT, 0)
-            self.set_samp_rate(samp_rate)
-            self.set_igain(igain)
-            self.freq_setter = lambda x: self.source.set_center_freq(x, 0)
-        elif sdr in ('bladerf', 'lime'):
-            dev = f'driver={sdr}'
-            stream_args = ''
-            tune_args = ['']
-            settings = ['']
-            self.source = soapy.source(dev, "fc32", 1, '',
-                stream_args, tune_args, settings)
-            self.source.set_sample_rate(0, samp_rate)
-            self.source.set_bandwidth(0, 0.0)
-            self.source.set_frequency_correction(0, 0)
-            self.source.set_gain(0, igain)
-            self.freq_setter = lambda x: self.source.set_frequency(0, x)
+        logging.info(f'will scan from {freq_start} to {freq_end}')
+        self.source, self.freq_setter = get_source(
+            sdr, samp_rate, igain, agc=False, center_freq=None)
 
         self.center_freq_thread = threading.Thread(target=_center_freq_probe)
         self.center_freq_thread.daemon = True
@@ -136,18 +107,10 @@ class grscan(gr.top_block):
             self.connect((self.source, 0),
                          (self.blocks_stream_to_vector_0, 0))
 
-    def set_igain(self, igain):
-        self.igain = igain
-        self.source.set_gain(self.igain, 0)  # pytype: disable=attribute-error
-
-    def set_samp_rate(self, samp_rate):
-        self.samp_rate = samp_rate
-        self.source.set_samp_rate(self.samp_rate)  # pytype: disable=attribute-error
-
     def set_center_freq(self, center_freq):
         self.center_freq = center_freq
         if self.center_freq:
-            self.freq_setter(self.center_freq)
+            self.freq_setter(self.source, self.center_freq)
             self.freq_update = time.time()
             self.no_freq_updates = 0
 

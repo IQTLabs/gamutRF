@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 import signal
 import time
 import sys
@@ -63,6 +64,7 @@ def argument_parser():
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
     options = argument_parser().parse_args()
     if gr.enable_realtime_scheduling() != gr.RT_OK:
         print('Warning: failed to enable real-time scheduling.')

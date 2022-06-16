@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install --no-install-recommends -yq \
 COPY scan-requirements.txt /root/scan-requirements.txt
 RUN pip3 install -r /root/scan-requirements.txt
 COPY gamutrf/scanhc.sh /root/scanhc.sh
+COPY gamutrf/grsource.py /root/gamutrf/grsource.py
 COPY gamutrf/grscan.py /root/gamutrf/grscan.py
 COPY gamutrf/utils.py /root/gamutrf/utils.py
 COPY gamutrf/scan.py /root/scan.py
