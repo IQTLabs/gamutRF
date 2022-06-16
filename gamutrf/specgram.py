@@ -121,9 +121,11 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
         else:
             lastresult = np.hstack((lastresult, result))
 
-    t_x = lastresult.shape[0] * lastresult.shape[1]
-    t = np.arange(NFFT/2, t_x - NFFT/2 + 1, NFFT - noverlap)/Fs
-    return lastresult, freqs, t
+    if lastresult is not None:
+        t_x = lastresult.shape[0] * lastresult.shape[1]
+        t = np.arange(NFFT/2, t_x - NFFT/2 + 1, NFFT - noverlap)/Fs
+        return lastresult, freqs, t
+    return (None, None, None)
 
 
 def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
