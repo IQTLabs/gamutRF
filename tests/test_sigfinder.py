@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import concurrent.futures
 import os
 import tempfile
 import time
@@ -37,12 +38,13 @@ class FakeSock:
 class SigFinderTestCase(unittest.TestCase):
 
     def test_process_fft_lines(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            test_log = os.path.join(str(tempdir), 'test.csv')
-            args = FakeArgs(test_log, 60, 4, 1, 1e9, 2e9)
-            prom_vars = init_prom_vars()
-            sock = FakeSock(f'{time.time()} 1e9 0.1\n'.encode('utf8'))
-            process_fft_lines(args, prom_vars, sock, 'csv')
+        with concurrent.futures.ProcessPoolExecutor(1) as executor:
+            with tempfile.TemporaryDirectory() as tempdir:
+                test_log = os.path.join(str(tempdir), 'test.csv')
+                args = FakeArgs(test_log, 60, 4, 1, 1e9, 2e9)
+                prom_vars = init_prom_vars()
+                sock = FakeSock(f'{time.time()} 1e9 0.1\n'.encode('utf8'))
+                process_fft_lines(args, prom_vars, sock, 'csv', executor)
 
 
 if __name__ == '__main__':
