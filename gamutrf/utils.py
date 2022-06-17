@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import numpy as np
 
+MTU = 8962
 
 # Use max recv_frame_size for USB - because we don't mind latency,
 # we are optimizing for lower CPU.

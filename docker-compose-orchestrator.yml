@@ -1,6 +1,9 @@
 version: "3.3"
 networks:
   gamutrf:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 9000
 services:
   compass:
     restart: always

@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
 import argparse
+import concurrent.futures
 import json
 import logging
 import os
 import socket
+import subprocess
 import threading
 import time
 
@@ -22,6 +24,7 @@ from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import get_center
+from gamutrf.utils import MTU
 
 SOCKET_TIMEOUT = 1.0
 ROLLOVERHZ = 100e6
@@ -207,7 +210,11 @@ def call_record_signals(args, lastbins_history, prom_vars):
                 worker_record_request.labels(worker=recorder).set(signal_hz)
 
 
-def process_fft_lines(args, prom_vars, sock, ext):
+def zstd_file(uncompressed_file):
+    subprocess.check_call(['/usr/bin/zstd', '--rm', uncompressed_file])
+
+
+def process_fft_lines(args, prom_vars, sock, ext, executor):
     lastfreq = 0
     fftbuffer = []
     lastbins_history = []
@@ -228,7 +235,7 @@ def process_fft_lines(args, prom_vars, sock, ext):
                 schedule.run_pending()
                 try:
                     sock.settimeout(SOCKET_TIMEOUT)
-                    sock_txt, _ = sock.recvfrom(2048)
+                    sock_txt, _ = sock.recvfrom(MTU)
                 except socket.timeout:
                     logging.info('timeout receiving FFT from scanner - retrying')
                     continue
@@ -266,12 +273,14 @@ def process_fft_lines(args, prom_vars, sock, ext):
                             lastbins_history = lastbins_history[:args.history]
                         fftbuffer = []
                         call_record_signals(args, lastbins_history, prom_vars)
-                        if now - openlogts > args.rotatesecs:
+                        rotate_age = now - openlogts
+                        if rotate_age > args.rotatesecs:
                             rotatelognow = True
                 if rotatelognow:
                     break
         new_log = args.log.replace(ext, f'{openlogts}{ext}')
         os.rename(args.log, new_log)
+        executor.submit(zstd_file, new_log)
 
 
 def find_signals(args, prom_vars):
@@ -280,10 +289,11 @@ def find_signals(args, prom_vars):
     except ValueError:
         logging.fatal(f'cannot parse extension from {args.log}')
 
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.setblocking(False)
-        sock.bind((args.logaddr, args.logport))
-        process_fft_lines(args, prom_vars, sock, ext)
+    with concurrent.futures.ProcessPoolExecutor(1) as executor:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.setblocking(False)
+            sock.bind((args.logaddr, args.logport))
+            process_fft_lines(args, prom_vars, sock, ext, executor)
 
 
 def main():
