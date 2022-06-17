@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-
 import time
 import unittest
+
 from gamutrf.grscan import grscan
 
 

@@ -1,12 +1,12 @@
 #!/usr/bin/python3
-
 import concurrent.futures
 import os
 import tempfile
 import time
 import unittest
 
-from gamutrf.sigfinder import process_fft_lines, init_prom_vars
+from gamutrf.sigfinder import init_prom_vars
+from gamutrf.sigfinder import process_fft_lines
 
 
 class FakeArgs:

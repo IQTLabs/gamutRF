@@ -1,24 +1,28 @@
-
 import logging
 import time
-from gnuradio import soapy, uhd
-from gamutrf.utils import ETTUS_ARGS, ETTUS_ANT
+
+from gnuradio import soapy
+from gnuradio import uhd
+
+from gamutrf.utils import ETTUS_ANT
+from gamutrf.utils import ETTUS_ARGS
 
 
 def get_source(sdr, samp_rate, gain, agc=False, center_freq=None):
     stream_args = ''
     tune_args = ['']
     settings = ['']
-    logging.info(f'initializing SDR {sdr} with sample rate {samp_rate}, gain {gain}, agc {agc}')
+    logging.info(
+        f'initializing SDR {sdr} with sample rate {samp_rate}, gain {gain}, agc {agc}')
 
     if sdr == 'ettus':
         source_0 = uhd.usrp_source(
-                ','.join((ETTUS_ARGS, '')),
-                uhd.stream_args(
-                    cpu_format='fc32',
-                    args='',
-                    channels=list(range(0, 1)),
-                ),
+            ','.join((ETTUS_ARGS, '')),
+            uhd.stream_args(
+                cpu_format='fc32',
+                args='',
+                channels=list(range(0, 1)),
+            ),
         )
         source_0.set_time_now(
             uhd.time_spec(time.time()), uhd.ALL_MBOARDS)

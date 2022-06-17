@@ -5,9 +5,11 @@ import logging
 import os
 import time
 from statistics import mean
+
 import numpy as np
 
-from gamutrf.sigwindows import read_csv, CSV
+from gamutrf.sigwindows import CSV
+from gamutrf.sigwindows import read_csv
 
 MAX_WORKERS = 4
 

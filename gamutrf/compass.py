@@ -9,6 +9,7 @@ from falcon_cors import CORS
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
+
 class Bearing:
 
     def get_bearing(self):
@@ -21,25 +22,27 @@ class Bearing:
         scale = 0.92
         x_offset = -10
         y_offset = 10
-        x_out = (self.read_word_2c(0)- x_offset+2) * scale  # calculating x,y,z coordinates
-        y_out = (self.read_word_2c(2)- y_offset+2)* scale
+        x_out = (self.read_word_2c(0) - x_offset+2) * \
+            scale  # calculating x,y,z coordinates
+        y_out = (self.read_word_2c(2) - y_offset+2) * scale
         z_out = self.read_word_2c(4) * scale
-        self.bearing_reading = math.atan2(y_out, x_out)+.48  # 0.48 is correction value
+        self.bearing_reading = math.atan2(
+            y_out, x_out)+.48  # 0.48 is correction value
         if(self.bearing_reading < 0):
-            self.bearing_reading += 2* math.pi
+            self.bearing_reading += 2 * math.pi
 
-    def read_byte(self, adr): # communicate with compass
+    def read_byte(self, adr):  # communicate with compass
         return self.bus.read_byte_data(self.address, adr)
 
     def read_word(self, adr):
         low = self.bus.read_byte_data(self.address, adr)
         high = self.bus.read_byte_data(self.address, adr+1)
-        val = (high<< 8) + low
+        val = (high << 8) + low
         return val
 
     def read_word_2c(self, adr):
         val = self.read_word(adr)
-        if (val>= 0x8000):
+        if (val >= 0x8000):
             return -((65535 - val)+1)
         else:
             return val

@@ -7,7 +7,8 @@ import subprocess
 import tempfile
 import time
 
-from gamutrf.sigwindows import read_csv, CSV
+from gamutrf.sigwindows import CSV
+from gamutrf.sigwindows import read_csv
 
 MAX_WORKERS = 4
 

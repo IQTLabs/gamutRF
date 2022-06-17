@@ -5,7 +5,13 @@ import unittest
 
 import pandas as pd
 
-from gamutrf.sigwindows import find_sig_windows, choose_record_signal, freq_excluded, parse_freq_excluded, choose_recorders, read_csv, ROLLOVERHZ
+from gamutrf.sigwindows import choose_record_signal
+from gamutrf.sigwindows import choose_recorders
+from gamutrf.sigwindows import find_sig_windows
+from gamutrf.sigwindows import freq_excluded
+from gamutrf.sigwindows import parse_freq_excluded
+from gamutrf.sigwindows import read_csv
+from gamutrf.sigwindows import ROLLOVERHZ
 
 
 TESTDIR = os.path.join(os.path.dirname(
@@ -81,7 +87,7 @@ class WindowsTestCase(unittest.TestCase):
             'c2': ((100, 199),)}
         self.assertEqual(
             [(100, 'c1'), (200, 'c2')],
-        choose_recorders([100, 200], recorder_freq_exclusions))
+            choose_recorders([100, 200], recorder_freq_exclusions))
 
     def test_freq_excluded(self):
         self.assertTrue(freq_excluded(100, ((100, 200),)))
@@ -92,7 +98,7 @@ class WindowsTestCase(unittest.TestCase):
 
     def test_parse_excluded(self):
         self.assertEqual(((100, 200), (200, None), (None, 100)),
-            parse_freq_excluded(['100-200', '200-', '-100']))
+                         parse_freq_excluded(['100-200', '200-', '-100']))
 
     def test_verybusy1g1(self):
         df = pd.read_csv(self._get_data('verybusy1g1.csv'),
@@ -118,7 +124,8 @@ class WindowsTestCase(unittest.TestCase):
         # One signal received less often, so record that, since we have only one recorder.
         self.assertEqual([110], choose_record_signal([20, 20, 20, 20, 110], 1))
         # We have two recorders so can afford to record the more common one as well.
-        self.assertEqual([110, 20], choose_record_signal([20, 20, 20, 20, 110], 2))
+        self.assertEqual([110, 20], choose_record_signal(
+            [20, 20, 20, 20, 110], 2))
 
 
 if __name__ == '__main__':

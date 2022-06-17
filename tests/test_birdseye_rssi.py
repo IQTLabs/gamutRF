@@ -1,14 +1,14 @@
 #!/usr/bin/python3
-
-import json
 import glob
+import json
 import os
 import tempfile
 import time
 import unittest
+
 import docker
-import requests
 import numpy as np
+import requests
 
 
 class BirdseyeRSSITestCase(unittest.TestCase):
@@ -18,21 +18,25 @@ class BirdseyeRSSITestCase(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tempdir:
             testraw = os.path.join(tempdir, 'test.raw')
             gamutdir = os.path.join(tempdir, 'gamutrf')
-            testdata = np.random.random(int(1e6)).astype(np.float32) + np.random.random(int(1e6)).astype(np.float32) * 1j
+            testdata = np.random.random(int(1e6)).astype(
+                np.float32) + np.random.random(int(1e6)).astype(np.float32) * 1j
             with open(testraw, 'wb') as testrawfile:
                 testdata.tofile(testrawfile)
             os.mkdir(gamutdir)
             client = docker.from_env()
-            client.images.build(dockerfile='Dockerfile.api', path='.', tag=test_tag)
+            client.images.build(dockerfile='Dockerfile.api',
+                                path='.', tag=test_tag)
             container = client.containers.run(
                 test_tag,
-                command=['--rssi_threshold=-100', '--rssi', '--birdseye_test_recording=/data/test.raw'],
+                command=['--rssi_threshold=-100', '--rssi',
+                         '--birdseye_test_recording=/data/test.raw'],
                 ports={'8000/tcp': 8000},
                 volumes={tempdir: {'bind': '/data', 'mode': 'rw'}},
                 detach=True)
             for _ in range(15):
                 try:
-                    response = requests.get('http://localhost:8000/v1/record/100000000/1000000/1000000')
+                    response = requests.get(
+                        'http://localhost:8000/v1/record/100000000/1000000/1000000')
                     self.assertEqual(200, response.status_code, response)
                     break
                 except requests.exceptions.ConnectionError:
