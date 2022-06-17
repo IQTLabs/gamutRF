@@ -1,8 +1,8 @@
-import gpsd
 import json
 import logging
 import socket
 
+import gpsd
 import httpx
 import paho.mqtt.client as mqtt
 
@@ -27,7 +27,8 @@ class MQTTReporter:
 
     def get_bearing(self):
         try:
-            self.bearing = str(float(httpx.get(f'http://{self.gps_server}:8000/v1/').text))
+            self.bearing = str(
+                float(httpx.get(f'http://{self.gps_server}:8000/v1/').text))
         except Exception as err:
             logging.error('could not update bearing: %s', err)
 
@@ -66,4 +67,5 @@ class MQTTReporter:
             publish_args['name'] = self.name
             self.mqttc.publish(publish_path, json.dumps(publish_args))
         except (socket.gaierror, ConnectionRefusedError, mqtt.WebsocketConnectionError, ValueError) as err:
-            logging.error(f'failed to publish to MQTT {self.mqtt_server}: {err}')
+            logging.error(
+                f'failed to publish to MQTT {self.mqtt_server}: {err}')

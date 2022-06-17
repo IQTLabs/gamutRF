@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 # Extract and decimate narrowband signal from wideband signal
 #
 # Example of decoding FM signal centered at 98.1MHz, from 20MHz wideband recording centered at 100MHz recorded at 20Msps.
@@ -15,14 +14,15 @@
 # Decode 1Msps recording as FM.
 #
 # $ airspy-fmradion -t filesource -c srate=1000000,raw,format=FLOAT,filename=fm.raw -W fm.wav
-
 import argparse
+
 from gnuradio import blocks  # pytype: disable=import-error
 from gnuradio import eng_notation  # pytype: disable=import-error
 from gnuradio import gr  # pytype: disable=import-error
-from pmt import PMT_NIL  # pytype: disable=import-error
-from gnuradio.filter import firdes, freq_xlating_fir_filter_ccc  # pylint: disable=no-name-in-module  # pytype: disable=import-error
 from gnuradio.eng_arg import eng_float  # pytype: disable=import-error
+from gnuradio.filter import firdes
+from gnuradio.filter import freq_xlating_fir_filter_ccc
+from pmt import PMT_NIL  # pytype: disable=import-error
 
 
 class FreqXLator(gr.top_block):
@@ -37,21 +37,27 @@ class FreqXLator(gr.top_block):
         self.infile = infile
         self.outfile = outfile
 
-        self.freq_xlating_fir_filter_xxx_0 = freq_xlating_fir_filter_ccc(self.dec, self._get_taps(), self.center, self.samp_rate)
-        self.blocks_file_source_0 = blocks.file_source(gr.sizeof_gr_complex, self.infile, False, 0, 0)  # pylint: disable=no-member
+        self.freq_xlating_fir_filter_xxx_0 = freq_xlating_fir_filter_ccc(
+            self.dec, self._get_taps(), self.center, self.samp_rate)
+        self.blocks_file_source_0 = blocks.file_source(
+            gr.sizeof_gr_complex, self.infile, False, 0, 0)  # pylint: disable=no-member
         self.blocks_file_source_0.set_begin_tag(PMT_NIL)
-        self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_gr_complex, self.outfile, False)  # pylint: disable=no-member
+        self.blocks_file_sink_0 = blocks.file_sink(
+            gr.sizeof_gr_complex, self.outfile, False)  # pylint: disable=no-member
         self.blocks_file_sink_0.set_unbuffered(False)
 
-        self.connect((self.blocks_file_source_0, 0), (self.freq_xlating_fir_filter_xxx_0, 0))
-        self.connect((self.freq_xlating_fir_filter_xxx_0, 0), (self.blocks_file_sink_0, 0))
+        self.connect((self.blocks_file_source_0, 0),
+                     (self.freq_xlating_fir_filter_xxx_0, 0))
+        self.connect((self.freq_xlating_fir_filter_xxx_0, 0),
+                     (self.blocks_file_sink_0, 0))
 
     def _get_taps(self):
         return firdes.complex_band_pass(1, self.samp_rate, -self.samp_rate/(2*self.dec), self.samp_rate/(2*self.dec), self.transitionbw)
 
 
 def main():
-    parser = argparse.ArgumentParser('Extract and decimate narrowband signal from wideband signal')
+    parser = argparse.ArgumentParser(
+        'Extract and decimate narrowband signal from wideband signal')
     parser.add_argument(
         'infile', type=str,
         help='Input file (complex I/Q format)')

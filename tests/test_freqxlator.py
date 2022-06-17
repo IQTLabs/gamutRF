@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-
 import unittest
+
 from gamutrf.freqxlator import FreqXLator
 
 

@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 import signal
-import time
 import sys
+import time
 from argparse import ArgumentParser
-from prometheus_client import start_http_server, Gauge
+
 import habets39  # pytype: disable=import-error
 from gnuradio import eng_notation  # pytype: disable=import-error
 from gnuradio import gr  # pytype: disable=import-error
 from gnuradio.eng_arg import eng_float  # pytype: disable=import-error
 from gnuradio.eng_arg import intx  # pytype: disable=import-error
-from gamutrf.grscan import grscan
+from prometheus_client import Gauge
+from prometheus_client import start_http_server
 
+from gamutrf.grscan import grscan
 from gamutrf.utils import ETTUS_ARGS
 
 

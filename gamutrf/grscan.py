@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 # Derivative work from:
 # https://github.com/ThomasHabets/radiostuff/blob/922944c9a7c9c51a15e369ac07a7f8963b5f67bd/broadband-scan/broadband_scan.grc
-
 import functools
 import threading
 import time
+
 from gnuradio import analog  # pytype: disable=import-error
 from gnuradio import blocks  # pytype: disable=import-error
 from gnuradio import fft  # pytype: disable=import-error
 from gnuradio import gr  # pytype: disable=import-error
+from gnuradio import soapy  # pytype: disable=import-error
 from gnuradio import uhd  # pytype: disable=import-error
 from gnuradio.fft import window  # pytype: disable=import-error
-from gnuradio import soapy  # pytype: disable=import-error
 
 from gamutrf.utils import ETTUS_ANT
 
@@ -82,8 +82,8 @@ class grscan(gr.top_block):
             stream_args = ''
             tune_args = ['']
             settings = ['']
-            self.source = soapy.source(dev, "fc32", 1, '',
-                stream_args, tune_args, settings)
+            self.source = soapy.source(dev, 'fc32', 1, '',
+                                       stream_args, tune_args, settings)
             self.source.set_sample_rate(0, samp_rate)
             self.source.set_bandwidth(0, 0.0)
             self.source.set_frequency_correction(0, 0)
@@ -97,7 +97,7 @@ class grscan(gr.top_block):
         self.habets39_sweepsinkv_0 = None
         if habets39:
             self.habets39_sweepsinkv_0 = habets39.sweepsinkv(
-                    'rx_freq', fft_size, samp_rate)
+                'rx_freq', fft_size, samp_rate)
         self.fft_vxx_0 = fft.fft_vcc(
             fft_size, True, window.blackmanharris(fft_size), True, 1)
         self.blocks_throttle_0 = blocks.throttle(
@@ -142,7 +142,8 @@ class grscan(gr.top_block):
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.source.set_samp_rate(self.samp_rate)  # pytype: disable=attribute-error
+        # pytype: disable=attribute-error
+        self.source.set_samp_rate(self.samp_rate)
 
     def set_center_freq(self, center_freq):
         self.center_freq = center_freq

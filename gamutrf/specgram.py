@@ -5,17 +5,20 @@ import gzip
 import os
 import time
 
+import matplotlib.pyplot as plt
 import numpy as np
+import zstandard
 from matplotlib.mlab import detrend
 from matplotlib.mlab import detrend_none
 from matplotlib.mlab import stride_windows
 from matplotlib.mlab import window_hanning
-import matplotlib.pyplot as plt
 from scipy.fft import fft  # pylint disable=no-name-in-module
 from scipy.fft import fftfreq  # pylint disable=no-name-in-module
-import zstandard
 
-from gamutrf.utils import replace_ext, parse_filename, get_nondot_files, is_fft
+from gamutrf.utils import get_nondot_files
+from gamutrf.utils import is_fft
+from gamutrf.utils import parse_filename
+from gamutrf.utils import replace_ext
 
 
 def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
@@ -65,7 +68,8 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
         else:
             result = stride_windows(i, NFFT, noverlap, axis=0)
             result = detrend(result, detrend_func, axis=0)
-            result = fft(result, n=pad_to, axis=0)[:numFreqs, :]  # pylint: disable=invalid-sequence-index
+            result = fft(result, n=pad_to, axis=0)[
+                :numFreqs, :]  # pylint: disable=invalid-sequence-index
         if not np.iterable(window):
             window = window(np.ones(NFFT, i.dtype))
         if len(window) != NFFT:
@@ -233,8 +237,9 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, n
 
     if bare:
         axes.set_axis_off()
-        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-        plt.margins(0,0)
+        plt.subplots_adjust(top=1, bottom=0, right=1,
+                            left=0, hspace=0, wspace=0)
+        plt.margins(0, 0)
         axes.xaxis.set_major_locator(plt.NullLocator())
         axes.yaxis.set_major_locator(plt.NullLocator())
 
@@ -249,7 +254,8 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, n
 
 
 def process_recording(args, recording):
-    freq_center, sample_rate, sample_dtype, sample_len, _sample_type, _sample_bits = parse_filename(recording)
+    freq_center, sample_rate, sample_dtype, sample_len, _sample_type, _sample_bits = parse_filename(
+        recording)
     spectrogram_filename = replace_ext(recording, args.iext, all_ext=True)
     if args.skip_exist and os.path.exists(spectrogram_filename):
         print(f'skipping {recording}')

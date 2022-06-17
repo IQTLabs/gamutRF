@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import argparse
 import json
 import logging
@@ -12,16 +11,18 @@ import bjoern
 import falcon
 import jinja2
 import pandas as pd
-from prometheus_client import start_http_server, Counter, Gauge
 import requests
 import schedule
+from prometheus_client import Counter
+from prometheus_client import Gauge
+from prometheus_client import start_http_server
 
 from gamutrf.sigwindows import calc_db
 from gamutrf.sigwindows import choose_record_signal
 from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import find_sig_windows
-from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import get_center
+from gamutrf.sigwindows import parse_freq_excluded
 
 SOCKET_TIMEOUT = 1.0
 ROLLOVERHZ = 100e6
@@ -72,7 +73,8 @@ class Result:
             timeout = int(req.media['duration'])
             response = None
             if int(req.media['repeat']) == -1:
-                schedule.every(timeout).seconds.do(run_threaded, record, recorder=recorder, recorder_args=recorder_args, timeout=timeout).tag(f'{recorder}{recorder_args}-{timeout}')
+                schedule.every(timeout).seconds.do(run_threaded, record, recorder=recorder,
+                                                   recorder_args=recorder_args, timeout=timeout).tag(f'{recorder}{recorder_args}-{timeout}')
                 ok_response(resp)
             else:
                 response = recorder_req(recorder, recorder_args, timeout)
@@ -83,7 +85,8 @@ class Result:
                 if response:
                     ok_response(resp)
                 else:
-                    ok_response(resp, f'Request {recorder} {recorder_args} failed.')
+                    ok_response(
+                        resp, f'Request {recorder} {recorder_args} failed.')
         except Exception as e:
             error_response(resp, f'{e}')
 
@@ -93,7 +96,8 @@ def record(recorder, recorder_args, timeout):
 
 
 def run_threaded(job_func, recorder, recorder_args, timeout):
-    job_thread = threading.Thread(target=job_func, args=(recorder, recorder_args, timeout,))
+    job_thread = threading.Thread(
+        target=job_func, args=(recorder, recorder_args, timeout,))
     job_thread.start()
 
 
@@ -142,7 +146,8 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         if center_freq < freq_start_mhz or center_freq > freq_end_mhz:
             print(f'ignoring {center_freq}')
             continue
-        center_freq = get_center(center_freq, freq_start_mhz, args.bin_mhz, args.record_bw_mbps)
+        center_freq = get_center(
+            center_freq, freq_start_mhz, args.bin_mhz, args.record_bw_mbps)
         bin_freq_count.labels(bin_mhz=center_freq).inc()
         last_bin_freq_time.labels(bin_mhz=ts).set(ts)
         monitor_bins.add(center_freq)
@@ -230,7 +235,8 @@ def process_fft_lines(args, prom_vars, sock, ext):
                     sock.settimeout(SOCKET_TIMEOUT)
                     sock_txt, _ = sock.recvfrom(2048)
                 except socket.timeout:
-                    logging.info('timeout receiving FFT from scanner - retrying')
+                    logging.info(
+                        'timeout receiving FFT from scanner - retrying')
                     continue
                 if not len(sock_txt):
                     return
@@ -260,7 +266,8 @@ def process_fft_lines(args, prom_vars, sock, ext):
                     lastfreq = freq
                     if rollover:
                         frame_counter.inc()
-                        lastbins = process_fft(args, prom_vars, ts, fftbuffer, lastbins)
+                        lastbins = process_fft(
+                            args, prom_vars, ts, fftbuffer, lastbins)
                         if lastbins:
                             lastbins_history = [lastbins] + lastbins_history
                             lastbins_history = lastbins_history[:args.history]

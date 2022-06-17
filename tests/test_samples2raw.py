@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import os
 import unittest
 
@@ -17,7 +16,7 @@ class Samples2RawTestCase(unittest.TestCase):
         self.assertEqual(
             [['sox', '-t', 'raw', '-r', '20000000', '-c', '1', '-b', '16', '-e', 'signed-integer',
              'gamutrf_recording1644265099_320000000Hz_20000000sps.s16',
-             '-e', 'float', 'gamutrf_recording1644265099_320000000Hz_20000000sps.raw']],
+              '-e', 'float', 'gamutrf_recording1644265099_320000000Hz_20000000sps.raw']],
             make_procs_args('gamutrf_recording1644265099_320000000Hz_20000000sps.s16'))
 
 

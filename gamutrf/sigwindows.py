@@ -1,8 +1,9 @@
 #!/usr/bin/python3
-
 import logging
 import random
-from collections import defaultdict, Counter
+from collections import Counter
+from collections import defaultdict
+
 import numpy as np
 import pandas as pd
 

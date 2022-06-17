@@ -1,6 +1,6 @@
 import argparse
-import logging
 import json
+import logging
 import os
 import queue
 import socket
@@ -13,11 +13,17 @@ import falcon
 from falcon_cors import CORS
 
 from gamutrf.__init__ import __version__
-from gamutrf.birdseye_rssi import BirdsEyeRSSI, RSSI_UDP_ADDR, RSSI_UDP_PORT, MAX_RSSI, FLOAT_SIZE
-from gamutrf.sdr_recorder import get_recorder, RECORDER_MAP
+from gamutrf.birdseye_rssi import BirdsEyeRSSI
+from gamutrf.birdseye_rssi import FLOAT_SIZE
+from gamutrf.birdseye_rssi import MAX_RSSI
+from gamutrf.birdseye_rssi import RSSI_UDP_ADDR
+from gamutrf.birdseye_rssi import RSSI_UDP_PORT
 from gamutrf.mqtt_reporter import MQTTReporter
+from gamutrf.sdr_recorder import get_recorder
+from gamutrf.sdr_recorder import RECORDER_MAP
 
-WORKER_NAME = os.getenv('WORKER_NAME', socket.gethostbyname(socket.gethostname()))
+WORKER_NAME = os.getenv(
+    'WORKER_NAME', socket.gethostbyname(socket.gethostname()))
 ORCHESTRATOR = os.getenv('ORCHESTRATOR', 'orchestrator')
 ANTENNA = os.getenv('ANTENNA', '')
 
@@ -56,22 +62,28 @@ parser.add_argument(
     '--qsize', help='Max request queue size',
     default=int(2), type=int)
 parser.add_argument('--mqtt_server', default=ORCHESTRATOR, type=str,
-                     help='MQTT server to report RSSI')
+                    help='MQTT server to report RSSI')
 parser.add_argument('--rssi_interval', default=1.0, type=float,
-                     help='rate limit in seconds for RSSI updates to MQTT')
+                    help='rate limit in seconds for RSSI updates to MQTT')
 parser.add_argument('--rssi_throttle', default=10, type=int,
-                     help='rate limit RSSI calculations to 1 in n')
+                    help='rate limit RSSI calculations to 1 in n')
 parser.add_argument('--rssi_threshold', default=-45, type=float,
-                     help='RSSI reporting threshold')
+                    help='RSSI reporting threshold')
 arg_parser = parser.add_mutually_exclusive_group(required=False)
-arg_parser.add_argument('--agc', dest='agc', action='store_true', default=True, help='use AGC')
-arg_parser.add_argument('--no-agc', dest='agc', action='store_false', help='do not use AGC')
+arg_parser.add_argument('--agc', dest='agc',
+                        action='store_true', default=True, help='use AGC')
+arg_parser.add_argument('--no-agc', dest='agc',
+                        action='store_false', help='do not use AGC')
 sigmf_parser = parser.add_mutually_exclusive_group(required=False)
-sigmf_parser.add_argument('--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
-sigmf_parser.add_argument('--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
+sigmf_parser.add_argument('--sigmf', dest='sigmf',
+                          action='store_true', help='add sigmf meta file')
+sigmf_parser.add_argument('--no-sigmf', dest='sigmf',
+                          action='store_false', help='do not add sigmf meta file')
 rssi_parser = parser.add_mutually_exclusive_group(required=False)
-rssi_parser.add_argument('--rssi', dest='enable_rssi', action='store_true', help='get RSSI values')
-rssi_parser.add_argument('--no-rssi', dest='enable_rssi', action='store_false', help='do not get RSSI values')
+rssi_parser.add_argument('--rssi', dest='enable_rssi',
+                         action='store_true', help='get RSSI values')
+rssi_parser.add_argument('--no-rssi', dest='enable_rssi',
+                         action='store_false', help='do not get RSSI values')
 
 arguments = parser.parse_args()
 q = queue.Queue(arguments.qsize)
@@ -102,8 +114,8 @@ class Info:
     @staticmethod
     def on_get(_req, resp):
         resp.text = json.dumps(
-                {'version': __version__, 'sdr': arguments.sdr,
-                    'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded})
+            {'version': __version__, 'sdr': arguments.sdr,
+             'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded})
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
 
@@ -120,7 +132,8 @@ class Record:
         if q.full():
             status = 'Request queue is full'
         else:
-            status = sdr_recorder.validate_request(arguments.freq_excluded, center_freq, sample_count, sample_rate)
+            status = sdr_recorder.validate_request(
+                arguments.freq_excluded, center_freq, sample_count, sample_rate)
 
         if status is None:
             q.put({
@@ -136,7 +149,8 @@ class Record:
 class API:
 
     def __init__(self, start_app=True):
-        self.mqtt_reporter = MQTTReporter(arguments.name, arguments.mqtt_server, ORCHESTRATOR, True)
+        self.mqtt_reporter = MQTTReporter(
+            arguments.name, arguments.mqtt_server, ORCHESTRATOR, True)
         self.main(start_app)
 
     def run_recorder(self, record_func, q):
@@ -177,7 +191,8 @@ class API:
                 f.write(f'{json.dumps(record_args)}\n')
 
     def report_rssi(self, args, record_args, reported_rssi, reported_time, start_time):
-        logging.info(f'reporting RSSI {reported_rssi} for {record_args["center_freq"]}')
+        logging.info(
+            f'reporting RSSI {reported_rssi} for {record_args["center_freq"]}')
         record_args.update({
             'rssi': reported_rssi,
             'time': reported_time})
@@ -205,7 +220,8 @@ class API:
 
     def serve_rssi(self, args, record_args):
         center_freq = int(record_args['center_freq'])
-        logging.info(f'serving RSSI for {center_freq}Hz over threshold {args.rssi_threshold} with AGC {args.agc}')
+        logging.info(
+            f'serving RSSI for {center_freq}Hz over threshold {args.rssi_threshold} with AGC {args.agc}')
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind((RSSI_UDP_ADDR, RSSI_UDP_PORT))
             self.process_rssi(args, record_args, sock)
