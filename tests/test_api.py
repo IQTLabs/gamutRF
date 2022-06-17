@@ -1,10 +1,10 @@
-from gamutrf import api
 import sys
 
 import pytest
 from falcon import testing
 
 sys.argv = [sys.argv[0]]
+from gamutrf import api
 
 
 @pytest.fixture(scope='module')
