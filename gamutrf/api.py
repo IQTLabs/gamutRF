@@ -1,6 +1,6 @@
 import argparse
-import logging
 import json
+import logging
 import os
 import queue
 import socket
@@ -13,11 +13,17 @@ import falcon
 from falcon_cors import CORS
 
 from gamutrf.__init__ import __version__
-from gamutrf.birdseye_rssi import BirdsEyeRSSI, RSSI_UDP_ADDR, RSSI_UDP_PORT, MAX_RSSI, FLOAT_SIZE
-from gamutrf.sdr_recorder import get_recorder, RECORDER_MAP
+from gamutrf.birdseye_rssi import BirdsEyeRSSI
+from gamutrf.birdseye_rssi import FLOAT_SIZE
+from gamutrf.birdseye_rssi import MAX_RSSI
+from gamutrf.birdseye_rssi import RSSI_UDP_ADDR
+from gamutrf.birdseye_rssi import RSSI_UDP_PORT
 from gamutrf.mqtt_reporter import MQTTReporter
+from gamutrf.sdr_recorder import get_recorder
+from gamutrf.sdr_recorder import RECORDER_MAP
 
-WORKER_NAME = os.getenv('WORKER_NAME', socket.gethostbyname(socket.gethostname()))
+WORKER_NAME = os.getenv(
+    'WORKER_NAME', socket.gethostbyname(socket.gethostname()))
 ORCHESTRATOR = os.getenv('ORCHESTRATOR', 'orchestrator')
 ANTENNA = os.getenv('ANTENNA', '')
 
@@ -115,8 +121,8 @@ class Info:
     @staticmethod
     def on_get(_req, resp):
         resp.text = json.dumps(
-                {'version': __version__, 'sdr': arguments.sdr,
-                    'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded})
+            {'version': __version__, 'sdr': arguments.sdr,
+             'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded})
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
 
@@ -133,7 +139,8 @@ class Record:
         if q.full():
             status = 'Request queue is full'
         else:
-            status = sdr_recorder.validate_request(arguments.freq_excluded, center_freq, sample_count, sample_rate)
+            status = sdr_recorder.validate_request(
+                arguments.freq_excluded, center_freq, sample_count, sample_rate)
 
         if status is None:
             q.put({
@@ -149,7 +156,8 @@ class Record:
 class API:
 
     def __init__(self, start_app=True):
-        self.mqtt_reporter = MQTTReporter(arguments.name, arguments.mqtt_server, ORCHESTRATOR, True)
+        self.mqtt_reporter = MQTTReporter(
+            arguments.name, arguments.mqtt_server, ORCHESTRATOR, True)
         self.main(start_app)
 
     def run_recorder(self, record_func, q):
@@ -190,7 +198,8 @@ class API:
                 f.write(f'{json.dumps(record_args)}\n')
 
     def report_rssi(self, args, record_args, reported_rssi, reported_time, start_time):
-        logging.info(f'reporting RSSI {reported_rssi} for {record_args["center_freq"]}')
+        logging.info(
+            f'reporting RSSI {reported_rssi} for {record_args["center_freq"]}')
         record_args.update({
             'rssi': reported_rssi,
             'time': reported_time})
@@ -221,7 +230,8 @@ class API:
 
     def serve_rssi(self, args, record_args):
         center_freq = int(record_args['center_freq'])
-        logging.info(f'serving RSSI for {center_freq}Hz over threshold {args.rssi_threshold} with AGC {args.agc}')
+        logging.info(
+            f'serving RSSI for {center_freq}Hz over threshold {args.rssi_threshold} with AGC {args.agc}')
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind((RSSI_UDP_ADDR, RSSI_UDP_PORT))
             self.process_rssi(args, record_args, sock)

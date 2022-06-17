@@ -1,16 +1,17 @@
+from gamutrf import api
 import sys
 
-from falcon import testing
 import pytest
+from falcon import testing
 
 sys.argv = [sys.argv[0]]
-from gamutrf import api
 
 
 @pytest.fixture(scope='module')
 def client():
     app = api.API(start_app=False)
     return testing.TestClient(app.create_app())
+
 
 def test_routes(client):
     # TODO track down what's causing the exception

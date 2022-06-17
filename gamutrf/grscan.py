@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 # Derivative work from:
 # https://github.com/ThomasHabets/radiostuff/blob/922944c9a7c9c51a15e369ac07a7f8963b5f67bd/broadband-scan/broadband_scan.grc
-
 import functools
 import logging
 import threading
 import time
+
 from gnuradio import analog  # pytype: disable=import-error
 from gnuradio import blocks  # pytype: disable=import-error
 from gnuradio import fft  # pytype: disable=import-error
@@ -69,7 +69,7 @@ class grscan(gr.top_block):
         self.habets39_sweepsinkv_0 = None
         if habets39:
             self.habets39_sweepsinkv_0 = habets39.sweepsinkv(
-                    'rx_freq', fft_size, samp_rate)
+                'rx_freq', fft_size, samp_rate)
         self.fft_vxx_0 = fft.fft_vcc(
             fft_size, True, window.blackmanharris(fft_size), True, 1)
         self.blocks_throttle_0 = blocks.throttle(

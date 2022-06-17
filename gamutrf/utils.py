@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-
-import re
 import os
+import re
 from pathlib import Path
+
 import numpy as np
 
 MTU = 8962

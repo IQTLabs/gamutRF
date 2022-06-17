@@ -1,5 +1,9 @@
 import time
-from gnuradio import blocks, gr, network
+
+from gnuradio import blocks
+from gnuradio import gr
+from gnuradio import network
+
 from gamutrf.grsource import get_source
 
 FLOAT_SIZE = 4
@@ -18,22 +22,33 @@ class BirdsEyeRSSI(gr.top_block):
         self.rssi_throttle = rssi_throttle
 
         if args.birdseye_test_recording:
-            self.recording_source_0 = blocks.file_source(gr.sizeof_gr_complex, args.birdseye_test_recording, True, 0, 0)
-            self.source_0 = blocks.throttle(gr.sizeof_gr_complex, samp_rate, True)
+            self.recording_source_0 = blocks.file_source(
+                gr.sizeof_gr_complex, args.birdseye_test_recording, True, 0, 0)
+            self.source_0 = blocks.throttle(
+                gr.sizeof_gr_complex, samp_rate, True)
             self.connect((self.recording_source_0, 0), (self.source_0, 0))
         else:
-            self.source_0, _ = get_source(args.sdr, samp_rate, args.gain, agc, center_freq)
+            self.source_0, _ = get_source(
+                args.sdr, samp_rate, args.gain, agc, center_freq)
 
-        self.network_udp_sink_0 = network.udp_sink(gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 32768, False)
+        self.network_udp_sink_0 = network.udp_sink(
+            gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 32768, False)
         self.blocks_nlog10_ff_0 = blocks.nlog10_ff(10, 1, 0)
-        self.blocks_moving_average_xx_0 = blocks.moving_average_ff(self.mean_window, 1, 2000, 1)
+        self.blocks_moving_average_xx_0 = blocks.moving_average_ff(
+            self.mean_window, 1, 2000, 1)
         self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(1)
         self.blocks_add_const_vxx_0 = blocks.add_const_ff(-60)
-        self.keep_one_in_n_0 = blocks.keep_one_in_n(gr.sizeof_float, int(self.rssi_throttle))
+        self.keep_one_in_n_0 = blocks.keep_one_in_n(
+            gr.sizeof_float, int(self.rssi_throttle))
 
         self.connect((self.keep_one_in_n_0, 0), (self.network_udp_sink_0, 0))
-        self.connect((self.blocks_add_const_vxx_0, 0), (self.keep_one_in_n_0, 0))
-        self.connect((self.blocks_complex_to_mag_squared_0, 0), (self.blocks_moving_average_xx_0, 0))
-        self.connect((self.blocks_moving_average_xx_0, 0), (self.blocks_nlog10_ff_0, 0))
-        self.connect((self.blocks_nlog10_ff_0, 0), (self.blocks_add_const_vxx_0, 0))
-        self.connect((self.source_0, 0), (self.blocks_complex_to_mag_squared_0, 0))
+        self.connect((self.blocks_add_const_vxx_0, 0),
+                     (self.keep_one_in_n_0, 0))
+        self.connect((self.blocks_complex_to_mag_squared_0, 0),
+                     (self.blocks_moving_average_xx_0, 0))
+        self.connect((self.blocks_moving_average_xx_0, 0),
+                     (self.blocks_nlog10_ff_0, 0))
+        self.connect((self.blocks_nlog10_ff_0, 0),
+                     (self.blocks_add_const_vxx_0, 0))
+        self.connect((self.source_0, 0),
+                     (self.blocks_complex_to_mag_squared_0, 0))

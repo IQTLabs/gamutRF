@@ -1,4 +1,3 @@
-
 import datetime
 import logging
 import os
@@ -7,8 +6,11 @@ import tempfile
 import time
 
 import sigmf
-from gamutrf.utils import ETTUS_ARGS, ETTUS_ANT
-from gamutrf.sigwindows import parse_freq_excluded, freq_excluded
+
+from gamutrf.sigwindows import freq_excluded
+from gamutrf.sigwindows import parse_freq_excluded
+from gamutrf.utils import ETTUS_ANT
+from gamutrf.utils import ETTUS_ARGS
 
 
 SAMPLE_TYPE = 's16'
@@ -49,8 +51,10 @@ class SDRRecorder:
 
     def write_recording(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb):
         record_status = -1
-        args = self.record_args(self.zst_fifo, sample_rate, sample_count, center_freq, gain, agc, rxb)
-        dotfile = os.path.join(os.path.dirname(sample_file), '.' + os.path.basename(sample_file))
+        args = self.record_args(
+            self.zst_fifo, sample_rate, sample_count, center_freq, gain, agc, rxb)
+        dotfile = os.path.join(os.path.dirname(
+            sample_file), '.' + os.path.basename(sample_file))
         zstd_args = ['nice', 'zstd', '-1', self.zst_fifo, '-o', dotfile]
         logging.info('starting recording: %s', args)
         with subprocess.Popen(zstd_args, stdin=subprocess.DEVNULL) as zstd_proc:
@@ -63,15 +67,16 @@ class SDRRecorder:
     def run_recording(self, path, sample_rate, sample_count, center_freq, gain, agc, rxb, sigmf_, sdr, antenna):
         epoch_time = str(int(time.time()))
         meta_time = datetime.datetime.utcnow().isoformat() + 'Z'
-        sample_file = self.get_sample_file(path, epoch_time, center_freq, sample_rate, sdr, antenna, gain)
+        sample_file = self.get_sample_file(
+            path, epoch_time, center_freq, sample_rate, sdr, antenna, gain)
         record_status = -1
         try:
             record_status = self.write_recording(
                 sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb)
             if sigmf_:
                 meta = sigmf.SigMFFile(
-                    data_file = sample_file,
-                    global_info = {
+                    data_file=sample_file,
+                    global_info={
                         sigmf.SigMFFile.DATATYPE_KEY: SAMPLE_TYPE,
                         sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
                         sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
@@ -112,7 +117,8 @@ class EttusRecorder(SDRRecorder):
     def write_recording(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb):
         # Ettus doesn't need a wrapper, it can do its own zst compression.
         record_status = -1
-        args = self.record_args(sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb)
+        args = self.record_args(sample_file, sample_rate,
+                                sample_count, center_freq, gain, agc, rxb)
         logging.info('starting recording: %s', args)
         record_status = subprocess.check_call(args)
         return record_status
@@ -122,14 +128,14 @@ class BladeRecorder(SDRRecorder):
 
     def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, _rxb):
         gain_args = [
-           '-e', 'set agc rx off',
-           '-e', f'set gain rx {gain}',
+            '-e', 'set agc rx off',
+            '-e', f'set gain rx {gain}',
         ]
         if agc:
             gain_args = [
                 '-e', 'set agc rx on',
             ]
-        return ['bladeRF-cli' ] + gain_args + [
+        return ['bladeRF-cli'] + gain_args + [
             '-e', f'set samplerate rx {sample_rate}',
             '-e', f'set bandwidth rx {sample_rate}',
             '-e', f'set frequency rx {center_freq}',
@@ -163,4 +169,3 @@ RECORDER_MAP = {
 
 def get_recorder(recorder_name):
     return RECORDER_MAP[recorder_name]()
-
