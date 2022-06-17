@@ -48,5 +48,5 @@ def get_source(sdr, samp_rate, gain, agc=False, center_freq=None):
     source_0.set_frequency_correction(0, 0)
     source_0.set_gain_mode(0, agc)
     source_0.set_gain(0, gain)
-    def freq_setter(x, y): return x.set_frequency(0, y)
+    freq_setter = lambda x, y: x.set_frequency(0, y)
     return (source_0, freq_setter)
