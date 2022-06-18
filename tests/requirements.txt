@@ -1,7 +1,7 @@
 attrs==21.4.0
 docker==5.0.3
 fake-rpi==0.7.1
-pylint==2.14.2
+pylint==2.14.3
 pytest==7.1.2
 pytest-cov==3.0.0
 pytype==2022.6.14
