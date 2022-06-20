@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 import time
+from urllib.parse import urlparse
 
 import sigmf
 
@@ -94,10 +95,10 @@ class SDRRecorder:
 
 class EttusRecorder(SDRRecorder):
 
-    def __init__(self):
-        super().__init__()
-        # TODO: troubleshoot why this doesn't find an Ettus initially, still.
-        # subprocess.call(['uhd_find_devices'])
+    # def __init__(self):
+    #    super().__init__()
+    #    # TODO: troubleshoot why this doesn't find an Ettus initially, still.
+    #    # subprocess.call(['uhd_find_devices'])
 
     def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb):
         # Ettus "nsamps" API has an internal limit, so translate "stream for druation".
@@ -160,6 +161,16 @@ class LimeRecorder(SDRRecorder):
         ]
 
 
+class FileTestRecorder(SDRRecorder):
+
+    test_file = None
+
+    def record_args(self, sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb):
+        args = ['dd', f'if={urlparse(self.test_file).path}', f'of={sample_file}',
+                f'count={int(sample_count)}', f'bs={int(sample_rate)}']
+        return args
+
+
 RECORDER_MAP = {
     'ettus': EttusRecorder,
     'bladerf': BladeRecorder,
@@ -168,4 +179,9 @@ RECORDER_MAP = {
 
 
 def get_recorder(recorder_name):
-    return RECORDER_MAP[recorder_name]()
+    try:
+        return RECORDER_MAP[recorder_name]()
+    except KeyError:
+        recorder = FileTestRecorder
+        recorder.test_file = recorder_name
+        return recorder

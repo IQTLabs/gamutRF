@@ -44,8 +44,8 @@ parser.add_argument(
     '--port', '-p', help='Port to run the API webserver on', type=int,
     default=8000)
 parser.add_argument(
-    '--sdr', '-s', help='Specify SDR to record with (ettus, lime or bladerf)',
-    choices=list(RECORDER_MAP.keys()), default='ettus')
+    '--sdr', '-s', help=f'Specify SDR to record with {list(RECORDER_MAP.keys())} or file', type=str,
+    default='ettus')
 parser.add_argument(
     '--freq_excluded', '-e', help='Freq range to exclude in MHz (e.g. "100-200")',
     action='append', default=[])
@@ -61,9 +61,6 @@ parser.add_argument(
 parser.add_argument(
     '--qsize', help='Max request queue size',
     default=int(2), type=int)
-parser.add_argument(
-    '--birdseye_test_recording', help='continuously spool I/Q samples from this file',
-    default='', type=str)
 parser.add_argument(
     '--mqtt_server', help='MQTT server to report RSSI',
     default=ORCHESTRATOR, type=str)

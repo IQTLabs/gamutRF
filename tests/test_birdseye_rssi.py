@@ -10,10 +10,29 @@ import docker
 import numpy as np
 import requests
 
+from gamutrf.birdseye_rssi import BirdsEyeRSSI
+
+
+class FakeArgs:
+
+    def __init__(self):
+        self.sdr = 'file:/dev/zero'
+        self.threshold = -100
+        self.mean_window = 4096
+        self.rssi_threshold = -100
+        self.gain = 10
+
 
 class BirdseyeRSSITestCase(unittest.TestCase):
 
-    def test_birdseye_rssi(self):
+    def test_birdseye_smoke(self):
+        tb = BirdsEyeRSSI(FakeArgs(), 1e3, 1e3)
+        tb.start()
+        time.sleep(1)
+        tb.stop()
+        tb.wait()
+
+    def test_birdseye_endtoend_rssi(self):
         test_tag = 'iqtlabs/gamutrf-api:latest'
         with tempfile.TemporaryDirectory() as tempdir:
             testraw = os.path.join(tempdir, 'test.raw')
@@ -28,8 +47,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                                 path='.', tag=test_tag)
             container = client.containers.run(
                 test_tag,
-                command=['--rssi_threshold=-100', '--rssi',
-                         '--birdseye_test_recording=/data/test.raw'],
+                command=['--rssi_threshold=-100', '--rssi', '--sdr=file:/data/test.raw'],
                 ports={'8000/tcp': 8000},
                 volumes={tempdir: {'bind': '/data', 'mode': 'rw'}},
                 detach=True)

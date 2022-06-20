@@ -1,52 +1,72 @@
-import logging
-import time
 
+import logging
+import os
+import time
+from urllib.parse import urlparse
+
+from gnuradio import blocks
 from gnuradio import soapy
 from gnuradio import uhd
+from gnuradio.gr import sizeof_gr_complex
 
 from gamutrf.utils import ETTUS_ANT
 from gamutrf.utils import ETTUS_ARGS
 
 
-def get_source(sdr, samp_rate, gain, agc=False, center_freq=None):
-    stream_args = ''
-    tune_args = ['']
-    settings = ['']
+def get_source(grblock, sdr, samp_rate, gain, agc=False, center_freq=None, sdrargs=None):
     logging.info(
         f'initializing SDR {sdr} with sample rate {samp_rate}, gain {gain}, agc {agc}')
 
+    url = urlparse(sdr)
+    if url.scheme:
+        if url.scheme == 'file' and os.path.exists(url.path):
+            grblock.recording_source_0 = blocks.file_source(
+                sizeof_gr_complex, url.path, True, 0, 0)
+            grblock.source_0 = blocks.throttle(
+                sizeof_gr_complex, samp_rate, True)
+            grblock.connect((grblock.recording_source_0, 0), (grblock.source_0, 0))
+            # TODO: enable setting frequency change tags on the stream, so can test scanner.
+            grblock.freq_setter = lambda _x, _y: None
+        else:
+            raise ValueError('unsupported/missing file location')
+        return
+
     if sdr == 'ettus':
-        source_0 = uhd.usrp_source(
-            ','.join((ETTUS_ARGS, '')),
+        if not sdrargs:
+            sdrargs = ETTUS_ARGS
+        grblock.source_0 = uhd.usrp_source(
+            ','.join((sdrargs, '')),
             uhd.stream_args(
                 cpu_format='fc32',
                 args='',
                 channels=list(range(0, 1)),
             ),
         )
-        source_0.set_time_now(
+        grblock.source_0.set_time_now(
             uhd.time_spec(time.time()), uhd.ALL_MBOARDS)
-        source_0.set_antenna(ETTUS_ANT, 0)
-        source_0.set_samp_rate(samp_rate)
+        grblock.source_0.set_antenna(ETTUS_ANT, 0)
+        grblock.source_0.set_samp_rate(samp_rate)
         if center_freq is not None:
-            source_0.set_center_freq(center_freq, 0)
-        source_0.set_gain(gain, 0)
-        source_0.set_rx_agc(agc, 0)
-        freq_setter = lambda x, y: x.set_center_freq(y, 0)
-        return (source_0, freq_setter)
+            grblock.source_0.set_center_freq(center_freq, 0)
+        grblock.source_0.set_gain(gain, 0)
+        grblock.source_0.set_rx_agc(agc, 0)
+        grblock.freq_setter = lambda x, y: x.set_center_freq(y, 0)
+        return
 
     dev = f'driver={sdr}'
-    try:
-        source_0 = soapy.source(
-            dev, 'fc32', 1, '', stream_args, tune_args, settings)
-    except RuntimeError:
-        return (None, None)
-    source_0.set_sample_rate(0, samp_rate)
-    source_0.set_bandwidth(0, samp_rate)
+    stream_args = ''
+    tune_args = ['']
+    settings = ['']
+    if sdrargs:
+        settings = sdrargs
+    grblock.source_0 = soapy.source(
+        dev, 'fc32', 1, '', stream_args, tune_args, settings)
+    grblock.source_0.set_sample_rate(0, samp_rate)
+    grblock.source_0.set_bandwidth(0, samp_rate)
     if center_freq is not None:
-        source_0.set_frequency(0, center_freq)
-    source_0.set_frequency_correction(0, 0)
-    source_0.set_gain_mode(0, agc)
-    source_0.set_gain(0, gain)
-    freq_setter = lambda x, y: x.set_frequency(0, y)
-    return (source_0, freq_setter)
+        grblock.source_0.set_frequency(0, center_freq)
+    grblock.source_0.set_frequency_correction(0, 0)
+    grblock.source_0.set_gain_mode(0, agc)
+    grblock.source_0.set_gain(0, gain)
+    grblock.freq_setter = lambda x, y: x.set_frequency(0, y)
+    return
