@@ -14,7 +14,6 @@ from prometheus_client import Gauge
 from prometheus_client import start_http_server
 
 from gamutrf.grscan import grscan
-from gamutrf.utils import ETTUS_ARGS
 
 
 def init_prom_vars():
@@ -57,8 +56,8 @@ def argument_parser():
         '--sdr', dest='sdr', type=str, default='ettus',
         help='SDR to use (ettus, bladerf, or lime)')
     parser.add_argument(
-        '--ettusargs', dest='ettusargs', type=str, default=ETTUS_ARGS,
-        help='extra args to pass to Ettus driver')
+        '--sdrargs', dest='sdrargs', type=str, default='',
+        help='extra args to pass to SDR driver')
     parser.add_argument(
         '--updatetimeout', dest='updatetimeout', type=int, default=10,
         help='seconds to wait for healthy freq updates')
@@ -89,7 +88,7 @@ def main():
                 igain=options.igain, samp_rate=options.samp_rate,
                 sweep_sec=options.sweep_sec,
                 logaddr=options.logaddr, logport=options.logport,
-                sdr=options.sdr, ettusargs=options.ettusargs,
+                sdr=options.sdr, sdrargs=options.sdrargs,
                 habets39=habets39)
 
     def sig_handler(_sig=None, _frame=None):

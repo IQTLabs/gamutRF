@@ -7,6 +7,7 @@ import logging
 import threading
 import time
 
+from gnuradio import network
 from gnuradio import analog  # pytype: disable=import-error
 from gnuradio import blocks  # pytype: disable=import-error
 from gnuradio import fft  # pytype: disable=import-error
@@ -20,7 +21,7 @@ from gamutrf.utils import MTU
 class grscan(gr.top_block):
 
     def __init__(self, freq_end=1e9, freq_start=100e6, igain=0, samp_rate=4e6, sweep_sec=30,
-                 logaddr='127.0.0.1', logport=8001, sdr='ettus', ettusargs='', habets39=None):
+                 logaddr='127.0.0.1', logport=8001, sdr='ettus', sdrargs=None, habets39=None):
         gr.top_block.__init__(self, 'scan', catch_exceptions=True)
 
         ##################################################
@@ -59,8 +60,8 @@ class grscan(gr.top_block):
                 time.sleep(1.0 / (97))
 
         logging.info(f'will scan from {freq_start} to {freq_end}')
-        self.source, self.freq_setter = get_source(
-            sdr, samp_rate, igain, agc=False, center_freq=freq_start)
+        get_source(
+            self, sdr, samp_rate, igain, agc=False, center_freq=freq_start, sdrargs=sdrargs)
 
         self.center_freq_thread = threading.Thread(target=_center_freq_probe)
         self.center_freq_thread.daemon = True
@@ -78,8 +79,8 @@ class grscan(gr.top_block):
             gr.sizeof_gr_complex, fft_size)
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(
             freq_end-freq_start)
-        self.blocks_udp_sink_0 = blocks.udp_sink(
-            gr.sizeof_char, logaddr, logport, MTU, True)
+        self.blocks_udp_sink_0 = network.udp_sink(
+            gr.sizeof_char, 1, logaddr, logport, 0, MTU, True)
         self.blocks_complex_to_mag_0 = blocks.complex_to_mag(fft_size)
         self.blocks_add_const_vxx_0 = blocks.add_const_ff(freq_start)
         self.analog_sig_source_x_0 = analog.sig_source_f(
@@ -99,17 +100,16 @@ class grscan(gr.top_block):
                      (self.blocks_probe_signal_x_0, 0))
 
         # FFT chain
-        self.connect((self.blocks_stream_to_vector_0, 0),
-                     (self.fft_vxx_0, 0))
-        self.connect((self.fft_vxx_0, 0),
-                     (self.blocks_complex_to_mag_0, 0))
         if self.habets39_sweepsinkv_0:
+            self.connect((self.blocks_stream_to_vector_0, 0),
+                         (self.fft_vxx_0, 0))
+            self.connect((self.fft_vxx_0, 0),
+                         (self.blocks_complex_to_mag_0, 0))
             self.connect((self.blocks_complex_to_mag_0, 0),
                          (self.habets39_sweepsinkv_0, 0))
             self.connect((self.habets39_sweepsinkv_0, 0),
                          (self.blocks_udp_sink_0, 0))
-        if self.source:
-            self.connect((self.source, 0),
+            self.connect((self.source_0, 0),
                          (self.blocks_stream_to_vector_0, 0))
 
     def set_center_freq(self, center_freq):
@@ -117,12 +117,12 @@ class grscan(gr.top_block):
             return
         self.center_freq = center_freq
         if self.center_freq:
-            self.freq_setter(self.source, self.center_freq)
+            self.freq_setter(self.source_0, self.center_freq)
             self.freq_update = time.time()
             self.no_freq_updates = 0
 
     def freq_updated(self, timeout):
-        if (time.time() - self.freq_update) < timeout:
+        if time.time() - self.freq_update < timeout:
             return True
         self.no_freq_updates += 1
         return self.no_freq_updates < timeout

@@ -1,4 +1,3 @@
-import time
 
 from gnuradio import blocks
 from gnuradio import gr
@@ -20,16 +19,7 @@ class BirdsEyeRSSI(gr.top_block):
         self.threshold = args.rssi_threshold
         self.mean_window = args.mean_window
         self.rssi_throttle = rssi_throttle
-
-        if args.birdseye_test_recording:
-            self.recording_source_0 = blocks.file_source(
-                gr.sizeof_gr_complex, args.birdseye_test_recording, True, 0, 0)
-            self.source_0 = blocks.throttle(
-                gr.sizeof_gr_complex, samp_rate, True)
-            self.connect((self.recording_source_0, 0), (self.source_0, 0))
-        else:
-            self.source_0, _ = get_source(
-                args.sdr, samp_rate, args.gain, agc, center_freq)
+        get_source(self, args.sdr, samp_rate, args.gain, agc, center_freq)
 
         self.network_udp_sink_0 = network.udp_sink(
             gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 32768, False)

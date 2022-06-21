@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import os
 import tempfile
-import time
 import unittest
 
 from gamutrf.specgram import process_all_recordings
@@ -10,14 +9,14 @@ from gamutrf.utils import parse_filename
 
 class FakeArgs:
 
-    def __init__(self, nfft, cmap, ytics, bare, noverlap, iext, skip_test, recording, workers, skip_fft):
+    def __init__(self, nfft, cmap, ytics, bare, noverlap, iext, skip_exist, recording, workers, skip_fft):
         self.nfft = nfft
         self.cmap = cmap
         self.ytics = ytics
         self.bare = bare
         self.noverlap = noverlap
         self.iext = iext
-        self.skip_exist = True
+        self.skip_exist = skip_exist
         self.recording = recording
         self.workers = workers
         self.skip_fft = skip_fft
@@ -29,7 +28,7 @@ class SpecgramTestCase(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tempdir:
             recording = os.path.join(
                 str(tempdir), 'testrecording_100Hz_1000sps.raw')
-            freq_center, sample_rate, sample_dtype, sample_len, _sample_type, _sample_bits = parse_filename(
+            _freq_center, sample_rate, _sample_dtype, sample_len, _sample_type, _sample_bits = parse_filename(
                 recording)
             samples = chr(0) * int(sample_len * sample_rate)
             with open(recording, 'wb') as f:

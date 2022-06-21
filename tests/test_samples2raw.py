@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import os
 import unittest
 
 from gamutrf.samples2raw import make_procs_args
