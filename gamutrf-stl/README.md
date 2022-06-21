@@ -1,0 +1,1 @@
+This work, "gamutrf-stl", is a derivative of "[Raspberry Pi Rack](https://www.printables.com/model/50558-raspberry-pi-rack)" by [tobias](https://www.printables.com/social/102513-tobias), used under [CC BY](http://creativecommons.org/licenses/by/4.0/). "gamutrf-stl" is licensed under [CC BY](http://creativecommons.org/licenses/by/4.0/) by IQT Labs LLC.
