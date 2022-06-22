@@ -32,6 +32,30 @@ class BirdseyeRSSITestCase(unittest.TestCase):
         tb.stop()
         tb.wait()
 
+    def verify_birdseye_stream(self, gamutdir, freq):
+        for _ in range(15):
+            try:
+                response = requests.get(
+                    f'http://localhost:8000/v1/record/{int(freq)}/1000000/1000000')
+                self.assertEqual(200, response.status_code, response)
+                break
+            except requests.exceptions.ConnectionError:
+                time.sleep(1)
+        mqtt_logs = None
+        line_json = None
+        for _ in range(30):
+            self.assertTrue(os.path.exists(gamutdir))
+            mqtt_logs = glob.glob(os.path.join(gamutdir, 'mqtt-rssi-*log'))
+            for log_name in mqtt_logs:
+                with open(log_name, 'r') as log:
+                    for line in log.readlines():
+                        line_json = json.loads(line)
+                        self.assertGreater(-10, line_json['rssi'])
+                        if line_json['center_freq'] == freq:
+                            return
+            time.sleep(1)
+        self.assertEqual(freq, line_json['center_freq'], line_json)
+
     def test_birdseye_endtoend_rssi(self):
         test_tag = 'iqtlabs/gamutrf-api:latest'
         with tempfile.TemporaryDirectory() as tempdir:
@@ -43,34 +67,16 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                 testdata.tofile(testrawfile)
             os.mkdir(gamutdir)
             client = docker.from_env()
-            client.images.build(dockerfile='Dockerfile.api',
-                                path='.', tag=test_tag)
+            client.images.build(dockerfile='Dockerfile.api', path='.', tag=test_tag)
             container = client.containers.run(
                 test_tag,
                 command=['--rssi_threshold=-100', '--rssi', '--sdr=file:/data/test.raw'],
                 ports={'8000/tcp': 8000},
                 volumes={tempdir: {'bind': '/data', 'mode': 'rw'}},
                 detach=True)
-            for _ in range(15):
-                try:
-                    response = requests.get(
-                        'http://localhost:8000/v1/record/100000000/1000000/1000000')
-                    self.assertEqual(200, response.status_code, response)
-                    break
-                except requests.exceptions.ConnectionError:
-                    time.sleep(1)
-            mqtt_logs = None
-            for _ in range(15):
-                mqtt_logs = glob.glob(os.path.join(gamutdir, 'mqtt-rssi-*log'))
-                if mqtt_logs:
-                    container.kill()
-                    break
-                time.sleep(1)
-            self.assertTrue(mqtt_logs)
-            with open(mqtt_logs[0], 'r') as log:
-                for line in log.readlines():
-                    line_json = json.loads(line)
-                    self.assertGreater(-10, line_json['rssi'])
+            self.verify_birdseye_stream(gamutdir, 10e6)
+            self.verify_birdseye_stream(gamutdir, 99e6)
+            container.kill()
 
 
 if __name__ == '__main__':
