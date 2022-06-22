@@ -171,14 +171,6 @@ class API:
         return sdr_recorder.run_recording(
             arguments.path, sample_rate, sample_count, center_freq, arguments.gain, arguments.agc, arguments.rxb, arguments.sigmf, arguments.sdr, arguments.antenna)
 
-    @staticmethod
-    def mqtt_log(path, prefix, start_time, record_args):
-        try:
-            with open(os.path.join(path, f'mqtt-{prefix}-{start_time}.log'), 'a+') as f:
-                f.write(f'{json.dumps(record_args)}\n')
-        except FileNotFoundError as err:
-            logging.error(f'could not write to mqtt rssi log: {err}')
-
     def serve_recording(self, arguments, record_func, q):
         logging.info('serving recordings')
         start_time = time.time()
@@ -192,7 +184,7 @@ class API:
                 break
             record_args.update(vars(arguments))
             self.mqtt_reporter.publish('gamutrf/record', record_args)
-            self.mqtt_log(arguments.path, 'record', start_time, record_args)
+            self.mqtt_reporter.log(arguments.path, 'record', start_time, record_args)
 
     def report_rssi(self, args, record_args, reported_rssi, reported_time, start_time):
         logging.info(
@@ -202,7 +194,7 @@ class API:
             'time': reported_time})
         record_args.update(vars(args))
         self.mqtt_reporter.publish('gamutrf/rssi', record_args)
-        self.mqtt_log(args.path, 'rssi', start_time, record_args)
+        self.mqtt_reporter.log(args.path, 'rssi', start_time, record_args)
 
     def process_rssi(self, args, record_args, sock, q):
         last_rssi_time = 0
