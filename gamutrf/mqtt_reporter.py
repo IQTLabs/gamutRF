@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import socket
 
 import gpsd
@@ -16,6 +17,14 @@ class MQTTReporter:
         self.gps_server = gps_server
         self.mqttc = None
         self.bearing = 'no bearing'
+
+    @staticmethod
+    def log(path, prefix, start_time, record_args):
+        try:
+            with open(os.path.join(path, f'mqtt-{prefix}-{start_time}.log'), 'a+') as f:
+                f.write(f'{json.dumps(record_args)}\n')
+        except FileNotFoundError as err:
+            logging.error(f'could not write to mqtt rssi log: {err}')
 
     def connect(self):
         logging.info(f'connecting to {self.mqtt_server}')

@@ -161,14 +161,7 @@ class API:
         logging.info('run recorder')
         while True:
             if arguments.enable_rssi:
-                # TODO: this only gets called the first time then will be stuck in a loop, ignoring the rest of the queue
-                record_args = q.get()
-                logging.info(f'got request {record_args}')
-                rssi_server = BirdsEyeRSSI(
-                    arguments, record_args['sample_rate'], record_args['center_freq'],
-                    agc=arguments.agc, rssi_throttle=arguments.rssi_throttle)
-                rssi_server.start()
-                self.serve_rssi(arguments, record_args)
+                self.serve_rssi(arguments, q)
             else:
                 self.serve_recording(arguments, record_func, q)
             time.sleep(5)
@@ -191,8 +184,7 @@ class API:
                 break
             record_args.update(vars(arguments))
             self.mqtt_reporter.publish('gamutrf/record', record_args)
-            with open(os.path.join(arguments.path, f'mqtt-record-{start_time}.log'), 'a') as f:
-                f.write(f'{json.dumps(record_args)}\n')
+            self.mqtt_reporter.log(arguments.path, 'record', start_time, record_args)
 
     def report_rssi(self, args, record_args, reported_rssi, reported_time, start_time):
         logging.info(
@@ -202,16 +194,12 @@ class API:
             'time': reported_time})
         record_args.update(vars(args))
         self.mqtt_reporter.publish('gamutrf/rssi', record_args)
-        try:
-            with open(os.path.join(args.path, f'mqtt-rssi-{start_time}.log'), 'a') as f:
-                f.write(f'{json.dumps(record_args)}\n')
-        except FileNotFoundError as err:
-            logging.error(f'could not write to mqtt rssi log: {err}')
+        self.mqtt_reporter.log(args.path, 'rssi', start_time, record_args)
 
-    def process_rssi(self, args, record_args, sock):
+    def process_rssi(self, args, record_args, sock, q):
         last_rssi_time = 0
         start_time = time.time()
-        while True:
+        while q.empty():
             rssi_raw, _ = sock.recvfrom(FLOAT_SIZE)
             rssi = struct.unpack('f', rssi_raw)[0]
             if rssi < args.rssi_threshold:
@@ -225,13 +213,22 @@ class API:
             self.report_rssi(args, record_args, rssi, now, start_time)
             last_rssi_time = now
 
-    def serve_rssi(self, args, record_args):
+    def serve_rssi(self, args, q):
+        record_args = q.get()
+        logging.info(f'got request {record_args}')
         center_freq = int(record_args['center_freq'])
+        rssi_server = BirdsEyeRSSI(
+            arguments, record_args['sample_rate'], center_freq,
+            agc=arguments.agc, rssi_throttle=arguments.rssi_throttle)
+        rssi_server.start()
         logging.info(
             f'serving RSSI for {center_freq}Hz over threshold {args.rssi_threshold} with AGC {args.agc}')
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind((RSSI_UDP_ADDR, RSSI_UDP_PORT))
-            self.process_rssi(args, record_args, sock)
+            self.process_rssi(args, record_args, sock, q)
+        logging.info('RSSI stream stopped')
+        rssi_server.stop()
+        rssi_server.wait()
 
     @staticmethod
     def paths():
