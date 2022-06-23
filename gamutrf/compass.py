@@ -10,12 +10,12 @@ from falcon_cors import CORS
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
 
-class Bearing:
+class Heading:
 
-    def get_bearing(self):
+    def get_heading(self):
         self.bus = smbus2.SMBus(1)
         self.address = 0x0d
-        self.bearing_reading = 'no bearing'
+        self.heading_reading = 'no heading'
         self.write_byte(11, 0b00000001)
         self.write_byte(10, 0b00100000)
         self.write_byte(9, 0xD)
@@ -26,12 +26,12 @@ class Bearing:
             scale  # calculating x,y,z coordinates
         y_out = (self.read_word_2c(2) - y_offset+2) * scale
         z_out = self.read_word_2c(4) * scale
-        self.bearing_reading = math.atan2(
+        self.heading_reading = math.atan2(
             y_out, x_out)+.48  # 0.48 is correction value
-        if(self.bearing_reading < 0):
-            self.bearing_reading += 2 * math.pi
+        if(self.heading_reading < 0):
+            self.heading_reading += 2 * math.pi
         # convert to degrees
-        self.bearing_reading = (self.bearing_reading * 180) / math.pi
+        self.heading_reading = (self.heading_reading * 180) / math.pi
 
     def read_byte(self, adr):  # communicate with compass
         return self.bus.read_byte_data(self.address, adr)
@@ -53,8 +53,8 @@ class Bearing:
         self.bus.write_byte_data(self.address, adr, value)
 
     def on_get(self, _req, resp):
-        self.get_bearing()
-        resp.text = str(self.bearing_reading)
+        self.get_heading()
+        resp.text = str(self.heading_reading)
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
 
@@ -76,8 +76,8 @@ class CompassAPI:
 
     def routes(self):
         p = self.paths()
-        bearing = Bearing()
-        funcs = [bearing]
+        heading = Heading()
+        funcs = [heading]
         return dict(zip(p, funcs))
 
     def main(self):
