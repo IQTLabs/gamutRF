@@ -30,6 +30,8 @@ class Bearing:
             y_out, x_out)+.48  # 0.48 is correction value
         if(self.bearing_reading < 0):
             self.bearing_reading += 2 * math.pi
+        # convert to degrees
+        self.bearing_reading = (self.bearing_reading * 180) / math.pi
 
     def read_byte(self, adr):  # communicate with compass
         return self.bus.read_byte_data(self.address, adr)
