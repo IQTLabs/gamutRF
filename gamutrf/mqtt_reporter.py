@@ -16,7 +16,7 @@ class MQTTReporter:
         self.compass = compass
         self.gps_server = gps_server
         self.mqttc = None
-        self.bearing = 'no bearing'
+        self.heading = 'no heading'
 
     @staticmethod
     def log(path, prefix, start_time, record_args):
@@ -34,12 +34,12 @@ class MQTTReporter:
         if self.gps_server:
             gpsd.connect(host=self.gps_server, port=2947)
 
-    def get_bearing(self):
+    def get_heading(self):
         try:
-            self.bearing = str(
+            self.heading = str(
                 float(httpx.get(f'http://{self.gps_server}:8000/v1/').text))
         except Exception as err:
-            logging.error('could not update bearing: %s', err)
+            logging.error('could not update heading: %s', err)
 
     def add_gps(self, publish_args):
         if not self.gps_server:
@@ -49,18 +49,18 @@ class MQTTReporter:
             'altitude': None,
             'gps_time': None,
             'map_url': None,
-            'bearing': self.bearing,
+            'heading': self.heading,
             'gps': 'no fix'})
         try:
             if self.compass:
-                self.get_bearing()
+                self.get_heading()
             packet = gpsd.get_current()
             publish_args.update({
                 'position': packet.position(),
                 'altitude': packet.altitude(),
                 'gps_time': packet.get_time().timestamp(),
                 'map_url': packet.map_url(),
-                'bearing': self.bearing,
+                'heading': self.heading,
                 'gps': 'fix'})
         except (gpsd.NoFixError, AttributeError) as err:
             logging.error('could not update with GPS: %s', err)
