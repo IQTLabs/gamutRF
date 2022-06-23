@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import argparse
 import subprocess
 
@@ -6,7 +7,7 @@ from gamutrf.utils import parse_filename
 from gamutrf.utils import replace_ext
 
 
-def make_procs_args(sample_filename):
+def make_procs_args(sample_filename, outfmt):
     procs_args = []
     out_filename = sample_filename
 
@@ -19,13 +20,15 @@ def make_procs_args(sample_filename):
 
     _, sample_rate, _sample_dtype, _sample_len, in_format, in_bits = parse_filename(
         out_filename)
+    print(_, sample_rate, _sample_dtype, _sample_len, in_format, in_bits)
     out_filename = replace_ext(out_filename, 'raw', all_ext=True)
     sox_in = sample_filename
     if procs_args:
         sox_in = '-'
     procs_args.append(
-        ['sox', '-t', 'raw', '-r', str(sample_rate), '-c', '1', '-b', str(in_bits),
-         '-e', in_format, sox_in, '-e', 'float', out_filename])
+        ['sox', '-t', 'raw', '-r', str(sample_rate), '-c', '1',
+         '-b', str(in_bits), '-e', in_format, sox_in,
+         '-e', outfmt, out_filename])
     return procs_args
 
 
@@ -45,10 +48,11 @@ def run_procs(procs_args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Convert (possibly compressed) sample recording to a complex float raw file (gnuradio style)')
+        description='Convert (possibly compressed) sample recording to a float raw file (gnuradio style)')
     parser.add_argument('samplefile', default='', help='sample file to read')
+    parser.add_argument('outfmt', default='float', help='output format')
     args = parser.parse_args()
-    procs_args = make_procs_args(args.samplefile)
+    procs_args = make_procs_args(args.samplefile, args.outfmt)
     run_procs(procs_args)
 
 
