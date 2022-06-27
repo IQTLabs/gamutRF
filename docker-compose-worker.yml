@@ -4,22 +4,6 @@ version: "3.3"
 networks:
   gamutrf:
 services:
-  specgram:
-    restart: always
-    image: iqtlabs/gamutrf-specgram:latest
-    volumes:
-      - '${VOL_PREFIX}:/data'
-    deploy:
-      resources:
-        # we would prefer "reservations", but this works only in "swarm" mode.
-        # see https://github.com/docker/compose/pull/5684
-        limits:
-          cpus: '0.5'
-    command:
-      - '--loop=10'
-      - '--skip-exist'
-      - '--workers=1'
-      - '/data/gamutrf'
   gamutrf-api:
     restart: always
     image: iqtlabs/gamutrf-api:latest
@@ -42,6 +26,7 @@ services:
     command:
       - --no-agc
       - --rxb=62914560
+      - '--gain=${GAIN}'
   watchtower:
     image: containrrr/watchtower:latest
     restart: always

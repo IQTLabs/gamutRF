@@ -1,0 +1,22 @@
+# On Pi4/Ubuntu, also requires systemd.unified_cgroup_hierarchy=0 added to /boot/firmware/cmdline.txt,
+# to fall back to cgroup v1.
+version: "3.3"
+networks:
+  gamutrf:
+services:
+  specgram:
+    restart: always
+    image: iqtlabs/gamutrf-specgram:latest
+    volumes:
+      - '${VOL_PREFIX}:/data'
+    deploy:
+      resources:
+        # we would prefer "reservations", but this works only in "swarm" mode.
+        # see https://github.com/docker/compose/pull/5684
+        limits:
+          cpus: '0.5'
+    command:
+      - '--loop=10'
+      - '--skip-exist'
+      - '--workers=1'
+      - '/data/gamutrf'
