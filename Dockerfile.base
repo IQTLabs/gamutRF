@@ -2,7 +2,7 @@ FROM iqtlabs/gamutrf-gnuradio:latest
 WORKDIR /root
 RUN git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
 RUN git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
-RUN git clone https://github.com/anarkiwi/gr-habets39 -b includes
+RUN git clone https://github.com/ThomasHabets/gr-habets39
 RUN git clone https://github.com/Nuand/bladeRF.git -b 2021.10
 RUN git clone https://github.com/anarkiwi/lime-tools -b samples
 WORKDIR /root/SoapyBladeRF/build
