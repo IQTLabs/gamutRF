@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 import argparse
 import concurrent.futures
-import gzip
 import os
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import zstandard
 from matplotlib.mlab import detrend
 from matplotlib.mlab import detrend_none
 from matplotlib.mlab import stride_windows
@@ -19,6 +17,7 @@ from gamutrf.utils import get_nondot_files
 from gamutrf.utils import is_fft
 from gamutrf.utils import parse_filename
 from gamutrf.utils import replace_ext
+from gamutrf.sample_reader import read_recording
 
 
 def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
@@ -190,38 +189,6 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
                         "'origin'")
 
     return Z, extent
-
-
-def get_reader(filename):
-
-    def gzip_reader(x):
-        return gzip.open(x, 'rb')
-
-    def zst_reader(x):
-        return zstandard.ZstdDecompressor().stream_reader(open(x, 'rb'))
-
-    def default_reader(x):
-        return open(x, 'rb')
-
-    if filename.endswith('.gz'):
-        return gzip_reader
-    if filename.endswith('.zst'):
-        return zst_reader
-
-    return default_reader
-
-
-def read_recording(filename, sample_rate, sample_dtype, sample_len):
-    reader = get_reader(filename)
-    with reader(filename) as infile:
-        while True:
-            sample_buffer = infile.read(sample_rate * sample_len)
-            buffered_samples = int(len(sample_buffer) / sample_len)
-            if buffered_samples == 0:
-                break
-            x1d = np.frombuffer(sample_buffer, dtype=sample_dtype,
-                                count=buffered_samples)
-            yield x1d['i'] + np.csingle(1j) * x1d['q']
 
 
 def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, noverlap, skip_fft):
