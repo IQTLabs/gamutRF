@@ -25,6 +25,7 @@ from gamutrf.sdr_recorder import RECORDER_MAP
 WORKER_NAME = os.getenv(
     'WORKER_NAME', socket.gethostbyname(socket.gethostname()))
 ORCHESTRATOR = os.getenv('ORCHESTRATOR', 'orchestrator')
+CALIBRATION = os.getenv('CALIBRATION', '0')
 ANTENNA = os.getenv('ANTENNA', '')
 
 parser = argparse.ArgumentParser()
@@ -154,7 +155,7 @@ class API:
 
     def __init__(self, start_app=True):
         self.mqtt_reporter = MQTTReporter(
-            arguments.name, arguments.mqtt_server, ORCHESTRATOR, True)
+            arguments.name, arguments.mqtt_server, ORCHESTRATOR, True, int(CALIBRATION))
         self.main(start_app)
 
     def run_recorder(self, record_func, q):
