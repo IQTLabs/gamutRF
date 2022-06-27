@@ -253,7 +253,7 @@ sudo /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
 git clone https://github.com/IQTLabs/gamutRF
 ```
 
-4. Setup Flash drive
+5. Setup Flash drive
 
 Verify the device name using `lsblk -f` and create an ext4 filesystem on it:
 ```
@@ -265,17 +265,17 @@ Copy the UUID of the device from `lsblk -f` (note it will have changed after run
 UUID=a04e77e2-772e-45b0-8590-bfb0741d855d /flash ext4 defaults,auto,users,rw,nofail 0 0
 ```
 
-4. Reboot
+6. Reboot
 ```
 sudo reboot
 ```
 
-5. Install GamutRF
+7. Install GamutRF
 ```
 cd gamutRF && docker-compose -f docker-compose-worker.yml pull && cd ..
 ```
 
-6. Choose what type of worker you want:
+8. Choose what type of worker you want:
 
 Each worker can be run in either `recorder` mode or `RSSI` mode.
 
@@ -312,7 +312,7 @@ If run in `RSSI` mode the `docker-compose-worker.yml` file under the gamutrf dir
 ```
 RSSI mode will only record signal strength in the form of float.
 
-7. Start GamutRF
+9. Start GamutRF
 ```
 cd gamutRF
 UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 WORKER_NAME=worker1 ANTENNA=directional docker-compose -f docker-compose-worker.yml up -d
