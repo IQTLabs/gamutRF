@@ -1,14 +1,9 @@
-FROM iqtlabs/gamutrf:latest as gamutrf-builder
+FROM python:3-slim
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV PYTHONUNBUFFERED 1
-RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
-    apt-get -y --no-install-recommends install build-essential cmake g++ gcc git libboost-all-dev libusb-1.0-0-dev libusb-1.0-0 zlib1g-dev make libev-dev zlib1g pkg-config python3-numpy libuhd-dev libjpeg-dev zstd uhd-host && apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /data/gamutrf
-COPY requirements.txt /root/requirements.txt
+COPY compass-requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/requirements.txt
-COPY . /root/gamutrf
-WORKDIR /root/gamutrf
-RUN pip3 install .
+COPY gamutrf/compass.py /root/compass.py
 EXPOSE 8000
-ENTRYPOINT ["nice", "-n", "-19", "gamutrf-compass"]
+ENTRYPOINT ["nice", "-n", "-19", "python3", "compass.py"]
 CMD [""]
