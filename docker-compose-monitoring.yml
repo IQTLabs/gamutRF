@@ -1,0 +1,29 @@
+version: "3.3"
+networks:
+  gamutrf:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 9000
+services:
+  prometheus:
+    restart: always
+    image: 'prom/prometheus:v2.36.2'
+    user: 'root'
+    networks:
+      - gamutrf
+    ports:
+      - '9090:9090'
+    volumes:
+      - '${VOL_PREFIX}/opt/prometheus/:/prometheus'
+      - './prometheus.yml:/etc/prometheus/prometheus.yml'
+  grafana:
+    restart: always
+    image: 'grafana/grafana:9.0.1'
+    user: 'root'
+    networks:
+      - gamutrf
+    ports:
+      - '3000:3000'
+    volumes:
+      - '${VOL_PREFIX}/opt/grafana:/var/lib/grafana'
+      - '${VOL_PREFIX}/opt/grafana/provisioning:/etc/grafana/provisioning'
