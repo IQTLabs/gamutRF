@@ -86,7 +86,7 @@ cd BirdsEye && pip3 install -r requirements.txt && cd ..
 
 9. Enable GPSD to listen on the external interface
 
-Change /lib/systemd/system/gpsd.socket to match the following:
+Change `/lib/systemd/system/gpsd.socket` to match the following:
 ```
 [Unit]
 Description=GPS (Global Positioning System) Daemon Sockets
@@ -108,7 +108,7 @@ WantedBy=sockets.target
 
 10. Add BirdsEye systemd service
 
-Create /etc/systemd/system/birdseye.service to contain the following:
+Create `/etc/systemd/system/birdseye.service` to contain the following:
 ```
 [Unit]
 Description=BirdsEye
@@ -128,7 +128,7 @@ WantedBy=multi-user.target
  
 11. Add GPSD systemd service
 
-Create /etc/systemd/system/gpsd.service to contain the following:
+Create `/etc/systemd/system/gpsd.service` to contain the following:
 ```
 [Unit]
 Description=GPSD
@@ -142,7 +142,7 @@ ExecStart=/usr/sbin/gpsd -G -N -n /dev/serial0 -F /var/run/gpsd.sock
 WantedBy=multi-user.target
 ```
 
-12. Add to the end of /etc/chrony/chrony.conf:
+12. Add to the end of `/etc/chrony/chrony.conf`:
 ```
 # SHM0 from gpsd is the NMEA data at 9600, so is not very accurate
 refclock SHM 0  delay 0.5 refid NMEA
@@ -155,7 +155,7 @@ refclock PPS /dev/pps0 refid PPS
 allow 192.168.111.0/24
 ```
 
-13. Add to the following sections in /etc/systemd/system/chronyd.service
+13. Add to the following sections in `/etc/systemd/system/chronyd.service`:
 ```
 [Unit]
 StartLimitIntervalSec=30
@@ -186,7 +186,7 @@ echo 'interface eth0' >> /etc/dhcpcd.conf
 echo 'static ip_address=192.168.111.10/24' >> /etc/dhcpcd.conf
 ```
 
-17. Disable bluetooth and wifi (note you'll want to be wired into the switch and have an IP on the 192.168.111.0/24 subnet to maintain remote access to the Orchestrator after you do this)
+17. Disable bluetooth and wifi (note you'll want to be wired into the switch and have an IP on the `192.168.111.0/24` subnet to maintain remote access to the Orchestrator after you do this)
 ```
 sudo rfkill block bluetooth
 sudo rfkill block wlan
@@ -209,7 +209,7 @@ UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/gamut
 ```
 (optionally add `-f docker-compose-monitoring.yml` if you want additional monitoring containers)
 
-Additionally, if you want to use the workers as recorders you'll want to update `docker-compose-orchestrator.yml` (before running the docker-compose command above) under the gamutRF directory to include it. Multiple workers can be assigned to be recorders. Here's an exmaple with two:
+Additionally, if you want to use the workers as recorders you'll want to update `docker-compose-orchestrator.yml` (before running the `docker-compose` command above) under the gamutRF directory to include it. Multiple workers can be assigned to be recorders. Here's an exmaple with two:
 ```
   sigfinder:
     restart: always
