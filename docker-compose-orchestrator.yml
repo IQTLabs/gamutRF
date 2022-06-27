@@ -63,39 +63,6 @@ services:
       - --log=/logs/scan.csv
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
-  birdseye:
-    restart: always
-    image: iqtlabs/birdseye:latest
-    network_mode: host
-    environment:
-      - "DISPLAY=:0"
-    volumes:
-      - '${VOL_PREFIX}:/BirdsEye/runs'
-      - '/tmp/.X11-unix:/tmp/.X11-unix:rw'
-    command:
-      - sigscan.py
-  prometheus:
-    restart: always
-    image: 'prom/prometheus:v2.36.2'
-    user: 'root'
-    networks:
-      - gamutrf
-    ports:
-      - '9090:9090'
-    volumes:
-      - '${VOL_PREFIX}/opt/prometheus/:/prometheus'
-      - './prometheus.yml:/etc/prometheus/prometheus.yml'
-  grafana:
-    restart: always
-    image: 'grafana/grafana:9.0.1'
-    user: 'root'
-    networks:
-      - gamutrf
-    ports:
-      - '3000:3000'
-    volumes:
-      - '${VOL_PREFIX}/opt/grafana:/var/lib/grafana'
-      - '${VOL_PREFIX}/opt/grafana/provisioning:/etc/grafana/provisioning'
   watchtower:
     image: containrrr/watchtower:latest
     restart: always
