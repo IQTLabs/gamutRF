@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
 class Heading:
 
-    def get_heading(self):
+    def get_heading(self, calibration=0):
         self.bus = smbus2.SMBus(1)
         self.address = 0x0d
         self.heading_reading = 'no heading'
@@ -32,6 +32,7 @@ class Heading:
             self.heading_reading += 2 * math.pi
         # convert to degrees
         self.heading_reading = (self.heading_reading * 180) / math.pi
+        self.heading_reading = (self.heading_reading + calibration) % 360
 
     def read_byte(self, adr):  # communicate with compass
         return self.bus.read_byte_data(self.address, adr)
@@ -52,8 +53,8 @@ class Heading:
     def write_byte(self, adr, value):
         self.bus.write_byte_data(self.address, adr, value)
 
-    def on_get(self, _req, resp):
-        self.get_heading()
+    def on_get(self, _req, resp, calibration):
+        self.get_heading(calibration=int(calibration))
         resp.text = str(self.heading_reading)
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
@@ -68,7 +69,7 @@ class CompassAPI:
 
     @staticmethod
     def paths():
-        return ['/']
+        return ['/{calibration}']
 
     @staticmethod
     def version():

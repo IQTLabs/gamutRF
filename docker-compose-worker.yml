@@ -22,6 +22,7 @@ services:
     environment:
       - 'WORKER_NAME=${WORKER_NAME}'
       - 'ORCHESTRATOR=${ORCHESTRATOR}'
+      - 'CALIBRATION=${CALIBRATION}'
       - 'ANTENNA=${ANTENNA}'
     command:
       - --no-agc
