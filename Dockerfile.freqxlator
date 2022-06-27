@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     apt-get -y --no-install-recommends install \
     python3 libpython3.10 python3-pip liblog4cpp5v5 libfftw3-bin \
-    libboost-thread1.74.0 libboost-program-options1.74.0 libboost-filesystem1.74.0
+    libboost-thread1.74.0 libboost-program-options1.74.0 libboost-filesystem1.74.0 libspdlog1
 COPY freqxlator-requirements.txt freqxlator-requirements.txt
 RUN pip3 install -r freqxlator-requirements.txt
 COPY gamutrf/freqxlator.py /root/freqxlator.py
