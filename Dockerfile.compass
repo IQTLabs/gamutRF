@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install --no-install-recommends -yq gcc libev-dev 
 COPY compass-requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/requirements.txt
 COPY gamutrf/compass.py /root/compass.py
+WORKDIR /root
 EXPOSE 8000
-ENTRYPOINT ["nice", "-n", "-19", "python3", "compass.py"]
+ENTRYPOINT ["nice", "-n", "-19", "python3", "/root/compass.py"]
 CMD [""]
