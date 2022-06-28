@@ -135,4 +135,6 @@ dmypy.json
 *.swo
 *.swp
 
+*.DS_Store
+
 \#*
