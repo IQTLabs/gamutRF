@@ -273,6 +273,7 @@ sudo reboot
 7. Install GamutRF
 ```
 cd gamutRF && docker-compose -f docker-compose-worker.yml pull && cd ..
+sudo mkdir -p /flash/gamutrf 
 ```
 
 8. Choose what type of worker you want:
@@ -316,7 +317,6 @@ RSSI mode will only record signal strength in the form of float.
 ```
 cd gamutRF
 UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 WORKER_NAME=worker1 ANTENNA=directional docker-compose -f docker-compose-worker.yml up -d
-sudo mkdir -p /flash/gamutrf 
 ```
 
 ## Initiating an API request
