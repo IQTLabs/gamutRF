@@ -53,12 +53,8 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
         freqcenter = (pad_to - 1)//2 + 1
     else:
         freqcenter = pad_to//2
-    scaling_factor = 1.
 
-    freqs = fftfreq(pad_to, 1/Fs)[:numFreqs]
-    # center the frequency range at zero
-    freqs = np.roll(freqs, -freqcenter, axis=0)
-    lastresult = None
+    results = []
 
     for i in x:
         if skip_fft:
@@ -77,28 +73,6 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
 
         if mode == 'psd':
             result = np.conj(result) * result
-        elif mode == 'magnitude':
-            result = np.abs(result) / np.abs(window).sum()
-        elif mode == 'angle' or mode == 'phase':
-            # we unwrap the phase later to handle the onesided vs. twosided case
-            result = np.angle(result)
-        elif mode == 'complex':
-            result /= np.abs(window).sum()
-
-        if mode == 'psd':
-            # Also include scaling factors for one-sided densities and dividing by
-            # the sampling frequency, if desired. Scale everything, except the DC
-            # component and the NFFT/2 component:
-
-            # if we have a even number of frequencies, don't scale NFFT/2
-            if not NFFT % 2:
-                slc = slice(1, -1, None)
-            # if we have an odd number, just don't scale DC
-            else:
-                slc = slice(1, None, None)
-
-            result[slc] *= scaling_factor
-
             # MATLAB divides by the sampling frequency so that density function
             # has units of dB/Hz and can be integrated by the plotted frequency
             # values. Perform the same scaling here.
@@ -110,23 +84,27 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
             else:
                 # In this case, preserve power in the segment, not amplitude
                 result /= np.abs(window).sum()**2
-
-        # center the frequency range at zero
-        result = np.roll(result, -freqcenter, axis=0)
-
-        # we unwrap the phase here to handle the onesided vs. twosided case
-        if mode == 'phase':
-            result = np.unwrap(result, axis=0)
+        elif mode == 'magnitude':
+            result = np.abs(result) / np.abs(window).sum()
+        elif mode == 'complex':
+            result /= np.abs(window).sum()
+        elif mode in ('angle', 'phase'):
+            # we unwrap the phase later to handle the onesided vs. twosided case
+            result = np.angle(result)
+            if mode == 'phase':
+                # we unwrap the phase here to handle the onesided vs. twosided case
+                result = np.unwrap(result, axis=0)
         result = np.apply_along_axis(np.real, 1, result)
+        results.append(result)
 
-        if lastresult is None:
-            lastresult = result
-        else:
-            lastresult = np.hstack((lastresult, result))
-
-    if lastresult is not None:
+    if results:
+        lastresult = np.hstack(results)
         t_x = lastresult.shape[0] * lastresult.shape[1]
         t = np.arange(NFFT/2, t_x - NFFT/2 + 1, NFFT - noverlap)/Fs
+        freqs = fftfreq(pad_to, 1/Fs)[:numFreqs]
+        # center the frequency range at zero
+        freqs = np.roll(freqs, -freqcenter, axis=0)
+        lastresult = np.roll(lastresult, -freqcenter, axis=0)
         return lastresult, freqs, t
     return (None, None, None)
 
@@ -162,7 +140,6 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
                                      noverlap=noverlap, pad_to=pad_to,
                                      scale_by_freq=scale_by_freq,
                                      mode=mode, skip_fft=skip_fft)
-
     if scale == 'linear':
         Z = spec
     elif scale == 'dB':
@@ -183,10 +160,6 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
     freqs += Fc
     freqs /= 1e6
     extent = xmin, xmax, freqs[0], freqs[-1]
-
-    if 'origin' in kwargs:
-        raise TypeError('specgram() got an unexpected keyword argument '
-                        "'origin'")
 
     return Z, extent
 
