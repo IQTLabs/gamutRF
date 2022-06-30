@@ -12,6 +12,8 @@ An SDR orchestrated scanner and collector.
 - 1 x [Triple Axis Compass](https://www.amazon.com/gp/product/B07PP67N9Q)
 - 2 x [Ettus B200-mini](https://www.ettus.com/all-products/usrp-b200mini/)
 - 1 x [USB 3.1 Flash Drive](https://www.amazon.com/dp/B07857Y17V)
+- 1 x [Antenna Splitter](https://www.amazon.com/gp/product/B07STYNB6V)
+- 1 x [Directional Antenna 850-6500Mhz](https://www.wa5vjb.com/products1.html)
 
 # Install Instructions
 
