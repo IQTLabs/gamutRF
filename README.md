@@ -284,7 +284,7 @@ Each worker can be run in either `recorder` mode or `RSSI` mode.
 
 If run in `recorder` mode (the default) no changes on the worker are needed, but the recorder needs to be added to the orchestrator as described above. In `recorder` mode the worker will capture full I/Q samples in `s16` format, and write it out to `/flash/gamutrf` as `.zst` compressed files.
 
-If run in `RSSI` mode the `docker-compose-worker.yml` file under the gamutrf directory needs to be updated to include the following optioons:
+If run in `RSSI` mode the `docker-compose-worker.yml` file under the gamutrf directory needs to be updated to include the following options:
 ```
   gamutrf-api:
     restart: always
@@ -323,7 +323,7 @@ UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCH
 
 ## Initiating an API request
 
-If running the orchestrator as a scanner with recorder workers, it will automatically make requests via the API for you based on signals it detects and the workers will start capturing I/Q. However if you want to control what gets recorded or are using workers in RSSI mode you'll need to make manual requests. Browse to the IP of the orchestrator via your browse and make a request with the specifications you desire.
+If running the orchestrator as a scanner with recorder workers, it will automatically make requests via the API for you based on signals it detects and the workers will start capturing I/Q. However if you want to control what gets recorded or are using workers in RSSI mode you'll need to make manual requests. Browse to the IP of the orchestrator via your browser and make a request with the specifications you desire.
 
 # FAQ
 
