@@ -5,7 +5,7 @@ gpsd-py3==0.3.0
 httpx==0.23.0
 Jinja2==3.1.2
 matplotlib==3.5.2
-numpy==1.23.0
+numpy==1.23.1
 paho-mqtt==1.6.1
 pandas==1.4.3
 pbr==5.9.0
