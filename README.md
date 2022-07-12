@@ -304,6 +304,7 @@ If run in `RSSI` mode the `docker-compose-worker.yml` file under the gamutrf dir
     environment:
       - 'WORKER_NAME=${WORKER_NAME}'
       - 'ORCHESTRATOR=${ORCHESTRATOR}'
+      - 'CALIBRATION=${CALIBRATION}'
       - 'ANTENNA=${ANTENNA}'
     command:
       - --no-agc
