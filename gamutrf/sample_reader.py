@@ -24,21 +24,22 @@ def get_reader(filename):
     return default_reader
 
 
-def read_recording(filename, sample_rate, sample_dtype, sample_len):
-    """Read an I/Q recording and iterate over it, returning 1-D numpy arrays of csingles, of size sample_len.
+def read_recording(filename, sample_rate, sample_dtype, sample_len, sample_secs=1.0):
+    """Read an I/Q recording and iterate over it, returning 1-D numpy arrays of csingles, of size sample_rate * sample_secs.
 
     Args:
         filename: str, recording to read.
         sample_rate: int, samples per second
         sample_dtype: numpy.dtype, binary format of original I/Q recording.
-        sample_len: int, samples per second.
+        sample_len: int, length of one sample.
+        sample_secs: float, number of seconds worth of samples per iteration.
     Returns:
         numpy arrays of csingles.
     """
     reader = get_reader(filename)
     with reader(filename) as infile:
         while True:
-            sample_buffer = infile.read(sample_rate * sample_len)
+            sample_buffer = infile.read(int(sample_rate * sample_secs) * sample_len)
             buffered_samples = int(len(sample_buffer) / sample_len)
             if buffered_samples == 0:
                 break
