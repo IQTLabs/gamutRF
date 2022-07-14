@@ -32,6 +32,11 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
     if window is None:
         window = window_hanning
 
+    window = np.abs(window(np.ones(NFFT, np.complex64)))
+    if len(window) != NFFT:
+        raise ValueError(
+            "The window length must match the data's first dimension")
+
     # if NFFT is set to None use the whole signal
     if NFFT is None:
         NFFT = 256
@@ -65,14 +70,9 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
             result = detrend(result, detrend_func, axis=0)
             result = fft(result, n=pad_to, axis=0)[
                 :numFreqs, :]  # pylint: disable=invalid-sequence-index
-        if not np.iterable(window):
-            window = window(np.ones(NFFT, i.dtype))
-        if len(window) != NFFT:
-            raise ValueError(
-                "The window length must match the data's first dimension")
 
         if mode == 'psd':
-            result = np.conj(result) * result
+            result *= np.conj(result)
             # MATLAB divides by the sampling frequency so that density function
             # has units of dB/Hz and can be integrated by the plotted frequency
             # values. Perform the same scaling here.
@@ -80,14 +80,14 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
                 result /= Fs
                 # Scale the spectrum by the norm of the window to compensate for
                 # windowing loss; see Bendat & Piersol Sec 11.5.2.
-                result /= (np.abs(window)**2).sum()
+                result /= (window**2).sum()
             else:
                 # In this case, preserve power in the segment, not amplitude
-                result /= np.abs(window).sum()**2
+                result /= window.sum()**2
         elif mode == 'magnitude':
-            result = np.abs(result) / np.abs(window).sum()
+            result = np.abs(result) / window.sum()
         elif mode == 'complex':
-            result /= np.abs(window).sum()
+            result /= window.sum()
         elif mode in ('angle', 'phase'):
             # we unwrap the phase later to handle the onesided vs. twosided case
             result = np.angle(result)
@@ -113,8 +113,7 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
              window=None, noverlap=None,
              xextent=None, pad_to=None,
              scale_by_freq=None, mode=None, scale=None,
-             skip_fft=False,
-             **kwargs):
+             skip_fft=False):
     if NFFT is None:
         NFFT = 256  # same default as in mlab.specgram()
     if Fc is None:
@@ -164,14 +163,14 @@ def specgram(x, NFFT=None, Fs=None, Fc=None, detrend=None,
     return Z, extent
 
 
-def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, noverlap, skip_fft):
+def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, noverlap, skip_fft, width, height, dpi):
     fig = plt.figure()
-    fig.set_size_inches(11, 8)
+    fig.set_size_inches(width, height)
     axes = fig.add_subplot(111)
     axes.set_xlabel('time (s)')
     axes.set_ylabel('freq (MHz)')
     Z, extent = specgram(
-        x, NFFT=nfft, Fs=fs, cmap=cmap, Fc=fc, noverlap=noverlap, skip_fft=skip_fft)
+        x, NFFT=nfft, Fs=fs, Fc=fc, noverlap=noverlap, skip_fft=skip_fft)
     im = axes.imshow(Z, cmap=cmap, extent=extent, origin='upper')
     axes.axis('auto')
     axes.minorticks_on()
@@ -186,7 +185,7 @@ def plot_spectrogram(x, spectrogram_filename, nfft, fs, fc, cmap, ytics, bare, n
         axes.yaxis.set_major_locator(plt.NullLocator())
 
     plt.sci(im)
-    plt.savefig(spectrogram_filename)
+    plt.savefig(spectrogram_filename, dpi=dpi)
     # must call this in specific order to avoid pyplot leak
     axes.images.remove(im)
     fig.clear()
@@ -222,7 +221,10 @@ def process_recording(args, recording):
         args.ytics,
         args.bare,
         args.noverlap,
-        args.skip_fft)
+        args.skip_fft,
+        args.width,
+        args.height,
+        args.dpi)
 
 
 def process_all_recordings(args):
@@ -271,6 +273,12 @@ def main():
                         help='calculate FFT')
     parser.add_argument('--loop', dest='loop', default=0, type=int,
                         help='if > 0, run in a loop')
+    parser.add_argument('--width', default=11, type=int,
+                        help='plot width')
+    parser.add_argument('--height', default=8, type=int,
+                        help='plot height')
+    parser.add_argument('--dpi', default=100, type=int,
+                        help='plot DPI')
     parser.set_defaults(bare=False, skip_exist=False, skip_fft=False)
     args = parser.parse_args()
     while True:
