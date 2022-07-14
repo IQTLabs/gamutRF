@@ -267,18 +267,25 @@ Copy the UUID of the device from `lsblk -f` (note it will have changed after run
 UUID=a04e77e2-772e-45b0-8590-bfb0741d855d /flash ext4 defaults,auto,users,rw,nofail 0 0
 ```
 
-6. Reboot
+6. Set static IP address for wired connection (plug ethernet into the PoE switch - PoE port)
+```
+sudo su -
+echo 'interface eth0' >> /etc/dhcpcd.conf
+echo 'static ip_address=192.168.111.10/24' >> /etc/dhcpcd.conf
+```
+
+7. Reboot
 ```
 sudo reboot
 ```
 
-7. Install GamutRF
+8. Install GamutRF
 ```
 cd gamutRF && docker-compose -f docker-compose-worker.yml pull && cd ..
 sudo mkdir -p /flash/gamutrf 
 ```
 
-8. Choose what type of worker you want:
+9. Choose what type of worker you want:
 
 Each worker can be run in either `recorder` mode or `RSSI` mode.
 
@@ -316,7 +323,7 @@ If run in `RSSI` mode the `docker-compose-worker.yml` file under the gamutrf dir
 ```
 RSSI mode will only record signal strength in the form of float.
 
-9. Start GamutRF
+10. Start GamutRF
 ```
 cd gamutRF
 UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 WORKER_NAME=worker1 ANTENNA=directional docker-compose -f docker-compose-worker.yml up -d
