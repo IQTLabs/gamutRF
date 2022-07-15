@@ -7,32 +7,47 @@ import unittest
 
 from gamutrf.sigfinder import init_prom_vars
 from gamutrf.sigfinder import process_fft_lines
+from gamutrf.sigfinder import ROLLOVERHZ
 
 
 class FakeArgs:
 
-    def __init__(self, log, rotatesecs, window, threshold, freq_start, freq_end):
+    def __init__(self, log, rotatesecs, window, threshold, freq_start, freq_end,
+                 fftlog, width, prominence, bin_mhz, record_bw_mbps, history, recorder):
         self.log = log
         self.rotatesecs = rotatesecs
         self.window = window
         self.threshold = threshold
         self.freq_start = freq_start
         self.freq_end = freq_end
+        self.fftlog = fftlog
+        self.width = width
+        self.threshold = threshold
+        self.prominence = prominence
+        self.bin_mhz = bin_mhz
+        self.record_bw_mbps = record_bw_mbps
+        self.history = history
+        self.recorder = recorder
 
 
-class FakeSock:
+class EmptyFifo(Exception):
+    pass
 
-    def __init__(self, txt):
-        self.txt = txt
 
-    def recvfrom(self, _):
-        result = (self.txt, None)
-        if self.txt:
-            self.txt = ''.encode('utf8')
+class FakeFifo:
+
+    def __init__(self, test_data):
+        self.test_data = test_data
+
+    def read(self):
+        if not self.test_data:
+            raise EmptyFifo
+        test_lines = []
+        for line in self.test_data[0]:
+            test_lines.append(' '.join((str(i) for i in line)))
+        result = ('\n'.join(test_lines) + '\n').encode('utf8')
+        self.test_data = self.test_data[1:]
         return result
-
-    def settimeout(self, _):
-        return
 
 
 class SigFinderTestCase(unittest.TestCase):
@@ -41,10 +56,14 @@ class SigFinderTestCase(unittest.TestCase):
         with concurrent.futures.ProcessPoolExecutor(1) as executor:
             with tempfile.TemporaryDirectory() as tempdir:
                 test_log = os.path.join(str(tempdir), 'test.csv')
-                args = FakeArgs(test_log, 60, 4, 1, 1e9, 2e9)
+                args = FakeArgs(test_log, 60, 4, -40, 100e6, 400e6, '', None, 5, 20, 21, 1, '')
                 prom_vars = init_prom_vars()
-                sock = FakeSock(f'{time.time()} 1e9 0.1\n'.encode('utf8'))
-                process_fft_lines(args, prom_vars, sock, 'csv', executor)
+                test_lines_1 = [(time.time(), ROLLOVERHZ + (1e6 * i), 0.001) for i in range(100)]
+                test_lines_2 = [(time.time(), ROLLOVERHZ + (1e6 * (i + 100)), 0.5) for i in range(5)]
+                test_lines_3 = [(time.time(), ROLLOVERHZ + (1e6 * (i + 105)), 0.1) for i in range(100)]
+                test_lines_4 = [(time.time(), ROLLOVERHZ - 1e6, 0.1)]
+                fifo = FakeFifo([test_lines_1, test_lines_2, test_lines_3, test_lines_4])
+                self.assertRaises(EmptyFifo, lambda: process_fft_lines(args, prom_vars, fifo, 'csv', executor))
 
 
 if __name__ == '__main__':

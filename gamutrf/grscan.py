@@ -20,8 +20,8 @@ from gamutrf.utils import MTU
 
 class grscan(gr.top_block):
 
-    def __init__(self, freq_end=1e9, freq_start=100e6, igain=0, samp_rate=4e6, sweep_sec=30,
-                 logaddr='127.0.0.1', logport=8001, sdr='ettus', sdrargs=None, habets39=None):
+    def __init__(self, freq_end=1e9, freq_start=100e6, igain=0, samp_rate=4e6, sweep_sec=30, retune_hz=97,
+                 logaddr='127.0.0.1', logport=8001, sdr='ettus', sdrargs=None, fft_size=1024, habets39=None):
         gr.top_block.__init__(self, 'scan', catch_exceptions=True)
 
         ##################################################
@@ -32,13 +32,14 @@ class grscan(gr.top_block):
         self.sweep_sec = sweep_sec
         self.freq_update = 0
         self.no_freq_updates = 0
+        self.retune_hz = retune_hz
 
         ##################################################
         # Variables
         ##################################################
         self.sweep_freq = sweep_freq = 1/sweep_sec
         self.scan_samp_rate = scan_samp_rate = 32000
-        self.fft_size = fft_size = 1024
+        self.fft_size = fft_size
         self.center_freq = freq_start
 
         ##################################################
@@ -57,7 +58,7 @@ class grscan(gr.top_block):
                         self.set_center_freq(val)
                 except AttributeError:
                     pass
-                time.sleep(1.0 / (97))
+                time.sleep(1.0 / self.retune_hz)
 
         logging.info(f'will scan from {freq_start} to {freq_end}')
         get_source(

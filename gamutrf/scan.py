@@ -14,6 +14,7 @@ from prometheus_client import Gauge
 from prometheus_client import start_http_server
 
 from gamutrf.grscan import grscan
+from gamutrf.utils import ROLLOVERHZ
 
 
 def init_prom_vars():
@@ -21,6 +22,7 @@ def init_prom_vars():
         'freq_start_hz': Gauge('freq_start_hz', 'start of scanning range in Hz'),
         'freq_end_hz': Gauge('freq_end_hz', 'end of scanning range in Hz'),
         'sweep_sec': Gauge('sweep_sec', 'scan sweep rate in seconds'),
+        'retune_hz': Gauge('retune_hz', 'retune rate per second'),
         'last_freq_update': Gauge('last_freq_update', 'last frequency update time'),
     }
     return prom_vars
@@ -43,6 +45,12 @@ def argument_parser():
     parser.add_argument(
         '--sweep-sec', dest='sweep_sec', type=intx, default=30,
         help='Set sweep_sec [default=%(default)r]')
+    parser.add_argument(
+        '--retune-hz', dest='retune_hz', type=intx, default=97,
+        help='Set retune rate per second [default=%(default)r]')
+    parser.add_argument(
+        '--nfft', dest='nfft', type=int, default=2048,
+        help='FFTI size [default=%(default)r]')
     parser.add_argument(
         '--logaddr', dest='logaddr', type=str, default='127.0.0.1',
         help='Log UDP results to this address')
@@ -74,6 +82,10 @@ def main():
         print('Error: freq_start must be less than freq_end')
         sys.exit(1)
 
+    if options.freq_end - options.freq_start < ROLLOVERHZ:
+        print(f'Difference between freq_end and freq_start must be greater than {ROLLOVERHZ}')
+        sys.exit(1)
+
     if options.freq_end > 6e9:
         print('Error: freq_end must be less than 6GHz')
         sys.exit(1)
@@ -82,14 +94,15 @@ def main():
     prom_vars['freq_start_hz'].set(options.freq_start)
     prom_vars['freq_end_hz'].set(options.freq_end)
     prom_vars['sweep_sec'].set(options.sweep_sec)
+    prom_vars['retune_hz'].set(options.retune_hz)
     start_http_server(options.promport)
 
     tb = grscan(freq_end=options.freq_end, freq_start=options.freq_start,
                 igain=options.igain, samp_rate=options.samp_rate,
-                sweep_sec=options.sweep_sec,
+                sweep_sec=options.sweep_sec, retune_hz=options.retune_hz,
                 logaddr=options.logaddr, logport=options.logport,
                 sdr=options.sdr, sdrargs=options.sdrargs,
-                habets39=habets39)
+                fft_size=options.nfft, habets39=habets39)
 
     def sig_handler(_sig=None, _frame=None):
         tb.stop()

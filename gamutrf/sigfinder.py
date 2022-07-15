@@ -6,6 +6,7 @@ import logging
 import os
 import socket
 import subprocess
+import tempfile
 import threading
 import time
 
@@ -22,13 +23,13 @@ from prometheus_client import start_http_server
 from gamutrf.sigwindows import calc_db
 from gamutrf.sigwindows import choose_record_signal
 from gamutrf.sigwindows import choose_recorders
-from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import parse_freq_excluded
-from gamutrf.utils import MTU
+from gamutrf.sigwindows import scipy_find_sig_windows
+from gamutrf.utils import MTU, ROLLOVERHZ
 
 SOCKET_TIMEOUT = 1.0
-ROLLOVERHZ = 100e6
+SCAN_FRES = 1e4
 PEAK_DBS = {}
 
 
@@ -131,26 +132,35 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
 
 def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
     global PEAK_DBS
-    tsc = time.ctime(ts)
-    logging.info(f'new frame at {tsc}')
     df = pd.DataFrame(fftbuffer, columns=['ts', 'freq', 'db'])
     df['freq'] /= 1e6
+    df = df.sort_values('freq')
+    df['freqdiffs'] = df.freq - df.freq.shift()
+    mindiff = df.freqdiffs.min()
+    maxdiff = df.freqdiffs.max()
+    meandiff = df.freqdiffs.mean()
+    logging.info(
+        'new frame, frequency sample differences min %f mean %f max %f',
+        mindiff, meandiff, maxdiff)
+    if meandiff > mindiff * 2:
+        logging.warning('mean frequency diff larger than minimum - increase scanner sample rate')
+        logging.warning(df[df.freqdiffs > mindiff * 2])
     df = calc_db(df)
+    if args.fftlog:
+        df.to_csv(args.fftlog, sep='\t', index=False)
     monitor_bins = set()
     peak_dbs = {}
     bin_freq_count = prom_vars['bin_freq_count']
     last_bin_freq_time = prom_vars['last_bin_freq_time']
     freq_start_mhz = args.freq_start / 1e6
     freq_end_mhz = args.freq_end / 1e6
-    for signal in find_sig_windows(df, window=args.window, threshold=args.threshold):
-        start_freq, end_freq = signal[:2]
-        peak_db = signal[-1]
-        center_freq = start_freq + ((end_freq - start_freq) / 2)
-        if center_freq < freq_start_mhz or center_freq > freq_end_mhz:
-            print(f'ignoring {center_freq}')
+    for peak_freq, peak_db in scipy_find_sig_windows(df, width=args.width, prominence=args.prominence, threshold=args.threshold):
+        if peak_freq < freq_start_mhz or peak_freq > freq_end_mhz:
+            logging.info('ignoring peak at %f MHz', peak_freq)
             continue
         center_freq = get_center(
-            center_freq, freq_start_mhz, args.bin_mhz, args.record_bw_mbps)
+            peak_freq, freq_start_mhz, args.bin_mhz, args.record_bw_mbps)
+        logging.info('detected peak at %f MHz %f dB, assigned bin frequency %f MHz', peak_freq, peak_db, center_freq)
         bin_freq_count.labels(bin_mhz=center_freq).inc()
         last_bin_freq_time.labels(bin_mhz=ts).set(ts)
         monitor_bins.add(center_freq)
@@ -219,13 +229,15 @@ def zstd_file(uncompressed_file):
     subprocess.check_call(['/usr/bin/zstd', '--rm', uncompressed_file])
 
 
-def process_fft_lines(args, prom_vars, sock, ext, executor):
+def process_fft_lines(args, prom_vars, fifo, ext, executor):
     lastfreq = 0
-    fftbuffer = []
+    fftbuffer = {}
     lastbins_history = []
     lastbins = set()
     frame_counter = prom_vars['frame_counter']
     txt_buf = ''
+    last_fft_report = 0
+    fft_packets = 0
 
     while True:
         if os.path.exists(args.log):
@@ -238,56 +250,75 @@ def process_fft_lines(args, prom_vars, sock, ext, executor):
         with open(args.log, mode=mode) as l:
             while True:
                 schedule.run_pending()
-                try:
-                    sock.settimeout(SOCKET_TIMEOUT)
-                    sock_txt, _ = sock.recvfrom(MTU)
-                except socket.timeout:
-                    logging.info(
-                        'timeout receiving FFT from scanner - retrying')
+                sock_txt = fifo.read()
+                now = int(time.time())
+                if sock_txt:
+                    fft_packets += 1
+                if now - last_fft_report > 5:
+                    logging.info('received %u FFT packets, last freq %f MHz', fft_packets, lastfreq / 1e6)
+                    fft_packets = 0
+                    last_fft_report = now
+                if sock_txt is None:
+                    time.sleep(0.1)
                     continue
-                if not len(sock_txt):
-                    return
                 txt_buf += sock_txt.decode('utf8')
                 lines = txt_buf.splitlines()
                 if txt_buf.endswith('\n'):
                     txt_buf = ''
-                else:
+                elif lines:
                     txt_buf = lines[-1]
                     lines = lines[:-1]
                 rotatelognow = False
-                now = int(time.time())
                 for line in lines:
                     try:
                         ts, freq, pw = [float(x) for x in line.strip().split()]
-                    except ValueError:
+                    except ValueError as err:
+                        logging.info('could not parse FFT data: %s: %s', line, err)
                         continue
-                    if pw < 0 or pw > 1:
+                    if pw < 0 or pw > 2:
+                        logging.info('power %f out of range on %s', pw, line)
                         continue
                     if freq < 0 or freq > 10e9:
+                        logging.info('frequency %f out of range on %s', freq, line)
                         continue
                     if abs(now - ts) > 60:
+                        logging.info('timestamp %f out of range on %s', ts, line)
                         continue
                     l.write(line.encode('utf8') + b'\n')
                     rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
-                    fftbuffer.append((ts, freq, pw))
                     lastfreq = freq
                     if rollover:
                         frame_counter.inc()
-                        lastbins = process_fft(
+                        fftbuffer = [(data[0], freq, data[1]) for freq, data in sorted(fftbuffer.items())]
+                        new_lastbins = process_fft(
                             args, prom_vars, ts, fftbuffer, lastbins)
-                        if lastbins:
-                            lastbins_history = [lastbins] + lastbins_history
-                            lastbins_history = lastbins_history[:args.history]
-                        fftbuffer = []
-                        call_record_signals(args, lastbins_history, prom_vars)
+                        if new_lastbins is not None:
+                            lastbins = new_lastbins
+                            if lastbins:
+                                lastbins_history = [lastbins] + lastbins_history
+                                lastbins_history = lastbins_history[:args.history]
+                            call_record_signals(args, lastbins_history, prom_vars)
+                        fftbuffer = {}
                         rotate_age = now - openlogts
                         if rotate_age > args.rotatesecs:
                             rotatelognow = True
+                    fftbuffer[round(freq / SCAN_FRES) * SCAN_FRES] = (ts, pw)
                 if rotatelognow:
                     break
         new_log = args.log.replace(ext, f'{openlogts}{ext}')
         os.rename(args.log, new_log)
         executor.submit(zstd_file, new_log)
+
+
+def udp_proxy(args, fifo_name):
+    with open(fifo_name, 'wb') as fifo:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_sock:
+            udp_sock.bind((args.logaddr, args.logport))
+            while True:
+                sock_txt, _ = udp_sock.recvfrom(MTU)
+                if sock_txt:
+                    fifo.write(sock_txt)
+                    fifo.flush()
 
 
 def find_signals(args, prom_vars):
@@ -296,11 +327,15 @@ def find_signals(args, prom_vars):
     except ValueError:
         logging.fatal(f'cannot parse extension from {args.log}')
 
-    with concurrent.futures.ProcessPoolExecutor(1) as executor:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.setblocking(False)
-            sock.bind((args.logaddr, args.logport))
-            process_fft_lines(args, prom_vars, sock, ext, executor)
+    with tempfile.TemporaryDirectory() as tempdir:
+        fifo_name = os.path.join(tempdir, 'fftfifo')
+        os.mkfifo(fifo_name)
+
+        with concurrent.futures.ProcessPoolExecutor(2) as executor:
+            executor.submit(udp_proxy, args, fifo_name)
+            with open(fifo_name, 'rb') as fifo:
+                os.set_blocking(fifo.fileno(), False)
+                process_fft_lines(args, prom_vars, fifo, ext, executor)
 
 
 def main():
@@ -308,6 +343,8 @@ def main():
         description='watch a scan UDP stream and find signals')
     parser.add_argument('--log', default='scan.log', type=str,
                         help='base path for scan logging')
+    parser.add_argument('--fftlog', default='', type=str,
+                        help='if defined, path to log last complete FFT frame')
     parser.add_argument('--rotatesecs', default=3600, type=int,
                         help='rotate scan log after this many seconds')
     parser.add_argument('--logaddr', default='127.0.0.1', type=str,
@@ -316,10 +353,12 @@ def main():
                         help='UDP stream port')
     parser.add_argument('--bin_mhz', default=20, type=int,
                         help='monitoring bin width in MHz')
-    parser.add_argument('--window', default=4, type=int,
-                        help='signal finding sample window size')
-    parser.add_argument('--threshold', default=1.5, type=float,
+    parser.add_argument('--width', default=3, type=int,
+                        help=f'minimum signal sample width to detect a peak (multiple of {SCAN_FRES}Hz)')
+    parser.add_argument('--threshold', default=-40, type=float,
                         help='signal finding threshold')
+    parser.add_argument('--prominence', default=5, type=float,
+                        help='minimum peak prominence (see scipy.signal.find_peaks)')
     parser.add_argument('--history', default=50, type=int,
                         help='number of frames of signal history to keep')
     parser.add_argument('--recorder', action='append', default=[],
