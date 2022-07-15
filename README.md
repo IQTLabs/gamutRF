@@ -271,7 +271,7 @@ UUID=a04e77e2-772e-45b0-8590-bfb0741d855d /flash ext4 defaults,auto,users,rw,nof
 ```
 sudo su -
 echo 'interface eth0' >> /etc/dhcpcd.conf
-echo 'static ip_address=192.168.111.10/24' >> /etc/dhcpcd.conf
+echo 'static ip_address=192.168.111.11/24' >> /etc/dhcpcd.conf
 ```
 
 7. Reboot
