@@ -6,6 +6,7 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+from scipy.signal import find_peaks
 
 
 ROLLOVERHZ = 100e6
@@ -133,6 +134,19 @@ def calc_db(df):
     return df
 
 
+def scipy_find_sig_windows(df, width, prominence, threshold):
+    data = df.db.to_numpy()
+    peaks, _ = find_peaks(data, prominence=prominence, width=width)
+    signals = []
+    for peak in peaks:
+        row = df.iloc[peak]
+        aroundrows = df.iloc[peak-1:peak+1]
+        arounddb = aroundrows.db.mean()
+        if arounddb > threshold:
+            signals.append((row.freq, arounddb))
+    return signals
+
+
 def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
     window_df = df[(df['rollingdiffdb'].rolling(
         window).sum().abs() > (window * threshold))]
@@ -145,8 +159,8 @@ def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
             end_freq = row.freq
             signal_df = df[(df['freq'] >= start_freq)
                            & (df['freq'] <= end_freq)]
-            signals.append((start_freq, end_freq, in_signal.db,
-                           row.db, signal_df['db'].max()))
+            center_freq = start_freq + ((end_freq - start_freq) / 2)
+            signals.append((center_freq, signal_df['db'].max()))
             in_signal = None
         else:
             in_signal = row
