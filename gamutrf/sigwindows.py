@@ -15,6 +15,8 @@ ROLLOVERHZ = 100e6
 CSV = '.csv'
 CSVCOLS = ['ts', 'freq', 'db']
 
+logging.getLogger('matplotlib.font_manager').disabled = True
+
 
 def read_csv_chunks(args):
     minmhz = args.minhz / 1e6
