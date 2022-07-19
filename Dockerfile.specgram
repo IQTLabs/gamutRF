@@ -3,6 +3,7 @@ WORKDIR /root
 COPY specgram-requirements.txt /root/specgram-requirements.txt
 RUN apt-get update && apt-get install -y --no-install-recommends python3-pip && pip3 install -r /root/specgram-requirements.txt
 COPY gamutrf/utils.py /root/gamutrf/utils.py
+COPY gamutrf/sample_reader.py /root/gamutrf/sample_reader.py
 COPY gamutrf/specgram.py /root/gamutrf/specgram.py
 ENV PYTHONPATH /root
 ENTRYPOINT ["nice", "-n", "19", "/root/gamutrf/specgram.py"]
