@@ -38,7 +38,7 @@ services:
       - /dev/bus/usb:/dev/bus/usb
     command:
       - --logaddr=sigfinder
-      - --igain=30
+      - --igain=40
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
       - --samp-rate=8e6
@@ -62,9 +62,11 @@ services:
       - --logaddr=sigfinder
       - --log=/logs/scan.csv
       - --fftlog=/logs/fft.csv
-      # suggested values width 2 for narrowband FM, >= 10 for wideband/video.
+      - --fftgraph=/logs/fft.png
+      # suggested values width 2 for narrowband FM, >= 20 for wideband/video.
       - --width=2
-      - --prominence=10
+      # suggested values prominence 15 for narrowband FM, >= 5 for wideband/video.
+      - --prominence=15
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
   watchtower:
