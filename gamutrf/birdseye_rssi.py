@@ -25,9 +25,9 @@ class BirdsEyeRSSI(gr.top_block):
             gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 32768, False)
         self.blocks_nlog10_ff_0 = blocks.nlog10_ff(10, 1, 0)
         self.blocks_moving_average_xx_0 = blocks.moving_average_ff(
-            self.mean_window, 1, 2000, 1)
+            self.mean_window, 1/self.mean_window, 2000, 1)
         self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(1)
-        self.blocks_add_const_vxx_0 = blocks.add_const_ff(-60)
+        self.blocks_add_const_vxx_0 = blocks.add_const_ff(-34)
         self.keep_one_in_n_0 = blocks.keep_one_in_n(
             gr.sizeof_float, int(self.rssi_throttle))
 
