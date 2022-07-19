@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 import logging
 import random
+import time
 from collections import Counter
 from collections import defaultdict
 
 import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
+import matplotlib.pyplot as plt
 
 
 ROLLOVERHZ = 100e6
@@ -145,6 +147,21 @@ def scipy_find_sig_windows(df, width, prominence, threshold):
         if arounddb > threshold:
             signals.append((row.freq, arounddb))
     return signals
+
+
+def graph_fft_peaks(graph_path, df, signals):
+    maxdb = df.db.max()
+    df['peaks'] = df.db.min()
+    for peak_freq, _ in signals:
+        df.loc[df.freq == peak_freq, 'peaks'] = maxdb
+
+    plt.figure(figsize=(11, 8), dpi=100)
+    plt.plot(df.freq, df.db, 'b', df.freq, df.peaks, 'y')
+    plt.xlabel('freq (MHz)')
+    plt.ylabel('power (dB)')
+    plt.legend(('power', 'peak status'), loc='upper right')
+    plt.title(f'gamutRF scanner FFT ending at {time.ctime(df.ts.max())}')
+    plt.savefig(graph_path)
 
 
 def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):

@@ -13,7 +13,8 @@ from gamutrf.sigfinder import ROLLOVERHZ
 class FakeArgs:
 
     def __init__(self, log, rotatesecs, window, threshold, freq_start, freq_end,
-                 fftlog, width, prominence, bin_mhz, record_bw_mbps, history, recorder):
+                 fftlog, width, prominence, bin_mhz, record_bw_mbps, history, recorder,
+                 fftgraph):
         self.log = log
         self.rotatesecs = rotatesecs
         self.window = window
@@ -28,6 +29,7 @@ class FakeArgs:
         self.record_bw_mbps = record_bw_mbps
         self.history = history
         self.recorder = recorder
+        self.fftgraph = fftgraph 
 
 
 class EmptyFifo(Exception):
@@ -56,7 +58,9 @@ class SigFinderTestCase(unittest.TestCase):
         with concurrent.futures.ProcessPoolExecutor(1) as executor:
             with tempfile.TemporaryDirectory() as tempdir:
                 test_log = os.path.join(str(tempdir), 'test.csv')
-                args = FakeArgs(test_log, 60, 4, -40, 100e6, 400e6, '', None, 5, 20, 21, 1, '')
+                test_fftlog = os.path.join(str(tempdir), 'fft.csv')
+                test_fftgraph = os.path.join(str(tempdir), 'fft.png')
+                args = FakeArgs(test_log, 60, 4, -40, 100e6, 400e6, test_fftlog, None, 5, 20, 21, 1, '', test_fftgraph)
                 prom_vars = init_prom_vars()
                 test_lines_1 = [(time.time(), ROLLOVERHZ + (1e6 * i), 0.001) for i in range(100)]
                 test_lines_2 = [(time.time(), ROLLOVERHZ + (1e6 * (i + 100)), 0.5) for i in range(5)]

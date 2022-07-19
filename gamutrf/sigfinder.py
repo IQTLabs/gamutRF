@@ -24,6 +24,7 @@ from gamutrf.sigwindows import calc_db
 from gamutrf.sigwindows import choose_record_signal
 from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import get_center
+from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
 from gamutrf.utils import MTU, ROLLOVERHZ
@@ -154,10 +155,14 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
     last_bin_freq_time = prom_vars['last_bin_freq_time']
     freq_start_mhz = args.freq_start / 1e6
     freq_end_mhz = args.freq_end / 1e6
-    for peak_freq, peak_db in scipy_find_sig_windows(df, width=args.width, prominence=args.prominence, threshold=args.threshold):
-        if peak_freq < freq_start_mhz or peak_freq > freq_end_mhz:
-            logging.info('ignoring peak at %f MHz', peak_freq)
-            continue
+    df = df[(df.freq >= freq_start_mhz) & (df.freq <= freq_end_mhz)]
+    signals = scipy_find_sig_windows(
+        df, width=args.width, prominence=args.prominence, threshold=args.threshold)
+
+    if args.fftgraph:
+        graph_fft_peaks(args.fftgraph, df, signals)
+
+    for peak_freq, peak_db in signals:
         center_freq = get_center(
             peak_freq, freq_start_mhz, args.bin_mhz, args.record_bw_mbps)
         logging.info('detected peak at %f MHz %f dB, assigned bin frequency %f MHz', peak_freq, peak_db, center_freq)
@@ -275,7 +280,7 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
                     except ValueError as err:
                         logging.info('could not parse FFT data: %s: %s', line, err)
                         continue
-                    if pw < 0 or pw > 2:
+                    if pw < 0 or pw > 10:
                         logging.info('power %f out of range on %s', pw, line)
                         continue
                     if freq < 0 or freq > 10e9:
@@ -345,6 +350,8 @@ def main():
                         help='base path for scan logging')
     parser.add_argument('--fftlog', default='', type=str,
                         help='if defined, path to log last complete FFT frame')
+    parser.add_argument('--fftgraph', default='', type=str,
+                        help='if defined, path to write graph of most recent FFT and detected peaks')
     parser.add_argument('--rotatesecs', default=3600, type=int,
                         help='rotate scan log after this many seconds')
     parser.add_argument('--logaddr', default='127.0.0.1', type=str,
