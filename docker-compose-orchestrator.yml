@@ -63,10 +63,9 @@ services:
       - --log=/logs/scan.csv
       - --fftlog=/logs/fft.csv
       - --fftgraph=/logs/fft.png
-      # suggested values width 2 for narrowband FM, >= 20 for wideband/video.
-      - --width=2
-      # suggested values prominence 15 for narrowband FM, >= 5 for wideband/video.
-      - --prominence=15
+      - --width=10
+      - --prominence=2
+      - --threshold=-35
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
   watchtower:

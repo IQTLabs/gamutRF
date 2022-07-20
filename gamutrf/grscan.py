@@ -81,7 +81,8 @@ class grscan(gr.top_block):
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(
             freq_end-freq_start)
         self.blocks_udp_sink_0 = network.udp_sink(
-            gr.sizeof_char, 1, logaddr, logport, 0, MTU, True)
+            # https://wiki.gnuradio.org/index.php/UDP_Sink
+            gr.sizeof_char, 1, logaddr, logport, 0, MTU - 28, True)
         self.blocks_complex_to_mag_0 = blocks.complex_to_mag(fft_size)
         self.blocks_add_const_vxx_0 = blocks.add_const_ff(freq_start)
         self.analog_sig_source_x_0 = analog.sig_source_f(

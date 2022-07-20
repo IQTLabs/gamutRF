@@ -82,7 +82,7 @@ def main():
         print('Error: freq_start must be less than freq_end')
         sys.exit(1)
 
-    if options.freq_end - options.freq_start < ROLLOVERHZ:
+    if options.freq_end - options.freq_start <= ROLLOVERHZ:
         print(f'Difference between freq_end and freq_start must be greater than {ROLLOVERHZ}')
         sys.exit(1)
 

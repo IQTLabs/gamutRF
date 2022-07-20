@@ -9,11 +9,13 @@ import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+from gamutrf.utils import SCAN_FRES, SCAN_FROLL
 
 
 ROLLOVERHZ = 100e6
 CSV = '.csv'
 CSVCOLS = ['ts', 'freq', 'db']
+ROLLING_FACTOR = int(SCAN_FROLL / SCAN_FRES)
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 
@@ -135,20 +137,15 @@ def calc_db(df):
     df['db'] = 20 * np.log10(df[df['db'] != 0]['db'])
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     df['rollingdiffdb'] = df[df['db'].notna()]['db'].rolling(5).mean().diff()
+    meandb = df['db'].mean()
+    df['db'] = df['db'].rolling(ROLLING_FACTOR).mean().fillna(meandb)
     return df
 
 
 def scipy_find_sig_windows(df, width, prominence, threshold):
     data = df.db.to_numpy()
-    peaks, _ = find_peaks(data, prominence=prominence, width=width)
-    signals = []
-    for peak in peaks:
-        row = df.iloc[peak]
-        aroundrows = df.iloc[peak-1:peak+1]
-        arounddb = aroundrows.db.mean()
-        if arounddb > threshold:
-            signals.append((row.freq, arounddb))
-    return signals
+    peaks, _ = find_peaks(data, prominence=prominence, width=(width,), height=threshold)
+    return [(df.iloc[peak].freq, df.iloc[peak].db) for peak in peaks]
 
 
 def graph_fft_peaks(graph_path, df, signals):
@@ -157,13 +154,23 @@ def graph_fft_peaks(graph_path, df, signals):
     for peak_freq, _ in signals:
         df.loc[df.freq == peak_freq, 'peaks'] = maxdb
 
+    peak_df = df[df.peaks == maxdb].sort_values('db', ascending=False)[:5]
+    peak_signals = ','.join([
+        '%.1f MHz %.1f dB' % (row.freq, row.db) for row in peak_df.itertuples()])
+    if peak_signals:
+        peak_signals = f'strongest peak signals: {peak_signals}'
+
     plt.figure(figsize=(11, 8), dpi=100)
     plt.plot(df.freq, df.db, 'b', df.freq, df.peaks, 'y')
     plt.xlabel('freq (MHz)')
     plt.ylabel('power (dB)')
     plt.legend(('power', 'peak status'), loc='upper right')
-    plt.title(f'gamutRF scanner FFT ending at {time.ctime(df.ts.max())}')
+    time_min = time.ctime(df.ts.min())
+    time_max = time.ctime(df.ts.max())
+    plt.title(f'gamutRF scanner FFT {time_min} to {time_max}\n{peak_signals}')
     plt.savefig(graph_path)
+    plt.cla()
+    plt.close('all')
 
 
 def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
