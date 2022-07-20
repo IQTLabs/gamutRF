@@ -7,6 +7,8 @@ import numpy as np
 
 MTU = 8962
 ROLLOVERHZ = 100e6
+SCAN_FRES = 1e4
+SCAN_FROLL = 1e6
 
 # Use max recv_frame_size for USB - because we don't mind latency,
 # we are optimizing for lower CPU.

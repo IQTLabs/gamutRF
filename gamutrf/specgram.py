@@ -242,7 +242,7 @@ def process_all_recordings(args):
             executor.shutdown(wait=True)
 
 
-def main():
+def argument_parser():
     parser = argparse.ArgumentParser(
         description='draw spectrogram from recording')
     parser.add_argument('recording', default='', type=str,
@@ -280,6 +280,11 @@ def main():
     parser.add_argument('--dpi', default=100, type=int,
                         help='plot DPI')
     parser.set_defaults(bare=False, skip_exist=False, skip_fft=False)
+    return parser
+
+
+def main():
+    parser = argument_parser()
     args = parser.parse_args()
     while True:
         process_all_recordings(args)

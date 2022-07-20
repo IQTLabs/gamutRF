@@ -130,6 +130,7 @@ dmypy.json
 # Data files
 *.csv
 *.mp4
+*.png
 
 # Temporary files
 *.swo
