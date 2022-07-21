@@ -136,25 +136,24 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
     global PEAK_DBS
     df = pd.DataFrame(fftbuffer, columns=['ts', 'freq', 'db'])
     # resample to SCAN_FRES
-    df = df.sort_values('freq')
     # ...first frequency
-    df['freq'] = (df['freq'] / SCAN_FRES).round() * SCAN_FRES
+    df['freq'] = (df['freq'] / SCAN_FRES).round() * SCAN_FRES / 1e6
     df = df.set_index('freq')
     # ...then power
     df['db'] = df.groupby(['freq'])['db'].mean()
     df = df.reset_index().drop_duplicates(subset=['freq'])
-    df['freq'] /= 1e6
-    df['freqdiffs'] = df.freq - df.freq.shift()
-    mindiff = df.freqdiffs.min()
-    maxdiff = df.freqdiffs.max()
-    meandiff = df.freqdiffs.mean()
+    df = df.sort_values('freq')
+    df = calc_db(df)
+    freqdiffs = df.freq - df.freq.shift()
+    mindiff = freqdiffs.min()
+    maxdiff = freqdiffs.max()
+    meandiff = freqdiffs.mean()
     logging.info(
-        'new frame, frequency sample differences min %f mean %f max %f',
-        mindiff, meandiff, maxdiff)
+        'new frame with %u samples, frequency sample differences min %f mean %f max %f',
+        len(df), mindiff, meandiff, maxdiff)
     if meandiff > mindiff * 2:
         logging.warning('mean frequency diff larger than minimum - increase scanner sample rate')
-        logging.warning(df[df.freqdiffs > mindiff * 2])
-    df = calc_db(df)
+        logging.warning(df[freqdiffs > mindiff * 2])
     if args.fftlog:
         df.to_csv(args.fftlog, sep='\t', index=False)
     monitor_bins = set()
@@ -163,7 +162,6 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
     last_bin_freq_time = prom_vars['last_bin_freq_time']
     freq_start_mhz = args.freq_start / 1e6
     freq_end_mhz = args.freq_end / 1e6
-    df = df[(df.freq >= freq_start_mhz) & (df.freq <= freq_end_mhz)]
     signals = scipy_find_sig_windows(
         df, width=args.width, prominence=args.prominence, threshold=args.threshold)
 
@@ -255,27 +253,28 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
     while True:
         if os.path.exists(args.log):
             logging.info(f'{args.log} exists, will append first')
-            mode = 'ab'
+            mode = 'a'
         else:
             logging.info(f'opening {args.log}')
-            mode = 'wb'
+            mode = 'w'
         openlogts = int(time.time())
         with open(args.log, mode=mode) as l:
             while True:
-                schedule.run_pending()
                 sock_txt = fifo.read()
                 now = int(time.time())
                 if sock_txt:
                     fft_packets += 1
+                    txt_buf += sock_txt.decode('utf8')
+                    continue
                 if now - last_fft_report > 5:
                     logging.info('received %u FFT packets, last freq %f MHz', fft_packets, lastfreq / 1e6)
                     fft_packets = 0
                     last_fft_report = now
-                if sock_txt is None:
+                schedule.run_pending()
+                lines = txt_buf.splitlines()
+                if not len(lines) > 1:
                     time.sleep(0.1)
                     continue
-                txt_buf += sock_txt.decode('utf8')
-                lines = txt_buf.splitlines()
                 if txt_buf.endswith('\n'):
                     txt_buf = ''
                 elif lines:
@@ -297,7 +296,6 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
                     if abs(now - ts) > 60:
                         logging.info('timestamp %f out of range on %s', ts, line)
                         continue
-                    l.write(line.encode('utf8') + b'\n')
                     rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
                     lastfreq = freq
                     if rollover:
@@ -315,6 +313,7 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
                         if rotate_age > args.rotatesecs:
                             rotatelognow = True
                     fftbuffer.append((ts, freq, pw))
+                l.write('\n'.join(lines) + '\n')
                 if rotatelognow:
                     break
         new_log = args.log.replace(ext, f'{openlogts}{ext}')

@@ -50,9 +50,12 @@ class FakeFifo:
         if not self.test_data:
             raise EmptyFifo
         test_lines = []
-        for line in self.test_data[0]:
-            test_lines.append(' '.join((str(i) for i in line)))
-        result = ('\n'.join(test_lines) + '\n').encode('utf8')
+        if self.test_data[0]:
+            for line in self.test_data[0]:
+                test_lines.append(' '.join((str(i) for i in line)))
+            result = ('\n'.join(test_lines) + '\n').encode('utf8')
+        else:
+            result = None
         self.test_data = self.test_data[1:]
         return result
 
@@ -75,7 +78,7 @@ class SigFinderTestCase(unittest.TestCase):
                 test_lines_3 = [(time.time(), ROLLOVERHZ + (1e5 * (i + line_count)), 0.1) for i in range(1000)]
                 line_count += len(test_lines_3)
                 test_lines_4 = [(time.time(), ROLLOVERHZ + 1e6, 0.1)]
-                fifo = FakeFifo([test_lines_1, test_lines_2, test_lines_3, test_lines_4])
+                fifo = FakeFifo([test_lines_1, test_lines_2, test_lines_3, test_lines_4, None])
                 self.assertRaises(EmptyFifo, lambda: process_fft_lines(args, prom_vars, fifo, 'csv', executor))
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))

@@ -136,7 +136,6 @@ def freq_excluded(freq, freq_exclusions):
 def calc_db(df):
     df['db'] = 20 * np.log10(df[df['db'] != 0]['db'])
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df['rollingdiffdb'] = df[df['db'].notna()]['db'].rolling(5).mean().diff()
     meandb = df['db'].mean()
     df['db'] = df['db'].rolling(ROLLING_FACTOR).mean().fillna(meandb)
     return df
@@ -171,26 +170,6 @@ def graph_fft_peaks(graph_path, df, signals):
     plt.savefig(graph_path)
     plt.cla()
     plt.close('all')
-
-
-def find_sig_windows(df, window=4, threshold=2, min_bw_mhz=1):
-    window_df = df[(df['rollingdiffdb'].rolling(
-        window).sum().abs() > (window * threshold))]
-    freq_diff = window_df['freq'].diff().fillna(min_bw_mhz)
-    signals = []
-    in_signal = None
-    for row in window_df[freq_diff >= min_bw_mhz].itertuples():
-        if in_signal is not None:
-            start_freq = in_signal.freq
-            end_freq = row.freq
-            signal_df = df[(df['freq'] >= start_freq)
-                           & (df['freq'] <= end_freq)]
-            center_freq = start_freq + ((end_freq - start_freq) / 2)
-            signals.append((center_freq, signal_df['db'].max()))
-            in_signal = None
-        else:
-            in_signal = row
-    return signals
 
 
 def get_center(signal_mhz, freq_start_mhz, bin_mhz, record_bw):

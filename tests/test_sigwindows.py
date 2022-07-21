@@ -7,7 +7,6 @@ import pandas as pd
 
 from gamutrf.sigwindows import choose_record_signal
 from gamutrf.sigwindows import choose_recorders
-from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import freq_excluded
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import read_csv
@@ -99,18 +98,6 @@ class WindowsTestCase(unittest.TestCase):
     def test_parse_excluded(self):
         self.assertEqual(((100, 200), (200, None), (None, 100)),
                          parse_freq_excluded(['100-200', '200-', '-100']))
-
-    def test_verybusy1g1(self):
-        df = pd.read_csv(self._get_data('verybusy1g1.csv'),
-                         delim_whitespace=True)
-        signals = sorted(find_sig_windows(df))
-        self.assertIn((766.8655679999999, 1.5591977316304422), signals, signals)
-        self.assertIn((276.675192, 10.327983621238149), signals, signals)
-        self.assertIn((935.5615680000001, 7.672896900099766), signals, signals)
-
-    def test_find_wifi(self):
-        df = pd.read_csv(self._get_data('wifi24.csv'), delim_whitespace=True)
-        self.assertEqual([(2428.9539839999998, -13.27136572108361)], find_sig_windows(df))
 
     def test_choose_record_signal(self):
         # One signal, one recorder.
