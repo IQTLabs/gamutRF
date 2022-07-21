@@ -287,7 +287,7 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
                     except ValueError as err:
                         logging.info('could not parse FFT data: %s: %s', line, err)
                         continue
-                    if pw < 0 or pw > 10:
+                    if pw < 0 or pw > args.max_raw_power:
                         logging.info('power %f out of range on %s', pw, line)
                         continue
                     # FFT data might appear slightly outside requested range
@@ -389,6 +389,8 @@ def argument_parser():
                         help='UDP stream port')
     parser.add_argument('--bin_mhz', default=20, type=int,
                         help='monitoring bin width in MHz')
+    parser.add_argument('--max_raw_power', default=50, type=int,
+                        help='maximum raw power permitted from FFT')
     parser.add_argument('--width', default=10, type=int,
                         help=f'minimum signal width to detect a peak (multiple of {SCAN_FRES / 1e6} MHz, e.g. 10 is {10 * SCAN_FRES / 1e6} MHz)')
     parser.add_argument('--threshold', default=-35, type=float,
