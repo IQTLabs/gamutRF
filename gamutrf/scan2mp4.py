@@ -17,8 +17,6 @@ def generate_frames(args, tempdir):
     tsmap = []
     db_min = None
     db_max = None
-    diff_min = None
-    diff_max = None
     freq_min = None
     freq_max = None
     lastts = None
@@ -29,8 +27,7 @@ def generate_frames(args, tempdir):
             dumpfile = args.csv.replace(CSV, f'-{frame}.csv')
             frame_fs.append(dumpfile)
         for f in frame_fs:
-            frame_df.to_csv(f, sep='\t', columns=[
-                            'freq', 'db', 'rollingdiffdb'], index=False)
+            frame_df.to_csv(f, sep='\t', columns=['freq', 'db'], index=False)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         maxmhz = args.maxhz / 1e6
@@ -41,20 +38,15 @@ def generate_frames(args, tempdir):
             frame_f = os.path.join(str(tempdir), str(ts))
             tsmap.append((frame, ts, tsc, frame_f))
             db = frame_df.db
-            rollingdiffdb = frame_df.rollingdiffdb
             freq = frame_df.freq
             if frame:
                 db_min = min(db_min, db.min())
                 db_max = max(db_max, db.max())
-                diff_min = min(diff_min, rollingdiffdb.min())
-                diff_max = max(diff_max, rollingdiffdb.max())
                 freq_min = min(freq_min, freq.min())
                 freq_max = max(freq_max, freq.max())
             else:
                 db_min = db.min()
                 db_max = db.max()
-                diff_min = rollingdiffdb.min()
-                diff_max = rollingdiffdb.max()
                 freq_min = freq.min()
                 freq_max = freq.max()
                 lastts = ts
@@ -67,7 +59,7 @@ def generate_frames(args, tempdir):
                 columns=['ts', 'freq', 'db'], index=False, header=False)
         executor.shutdown(wait=True)
 
-    return (tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max)
+    return (tsmap, freq_min, freq_max, db_min, db_max)
 
 
 def call_gnuplot(gnuplot_cmds, tempdir):
@@ -79,10 +71,10 @@ def call_gnuplot(gnuplot_cmds, tempdir):
     subprocess.check_call(['gnuplot', plot_f])
 
 
-def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir, graph):
+def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, args, tempdir, graph):
     logging.info('creating gunplot commands')
-    y_min = min(diff_min, db_min)
-    y_max = max(diff_max, db_max)
+    y_min = db_min
+    y_max = db_max
     freq_min = int(freq_min / 100) * 100
     freq_max = round(freq_max / 100) * 100
     xtics = (freq_max - freq_min) / args.xtics
@@ -107,12 +99,10 @@ def run_gnuplot(tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, a
     for frame, _ts, tsc, frame_f in tsmap:
         db_plot = (
             f'"{frame_f}" using 1:2 with linespoints title "dB"')
-        rolling_diff_plot = (
-            f'"{frame_f}" using 1:3 with linespoints title "rolling diff dB"')
         gnuplot_cmds.extend([
             f'set output "{tempdir}/{frame:09}.png"',
             f'set title "{tsc} frame {frame}"',
-            f'plot {db_plot}, {rolling_diff_plot}'])
+            f'plot {db_plot}'])
 
     call_gnuplot(gnuplot_cmds, tempdir)
 
@@ -180,10 +170,10 @@ def main():
         tmproot = args.tmproot
 
     with tempfile.TemporaryDirectory(dir=tmproot) as tempdir:
-        tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max = generate_frames(
+        tsmap, freq_min, freq_max, db_min, db_max = generate_frames(
             args, tempdir)
         run_gnuplot(
-            tsmap, freq_min, freq_max, db_min, db_max, diff_min, diff_max, args, tempdir, graph)
+            tsmap, freq_min, freq_max, db_min, db_max, args, tempdir, graph)
         run_ffmpeg(args, tempdir, mp4)
 
 
