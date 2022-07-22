@@ -46,11 +46,16 @@ def run_procs(procs_args):
     procs[-1].communicate()
 
 
-def main():
+def argument_parser():
     parser = argparse.ArgumentParser(
-        description='Convert (possibly compressed) sample recording to a float raw file (gnuradio style)')
+    description='Convert (possibly compressed) sample recording to a float raw file (gnuradio style)')
     parser.add_argument('samplefile', default='', help='sample file to read')
-    parser.add_argument('outfmt', default='float', help='output format')
+    parser.add_argument('--outfmt', default='float', help='output format')
+    return parser
+
+
+def main():
+    parser = argument_parser()
     args = parser.parse_args()
     procs_args = make_procs_args(args.samplefile, args.outfmt)
     run_procs(procs_args)
