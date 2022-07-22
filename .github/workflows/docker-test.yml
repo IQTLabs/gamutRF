@@ -20,6 +20,7 @@ jobs:
         docker run -t gamutrf-sigfinder:latest --help && \
         docker build -f Dockerfile.airspyfm . -t gamutrf-airspyfm:latest && \
         docker build -f Dockerfile.freqxlator . -t gamutrf-freqxlator:latest && \
+        docker build -f Dockerfile.samples2raw . -t gamutrf-samples2raw:latest && \
         docker run -t gamutrf-freqxlator:latest --help && \
         sudo apt-get update && sudo apt-get install -qy python3-pip && pip3 install docker-compose \
         docker-compose build

@@ -11,6 +11,7 @@ from gamutrf.sigfinder import init_prom_vars
 from gamutrf.sigfinder import process_fft_lines
 from gamutrf.sigfinder import ROLLOVERHZ
 from gamutrf.sigfinder import udp_proxy
+from gamutrf.sigfinder import argument_parser
 
 
 class FakeArgs:
@@ -62,6 +63,9 @@ class FakeFifo:
 
 
 class SigFinderTestCase(unittest.TestCase):
+
+    def test_argument_parser(self):
+        argument_parser()
 
     def test_process_fft_lines(self):
         with concurrent.futures.ProcessPoolExecutor(1) as executor:

@@ -6,10 +6,13 @@ import unittest
 
 import numpy as np
 
-from gamutrf.samples2raw import make_procs_args, run_procs
+from gamutrf.samples2raw import make_procs_args, run_procs, argument_parser
 
 
 class Samples2RawTestCase(unittest.TestCase):
+
+    def test_argument_parser(self):
+        argument_parser()
 
     def test_s2r(self):
         with tempfile.TemporaryDirectory() as tempdir:
