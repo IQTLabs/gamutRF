@@ -11,6 +11,12 @@ gamutRF provides tools to work with I/Q sample recordings, and to also record GP
 
 See also [instructions on how to build a gamutRF system](BUILD.md).
 
+## Scanner theory of operation
+
+gamutRF's scanner function is split across two docker containers which are both run on the orchestrator. One container connects to the SDR and sweeps over a configured frequency range in 30s, retuning at 97Hz, while sampling at 8Msps (all default values which can be changed). For example, to sweep from 5GHz to 6GHz in 30s, it covers approximately 33.3MHz/s, retuning across that 33.3MHz at 97Hz. The samples are sent to a [streaming FFT gnuradio block](https://github.com/ThomasHabets/gr-habets39) which emits 2048 FFT points which are sent over UDP to the sigfinder container (see below). The FFT block needs to know when the SDR has been retuned to a new frequency, so it uses an gnuradio timestamp and frequency tag provided by the gnuradio UHD driver upon retuning. This tag functionality has been added the Soapy driver in a gnuradio fork which is part of gamutRF, so that other SDRs may be used as scanners.
+
+The sigfinder consumes these FFT points from UDP packets, does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 0.1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html). If workers have been provisioned, the orchestrator will then command the workers to make an approximately 10s recording at approximately 20Msps of each signal. As there will almost certainly more signals than workers available, the orchestrator will prioritize signals that it least often observed over a configurable number of scanner cycles. It is possible to configure this off so the recording choice will be random. It is also possible to configure the workers to tell the orchestrator to exclude that worker from certain frequency ranges (if for example the worker SDR cannot handle some part of the frequency specutrum scanned).
+
 ## Operating gamutRF
 
 See the [build doc](BUILD.md)
