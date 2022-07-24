@@ -28,73 +28,75 @@ ORCHESTRATOR = os.getenv('ORCHESTRATOR', 'orchestrator')
 CALIBRATION = os.getenv('CALIBRATION', '0')
 ANTENNA = os.getenv('ANTENNA', '')
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    '--loglevel', '-l', help='Set logging level',
-    choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
-parser.add_argument(
-    '--antenna', '-a', help='Antenna make/model',
-    type=str, default=ANTENNA)
-parser.add_argument(
-    '--name', '-n', help='Name for the worker',
-    type=str, default=WORKER_NAME)
-parser.add_argument(
-    '--path', '-P', help='Path prefix for writing out samples to',
-    type=str, default='/data/gamutrf')
-parser.add_argument(
-    '--port', '-p', help='Port to run the API webserver on', type=int,
-    default=8000)
-parser.add_argument(
-    '--sdr', '-s', help=f'Specify SDR to record with {list(RECORDER_MAP.keys())} or file', type=str,
-    default='ettus')
-parser.add_argument(
-    '--freq_excluded', '-e', help='Freq range to exclude in MHz (e.g. "100-200")',
-    action='append', default=[])
-parser.add_argument(
-    '--gain', '-g', help='Gain in dB',
-    default=30, type=int)
-parser.add_argument(
-    '--mean_window', '-m', help='birdseye mean window size',
-    default=128, type=int)
-parser.add_argument(
-    '--rxb', help='Receive buffer size',
-    default=int(1024 * 1024 * 10), type=int)
-parser.add_argument(
-    '--qsize', help='Max request queue size',
-    default=int(2), type=int)
-parser.add_argument(
-    '--mqtt_server', help='MQTT server to report RSSI',
-    default=ORCHESTRATOR, type=str)
-parser.add_argument(
-    '--rssi_interval', help='rate limit in seconds for RSSI updates to MQTT',
-    default=1.0, type=float)
-parser.add_argument(
-    '--rssi_throttle', help='rate limit RSSI calculations to 1 in n',
-    default=10, type=int)
-parser.add_argument(
-    '--rssi_threshold', help='RSSI reporting threshold',
-    default=-45, type=float)
-arg_parser = parser.add_mutually_exclusive_group(required=False)
-arg_parser.add_argument(
-    '--agc', dest='agc', action='store_true', default=True, help='use AGC')
-arg_parser.add_argument(
-    '--no-agc', dest='agc', action='store_false', help='do not use AGC')
-sigmf_parser = parser.add_mutually_exclusive_group(required=False)
-sigmf_parser.add_argument(
-    '--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
-sigmf_parser.add_argument(
-    '--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
-rssi_parser = parser.add_mutually_exclusive_group(required=False)
-rssi_parser.add_argument(
-    '--rssi', dest='enable_rssi', action='store_true', help='get RSSI values')
-rssi_parser.add_argument(
-    '--no-rssi', dest='enable_rssi', action='store_false', help='do not get RSSI values')
 
-arguments = parser.parse_args()
+def argument_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--loglevel', '-l', help='Set logging level',
+        choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
+    parser.add_argument(
+        '--antenna', '-a', help='Antenna make/model',
+        type=str, default=ANTENNA)
+    parser.add_argument(
+        '--name', '-n', help='Name for the worker',
+        type=str, default=WORKER_NAME)
+    parser.add_argument(
+        '--path', '-P', help='Path prefix for writing out samples to',
+        type=str, default='/data/gamutrf')
+    parser.add_argument(
+        '--port', '-p', help='Port to run the API webserver on', type=int,
+        default=8000)
+    parser.add_argument(
+        '--sdr', '-s', help=f'Specify SDR to record with {list(RECORDER_MAP.keys())} or file', type=str,
+        default='ettus')
+    parser.add_argument(
+        '--freq_excluded', '-e', help='Freq range to exclude in MHz (e.g. "100-200")',
+        action='append', default=[])
+    parser.add_argument(
+        '--gain', '-g', help='Gain in dB',
+        default=30, type=int)
+    parser.add_argument(
+        '--mean_window', '-m', help='birdseye mean window size',
+        default=128, type=int)
+    parser.add_argument(
+        '--rxb', help='Receive buffer size',
+        default=int(1024 * 1024 * 10), type=int)
+    parser.add_argument(
+        '--qsize', help='Max request queue size',
+        default=int(2), type=int)
+    parser.add_argument(
+        '--mqtt_server', help='MQTT server to report RSSI',
+        default=ORCHESTRATOR, type=str)
+    parser.add_argument(
+        '--rssi_interval', help='rate limit in seconds for RSSI updates to MQTT',
+        default=1.0, type=float)
+    parser.add_argument(
+        '--rssi_throttle', help='rate limit RSSI calculations to 1 in n',
+        default=10, type=int)
+    parser.add_argument(
+        '--rssi_threshold', help='RSSI reporting threshold',
+        default=-45, type=float)
+    arg_parser = parser.add_mutually_exclusive_group(required=False)
+    arg_parser.add_argument(
+        '--agc', dest='agc', action='store_true', default=True, help='use AGC')
+    arg_parser.add_argument(
+        '--no-agc', dest='agc', action='store_false', help='do not use AGC')
+    sigmf_parser = parser.add_mutually_exclusive_group(required=False)
+    sigmf_parser.add_argument(
+        '--sigmf', dest='sigmf', action='store_true', help='add sigmf meta file')
+    sigmf_parser.add_argument(
+        '--no-sigmf', dest='sigmf', action='store_false', help='do not add sigmf meta file')
+    rssi_parser = parser.add_mutually_exclusive_group(required=False)
+    rssi_parser.add_argument(
+        '--rssi', dest='enable_rssi', action='store_true', help='get RSSI values')
+    rssi_parser.add_argument(
+        '--no-rssi', dest='enable_rssi', action='store_false', help='do not get RSSI values')
+    return parser
+
+
+arguments = argument_parser().parse_args()
 q = queue.Queue(arguments.qsize)
-
 sdr_recorder = get_recorder(arguments.sdr)
-
 level_int = {'CRITICAL': 50, 'ERROR': 40, 'WARNING': 30, 'INFO': 20,
              'DEBUG': 10}
 level = level_int.get(arguments.loglevel.upper(), 0)
@@ -160,32 +162,31 @@ class API:
 
     def run_recorder(self, record_func, q):
         logging.info('run recorder')
+        start_time = time.time()
         while True:
+            logging.info('awaiting request')
             if arguments.enable_rssi:
                 self.serve_rssi(arguments, q)
             else:
-                self.serve_recording(arguments, record_func, q)
-            time.sleep(5)
+                self.serve_recording(arguments, start_time, record_func, q)
 
     @staticmethod
     def record(center_freq, sample_count, sample_rate=20e6):
         return sdr_recorder.run_recording(
-            arguments.path, sample_rate, sample_count, center_freq, arguments.gain, arguments.agc, arguments.rxb, arguments.sigmf, arguments.sdr, arguments.antenna)
+            arguments.path, sample_rate, sample_count, center_freq,
+            arguments.gain, arguments.agc, arguments.rxb, arguments.sigmf,
+            arguments.sdr, arguments.antenna)
 
-    def serve_recording(self, arguments, record_func, q):
-        logging.info('serving recordings')
-        start_time = time.time()
-        while True:
-            logging.info('awaiting request')
-            record_args = q.get()
-            logging.info(f'got a request: {record_args}')
-            record_status = record_func(**record_args)
-            if record_status == -1:
-                # TODO this only kills the thread, not the main process
-                break
-            record_args.update(vars(arguments))
-            self.mqtt_reporter.publish('gamutrf/record', record_args)
-            self.mqtt_reporter.log(arguments.path, 'record', start_time, record_args)
+    def serve_recording(self, arguments, start_time, record_func, q):
+        record_args = q.get()
+        logging.info(f'got a request: {record_args}')
+        record_status = record_func(**record_args)
+        if record_status == -1:
+            # TODO this only kills the thread, not the main process
+            return
+        record_args.update(vars(arguments))
+        self.mqtt_reporter.publish('gamutrf/record', record_args)
+        self.mqtt_reporter.log(arguments.path, 'record', start_time, record_args)
 
     def report_rssi(self, args, record_args, reported_rssi, reported_time, start_time):
         logging.info(
@@ -254,6 +255,7 @@ class API:
         r = self.routes()
         for route in r:
             self.app.add_route(self.version()+route, r[route])
+        return self.app
 
     def main(self, start_app):
         if start_app:

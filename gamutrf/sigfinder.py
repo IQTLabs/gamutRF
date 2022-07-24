@@ -31,8 +31,10 @@ from gamutrf.sigwindows import scipy_find_sig_windows
 from gamutrf.utils import MTU, ROLLOVERHZ, SCAN_FRES
 
 SOCKET_TIMEOUT = 1.0
+MB = 1024 * 1024
+MIN_SOCK_SIZE = MB * 2
+
 PEAK_DBS = {}
-MIN_SOCK_SIZE = 1024 * 1024 * 2
 
 
 def falcon_response(resp, text, status):
@@ -73,7 +75,7 @@ class Result:
         try:
             recorder = f'http://{req.media["worker"]}:8000/'
             signal_hz = int(int(req.media['frequency']) * 1e6)
-            record_bps = int(int(req.media['bandwidth']) * (1024 * 1024))
+            record_bps = int(int(req.media['bandwidth']) * MB)
             record_samples = int(record_bps * int(req.media['duration']))
             recorder_args = f'record/{signal_hz}/{record_samples}/{record_bps}'
             timeout = int(req.media['duration'])
@@ -161,7 +163,6 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
     bin_freq_count = prom_vars['bin_freq_count']
     last_bin_freq_time = prom_vars['last_bin_freq_time']
     freq_start_mhz = args.freq_start / 1e6
-    freq_end_mhz = args.freq_end / 1e6
     signals = scipy_find_sig_windows(
         df, width=args.width, prominence=args.prominence, threshold=args.threshold)
 
@@ -170,7 +171,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
 
     for peak_freq, peak_db in signals:
         center_freq = get_center(
-            peak_freq, freq_start_mhz, args.bin_mhz, args.record_bw_mbps)
+            peak_freq, freq_start_mhz, args.bin_mhz, args.record_bw_msps)
         logging.info('detected peak at %f MHz %f dB, assigned bin frequency %f MHz', peak_freq, peak_db, center_freq)
         bin_freq_count.labels(bin_mhz=center_freq).inc()
         last_bin_freq_time.labels(bin_mhz=ts).set(ts)
@@ -225,9 +226,8 @@ def call_record_signals(args, lastbins_history, prom_vars):
             signals, recorder_count)
         for signal, recorder in choose_recorders(record_signals, recorder_freq_exclusions):
             signal_hz = int(signal * 1e6)
-            record_bps = int(args.record_bw_mbps * (1024 * 1024))
-            record_samples = int(
-                record_bps * args.record_secs)
+            record_bps = int(args.record_bw_msps * MB)
+            record_samples = int(record_bps * args.record_secs)
             recorder_args = f'record/{signal_hz}/{record_samples}/{record_bps}'
             resp = recorder_req(
                 recorder, recorder_args, args.record_secs)
@@ -321,7 +321,7 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
         executor.submit(zstd_file, new_log)
 
 
-def udp_proxy(args, fifo_name, buffer_time=1, max_packets=None):
+def udp_proxy(args, fifo_name, buffer_time=1, shutdown_str=None):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_sock:
         udp_sock.bind((args.logaddr, args.logport))
         sock_size = udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
@@ -338,20 +338,21 @@ def udp_proxy(args, fifo_name, buffer_time=1, max_packets=None):
                 sock_txt, _ = udp_sock.recvfrom(MTU)
                 if len(sock_txt):
                     sock_buf += sock_txt
+                    shutdown = shutdown_str is not None and sock_buf.find(shutdown_str) != -1
                     now = time.time()
-                    if now - last_packet_sent_time > buffer_time:
+                    if shutdown or now - last_packet_sent_time > buffer_time:
                         if packets_sent == 0:
                             logging.info('received first FFT UDP packet')
                             # synchronize at the start of a new FFT sample.
                             first_newline = sock_buf.find(b'\n')
-                            if first_newline > 0:
+                            if first_newline != -1:
                                 sock_buf = sock_buf[first_newline + 1:]
                         fifo.write(sock_buf)
                         fifo.flush()
                         sock_buf = b''
                         packets_sent += 1
                         last_packet_sent_time = now
-                        if max_packets is not None and packets_sent > max_packets:
+                        if shutdown:
                             return
 
 
@@ -397,12 +398,12 @@ def argument_parser():
                         help='minimum signal finding threshold (dB)')
     parser.add_argument('--prominence', default=2, type=float,
                         help='minimum peak prominence (see scipy.signal.find_peaks)')
-    parser.add_argument('--history', default=50, type=int,
+    parser.add_argument('--history', default=5, type=int,
                         help='number of frames of signal history to keep')
     parser.add_argument('--recorder', action='append', default=[],
                         help='SDR recorder base URLs (e.g. http://host:port/, multiples can be specified)')
-    parser.add_argument('--record_bw_mbps', default=20, type=int,
-                        help='record bandwidth in mbps')
+    parser.add_argument('--record_bw_msps', default=20, type=int,
+                        help='record bandwidth in n * {MB} samples per second')
     parser.add_argument('--record_secs', default=10, type=int,
                         help='record time duration in seconds')
     parser.add_argument('--promport', dest='promport', type=int, default=9000,
