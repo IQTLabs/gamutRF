@@ -13,15 +13,15 @@ See also [instructions on how to build a gamutRF system](BUILD.md).
 
 ## Scanner theory of operation
 
-gamutRF's scanner function is split across two docker containers which are both run on the orchestrator. The gamutrf (scanner) container connects to the SDR and sweeps over a configured frequency range in 30s, retuning at 97Hz, while sampling at 8Msps (all default values which can be changed). For example, to sweep from 5GHz to 6GHz in 30s, it covers approximately 33.3MHz/s, retuning across that 33.3MHz at 97Hz.
+gamutRF's scanner function is split across two Docker containers which are both run on the orchestrator. The `gamutrf` (scanner) container connects to the SDR and sweeps over a configured frequency range in 30s, retuning at 97Hz, while sampling at 8Msps (all default values which can be changed). For example, to sweep from 5GHz to 6GHz in 30s, it covers approximately 33.3MHz/s, retuning across that 33.3MHz at 97Hz.
 
-The samples are sent to a [streaming FFT gnuradio block](https://github.com/ThomasHabets/gr-habets39) which emits 2048 FFT points which are sent over UDP to the sigfinder container (see below). The FFT block needs to know when the SDR has been retuned to a new frequency, so it uses a gnuradio timestamp and frequency tag provided by the gnuradio UHD driver upon retuning. This tag functionality has been added the Soapy driver in a gnuradio fork which is part of gamutRF, so that other SDRs may be used as scanners.
+The samples are sent to a [streaming FFT gnuradio block](https://github.com/ThomasHabets/gr-habets39) which emits 2048 FFT points which are sent over UDP to the `sigfinder` container (see below). The FFT block needs to know when the SDR has been retuned to a new frequency, so it uses a gnuradio timestamp and frequency tag provided by the gnuradio UHD driver upon retuning. This tag functionality has been added to the Soapy driver in a gnuradio fork which is part of gamutRF, so that other SDRs may be used as scanners.
 
-The sigfinder container consumes these FFT points from UDP packets, does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
+The `sigfinder` container consumes these FFT points from UDP packets, does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
 
-If workers have been provisioned, the orchestrator will then command the workers to make an approximately 10s I/Q recording at approximately 20Msps of each signal. Each signal peak is assigned a 20MHz bin, which means that if a signal is repeatedly detected with some frequency variation, the assigned recording bin will be constant, and if multiple signals are detected within 20MHz they can be collected simultaneously. A worker by default records at a higher sample rate than the bin size, so that 20MHz signal margins can be recorded.
+If workers have been provisioned, the orchestrator will then command the workers to make an approximately 10 second I/Q recording at approximately 20Msps of each signal. Each signal peak is assigned a 20MHz bin, which means that if a signal is repeatedly detected with some frequency variation, the assigned recording bin will be constant, and if multiple signals are detected within 20MHz they can be collected simultaneously. A worker by default records at a higher sample rate than the bin size, so that 20MHz signal margins can be recorded.
 
-As there will almost certainly more signals than workers available, the orchestrator will prioritize signals that it least often observed over a configurable number of scanner cycles. It is possible to configure this off so that the recording choice will be random. It is also possible to configure the workers to tell the orchestrator to exclude that worker from certain frequency ranges (if for example the worker SDR cannot handle some part of the frequency spectrum scanned).
+As there will almost certainly be more signals than workers available, the orchestrator will prioritize signals that it least often observed over a configurable number of scanner cycles. It is possible to configure this to `off` so that the recording choice will be random. It is also possible to configure the workers to tell the orchestrator to exclude that worker from certain frequency ranges (if for example the worker SDR cannot handle some part of the frequency spectrum scanned).
 
 ## Operating gamutRF
 
@@ -56,7 +56,7 @@ While there are other options, these options primarily influence gamutRF's scann
 
 ### Manually initiating worker actions
 
-The orchestrator has a web interface on port 9000. You can use this to command a worker to start an I/Q sample recording or start a RSSI stream.
+The orchestrator has a web interface on port 80. You can use this to command a worker to start an I/Q sample recording or start a RSSI stream.
 
 ## Working with worker I/Q recordings
 
@@ -104,7 +104,7 @@ For example, to reduce a recording made with gamutRF's default sample rate to 1/
 
 gamutRF provides a tool to demodulate AM/FM audio from a recording as an example use case.
 
-* Use the ```freqxlator``` tool to make new recording at no more than 1Msps and has the frequency to be demodulated centered.
+* Use the ```freqxlator``` tool to make a new recording at no more than 1Msps and has the frequency to be demodulated centered.
 * Use the ```airspyfm``` tool to demodulate audio to a WAV file.
 
 For example, to decode an FM recording which must be at the center frequency of a recording:
