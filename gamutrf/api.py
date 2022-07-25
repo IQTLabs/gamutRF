@@ -94,15 +94,6 @@ def argument_parser():
     return parser
 
 
-arguments = argument_parser().parse_args()
-q = queue.Queue(arguments.qsize)
-sdr_recorder = get_recorder(arguments.sdr)
-level_int = {'CRITICAL': 50, 'ERROR': 40, 'WARNING': 30, 'INFO': 20,
-             'DEBUG': 10}
-level = level_int.get(arguments.loglevel.upper(), 0)
-logging.basicConfig(level=level, format='%(asctime)s %(message)s')
-
-
 class Endpoints:
 
     @staticmethod
@@ -118,32 +109,40 @@ class Endpoints:
 
 class Info:
 
-    @staticmethod
-    def on_get(_req, resp):
+    def __init__(self, arguments):
+        self.arguments = arguments
+
+    def on_get(self, _req, resp):
         resp.text = json.dumps(
-            {'version': __version__, 'sdr': arguments.sdr,
-             'path_prefix': arguments.path, 'freq_excluded': arguments.freq_excluded})
+            {'version': __version__,
+             'sdr': self.arguments.sdr,
+             'path_prefix': self.arguments.path,
+             'freq_excluded': self.arguments.freq_excluded})
         resp.content_type = falcon.MEDIA_TEXT
         resp.status = falcon.HTTP_200
 
 
 class Record:
 
-    @staticmethod
-    def on_get(_req, resp, center_freq, sample_count, sample_rate):
+    def __init__(self, arguments, q, sdr_recorder):
+        self.arguments = arguments
+        self.q = q
+        self.sdr_recorder = sdr_recorder
+
+    def on_get(self, _req, resp, center_freq, sample_count, sample_rate):
         # TODO check if chosen SDR can do the supplied sample_count
         resp.content_type = falcon.MEDIA_JSON
         resp.status = falcon.HTTP_400
 
         status = None
-        if q.full():
+        if self.q.full():
             status = 'Request queue is full'
         else:
-            status = sdr_recorder.validate_request(
-                arguments.freq_excluded, center_freq, sample_count, sample_rate)
+            status = self.sdr_recorder.validate_request(
+                self.arguments.freq_excluded, center_freq, sample_count, sample_rate)
 
         if status is None:
-            q.put({
+            self.q.put({
                 'center_freq': int(center_freq),
                 'sample_count': int(sample_count),
                 'sample_rate': int(sample_rate)})
@@ -155,79 +154,93 @@ class Record:
 
 class API:
 
-    def __init__(self, start_app=True):
+    def __init__(self, arguments):
+        self.arguments = arguments
         self.mqtt_reporter = MQTTReporter(
-            arguments.name, arguments.mqtt_server, ORCHESTRATOR, True, int(CALIBRATION))
-        self.main(start_app)
+            self.arguments.name, self.arguments.mqtt_server,
+            ORCHESTRATOR, True, int(CALIBRATION))
+        self.q = queue.Queue(self.arguments.qsize)
+        self.sdr_recorder = get_recorder(self.arguments.sdr)
+        self.start_time = time.time()
+        cors = CORS(allow_all_origins=True)
+        self.app = falcon.App(middleware=[cors.middleware])
+        routes = self.routes()
+        for route, handler in routes.items():
+            self.app.add_route(self.version()+route, handler)
 
-    def run_recorder(self, record_func, q):
+    def run_recorder(self, record_func):
         logging.info('run recorder')
         start_time = time.time()
         while True:
             logging.info('awaiting request')
-            if arguments.enable_rssi:
-                self.serve_rssi(arguments, q)
+            if self.arguments.enable_rssi:
+                self.serve_rssi()
             else:
-                self.serve_recording(arguments, start_time, record_func, q)
+                self.serve_recording(record_func)
 
-    @staticmethod
-    def record(center_freq, sample_count, sample_rate=20e6):
-        return sdr_recorder.run_recording(
-            arguments.path, sample_rate, sample_count, center_freq,
-            arguments.gain, arguments.agc, arguments.rxb, arguments.sigmf,
-            arguments.sdr, arguments.antenna)
+    def record(self, center_freq, sample_count, sample_rate=20e6):
+        return self.sdr_recorder.run_recording(
+            self.arguments.path, sample_rate, sample_count, center_freq,
+            self.arguments.gain, self.arguments.agc, self.arguments.rxb,
+            self.arguments.sigmf, self.arguments.sdr, self.arguments.antenna)
 
-    def serve_recording(self, arguments, start_time, record_func, q):
-        record_args = q.get()
+    def serve_recording(self, record_func):
+        record_args = self.q.get()
         logging.info(f'got a request: {record_args}')
         record_status = record_func(**record_args)
         if record_status == -1:
             # TODO this only kills the thread, not the main process
             return
-        record_args.update(vars(arguments))
+        record_args.update(vars(self.arguments))
         self.mqtt_reporter.publish('gamutrf/record', record_args)
-        self.mqtt_reporter.log(arguments.path, 'record', start_time, record_args)
+        self.mqtt_reporter.log(self.arguments.path, 'record', self.start_time, record_args)
 
-    def report_rssi(self, args, record_args, reported_rssi, reported_time, start_time):
+    def report_rssi(self, record_args, reported_rssi, reported_time):
         logging.info(
             f'reporting RSSI {reported_rssi} for {record_args["center_freq"]}')
         record_args.update({
             'rssi': reported_rssi,
             'time': reported_time})
-        record_args.update(vars(args))
+        record_args.update(vars(self.arguments))
         self.mqtt_reporter.publish('gamutrf/rssi', record_args)
-        self.mqtt_reporter.log(args.path, 'rssi', start_time, record_args)
+        self.mqtt_reporter.log(self.arguments.path, 'rssi', self.start_time, record_args)
 
-    def process_rssi(self, args, record_args, sock, q):
+    def process_rssi(self, record_args, sock):
         last_rssi_time = 0
-        start_time = time.time()
-        while q.empty():
+        while self.q.empty():
             rssi_raw, _ = sock.recvfrom(FLOAT_SIZE)
             rssi = struct.unpack('f', rssi_raw)[0]
-            if rssi < args.rssi_threshold:
+            if rssi < self.arguments.rssi_threshold:
                 continue
             if rssi > MAX_RSSI:
                 continue
             now = time.time()
             now_diff = now - last_rssi_time
-            if now_diff < args.rssi_interval:
+            if now_diff < self.arguments.rssi_interval:
                 continue
-            self.report_rssi(args, record_args, rssi, now, start_time)
+            self.report_rssi(record_args, rssi, now)
             last_rssi_time = now
 
-    def serve_rssi(self, args, q):
-        record_args = q.get()
+    def serve_rssi(self):
+        record_args = self.q.get()
         logging.info(f'got request {record_args}')
         center_freq = int(record_args['center_freq'])
-        rssi_server = BirdsEyeRSSI(
-            arguments, record_args['sample_rate'], center_freq,
-            agc=arguments.agc, rssi_throttle=arguments.rssi_throttle)
+        try:
+            rssi_server = BirdsEyeRSSI(
+                self.arguments,
+                record_args['sample_rate'],
+                center_freq,
+                agc=self.arguments.agc,
+                rssi_throttle=self.arguments.rssi_throttle)
+        except RuntimeError as err:
+            logging.error('could not initialize RSSI server: %s', err)
+            return
         rssi_server.start()
         logging.info(
-            f'serving RSSI for {center_freq}Hz over threshold {args.rssi_threshold} with AGC {args.agc}')
+            f'serving RSSI for {center_freq}Hz over threshold {self.arguments.rssi_threshold} with AGC {self.arguments.agc}')
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind((RSSI_UDP_ADDR, RSSI_UDP_PORT))
-            self.process_rssi(args, record_args, sock, q)
+            self.process_rssi(record_args, sock)
         logging.info('RSSI stream stopped')
         rssi_server.stop()
         rssi_server.wait()
@@ -243,30 +256,26 @@ class API:
     def routes(self):
         p = self.paths()
         endpoints = Endpoints()
-        info = Info()
-        record = Record()
+        info = Info(self.arguments)
+        record = Record(self.arguments, self.q, self.sdr_recorder)
         funcs = [endpoints, info, record]
         return dict(zip(p, funcs))
 
-    def create_app(self):
-        cors = CORS(allow_all_origins=True)
-        self.app = falcon.App(middleware=[cors.middleware])
-        logging.info('adding API routes')
-        r = self.routes()
-        for route in r:
-            self.app.add_route(self.version()+route, r[route])
-        return self.app
+    def run(self):
+        logging.info('starting recorder thread')
+        recorder_thread = threading.Thread(
+            target=self.run_recorder, args=(self.record,))
+        recorder_thread.start()
 
-    def main(self, start_app):
-        if start_app:
-            logging.info('starting recorder thread')
-            recorder_thread = threading.Thread(
-                target=self.run_recorder, args=(self.record, q))
-            recorder_thread.start()
+        logging.info('starting API thread')
+        bjoern.run(self.app, '0.0.0.0', self.arguments.port)  # nosec
+        recorder_thread.join()
 
-            self.create_app()
 
-            logging.info('starting API thread')
-            bjoern.run(self.app, '0.0.0.0', arguments.port)
-
-            recorder_thread.join()
+def main():
+    arguments = argument_parser().parse_args()
+    level_int = {'CRITICAL': 50, 'ERROR': 40, 'WARNING': 30, 'INFO': 20, 'DEBUG': 10}
+    level = level_int.get(arguments.loglevel.upper(), 0)
+    logging.basicConfig(level=level, format='%(asctime)s %(message)s')
+    app = API(arguments)
+    app.run()
