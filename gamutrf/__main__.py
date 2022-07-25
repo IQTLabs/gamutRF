@@ -1,3 +1,3 @@
 def api():
-    from gamutrf.api import API
-    API()
+    from gamutrf.api import main
+    main()
