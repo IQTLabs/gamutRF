@@ -55,7 +55,7 @@ class FreqXLator(gr.top_block):
         return firdes.complex_band_pass(1, self.samp_rate, -self.samp_rate/(2*self.dec), self.samp_rate/(2*self.dec), self.transitionbw)
 
 
-def main():
+def argument_parser():
     parser = argparse.ArgumentParser(
         'Extract and decimate narrowband signal from wideband signal')
     parser.add_argument(
@@ -76,6 +76,11 @@ def main():
     parser.add_argument(
         '--dec', dest='dec', type=int, default=20,
         help='Decimation [default=%(default)r]')
+    return parser
+
+
+def main():
+    parser = argument_parser()
     options = parser.parse_args()
     block = FreqXLator(options.samp_rate, options.center, options.transitionbw, options.dec,
                        options.infile, options.outfile)

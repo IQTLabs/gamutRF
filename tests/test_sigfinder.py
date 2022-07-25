@@ -17,7 +17,7 @@ from gamutrf.sigfinder import argument_parser
 class FakeArgs:
 
     def __init__(self, log, rotatesecs, window, threshold, freq_start, freq_end,
-                 fftlog, width, prominence, bin_mhz, record_bw_mbps, history, recorder,
+                 fftlog, width, prominence, bin_mhz, record_bw_msps, history, recorder,
                  fftgraph, logaddr, logport, max_raw_power):
         self.log = log
         self.rotatesecs = rotatesecs
@@ -30,10 +30,10 @@ class FakeArgs:
         self.threshold = threshold
         self.prominence = prominence
         self.bin_mhz = bin_mhz
-        self.record_bw_mbps = record_bw_mbps
+        self.record_bw_msps = record_bw_msps
         self.history = history
         self.recorder = recorder
-        self.fftgraph = fftgraph 
+        self.fftgraph = fftgraph
         self.logaddr = logaddr
         self.logport = logport
         self.max_raw_power = max_raw_power
@@ -88,7 +88,7 @@ class SigFinderTestCase(unittest.TestCase):
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
 
-    def disabled_hangs_in_gha_test_udp_proxy(self):
+    def test_udp_proxy(self):
         args = FakeArgs('', 60, 4, -40, 100e6, 400e6, '', None, 5, 20, 21, 1, '', '', '127.0.0.1', 9999, 100)
 
         with tempfile.TemporaryDirectory() as tempdir:
@@ -96,19 +96,21 @@ class SigFinderTestCase(unittest.TestCase):
             os.mkfifo(fifo_name)
             returned = None
             test_bytes = b'1, 2, 3\n4, 5, 6\n'
+            shutdown_str = b'shutdown\n'
 
             with concurrent.futures.ProcessPoolExecutor(1) as executor:
-                executor.submit(udp_proxy, args, fifo_name, 1, 0)
+                executor.submit(udp_proxy, args, fifo_name, 1, shutdown_str)
                 with open(fifo_name, 'rb') as fifo:
                     os.set_blocking(fifo.fileno(), False)
                     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                        for retry in range(5):
+                        for _ in range(5):
                             sock.sendto(test_bytes, (args.logaddr, args.logport))
                             returned = fifo.read()
-                            if returned:
+                            if returned and returned.find(test_bytes) != -1:
                                 break
                             time.sleep(1)
-                        self.assertGreater(returned.find(test_bytes), 0)
+                        sock.sendto(shutdown_str, (args.logaddr, args.logport))
+                        self.assertGreater(returned.find(test_bytes), -1)
 
 
 if __name__ == '__main__':

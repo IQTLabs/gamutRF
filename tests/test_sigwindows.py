@@ -3,8 +3,6 @@ import os
 import tempfile
 import unittest
 
-import pandas as pd
-
 from gamutrf.sigwindows import choose_record_signal
 from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import freq_excluded

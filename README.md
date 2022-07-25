@@ -13,13 +13,46 @@ See also [instructions on how to build a gamutRF system](BUILD.md).
 
 ## Scanner theory of operation
 
-gamutRF's scanner function is split across two docker containers which are both run on the orchestrator. One container connects to the SDR and sweeps over a configured frequency range in 30s, retuning at 97Hz, while sampling at 8Msps (all default values which can be changed). For example, to sweep from 5GHz to 6GHz in 30s, it covers approximately 33.3MHz/s, retuning across that 33.3MHz at 97Hz. The samples are sent to a [streaming FFT gnuradio block](https://github.com/ThomasHabets/gr-habets39) which emits 2048 FFT points which are sent over UDP to the sigfinder container (see below). The FFT block needs to know when the SDR has been retuned to a new frequency, so it uses an gnuradio timestamp and frequency tag provided by the gnuradio UHD driver upon retuning. This tag functionality has been added the Soapy driver in a gnuradio fork which is part of gamutRF, so that other SDRs may be used as scanners.
+gamutRF's scanner function is split across two docker containers which are both run on the orchestrator. The gamutrf (scanner) container connects to the SDR and sweeps over a configured frequency range in 30s, retuning at 97Hz, while sampling at 8Msps (all default values which can be changed). For example, to sweep from 5GHz to 6GHz in 30s, it covers approximately 33.3MHz/s, retuning across that 33.3MHz at 97Hz. 
 
-The sigfinder consumes these FFT points from UDP packets, does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 0.1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html). If workers have been provisioned, the orchestrator will then command the workers to make an approximately 10s recording at approximately 20Msps of each signal. As there will almost certainly more signals than workers available, the orchestrator will prioritize signals that it least often observed over a configurable number of scanner cycles. It is possible to configure this off so the recording choice will be random. It is also possible to configure the workers to tell the orchestrator to exclude that worker from certain frequency ranges (if for example the worker SDR cannot handle some part of the frequency specutrum scanned).
+The samples are sent to a [streaming FFT gnuradio block](https://github.com/ThomasHabets/gr-habets39) which emits 2048 FFT points which are sent over UDP to the sigfinder container (see below). The FFT block needs to know when the SDR has been retuned to a new frequency, so it uses a gnuradio timestamp and frequency tag provided by the gnuradio UHD driver upon retuning. This tag functionality has been added the Soapy driver in a gnuradio fork which is part of gamutRF, so that other SDRs may be used as scanners.
+
+The sigfinder container consumes these FFT points from UDP packets, does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html). 
+
+If workers have been provisioned, the orchestrator will then command the workers to make an approximately 10s I/Q recording at approximately 20Msps of each signal. Each signal peak is assigned a 20MHz bin, which means that if a signal is repeatedly detected with some frequency variation, the assigned recording bin will be constant, and if multiple signals are detected within 20MHz they can be collected simultaneously. A worker by default records at a higher sample rate than the bin size, so that 20MHz signal margins can be recorded.
+
+As there will almost certainly more signals than workers available, the orchestrator will prioritize signals that it least often observed over a configurable number of scanner cycles. It is possible to configure this off so that the recording choice will be random. It is also possible to configure the workers to tell the orchestrator to exclude that worker from certain frequency ranges (if for example the worker SDR cannot handle some part of the frequency spectrum scanned).
 
 ## Operating gamutRF
 
 See the [build doc](BUILD.md)
+
+### SDR/scanner/sigfinder command line options
+
+While there are other options, these options primarily influence gamutRF's scanner functionality.
+
+#### scanner
+
+| Option | Description |
+| -- | -- |
+| --freq-start and --freq-end | Start and end of frequency range to scan in Hz (also used by sigfinger) |
+| --igain | SDR input gain in dB |
+| --sweep-sec | Time to sweep frequency range in seconds |
+| --retune-hz | Rate at which to retune SDR frequency |
+| --nfft | Number of FFT points |
+
+##### sigfinder
+
+| Option | Description |
+| -- | -- |
+| --width | Minimum width of a peak to be detected in 0.01MHz increments (passed to scipy find_peaks()) |
+| --prominence | Minimum prominence of a peak to be detected (passed to scipy find_peaks()) |
+| --threshold | Minimum threshold in dB of a peak to be detected (passed to scipy find_peaks()) |
+| --bin_width | Bin width in MHz |
+| --max_raw_power | Maximum valid raw power value at each FFT point |
+| --history | Number of scanner cycles over which to prioritize recording of least often observed peaks |
+| --record_bw_msps | Number of samples per second in units of 1024^2 (generally larger than bin size to record signal margins) |
+| --record_secs | Length of time to record I/Q samples in seconds |
 
 ### Manually initiating worker actions
 
@@ -39,7 +72,7 @@ Use the ```--help``` option to change how the spectogram is generated (for examp
 
 ### Translating recordings to "gnuradio" format
 
-Most SDR tools by convention take an uncompressed raw binary file as input, of type complex, float32. The user must separately specify to the each SDR tool what sample rate the file was made at to correctly process it. gamutRF provides a tool that converts a compressed recording to an uncompressed binary file. For example:
+Most SDR tools by convention take an uncompressed raw binary file as input, of [gnuradio type complex](https://blog.sdr.hu/grblocks/types.html). The user must explicitly specify to most SDR tools what sample rate the file was made at to correctly process it. gamutRF provides a tool that converts a gamutRF I/Q recording (which may be compressed) to an uncompressed binary file. For example:
 
 ```
 doker run -v /tmp:/tmp -ti iqtlabs/gamutrf-samples2raw /tmp/gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.s16.zst
@@ -58,23 +91,23 @@ doker run -v /tmp:/tmp -ti iqtlabs/gamutrf-samples2raw /tmp/gamutrf_recording_et
 
 ### Reducing recording sample rate
 
-You may want to reduce the sample rate of a recording (e.g. to use another demodulator tool that doesn't support a high sample rate). gamutRF provides the ```freqxlator``` tool which does this. 
+You may want to reduce the sample rate of a recording or re-center it with respect to frequency (e.g. to use another demodulator tool that doesn't support a high sample rate). gamutRF provides the ```freqxlator``` tool to do this. 
 
 * Translate your gamutRF recording to gnuradio format (see above). 
 * Use ```freqxlator``` to create a new recording at a lower sample rate, potentially with a different center frequency. 
 
-For example, to reduce a recording make with gamutRF's default sample rate to 1/10th the rate while leaving the center frequency unchanged, use:
+For example, to reduce a recording made with gamutRF's default sample rate to 1/10th the rate while adjusting the center frequency down by 1MHz, use:
 
-```docker run -ti iqtlabs/gamutrf-freqxlator --samp-rate 20971520 --center 0 --dec 10 gamutrf_recording_gain70_1234_100000000Hz_20971520sps.raw gamutrf_recording_gain70_1234_100000000Hz_2097152sps.raw```
+```docker run -ti iqtlabs/gamutrf-freqxlator --samp-rate 20971520 --center -1e6 --dec 10 gamutrf_recording_gain70_1234_100000000Hz_20971520sps.raw gamutrf_recording_gain70_1234_100000000Hz_2097152sps.raw```
 
 ### Demodulating AM/FM audio from a recording
 
 gamutRF provides a tool to demodulate AM/FM audio from a recording as an example use case.
 
-* Use the ```freqxlator``` tool to make new recording at no more than 1Msps. 
+* Use the ```freqxlator``` tool to make new recording at no more than 1Msps and has the frequency to be demodulated centered.
 * Use the ```airspyfm``` tool to demodulate audio to a WAV file.
 
-For example, to decode an FM recording that is at the center frequency of a recording:
+For example, to decode an FM recording which must be at the center frequency of a recording:
 
 ```docker run -v /tmp:/tmp -ti iqtlabs/gamutrf-airspyfm -m fm -t filesource -c filename=/tmp/gamutrf_recording_gain70_1234_100000000Hz_2097152sps.raw,raw,format=FLOAT,srate=2097152 -F /tmp/out.wav```
 
