@@ -56,7 +56,7 @@ While there are other options, these options primarily influence gamutRF's scann
 
 ### Manually initiating worker actions
 
-The orchestrator has a web interface on port 9000. You can use this to command a worker to start an I/Q sample recording or start a RSSI stream.
+The orchestrator has a web interface on port 80. You can use this to command a worker to start an I/Q sample recording or start a RSSI stream.
 
 ## Working with worker I/Q recordings
 
@@ -104,7 +104,7 @@ For example, to reduce a recording made with gamutRF's default sample rate to 1/
 
 gamutRF provides a tool to demodulate AM/FM audio from a recording as an example use case.
 
-* Use the ```freqxlator``` tool to make new recording at no more than 1Msps and has the frequency to be demodulated centered.
+* Use the ```freqxlator``` tool to make a new recording at no more than 1Msps and has the frequency to be demodulated centered.
 * Use the ```airspyfm``` tool to demodulate audio to a WAV file.
 
 For example, to decode an FM recording which must be at the center frequency of a recording:
