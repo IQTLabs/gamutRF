@@ -88,7 +88,7 @@ docker run -v /tmp:/tmp -ti iqtlabs/gamutrf-samples2raw /tmp/gamutrf_recording_e
 * Set ```Input rate``` to be the same as the gamutRF sample rate (e.g. from the recording file name,
 ```gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.raw```, set ```Input rate``` to 20971520, and also edit ```rate=``` in ```Device string``` to be 20971520)
 * Set ``Bandwidth`` to 0
-* Edit ```Device string``` to set the ```path=``` to be the path to the recording.
+* Edit ```Device string``` to set the ```file=``` to be the path to the recording.
 * Set ```Decimation``` to None.
 * Finally select ```OK``` and then ```play``` from the gqrx interface to watch the recording play.
 
