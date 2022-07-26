@@ -77,7 +77,7 @@ Use the ```--help``` option to change how the spectogram is generated (for examp
 Most SDR tools by convention take an uncompressed raw binary file as input, of [gnuradio type complex](https://blog.sdr.hu/grblocks/types.html). The user must explicitly specify to most SDR tools what sample rate the file was made at to correctly process it. gamutRF provides a tool that converts a gamutRF I/Q recording (which may be compressed) to an uncompressed binary file. For example:
 
 ```
-doker run -v /tmp:/tmp -ti iqtlabs/gamutrf-samples2raw /tmp/gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.s16.zst
+docker run -v /tmp:/tmp -ti iqtlabs/gamutrf-samples2raw /tmp/gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.s16.zst
 ```
 
 ### Reviewing a recording interactively in gqrx
