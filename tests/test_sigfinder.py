@@ -19,7 +19,7 @@ class FakeArgs:
 
     def __init__(self, log, rotatesecs, window, threshold, freq_start, freq_end,
                  fftlog, width, prominence, bin_mhz, record_bw_msps, history, recorder,
-                 fftgraph, logaddr, logport, max_raw_power):
+                 fftgraph, logaddr, logport, max_raw_power, nfftgraph):
         self.log = log
         self.rotatesecs = rotatesecs
         self.window = window
@@ -38,6 +38,7 @@ class FakeArgs:
         self.logaddr = logaddr
         self.logport = logport
         self.max_raw_power = max_raw_power
+        self.nfftgraph = nfftgraph
 
 
 class EmptyFifo(Exception):
@@ -99,7 +100,7 @@ class SigFinderTestCase(unittest.TestCase):
                 test_log = os.path.join(str(tempdir), 'test.csv')
                 test_fftlog = os.path.join(str(tempdir), 'fft.csv')
                 test_fftgraph = os.path.join(str(tempdir), 'fft.png')
-                args = FakeArgs(test_log, 60, 4, -40, 100e6, 400e6, test_fftlog, 1, 5, 20, 21, 1, '', test_fftgraph, '127.0.0.1', 9999, 100)
+                args = FakeArgs(test_log, 60, 4, -40, 100e6, 400e6, test_fftlog, 1, 5, 20, 21, 1, '', test_fftgraph, '127.0.0.1', 9999, 100, 10)
                 prom_vars = init_prom_vars()
                 line_count = 0
                 test_lines_1 = [(time.time(), ROLLOVERHZ + (1e5 * i), 0.001) for i in range(1000)]
@@ -115,7 +116,7 @@ class SigFinderTestCase(unittest.TestCase):
                 self.assertTrue(os.path.exists(test_fftgraph))
 
     def test_udp_proxy(self):
-        args = FakeArgs('', 60, 4, -40, 100e6, 400e6, '', None, 5, 20, 21, 1, '', '', '127.0.0.1', 9999, 100)
+        args = FakeArgs('', 60, 4, -40, 100e6, 400e6, '', None, 5, 20, 21, 1, '', '', '127.0.0.1', 9999, 100, 10)
 
         with tempfile.TemporaryDirectory() as tempdir:
             fifo_name = os.path.join(tempdir, 'fftfifo')
