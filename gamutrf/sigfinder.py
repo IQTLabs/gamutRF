@@ -28,7 +28,7 @@ from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
-from gamutrf.utils import MTU, ROLLOVERHZ, SCAN_FRES
+from gamutrf.utils import rotate_file_n, MTU, ROLLOVERHZ, SCAN_FRES
 
 SOCKET_TIMEOUT = 1.0
 MB = 1024 * 1024
@@ -167,6 +167,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         df, width=args.width, prominence=args.prominence, threshold=args.threshold)
 
     if args.fftgraph:
+        rotate_file_n(args.fftgraph, args.nfftgraph)
         graph_fft_peaks(args.fftgraph, df, signals)
 
     for peak_freq, peak_db in signals:
@@ -382,6 +383,8 @@ def argument_parser():
                         help='if defined, path to log last complete FFT frame')
     parser.add_argument('--fftgraph', default='', type=str,
                         help='if defined, path to write graph of most recent FFT and detected peaks')
+    parser.add_argument('--nfftgraph', default=10, type=int,
+                        help='keep last N FFT graphs')
     parser.add_argument('--rotatesecs', default=3600, type=int,
                         help='rotate scan log after this many seconds')
     parser.add_argument('--logaddr', default='127.0.0.1', type=str,

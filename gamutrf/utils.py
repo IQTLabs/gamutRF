@@ -30,6 +30,23 @@ SAMPLE_DTYPES = {
 }
 
 
+def rotate_file_n(initial_name, n):
+    if not os.path.exists(initial_name):
+        return
+    base_name = initial_name
+    ext = ''
+    dot = initial_name.rfind('.')
+    if dot != -1:
+        ext = base_name[dot:]
+        base_name = base_name[:dot]
+    for i in range(n, 1, -1):
+        from_name = f'{base_name}.{i-1}{ext}'
+        to_name = f'{base_name}.{i}{ext}'
+        if os.path.exists(from_name):
+            os.rename(from_name, to_name)
+    os.rename(initial_name, f'{base_name}.1{ext}')
+
+
 def replace_ext(filename, ext, all_ext=False):
     basename = os.path.basename(filename)
     if all_ext:

@@ -12,6 +12,7 @@ from gamutrf.sigfinder import process_fft_lines
 from gamutrf.sigfinder import ROLLOVERHZ
 from gamutrf.sigfinder import udp_proxy
 from gamutrf.sigfinder import argument_parser
+from gamutrf.utils import rotate_file_n
 
 
 class FakeArgs:
@@ -63,6 +64,31 @@ class FakeFifo:
 
 
 class SigFinderTestCase(unittest.TestCase):
+
+    def test_rotate_file_n(self):
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            test_fftgraph = os.path.join(str(tempdir), 'fft.png')
+
+            def write_file():
+               with open(test_fftgraph, 'w') as f:
+                    f.write('test')
+
+            def exists(name):
+                return os.path.exists(os.path.join(str(tempdir), name))
+
+            write_file()
+            rotate_file_n(test_fftgraph, 3)
+            self.assertTrue(exists('fft.1.png'))
+            write_file()
+            rotate_file_n(test_fftgraph, 3)
+            self.assertTrue(exists('fft.2.png'))
+            write_file()
+            rotate_file_n(test_fftgraph, 3)
+            self.assertTrue(exists('fft.3.png'))
+            write_file()
+            rotate_file_n(test_fftgraph, 3)
+            self.assertFalse(exists('fft.4.png'))
 
     def test_argument_parser(self):
         argument_parser()
