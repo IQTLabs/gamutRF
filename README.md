@@ -80,11 +80,12 @@ doker run -v /tmp:/tmp -ti iqtlabs/gamutrf-samples2raw /tmp/gamutrf_recording_et
 
 ### Reviewing a recording interactively in gqrx
 
-[gqrx](https://gqrx.dk/) is a multiplatform open source tool that allows some basic SDR operations like visualizing or audio demodulating an I/Q sample recording. To use gqrx with a gamutRF recording, first translate the recording to gnuradio format (see above). Then open gqrx.
+[gqrx](https://gqrx.dk/) is a multiplatform open source tool that allows some basic SDR operations like visualizing or audio demodulating an I/Q sample recording (see the [github releases page](https://github.com/gqrx-sdr/gqrx/releases), for a MacOS .dmg file). To use gqrx with a gamutRF recording, first translate the recording to gnuradio format (see above). Then open gqrx.
 
 * Select ```Complex Sampled (I/Q) File```
-* Set input rate and bandwidth to be the same as the gamutRF sample rate (e.g. from the recording file name,
-```gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.raw```, set input rate and bandwidth to 20971520)
+* Set ```Input rate``` to be the same as the gamutRF sample rate (e.g. from the recording file name,
+```gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.raw```, set ```Input rate``` to 20971520, and also edit ```rate=``` in ```Device string``` to be 20971520)
+* Set ``Bandwidth`` to 0
 * Edit ```Device string``` to set the ```path=``` to be the path to the recording.
 * Set ```Decimation``` to None.
 * Finally select ```OK``` and then ```play``` from the gqrx interface to watch the recording play.
