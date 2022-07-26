@@ -53,6 +53,7 @@ While there are other options, these options primarily influence gamutRF's scann
 | --history | Number of scanner cycles over which to prioritize recording of least often observed peaks |
 | --record_bw_msps | Number of samples per second in units of 1024^2 (generally larger than bin size to record signal margins) |
 | --record_secs | Length of time to record I/Q samples in seconds |
+| --fftlog | Log raw output of CSV to this file, which will be rotated every --rotatesecs |
 | --fftgraph | Graph the most recent FFT signal and peaks to this PNG file (will keep the last --nfftgraph versions) |
 
 ### Manually initiating worker actions
