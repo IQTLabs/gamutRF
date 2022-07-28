@@ -62,6 +62,8 @@ def spectral_helper(x, NFFT=None, Fs=None, detrend_func=None,
     results = []
 
     for i in x:
+        if i is None:
+            break
         if skip_fft:
             # TODO: assume NFFT is factor of sps.
             result = np.reshape(i, (NFFT, int(len(i) / NFFT)), order='F')
@@ -210,7 +212,8 @@ def process_recording(args, recording):
             print(f'{recording} not a precomputed FFT, skipping')
             return
     print(f'processing {recording}')
-    samples = read_recording(recording, sample_rate, sample_dtype, sample_len)
+    samples = read_recording(recording, sample_rate, sample_dtype, sample_len,
+        skip_sample_secs=args.skip_sample_secs, max_sample_secs=args.max_sample_secs)
     plot_spectrogram(
         samples,
         spectrogram_filename,
@@ -279,6 +282,10 @@ def argument_parser():
                         help='plot height')
     parser.add_argument('--dpi', default=100, type=int,
                         help='plot DPI')
+    parser.add_argument('--skip_sample_secs', default=0, type=float,
+                        help='skip n seconds worth of samples (default skip none)')
+    parser.add_argument('--max_sample_secs', default=0, type=float,
+                        help='max n seconds worth of samples (default all samples)')
     parser.set_defaults(bare=False, skip_exist=False, skip_fft=False)
     return parser
 
