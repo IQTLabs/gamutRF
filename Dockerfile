@@ -5,15 +5,25 @@ COPY --from=iqtlabs/gamutrf-base:latest /usr/share/uhd/images /usr/share/uhd/ima
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
-# hadolint ignore=DL3008
+ENV PATH="${PATH}:/root/.poetry/bin"
+RUN mkdir -p /data/gamutrf
 RUN apt-get update && apt-get install --no-install-recommends -yq \
-    wget git python3-numpy python3-pip && apt-get clean && rm -rf /var/lib/apt/lists/*
-COPY scan-requirements.txt /root/scan-requirements.txt
-RUN pip3 install -r /root/scan-requirements.txt
-COPY gamutrf/scanhc.sh /root/scanhc.sh
-COPY gamutrf/grsource.py /root/gamutrf/grsource.py
-COPY gamutrf/grscan.py /root/gamutrf/grscan.py
-COPY gamutrf/utils.py /root/gamutrf/utils.py
-COPY gamutrf/scan.py /root/scan.py
-ENTRYPOINT ["/usr/bin/python3", "/root/scan.py"]
-CMD ["--help"]
+    ca-certificates \
+    curl \
+    ffmpeg \
+    gcc \
+    git \
+    gnuplot \
+    libev-dev \
+    python3 \
+    python3-dev \
+    sox \
+    wget \
+    zstd && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 - && \
+  poetry config virtualenvs.create false
+COPY . /gamutrf
+WORKDIR /gamutrf
+RUN poetry install --no-interaction --no-ansi
+CMD ["gamutrf-scan", "--help"]

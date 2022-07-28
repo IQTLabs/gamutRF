@@ -68,7 +68,7 @@ Workers make recordings that are compressed with zstandard, and are typically in
 
 gamutRF provides a tool to convert a recording or directory of recordings into a spectrogram. For example, to convert all I/Q recordings in /tmp:
 
-```docker run -ti iqtlabs/gamutrf-specgram -v /tmp:/tmp /tmp```
+```docker run -ti iqtlabs/gamutrf -v /tmp:/tmp gamutrf-specgram /tmp```
 
 Use the ```--help``` option to change how the spectogram is generated (for example, to change the sample rate).
 
@@ -77,7 +77,7 @@ Use the ```--help``` option to change how the spectogram is generated (for examp
 Most SDR tools by convention take an uncompressed raw binary file as input, of [gnuradio type complex](https://blog.sdr.hu/grblocks/types.html). The user must explicitly specify to most SDR tools what sample rate the file was made at to correctly process it. gamutRF provides a tool that converts a gamutRF I/Q recording (which may be compressed) to an uncompressed binary file. For example:
 
 ```
-docker run -v /tmp:/tmp -ti iqtlabs/gamutrf-samples2raw /tmp/gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.s16.zst
+docker run -v /tmp:/tmp -ti iqtlabs/gamutrf gamutrf-samples2raw /tmp/gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.s16.zst
 ```
 
 ### Reviewing a recording interactively in gqrx
@@ -101,7 +101,7 @@ You may want to reduce the sample rate of a recording or re-center it with respe
 
 For example, to reduce a recording made with gamutRF's default sample rate to 1/10th the rate while adjusting the center frequency down by 1MHz, use:
 
-```docker run -ti iqtlabs/gamutrf-freqxlator --samp-rate 20971520 --center -1e6 --dec 10 gamutrf_recording_gain70_1234_100000000Hz_20971520sps.raw gamutrf_recording_gain70_1234_100000000Hz_2097152sps.raw```
+```docker run -ti iqtlabs/gamutrf gamutrf-freqxlator --samp-rate 20971520 --center -1e6 --dec 10 gamutrf_recording_gain70_1234_100000000Hz_20971520sps.raw gamutrf_recording_gain70_1234_100000000Hz_2097152sps.raw```
 
 ### Demodulating AM/FM audio from a recording
 

@@ -6,7 +6,7 @@ networks:
 services:
   gamutrf-api:
     restart: always
-    image: iqtlabs/gamutrf-api:latest
+    image: iqtlabs/gamutrf:latest
     networks:
       - gamutrf
     ports:
@@ -25,6 +25,7 @@ services:
       - 'CALIBRATION=${CALIBRATION}'
       - 'ANTENNA=${ANTENNA}'
     command:
+      - gamutrf-api
       - --no-agc
       - --rxb=62914560
       - '--gain=${GAIN}'

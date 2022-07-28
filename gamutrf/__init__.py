@@ -1,4 +1,4 @@
-from pbr.version import VersionInfo
+from importlib import metadata
 
-# TODO: 3.8+ and later, use importlib: https://pypi.org/project/importlib-metadata/
-__version__ = VersionInfo('gamutrf').semantic_version().release_string()
+
+__version__ = metadata.version("gamutrf")

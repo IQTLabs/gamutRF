@@ -80,7 +80,7 @@ Reboot
 
 8. Install GamutRF and BirdsEye
 ```
-cd gamutRF && docker-compose -f docker-compose-orchestrator.yml pull && cd ..
+cd gamutRF && docker-compose -f orchestrator.yml pull && cd ..
 cd BirdsEye && pip3 install -r requirements.txt && cd ..
 ```
 
@@ -205,31 +205,35 @@ sudo reboot
 20. Start the orchestrator containers
 ```
 cd gamutRF
-UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/gamutrf/ FREQ_START=70e6 FREQ_END=6e9 docker-compose -f docker-compose-orchestrator.yml up -d
+UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/gamutrf/ FREQ_START=70e6 FREQ_END=6e9 docker-compose -f orchestrator.yml up -d
 ```
-(optionally add `-f docker-compose-monitoring.yml` if you want additional monitoring containers)
+(optionally add `-f monitoring.yml` if you want additional monitoring containers)
 
-Additionally, if you want to use the workers as recorders you'll want to update `docker-compose-orchestrator.yml` (before running the `docker-compose` command above) under the gamutRF directory to include it. Multiple workers can be assigned to be recorders. Here's an exmaple with two:
+Additionally, if you want to use the workers as recorders you'll want to update `orchestrator.yml` (before running the `docker-compose` command above) under the gamutRF directory to include it. Multiple workers can be assigned to be recorders. Here's an exmaple with two:
 ```
   sigfinder:
     restart: always
-    image: iqtlabs/gamutrf-sigfinder:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.sigfinder
+    image: iqtlabs/gamutrf:latest
     networks:
       - gamutrf
     ports:
+      - '80:80'
       - '9002:9000'
     volumes:
       - '${VOL_PREFIX}:/logs'
     command:
+      - gamutrf-sigfinder
       - --logaddr=sigfinder
       - --log=/logs/scan.csv
-      - --recorder=http://192.168.111.11:8000
-      - --recorder=http://192.168.111.12:8000
+      - --fftlog=/logs/fft.csv
+      - --fftgraph=/logs/fft.png
+      - --width=10
+      - --prominence=2
+      - --threshold=-35
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
+      - --recorder=http://192.168.111.11:8000
+      - --recorder=http://192.168.111.12:8000
 ```
 
 ### Worker
@@ -279,7 +283,7 @@ sudo reboot
 
 8. Install GamutRF
 ```
-cd gamutRF && docker-compose -f docker-compose-worker.yml pull && cd ..
+cd gamutRF && docker-compose -f worker.yml pull && cd ..
 sudo mkdir -p /flash/gamutrf 
 ```
 
@@ -289,11 +293,11 @@ Each worker can be run in either `recorder` mode or `RSSI` mode.
 
 If run in `recorder` mode (the default) no changes on the worker are needed, but the recorder needs to be added to the orchestrator as described above. In `recorder` mode the worker will capture full I/Q samples in `s16` format, and write it out to `/flash/gamutrf` as `.zst` compressed files.
 
-If run in `RSSI` mode the `docker-compose-worker.yml` file under the gamutrf directory needs to be updated to include the following options:
+If run in `RSSI` mode the `worker.yml` file under the gamutrf directory needs to be updated to include the following options:
 ```
   gamutrf-api:
     restart: always
-    image: iqtlabs/gamutrf-api:latest
+    image: iqtlabs/gamutrf:latest
     networks:
       - gamutrf
     ports:
@@ -312,6 +316,7 @@ If run in `RSSI` mode the `docker-compose-worker.yml` file under the gamutrf dir
       - 'CALIBRATION=${CALIBRATION}'
       - 'ANTENNA=${ANTENNA}'
     command:
+      - gamutrf-api
       - --no-agc
       - --rxb=62914560
       - '--gain=${GAIN}'
@@ -324,5 +329,5 @@ RSSI mode will only record signal strength in the form of float.
 10. Start GamutRF
 ```
 cd gamutRF
-UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 WORKER_NAME=worker1 ANTENNA=directional docker-compose -f docker-compose-worker.yml up -d
+UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 WORKER_NAME=worker1 ANTENNA=directional docker-compose -f worker.yml up -d
 ```

@@ -16,17 +16,17 @@ SCAN_FROLL = 1e6
 # https://github.com/EttusResearch/uhd/blob/master/host/lib/usrp/b200/b200_impl.hpp
 # Should result in no overflows:
 # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=128,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
-ETTUS_ARGS = 'num_recv_frames=960,recv_frame_size=16360'
-ETTUS_ANT = 'TX/RX'
-SAMPLE_FILENAME_RE = re.compile(r'^.+_([0-9]+)Hz_([0-9]+)sps\.(s\d+|raw).*$')
+ETTUS_ARGS = "num_recv_frames=960,recv_frame_size=16360"
+ETTUS_ANT = "TX/RX"
+SAMPLE_FILENAME_RE = re.compile(r"^.+_([0-9]+)Hz_([0-9]+)sps\.(s\d+|raw).*$")
 SAMPLE_DTYPES = {
-    's8':  ('<i1', 'signed-integer'),
-    's16': ('<i2', 'signed-integer'),
-    's32': ('<i4', 'signed-integer'),
-    'u8':  ('<u1', 'unsigned-integer'),
-    'u16': ('<u2', 'unsigned-integer'),
-    'u32': ('<u4', 'unsigned-integer'),
-    'raw': ('<f4', 'float'),
+    "s8": ("<i1", "signed-integer"),
+    "s16": ("<i2", "signed-integer"),
+    "s32": ("<i4", "signed-integer"),
+    "u8": ("<u1", "unsigned-integer"),
+    "u16": ("<u2", "unsigned-integer"),
+    "u32": ("<u4", "unsigned-integer"),
+    "raw": ("<f4", "float"),
 }
 
 
@@ -34,31 +34,31 @@ def rotate_file_n(initial_name, n):
     if not os.path.exists(initial_name):
         return
     base_name = initial_name
-    ext = ''
-    dot = initial_name.rfind('.')
+    ext = ""
+    dot = initial_name.rfind(".")
     if dot != -1:
         ext = base_name[dot:]
         base_name = base_name[:dot]
     for i in range(n, 1, -1):
-        from_name = f'{base_name}.{i-1}{ext}'
-        to_name = f'{base_name}.{i}{ext}'
+        from_name = f"{base_name}.{i-1}{ext}"
+        to_name = f"{base_name}.{i}{ext}"
         if os.path.exists(from_name):
             os.rename(from_name, to_name)
-    os.rename(initial_name, f'{base_name}.1{ext}')
+    os.rename(initial_name, f"{base_name}.1{ext}")
 
 
 def replace_ext(filename, ext, all_ext=False):
     basename = os.path.basename(filename)
     if all_ext:
-        dot = basename.index('.')
+        dot = basename.index(".")
     else:
-        dot = basename.rindex('.')
-    new_basename = basename[:(dot + 1)] + ext
+        dot = basename.rindex(".")
+    new_basename = basename[: (dot + 1)] + ext
     return filename.replace(basename, new_basename)
 
 
 def is_fft(filename):
-    return os.path.basename(filename).startswith('fft_')
+    return os.path.basename(filename).startswith("fft_")
 
 
 def parse_filename(filename):
@@ -74,17 +74,27 @@ def parse_filename(filename):
         sample_type = None
     # FFT is always float not matter the original sample type.
     if is_fft(filename):
-        sample_type = 'raw'
+        sample_type = "raw"
     sample_dtype, sample_type = SAMPLE_DTYPES.get(sample_type, (None, None))
     sample_bits = None
     sample_len = None
     if sample_dtype:
-        sample_dtype = np.dtype([('i', sample_dtype), ('q', sample_dtype)])
+        sample_dtype = np.dtype([("i", sample_dtype), ("q", sample_dtype)])
         sample_bits = sample_dtype[0].itemsize * 8
         sample_len = sample_dtype[0].itemsize * 2
-    return (freq_center, sample_rate, sample_dtype, sample_len, sample_type, sample_bits)
+    return (
+        freq_center,
+        sample_rate,
+        sample_dtype,
+        sample_len,
+        sample_type,
+        sample_bits,
+    )
 
 
-def get_nondot_files(filedir, glob='*.s*.*'):
-    return [str(path) for path in Path(filedir).rglob(glob)
-            if not os.path.basename(path).startswith('.')]
+def get_nondot_files(filedir, glob="*.s*.*"):
+    return [
+        str(path)
+        for path in Path(filedir).rglob(glob)
+        if not os.path.basename(path).startswith(".")
+    ]
