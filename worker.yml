@@ -4,7 +4,7 @@ version: "3.3"
 networks:
   gamutrf:
 services:
-  gamutrf-api:
+  api:
     restart: always
     image: iqtlabs/gamutrf:latest
     networks:
@@ -25,6 +25,9 @@ services:
       - 'CALIBRATION=${CALIBRATION}'
       - 'ANTENNA=${ANTENNA}'
     command:
+      - nice
+      - '-n'
+      - '-19'
       - gamutrf-api
       - --no-agc
       - --rxb=62914560

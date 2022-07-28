@@ -316,6 +316,9 @@ If run in `RSSI` mode the `worker.yml` file under the gamutrf directory needs to
       - 'CALIBRATION=${CALIBRATION}'
       - 'ANTENNA=${ANTENNA}'
     command:
+      - nice
+      - '-n'
+      - '-19'
       - gamutrf-api
       - --no-agc
       - --rxb=62914560

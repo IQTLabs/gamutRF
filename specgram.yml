@@ -6,7 +6,7 @@ networks:
 services:
   specgram:
     restart: always
-    image: iqtlabs/gamutrf-specgram:latest
+    image: iqtlabs/gamutrf:latest
     volumes:
       - '${VOL_PREFIX}:/data'
     deploy:
@@ -16,6 +16,10 @@ services:
         limits:
           cpus: '0.5'
     command:
+      - nice
+      - '-n'
+      - '-19'
+      - gamutrf-specgram
       - '--loop=10'
       - '--skip-exist'
       - '--workers=1'
