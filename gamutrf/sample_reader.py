@@ -45,7 +45,7 @@ def read_recording(filename, sample_rate, sample_dtype, sample_len, sample_secs=
         samples_remaining = int(sample_rate * max_sample_secs)
     with reader(filename) as infile:
         if skip_sample_secs:
-            infile.read(int(sample_rate * skip_sample_secs) * sample_len)
+            infile.seek(int(sample_rate * skip_sample_secs) * sample_len)
         while True:
             if max_sample_secs and not samples_remaining:
                 break
