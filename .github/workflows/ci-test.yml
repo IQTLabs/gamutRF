@@ -30,6 +30,8 @@ jobs:
           sudo add-apt-repository ppa:gnuradio/gnuradio-releases-3.9
           sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc git g++ libev-dev python3-dev gnuradio-dev python3-pip gnuradio sox
           git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../.. && sudo ldconfig -v
+          python3 -c "from gnuradio import *"
+          python3 -c "import habets39"
           poetry install --no-interaction
 
       - name: Code Quality - Black
