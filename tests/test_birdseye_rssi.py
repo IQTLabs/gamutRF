@@ -56,7 +56,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
         self.assertEqual(freq, line_json["center_freq"], line_json)
 
     def test_birdseye_endtoend_rssi(self):
-        test_tag = "iqtlabs/gamutrf-api:latest"
+        test_tag = "iqtlabs/gamutrf:latest"
         with tempfile.TemporaryDirectory() as tempdir:
             testraw = os.path.join(tempdir, "test.raw")
             gamutdir = os.path.join(tempdir, "gamutrf")
@@ -68,10 +68,11 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                 testdata.tofile(testrawfile)
             os.mkdir(gamutdir)
             client = docker.from_env()
-            client.images.build(dockerfile="Dockerfile.api", path=".", tag=test_tag)
+            client.images.build(dockerfile="Dockerfile", path=".", tag=test_tag)
             container = client.containers.run(
                 test_tag,
                 command=[
+                    "gamutrf-api",
                     "--rssi_threshold=-100",
                     "--rssi",
                     "--sdr=file:/data/test.raw",
