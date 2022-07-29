@@ -13,8 +13,6 @@ jobs:
           fetch-depth: 1
       - name: Install dependencies
         run: |
-          #export PYTHONPATH=/usr/local/lib/python3.10/dist-packages:/usr/local/lib/python3.10/site-packages:$PYTHONPATH
-          #export PYTHONPATH=/home/runner/.local/venv/lib/python3.10/dist-packages:/home/runner/.local/venv/lib/python3.10/site-packages:$PYTHONPATH
           sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ libbladerf-dev libboost-all-dev libev-dev libfftw3-dev libgmp-dev libgsl-dev liblimesuite-dev liblog4cpp5-dev libpython3-dev libspdlog-dev libthrift-dev libuhd-dev libunwind-dev libusb-1.0-0-dev libusb-1.0-0 make pkg-config python3-bladerf python3-mako python3-numpy python3-packaging python3-pip python3-pygccxml python3-uhd software-properties-common swig uhd-host wget
           wget -q -O- https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz |tar -zxvf -
           git clone https://github.com/gnuradio/volk -b v2.5.1
@@ -49,13 +47,10 @@ jobs:
           sudo ldconfig -v
           python3 -c "from gnuradio import *"
           python3 -c "import habets39"
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: false
-          virtualenvs-in-project: false
-      - name: Install GamutRF
-        run: poetry install --no-interaction
+          export PATH="${PATH}:/root/.poetry/bin"
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+          poetry config virtualenvs.create false
+          poetry install --no-interaction
       - name: Code Quality - Black
         run: |
           poetry run black gamutrf --check
