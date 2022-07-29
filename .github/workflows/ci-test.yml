@@ -19,17 +19,17 @@ jobs:
           git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
           mkdir -p pybind11-2.5.0/build && cd pybind11-2.5.0/build 
           cmake -DPYBIND11_TEST="" .. && make -j "$(nproc)" && sudo make install
-          cd ../../ && rm -rf pybind11-2.5.0
+          cd ../../ && sudo rm -rf pybind11-2.5.0
           mkdir -p volk/build && cd volk/build
           git submodule update --init
           cmake .. && make -j "$(nproc)" && sudo make install
-          cd ../../ && rm -rf volk
+          cd ../../ && sudo rm -rf volk
           mkdir -p SoapySDR/build && cd SoapySDR/build
           cmake .. && make -j "$(nproc)" && sudo make install
-          cd ../../ && rm -rf SoapySDR
+          cd ../../ && sudo rm -rf SoapySDR
           git clone https://github.com/anarkiwi/gnuradio -b st3 && mkdir -p gnuradio/build && cd gnuradio/build
           CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON .. && make -j "$(nproc)" && sudo make install 
-          cd ../../ && rm -rf gnuradio
+          cd ../../ && sudo rm -rf gnuradio
           sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
           sudo ldconfig -v
           git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
@@ -37,13 +37,13 @@ jobs:
           git clone https://github.com/ThomasHabets/gr-habets39
           mkdir -p SoapyBladeRF/build && cd SoapyBladeRF/build
           cmake .. && make -j "$(nproc)" && sudo make install
-          cd ../../ && rm -rf SoapyBladeRF
+          cd ../../ && sudo rm -rf SoapyBladeRF
           mkdir -p SoapyUHD/build && cd SoapyUHD/build
           cmake .. && make -j "$(nproc)" && sudo make install
-          cd ../../ && rm -rf SoapyUHD
+          cd ../../ && sudo rm -rf SoapyUHD
           mkdir -p gr-habets39/build && cd gr-habets39/build
           cmake .. && sudo make install
-          cd ../../ && rm -rf gr-habets39
+          cd ../../ && sudo rm -rf gr-habets39
           sudo ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
           sudo ldconfig -v
           python3 -c "from gnuradio import *"
