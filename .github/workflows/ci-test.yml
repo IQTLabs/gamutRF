@@ -32,6 +32,7 @@ jobs:
           git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../..
           sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python${{ matrix.python-version }}/dist-packages
           sudo ldconfig -v
+          export PYTHONPATH=/usr/local/lib/python${{ matrix.python-version }}/dist-packages:/usr/local/lib/python${{ matrix.python-version }}/site-packages:$PYTHONPATH
           python${{ matrix.python-version }} -c "import habets39"
           python${{ matrix.python-version }} -c "from gnuradio import *"
           poetry install --no-interaction
