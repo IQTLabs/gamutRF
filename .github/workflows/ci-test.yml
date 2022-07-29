@@ -33,9 +33,9 @@ jobs:
           sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python${{ matrix.python-version }}/dist-packages
           sudo ldconfig -v
           export PYTHONPATH=/usr/local/lib/python${{ matrix.python-version }}/dist-packages:/usr/local/lib/python${{ matrix.python-version }}/site-packages:$PYTHONPATH
+          poetry install --no-interaction
           python${{ matrix.python-version }} -c "import habets39"
           python${{ matrix.python-version }} -c "from gnuradio import *"
-          poetry install --no-interaction
 
       - name: Code Quality - Black
         run: |
