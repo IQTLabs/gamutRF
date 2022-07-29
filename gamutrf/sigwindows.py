@@ -13,11 +13,11 @@ from gamutrf.utils import SCAN_FRES, SCAN_FROLL
 
 
 ROLLOVERHZ = 100e6
-CSV = '.csv'
-CSVCOLS = ['ts', 'freq', 'db']
+CSV = ".csv"
+CSVCOLS = ["ts", "freq", "db"]
 ROLLING_FACTOR = int(SCAN_FROLL / SCAN_FRES)
 
-logging.getLogger('matplotlib.font_manager').disabled = True
+logging.getLogger("matplotlib.font_manager").disabled = True
 
 
 def read_csv_chunks(args):
@@ -25,48 +25,54 @@ def read_csv_chunks(args):
     leftover_df = pd.DataFrame()
 
     def detect_frames(df):
-        freqdiff = df['freq'].diff().abs()
-        df['frame'] = 0
+        freqdiff = df["freq"].diff().abs()
+        df["frame"] = 0
         # Detect tuning wraparound, where frequency changed by more than 100MHz
-        df.loc[freqdiff > (ROLLOVERHZ / 1e6), ['frame']] = 1
-        df['frame'] = (   # pylint: disable=unsupported-assignment-operation,disable=unsubscriptable-object
-            df['frame'].cumsum().fillna(0).astype(np.uint64))  # pylint: disable=unsubscriptable-object
+        df.loc[freqdiff > (ROLLOVERHZ / 1e6), ["frame"]] = 1
+        df[
+            "frame"
+        ] = (  # pylint: disable=unsupported-assignment-operation,disable=unsubscriptable-object
+            df["frame"].cumsum().fillna(0).astype(np.uint64)
+        )  # pylint: disable=unsubscriptable-object
 
     def preprocess_frames(df):
-        df.set_index('frame', inplace=True)
-        df['ts'] = df.groupby('frame', sort=False)['ts'].transform(min)
+        df.set_index("frame", inplace=True)
+        df["ts"] = df.groupby("frame", sort=False)["ts"].transform(min)
 
-    with pd.read_csv(args.csv, header=None, delim_whitespace=True, chunksize=args.nrows) as reader:
+    with pd.read_csv(
+        args.csv, header=None, delim_whitespace=True, chunksize=args.nrows
+    ) as reader:
         for chunk in reader:
             read_rows = len(chunk)
-            logging.info(f'read chunk of {read_rows} from {args.csv}')
+            logging.info(f"read chunk of {read_rows} from {args.csv}")
             chunk.columns = CSVCOLS
-            chunk['freq'] /= 1e6
+            chunk["freq"] /= 1e6
             df = pd.concat([leftover_df, chunk])
             detect_frames(df)
-            read_frames = df['frame'].max(
-            )  # pylint: disable=unsubscriptable-object
+            read_frames = df["frame"].max()  # pylint: disable=unsubscriptable-object
             if read_frames == 0 and len(chunk) == args.nrows:
                 leftover_df = leftover_df.append(chunk[CSVCOLS])
-                logging.info(
-                    f'buffering incomplete frame - {args.nrows} too small?')
+                logging.info(f"buffering incomplete frame - {args.nrows} too small?")
                 continue
-            leftover_df = df[df['frame'] ==
-                             read_frames][CSVCOLS]  # pylint: disable=unsubscriptable-object
-            df = df[(df['frame'] < read_frames) & (df['freq'] >= minmhz)
-                    ]  # pylint: disable=unsubscriptable-object
+            leftover_df = df[df["frame"] == read_frames][
+                CSVCOLS
+            ]  # pylint: disable=unsubscriptable-object
+            df = df[
+                (df["frame"] < read_frames) & (df["freq"] >= minmhz)
+            ]  # pylint: disable=unsubscriptable-object
             df = calc_db(df)
-            df = df[df['db'] >= args.mindb]
+            df = df[df["db"] >= args.mindb]
             preprocess_frames(df)
             yield df
 
     if len(leftover_df):
         df = leftover_df
         detect_frames(df)
-        df = df[(df['frame'] < read_frames) & (df['freq'] >= minmhz)
-                ]  # pylint: disable=unsubscriptable-object
+        df = df[
+            (df["frame"] < read_frames) & (df["freq"] >= minmhz)
+        ]  # pylint: disable=unsubscriptable-object
         df = calc_db(df)
-        df = df[df['db'] >= args.mindb]
+        df = df[df["db"] >= args.mindb]
         preprocess_frames(df)
         yield df
 
@@ -75,7 +81,7 @@ def read_csv(args):
     frames = 0
 
     for df in read_csv_chunks(args):
-        for _, frame_df in df.groupby('frame'):
+        for _, frame_df in df.groupby("frame"):
             yield (frames, frame_df)
             if args.maxframe and frames == args.maxframe:
                 return
@@ -105,7 +111,7 @@ def choose_recorders(signals, recorder_freq_exclusions):
 def parse_freq_excluded(freq_exclusions_raw):
     freq_exclusions = []
     for pair in freq_exclusions_raw:
-        freq_min, freq_max = pair.split('-')
+        freq_min, freq_max = pair.split("-")
         if len(freq_min):
             freq_min = int(freq_min)
         else:
@@ -134,10 +140,10 @@ def freq_excluded(freq, freq_exclusions):
 
 
 def calc_db(df):
-    df['db'] = 20 * np.log10(df[df['db'] != 0]['db'])
+    df["db"] = 20 * np.log10(df[df["db"] != 0]["db"])
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    meandb = df['db'].mean()
-    df['db'] = df['db'].rolling(ROLLING_FACTOR).mean().fillna(meandb)
+    meandb = df["db"].mean()
+    df["db"] = df["db"].rolling(ROLLING_FACTOR).mean().fillna(meandb)
     return df
 
 
@@ -149,31 +155,34 @@ def scipy_find_sig_windows(df, width, prominence, threshold):
 
 def graph_fft_peaks(graph_path, df, signals):
     maxdb = df.db.max()
-    df['peaks'] = df.db.min()
+    df["peaks"] = df.db.min()
     for peak_freq, _ in signals:
-        df.loc[df.freq == peak_freq, 'peaks'] = maxdb
+        df.loc[df.freq == peak_freq, "peaks"] = maxdb
 
-    peak_df = df[df.peaks == maxdb].sort_values('db', ascending=False)[:5]
-    peak_signals = ','.join([
-        '%.1f MHz %.1f dB' % (row.freq, row.db) for row in peak_df.itertuples()])
+    peak_df = df[df.peaks == maxdb].sort_values("db", ascending=False)[:5]
+    peak_signals = ",".join(
+        ["%.1f MHz %.1f dB" % (row.freq, row.db) for row in peak_df.itertuples()]
+    )
     if peak_signals:
-        peak_signals = f'strongest peak signals: {peak_signals}'
+        peak_signals = f"strongest peak signals: {peak_signals}"
 
     plt.figure(figsize=(11, 8), dpi=100)
-    plt.plot(df.freq, df.db, 'b', df.freq, df.peaks, 'y')
-    plt.xlabel('freq (MHz)')
-    plt.ylabel('power (dB)')
-    plt.legend(('power', 'peak status'), loc='upper right')
+    plt.plot(df.freq, df.db, "b", df.freq, df.peaks, "y")
+    plt.xlabel("freq (MHz)")
+    plt.ylabel("power (dB)")
+    plt.legend(("power", "peak status"), loc="upper right")
     time_min = time.ctime(df.ts.min())
     time_max = time.ctime(df.ts.max())
-    plt.title(f'gamutRF scanner FFT {time_min} to {time_max}\n{peak_signals}')
+    plt.title(f"gamutRF scanner FFT {time_min} to {time_max}\n{peak_signals}")
     plt.savefig(graph_path)
     plt.cla()
-    plt.close('all')
+    plt.close("all")
 
 
 def get_center(signal_mhz, freq_start_mhz, bin_mhz, record_bw):
-    return int(int((signal_mhz - freq_start_mhz) / record_bw) * bin_mhz + freq_start_mhz)
+    return int(
+        int((signal_mhz - freq_start_mhz) / record_bw) * bin_mhz + freq_start_mhz
+    )
 
 
 def choose_record_signal(signals, recorders):

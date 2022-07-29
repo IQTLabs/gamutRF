@@ -1,0 +1,74 @@
+name: CI Test
+
+on: [push, pull_request]
+
+jobs:
+
+  ci-test:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ libbladerf-dev libboost-all-dev libev-dev libfftw3-dev libgmp-dev libgsl-dev liblimesuite-dev liblog4cpp5-dev libpython3-dev libspdlog-dev libthrift-dev libuhd-dev libunwind-dev libusb-1.0-0-dev libusb-1.0-0 make pkg-config python3-bladerf python3-mako python3-numpy python3-packaging python3-pip python3-pygccxml python3-uhd software-properties-common sox swig uhd-host wget
+          wget -q -O- https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz |tar -zxvf -
+          git clone https://github.com/gnuradio/volk -b v2.5.1
+          git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
+          mkdir -p pybind11-2.5.0/build && cd pybind11-2.5.0/build 
+          cmake -DPYBIND11_TEST="" .. && make -j "$(nproc)" && sudo make install
+          cd ../../ && sudo rm -rf pybind11-2.5.0
+          mkdir -p volk/build && cd volk/build
+          git submodule update --init
+          cmake .. && make -j "$(nproc)" && sudo make install
+          cd ../../ && sudo rm -rf volk
+          mkdir -p SoapySDR/build && cd SoapySDR/build
+          cmake .. && make -j "$(nproc)" && sudo make install
+          cd ../../ && sudo rm -rf SoapySDR
+          git clone https://github.com/anarkiwi/gnuradio -b st3 && mkdir -p gnuradio/build && cd gnuradio/build
+          CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON .. && make -j "$(nproc)" && sudo make install 
+          cd ../../ && sudo rm -rf gnuradio
+          sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
+          sudo ldconfig -v
+          git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
+          git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
+          git clone https://github.com/ThomasHabets/gr-habets39
+          mkdir -p SoapyBladeRF/build && cd SoapyBladeRF/build
+          cmake .. && make -j "$(nproc)" && sudo make install
+          cd ../../ && sudo rm -rf SoapyBladeRF
+          mkdir -p SoapyUHD/build && cd SoapyUHD/build
+          cmake .. && make -j "$(nproc)" && sudo make install
+          cd ../../ && sudo rm -rf SoapyUHD
+          mkdir -p gr-habets39/build && cd gr-habets39/build
+          cmake .. && sudo make install
+          cd ../../ && sudo rm -rf gr-habets39
+          sudo ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
+          sudo ldconfig -v
+          python3 -c "from gnuradio import *"
+          python3 -c "import habets39"
+          export PATH="${PATH}:$HOME/.poetry/bin"
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+          poetry config virtualenvs.create false
+          poetry install --no-interaction
+      - name: Code Quality - Black
+        run: |
+          export PATH="${PATH}:$HOME/.poetry/bin"
+          poetry run black gamutrf --check
+      - name: Code Quality - Pytype
+        run: |
+          export PATH="${PATH}:$HOME/.poetry/bin"
+          poetry run pytype gamutrf/
+      - name: Code Quality - Pylint
+        run: |
+          export PATH="${PATH}:$HOME/.poetry/bin"
+          poetry run pylint --fail-under=6 gamutrf/
+      - name: Test with pytest
+        run: |
+          export PATH="${PATH}:$HOME/.poetry/bin"
+          poetry run pytest --cov-report term-missing --cov=. --cov-report=xml
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true

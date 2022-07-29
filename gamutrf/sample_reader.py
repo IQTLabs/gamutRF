@@ -6,26 +6,32 @@ import numpy as np
 
 
 def get_reader(filename):
-
     def gzip_reader(x):
-        return gzip.open(x, 'rb')
+        return gzip.open(x, "rb")
 
     def zst_reader(x):
-        return zstandard.ZstdDecompressor().stream_reader(open(x, 'rb'))
+        return zstandard.ZstdDecompressor().stream_reader(open(x, "rb"))
 
     def default_reader(x):
-        return open(x, 'rb')
+        return open(x, "rb")
 
-    if filename.endswith('.gz'):
+    if filename.endswith(".gz"):
         return gzip_reader
-    if filename.endswith('.zst'):
+    if filename.endswith(".zst"):
         return zst_reader
 
     return default_reader
 
 
-
-def read_recording(filename, sample_rate, sample_dtype, sample_len, sample_secs=1.0, skip_sample_secs=0, max_sample_secs=0):
+def read_recording(
+    filename,
+    sample_rate,
+    sample_dtype,
+    sample_len,
+    sample_secs=1.0,
+    skip_sample_secs=0,
+    max_sample_secs=0,
+):
     """Read an I/Q recording and iterate over it, returning 1-D numpy arrays of csingles, of size sample_rate * sample_secs.
 
     Args:
@@ -59,5 +65,7 @@ def read_recording(filename, sample_rate, sample_dtype, sample_len, sample_secs=
                 else:
                     buffered_samples = samples_remaining
                     samples_remaining = 0
-            x1d = np.frombuffer(sample_buffer, dtype=sample_dtype, count=buffered_samples)
-            yield x1d['i'] + np.csingle(1j) * x1d['q']
+            x1d = np.frombuffer(
+                sample_buffer, dtype=sample_dtype, count=buffered_samples
+            )
+            yield x1d["i"] + np.csingle(1j) * x1d["q"]

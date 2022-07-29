@@ -37,6 +37,7 @@ services:
     devices:
       - /dev/bus/usb:/dev/bus/usb
     command:
+      - gamutrf-scan
       - --logaddr=sigfinder
       - --igain=40
       - '--freq-start=${FREQ_START}'
@@ -44,13 +45,13 @@ services:
       - --samp-rate=8e6
       - --nfft=2048
     healthcheck:
-      test: [CMD, "/root/scanhc.sh", "9000"]
+      test: [CMD, "/gamutrf/scanhc.sh", "9000"]
       interval: 10s
       timeout: 10s
       retries: 3
   sigfinder:
     restart: always
-    image: iqtlabs/gamutrf-sigfinder:latest
+    image: iqtlabs/gamutrf:latest
     networks:
       - gamutrf
     ports:
@@ -59,6 +60,7 @@ services:
     volumes:
       - '${VOL_PREFIX}:/logs'
     command:
+      - gamutrf-sigfinder
       - --logaddr=sigfinder
       - --log=/logs/scan.csv
       - --fftlog=/logs/fft.csv

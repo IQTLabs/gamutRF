@@ -7,20 +7,19 @@ jobs:
     - uses: actions/checkout@v3
     - name: docker build
       run: |
-        docker build -f Dockerfile.gnuradio-deps . -t iqtlabs/gamutrf-gnuradio-deps:latest && \
-        docker build -f Dockerfile.gnuradio . -t iqtlabs/gamutrf-gnuradio:latest && \
-        docker build -f Dockerfile.base . -t iqtlabs/gamutrf-base:latest && \
-        docker build -f Dockerfile . -t iqtlabs/gamutrf:latest && \
-        docker run -t iqtlabs/gamutrf:latest --help && \
-        docker build -f Dockerfile.api . -t gamutrf-api:latest && \
-        docker run -t gamutrf-api:latest --help && \
-        docker build -f Dockerfile.graph . -t gamutrf-graph:latest && \
-        docker run -t gamutrf-graph:latest --help && \
-        docker build -f Dockerfile.sigfinder . -t gamutrf-sigfinder:latest && \
-        docker run -t gamutrf-sigfinder:latest --help && \
-        docker build -f Dockerfile.airspyfm . -t gamutrf-airspyfm:latest && \
-        docker build -f Dockerfile.freqxlator . -t gamutrf-freqxlator:latest && \
-        docker build -f Dockerfile.samples2raw . -t gamutrf-samples2raw:latest && \
-        docker run -t gamutrf-freqxlator:latest --help && \
-        sudo apt-get update && sudo apt-get install -qy python3-pip && pip3 install docker-compose \
-        docker-compose build
+        cd docker
+        docker build -f Dockerfile.gnuradio-deps . -t iqtlabs/gamutrf-gnuradio-deps:latest
+        docker build -f Dockerfile.gnuradio . -t iqtlabs/gamutrf-gnuradio:latest
+        docker build -f Dockerfile.base . -t iqtlabs/gamutrf-base:latest
+        docker build -f Dockerfile.airspyfm . -t iqtlabs/gamutrf-airspyfm:latest
+        docker build -f Dockerfile.mqtt . -t iqtlabs/gamutrf-mqtt:latest
+        cd ..
+        docker build -f Dockerfile . -t iqtlabs/gamutrf:latest
+        docker run -t iqtlabs/gamutrf:latest gamutrf-scan --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-scan2mp4 --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-sigfinder --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-api --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-samples2raw --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-freqxlator --help
+        sudo apt-get update && sudo apt-get install -qy python3-pip && pip3 install docker-compose
+        docker-compose -f orchestrator.yml -f worker.yml -f monitoring.yml -f specgram.yml build

@@ -1,0 +1,54 @@
+[tool.poetry]
+name = "gamutrf"
+version = "0.5.0"
+description = "An orchestrated SDR scanner"
+authors = ["cglewis <clewis@iqt.org>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [
+    { include = "gamutrf" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8 <3.11"
+bjoern = "3.2.1"
+falcon = "3.1.0"
+falcon-cors = "1.1.7"
+gpsd-py3 = "0.3.0"
+httpx = "0.23.0"
+Jinja2 = "3.1.2"
+matplotlib = "3.5.2"
+numpy = "1.23.1"
+paho-mqtt = "1.6.1"
+pandas = "1.4.3"
+prometheus_client = "0.14.1"
+requests = "2.28.1"
+schedule = "1.1.0"
+scipy = "1.8.1"
+sigmf = "1.0.0"
+zstandard = "0.18.0"
+
+[tool.poetry.dev-dependencies]
+attrs = "22.1.0"
+black = "22.6.0"
+docker = "5.0.3"
+pylint = "2.14.5"
+pytest = "7.1.2"
+pytest-cov = "3.0.0"
+pytype = "2022.7.26"
+
+[tool.poetry.scripts]
+gamutrf-api = 'gamutrf.__main__:api'
+gamutrf-freqxlator = 'gamutrf.__main__:freqxlator'
+gamutrf-samples2raw = 'gamutrf.__main__:samples2raw'
+gamutrf-scan = 'gamutrf.__main__:scan'
+gamutrf-scan2mp4 = 'gamutrf.__main__:scan2mp4'
+gamutrf-sigfinder = 'gamutrf.__main__:sigfinder'
+gamutrf-specgram = 'gamutrf.__main__:specgram'
+
+[tool.poetry.urls]
+homepage = "https://github.com/IQTLabs/gamutRF"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

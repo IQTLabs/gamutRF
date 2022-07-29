@@ -8,8 +8,24 @@ from gamutrf.utils import parse_filename
 
 
 class FakeArgs:
-
-    def __init__(self, nfft, cmap, ytics, bare, noverlap, iext, skip_exist, recording, workers, skip_fft, width, height, dpi, skip_sample_secs, max_sample_secs):
+    def __init__(
+        self,
+        nfft,
+        cmap,
+        ytics,
+        bare,
+        noverlap,
+        iext,
+        skip_exist,
+        recording,
+        workers,
+        skip_fft,
+        width,
+        height,
+        dpi,
+        skip_sample_secs,
+        max_sample_secs,
+    ):
         self.nfft = nfft
         self.cmap = cmap
         self.ytics = ytics
@@ -28,18 +44,37 @@ class FakeArgs:
 
 
 class SpecgramTestCase(unittest.TestCase):
-
     def test_process_fft_lines(self):
         with tempfile.TemporaryDirectory() as tempdir:
-            recording = os.path.join(
-                str(tempdir), 'testrecording_100Hz_1000sps.raw')
-            _freq_center, sample_rate, _sample_dtype, sample_len, _sample_type, _sample_bits = parse_filename(
-                recording)
+            recording = os.path.join(str(tempdir), "testrecording_100Hz_1000sps.raw")
+            (
+                _freq_center,
+                sample_rate,
+                _sample_dtype,
+                sample_len,
+                _sample_type,
+                _sample_bits,
+            ) = parse_filename(recording)
             samples = chr(0) * int(sample_len * sample_rate)
-            with open(recording, 'wb') as f:
-                f.write(samples.encode('utf8'))
+            with open(recording, "wb") as f:
+                f.write(samples.encode("utf8"))
             fakeargs = FakeArgs(
-                256, 'turbo', 1, True, 0, 'png', False, recording, 2, True, 11, 8, 100, 0, 0)
+                256,
+                "turbo",
+                1,
+                True,
+                0,
+                "png",
+                False,
+                recording,
+                2,
+                True,
+                11,
+                8,
+                100,
+                0,
+                0,
+            )
             process_all_recordings(fakeargs)
             fakeargs.workers = 1
             fakeargs.skip_exist = False
@@ -47,5 +82,5 @@ class SpecgramTestCase(unittest.TestCase):
             process_all_recordings(fakeargs)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
