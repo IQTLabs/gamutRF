@@ -31,7 +31,6 @@ jobs:
           sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc git g++ libev-dev python${{ matrix.python-version}}-dev gnuradio-dev python3-pip gnuradio sox
           git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../..
           sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python${{ matrix.python-version }}/dist-packages
-          sudo ln -s /usr/python3/dist-packages/* /usr/python${{ matrix.python-version }}/dist-packages
           sudo ldconfig -v
           python${{ matrix.python-version }} -c "import habets39"
           python${{ matrix.python-version }} -c "from gnuradio import *"
