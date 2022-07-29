@@ -11,17 +11,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 1
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: false
-          virtualenvs-in-project: false
       - name: Install dependencies
         run: |
           #export PYTHONPATH=/usr/local/lib/python3.10/dist-packages:/usr/local/lib/python3.10/site-packages:$PYTHONPATH
@@ -60,20 +49,22 @@ jobs:
           sudo ldconfig -v
           python3 -c "from gnuradio import *"
           python3 -c "import habets39"
-          poetry install --no-interaction
-
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: false
+          virtualenvs-in-project: false
+      - name: Install GamutRF
+        run: poetry install --no-interaction
       - name: Code Quality - Black
         run: |
           poetry run black gamutrf --check
-
       - name: Code Quality - Pytype
         run: |
           poetry run pytype gamutrf/
-
       - name: Code Quality - Pylint
         run: |
           poetry run pylint --fail-under=7 gamutrf/
-
       - name: Test with pytest
         run: |
           poetry run pytest --cov-report term-missing --cov=. --cov-report=xml
