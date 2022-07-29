@@ -26,7 +26,7 @@ jobs:
         run: |
           export PYTHONPATH=/usr/local/lib/python3.10/dist-packages:/usr/local/lib/python3.10/site-packages:$PYTHONPATH
           export PYTHONPATH=/home/runner/.local/venv/lib/python3.10/dist-packages:/home/runner/.local/venv/lib/python3.10/site-packages:$PYTHONPATH
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ libev-dev make pkg-config
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ libev-dev make pkg-config libboost-all-dev
           wget -q -O- https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz |tar -zxvf -
           git clone https://github.com/gnuradio/volk -b v2.5.1
           git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
