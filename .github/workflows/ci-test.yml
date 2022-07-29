@@ -27,13 +27,10 @@ jobs:
           sudo add-apt-repository ppa:gnuradio/gnuradio-releases-3.9
           sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc git g++ libev-dev python3-dev gnuradio-dev python3-pip gnuradio sox
           poetry install --no-interaction
-          git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../..
-          sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
-          sudo ln -s /usr/local/lib/python3/site-packages/* /usr/local/lib/python3.8/site-packages
+          #git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../..
           sudo ldconfig -v
-          ls /usr/local/lib
-          python3 --version
           export PYTHONPATH=/usr/local/lib/python3.8/dist-packages:/usr/local/lib/python3.8/site-packages:$PYTHONPATH
+          export PYTHONPATH=/home/runner/.local/venv/lib/python3.8/dist-packages:/home/runner/.local/venv/lib/python3.8/site-packages:$PYTHONPATH
           python3 -c "from gnuradio import *"
           python3 -c "import habets39"
 
