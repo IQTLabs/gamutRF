@@ -56,7 +56,7 @@ jobs:
           cd ../../
           mkdir -p gr-habets39/build && cd gr-habets39/build
           cmake .. && sudo make install
-          sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
+          sudo ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
           sudo ldconfig -v
           python3 -c "from gnuradio import *"
           python3 -c "import habets39"
