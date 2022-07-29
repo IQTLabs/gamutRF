@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.8
+          python-version: 3.10
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -24,14 +24,30 @@ jobs:
           virtualenvs-in-project: false
       - name: Install dependencies
         run: |
-          sudo add-apt-repository ppa:gnuradio/gnuradio-releases-3.9
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc git g++ libev-dev gnuradio-dev gnuradio
-          poetry install --no-interaction
-          #git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../..
+          export PYTHONPATH=/usr/local/lib/python3.10/dist-packages:/usr/local/lib/python3.10/site-packages:$PYTHONPATH
+          export PYTHONPATH=/home/runner/.local/venv/lib/python3.10/dist-packages:/home/runner/.local/venv/lib/python3.10/site-packages:$PYTHONPATH
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ libev-dev make pkg-config
+          wget -q -O- https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz |tar -zxvf -
+          git clone https://github.com/gnuradio/volk -b v2.5.1
+          git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
+          mkdir -p pybind11-2.5.0/build && cd pybind11-2.5.0/build 
+          cmake -DPYBIND11_TEST="" .. && make -j "$(nproc)" && make install
+          cd ../../
+          mkdir -p volk/build && cd volk/build
+          git submodule update --init
+          cmake .. && make -j "$(nproc)" && make install
+          cd ../../
+          mkdir -p SoapySDR/build && cd SoapySDR/build
+          cmake .. && make -j "$(nproc)" && make install
+          cd ../../
+          git clone https://github.com/anarkiwi/gnuradio -b st3 && mkdir -p gnuradio/build && cd gnuradio/build
+          CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON .. && make -j "$(nproc)" && make install 
+          cd ../../
+          ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
           sudo ldconfig -v
-          export PYTHONPATH=/usr/local/lib/python3.8/dist-packages:/usr/local/lib/python3.8/site-packages:$PYTHONPATH
-          export PYTHONPATH=/home/runner/.local/venv/lib/python3.8/dist-packages:/home/runner/.local/venv/lib/python3.8/site-packages:$PYTHONPATH
           python3 -c "from gnuradio import *"
+          poetry install --no-interaction
+          git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../..
           python3 -c "import habets39"
 
       - name: Code Quality - Black
