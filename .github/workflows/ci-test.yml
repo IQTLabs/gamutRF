@@ -43,6 +43,8 @@ jobs:
           git clone https://github.com/anarkiwi/gnuradio -b st3 && mkdir -p gnuradio/build && cd gnuradio/build
           CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON .. && make -j "$(nproc)" && sudo make install 
           cd ../../
+          sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
+          sudo ldconfig -v
           git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
           git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
           git clone https://github.com/ThomasHabets/gr-habets39
