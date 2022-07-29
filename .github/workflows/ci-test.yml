@@ -6,9 +6,6 @@ jobs:
 
   ci-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [ '3.8' ]
 
     steps:
       - uses: actions/checkout@v2
@@ -18,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.8
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -28,14 +25,17 @@ jobs:
       - name: Install dependencies
         run: |
           sudo add-apt-repository ppa:gnuradio/gnuradio-releases-3.9
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc git g++ libev-dev python${{ matrix.python-version}}-dev gnuradio-dev python3-pip gnuradio sox
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc git g++ libev-dev python3-dev gnuradio-dev python3-pip gnuradio sox
           poetry install --no-interaction
           git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../..
-          sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python${{ matrix.python-version }}/dist-packages
+          sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.8/dist-packages
+          sudo ln -s /usr/local/lib/python3/site-packages/* /usr/local/lib/python3.8/site-packages
           sudo ldconfig -v
-          export PYTHONPATH=/usr/local/lib/python${{ matrix.python-version }}/dist-packages:/usr/local/lib/python${{ matrix.python-version }}/site-packages:$PYTHONPATH
-          python${{ matrix.python-version }} -c "from gnuradio import *"
-          python${{ matrix.python-version }} -c "import habets39"
+          ls /usr/local/lib
+          python3 --version
+          export PYTHONPATH=/usr/local/lib/python3.8/dist-packages:/usr/local/lib/python3.8/site-packages:$PYTHONPATH
+          python3 -c "from gnuradio import *"
+          python3 -c "import habets39"
 
       - name: Code Quality - Black
         run: |
