@@ -31,23 +31,23 @@ jobs:
           git clone https://github.com/gnuradio/volk -b v2.5.1
           git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
           mkdir -p pybind11-2.5.0/build && cd pybind11-2.5.0/build 
-          cmake -DPYBIND11_TEST="" .. && make -j "$(nproc)" && make install
+          cmake -DPYBIND11_TEST="" .. && make -j "$(nproc)" && sudo make install
           cd ../../
           mkdir -p volk/build && cd volk/build
           git submodule update --init
-          cmake .. && make -j "$(nproc)" && make install
+          cmake .. && make -j "$(nproc)" && sudo make install
           cd ../../
           mkdir -p SoapySDR/build && cd SoapySDR/build
-          cmake .. && make -j "$(nproc)" && make install
+          cmake .. && make -j "$(nproc)" && sudo make install
           cd ../../
           git clone https://github.com/anarkiwi/gnuradio -b st3 && mkdir -p gnuradio/build && cd gnuradio/build
-          CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON .. && make -j "$(nproc)" && make install 
+          CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON .. && make -j "$(nproc)" && sudo make install 
           cd ../../
-          ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
+          sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
           sudo ldconfig -v
           python3 -c "from gnuradio import *"
           poetry install --no-interaction
-          git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../..
+          git clone https://github.com/ThomasHabets/gr-habets39 && cd gr-habets39 && mkdir build && cd build && cmake .. && sudo make install && cd ../../
           python3 -c "import habets39"
 
       - name: Code Quality - Black
