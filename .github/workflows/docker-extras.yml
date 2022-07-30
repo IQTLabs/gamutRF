@@ -35,7 +35,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: docker
-        file: Dockerfile.mqtt
+        file: docker/Dockerfile.mqtt
         platforms: linux/amd64,linux/arm64
         push: true
         tags: iqtlabs/gamutrf-mqtt:${{ steps.change_version.outputs.VERSION }}
@@ -70,7 +70,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: docker
-        file: Dockerfile.airspyfm
+        file: docker/Dockerfile.airspyfm
         platforms: linux/amd64,linux/arm64
         push: true
         tags: iqtlabs/gamutrf-airspyfm:${{ steps.change_version.outputs.VERSION }}
