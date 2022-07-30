@@ -35,7 +35,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: docker
-        file: Dockerfile.gnuradio-deps
+        file: docker/Dockerfile.gnuradio-deps
         platforms: linux/amd64,linux/arm64
         push: true
         tags: iqtlabs/gamutrf-gnuradio-deps:${{ steps.change_version.outputs.VERSION }}
@@ -71,7 +71,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: docker
-        file: Dockerfile.gnuradio
+        file: docker/Dockerfile.gnuradio
         platforms: linux/amd64,linux/arm64
         push: true
         tags: iqtlabs/gamutrf-gnuradio:${{ steps.change_version.outputs.VERSION }}
@@ -106,7 +106,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: docker
-        file: Dockerfile.base
+        file: docker/Dockerfile.base
         platforms: linux/amd64,linux/arm64
         push: true
         tags: iqtlabs/gamutrf-base:${{ steps.change_version.outputs.VERSION }}
