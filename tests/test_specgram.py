@@ -82,5 +82,5 @@ class SpecgramTestCase(unittest.TestCase):
             process_all_recordings(fakeargs)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()
