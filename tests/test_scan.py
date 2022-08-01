@@ -39,7 +39,7 @@ def test_bad_rollover(mocker):
     assert pytest_wrapped_e.value.code == 1
 
 
-def test_bad_freq_end():
+def test_bad_freq_end(mocker):
     mocker.patch(
         "sys.argv",
         [
@@ -52,7 +52,7 @@ def test_bad_freq_end():
     assert pytest_wrapped_e.value.code == 1
 
 
-def test_bad_freq_start():
+def test_bad_freq_start(mocker):
     mocker.patch(
         "sys.argv",
         [
@@ -65,7 +65,7 @@ def test_bad_freq_start():
     assert pytest_wrapped_e.value.code == 1
 
 
-def test_scan_main():
+def test_scan_main(mocker):
     mocker.patch(
         "sys.argv",
         [
