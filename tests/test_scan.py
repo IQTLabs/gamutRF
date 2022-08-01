@@ -15,10 +15,8 @@ def test_bad_freq(mocker):
     mocker.patch(
         "sys.argv",
         [
-            "--freq-start",
-            "100",
-            "--freq-end",
-            "99"
+            "--freq-start=100",
+            "--freq-end=99"
         ],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -31,10 +29,8 @@ def test_bad_rollover(mocker):
     mocker.patch(
         "sys.argv",
         [
-            "--freq-start",
-            "99",
-            "--freq-end",
-            "100"
+            "--freq-start=99",
+            "--freq-end=100"
         ],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -47,8 +43,7 @@ def test_bad_freq_end():
     mocker.patch(
         "sys.argv",
         [
-            "--freq-end",
-            "100000000000"
+            "--freq-end=100000000000"
         ],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -61,8 +56,7 @@ def test_bad_freq_start():
     mocker.patch(
         "sys.argv",
         [
-            "--freq-start",
-            "10000"
+            "--freq-start=10000"
         ],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -75,8 +69,7 @@ def test_scan_main():
     mocker.patch(
         "sys.argv",
         [
-            "--updatetimeout",
-            "-1"
+            "--updatetimeout=-1"
         ],
     )
     scan.main()
