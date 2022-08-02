@@ -13,9 +13,9 @@ def test_scan_argument_parser():
     scan.argument_parser()
 
 
-def test_bad_freq(mocker):
+def test_bad_freq(monkeypatch):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-    mocker.patch(
+    monkeypatch.setattr(
         "sys.argv",
         ["--freq-start=100", "--freq-end=99"],
     )
@@ -25,9 +25,9 @@ def test_bad_freq(mocker):
     assert pytest_wrapped_e.value.code == 1
 
 
-def test_bad_rollover(mocker):
+def test_bad_rollover(monkeypatch):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-    mocker.patch(
+    monkeypatch.setattr(
         "sys.argv",
         ["--freq-start=99", "--freq-end=100"],
     )
@@ -37,9 +37,9 @@ def test_bad_rollover(mocker):
     assert pytest_wrapped_e.value.code == 1
 
 
-def test_bad_freq_end(mocker):
+def test_bad_freq_end(monkeypatch):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-    mocker.patch(
+    monkeypatch.setattr(
         "sys.argv",
         ["--freq-end=6.1e9"],
     )
@@ -49,9 +49,9 @@ def test_bad_freq_end(mocker):
     assert pytest_wrapped_e.value.code == 1
 
 
-def test_bad_freq_start(mocker):
+def test_bad_freq_start(monkeypatch):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-    mocker.patch(
+    monkeypatch.setattr(
         "sys.argv",
         ["--freq-start=69e6"],
     )
@@ -61,9 +61,9 @@ def test_bad_freq_start(mocker):
     assert pytest_wrapped_e.value.code == 1
 
 
-def test_scan_main(mocker):
+def test_scan_main(monkeypatch):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-    mocker.patch(
+    monkeypatch.setattr(
         "sys.argv",
         ["--updatetimeout=-1"],
     )
