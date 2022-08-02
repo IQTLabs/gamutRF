@@ -17,10 +17,7 @@ def test_bad_freq(mocker):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
-        [
-            "--freq-start=100",
-            "--freq-end=99"
-        ],
+        ["--freq-start=100", "--freq-end=99"],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         scan.main()
@@ -32,10 +29,7 @@ def test_bad_rollover(mocker):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
-        [
-            "--freq-start=99",
-            "--freq-end=100"
-        ],
+        ["--freq-start=99", "--freq-end=100"],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         scan.main()
@@ -47,9 +41,7 @@ def test_bad_freq_end(mocker):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
-        [
-            "--freq-end=6.1e9"
-        ],
+        ["--freq-end=6.1e9"],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         scan.main()
@@ -61,9 +53,7 @@ def test_bad_freq_start(mocker):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
-        [
-            "--freq-start=69e6"
-        ],
+        ["--freq-start=69e6"],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         scan.main()
@@ -75,8 +65,6 @@ def test_scan_main(mocker):
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
-        [
-            "--updatetimeout=-1"
-        ],
+        ["--updatetimeout=-1"],
     )
     scan.main()
