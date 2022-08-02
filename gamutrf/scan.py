@@ -137,7 +137,7 @@ def main():
         print("Warning: failed to enable real-time scheduling.")
 
     print(
-        f"start: {options.freq_start}, end: {options.freq_end}, rollover: {ROLLOOVERHZ}, updatetimeout: {options.updatetimeout}"
+        f"start: {options.freq_start}, end: {options.freq_end}, rollover: {ROLLOVERHZ}, updatetimeout: {options.updatetimeout}"
     )
     if options.freq_start > options.freq_end:
         print("Error: freq_start must be less than freq_end")
