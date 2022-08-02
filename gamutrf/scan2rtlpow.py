@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 import argparse
 import datetime
 import logging
@@ -79,7 +78,3 @@ def main():
     if not os.path.exists(args.csv):
         logging.fatal(f"{args.csv} must exist")
     generate_csv(args)
-
-
-if __name__ == "__main__":
-    main()

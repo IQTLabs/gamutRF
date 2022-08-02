@@ -4,6 +4,7 @@ from gamutrf.freqxlator import main as freqxlator_main
 from gamutrf.samples2raw import main as samples2raw_main
 from gamutrf.scan import main as scan_main
 from gamutrf.scan2mp4 import main as scan2mp4_main
+from gamutrf.scan2rtlpow import main as scan2rtlpow_main
 from gamutrf.sigfinder import main as sigfinder_main
 from gamutrf.specgram import main as specgram_main
 
@@ -31,6 +32,11 @@ def scan():
 def scan2mp4():
     """Entrypoint for scan2mp4"""
     scan2mp4_main()
+
+
+def scan2rtlpow():
+    """Entrypoint for scan2rtlpow"""
+    scan2rtlpow_main()
 
 
 def sigfinder():
