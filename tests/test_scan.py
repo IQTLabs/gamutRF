@@ -1,12 +1,6 @@
-import prometheus_client
 import pytest
 
 from gamutrf import scan
-
-
-def test_scan_init_prom_vars():
-    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-    scan.init_prom_vars()
 
 
 def test_scan_argument_parser():
@@ -14,7 +8,6 @@ def test_scan_argument_parser():
 
 
 def test_bad_freq(monkeypatch):
-    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     monkeypatch.setattr(
         "sys.argv",
         ["--freq-start=100", "--freq-end=99"],
@@ -26,7 +19,6 @@ def test_bad_freq(monkeypatch):
 
 
 def test_bad_rollover(monkeypatch):
-    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     monkeypatch.setattr(
         "sys.argv",
         ["--freq-start=99", "--freq-end=100"],
@@ -38,7 +30,6 @@ def test_bad_rollover(monkeypatch):
 
 
 def test_bad_freq_end(monkeypatch):
-    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     monkeypatch.setattr(
         "sys.argv",
         ["--freq-end=6.1e9"],
@@ -50,7 +41,6 @@ def test_bad_freq_end(monkeypatch):
 
 
 def test_bad_freq_start(monkeypatch):
-    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     monkeypatch.setattr(
         "sys.argv",
         ["--freq-start=69e6"],
@@ -62,7 +52,6 @@ def test_bad_freq_start(monkeypatch):
 
 
 def test_scan_main(monkeypatch):
-    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     monkeypatch.setattr(
         "sys.argv",
         ["--updatetimeout=-1"],
