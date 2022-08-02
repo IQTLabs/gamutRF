@@ -10,7 +10,7 @@ def test_scan_argument_parser():
 def test_bad_freq(monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
-        ["--freq-start=100", "--freq-end=99"],
+        ["scan.py", "--freq-start=100", "--freq-end=99"],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         main()
@@ -21,7 +21,7 @@ def test_bad_freq(monkeypatch):
 def test_bad_rollover(monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
-        ["--freq-start=99", "--freq-end=100"],
+        ["scan.py", "--freq-start=99", "--freq-end=100"],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         main()
@@ -32,7 +32,7 @@ def test_bad_rollover(monkeypatch):
 def test_bad_freq_end(monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
-        ["--freq-end=6.1e9"],
+        ["scan.py", "--freq-end=6.1e9"],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         main()
@@ -43,7 +43,7 @@ def test_bad_freq_end(monkeypatch):
 def test_bad_freq_start(monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
-        ["--freq-start=69e6"],
+        ["scan.py", "--freq-start=69e6"],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         main()
@@ -54,6 +54,6 @@ def test_bad_freq_start(monkeypatch):
 def test_scan_main(monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
-        ["--updatetimeout=-1"],
+        ["scan.py", "--updatetimeout=-1"],
     )
     main()
