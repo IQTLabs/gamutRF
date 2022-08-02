@@ -5,6 +5,7 @@ from gamutrf import scan
 
 
 def test_scan_init_prom_vars():
+    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     scan.init_prom_vars()
 
 
@@ -47,7 +48,7 @@ def test_bad_freq_end(mocker):
     mocker.patch(
         "sys.argv",
         [
-            "--freq-end=100000000000"
+            "--freq-end=6.1e9"
         ],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -61,7 +62,7 @@ def test_bad_freq_start(mocker):
     mocker.patch(
         "sys.argv",
         [
-            "--freq-start=10000"
+            "--freq-start=69e6"
         ],
     )
     with pytest.raises(SystemExit) as pytest_wrapped_e:
