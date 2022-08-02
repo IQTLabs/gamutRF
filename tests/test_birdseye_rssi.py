@@ -51,9 +51,9 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                         line_json = json.loads(line)
                         self.assertGreater(-10, line_json["rssi"])
                         if line_json["center_freq"] == freq:
+                            self.assertEqual(freq, line_json["center_freq"], line_json)
                             return
             time.sleep(1)
-        self.assertEqual(freq, line_json["center_freq"], line_json)
 
     def test_birdseye_endtoend_rssi(self):
         test_tag = "iqtlabs/gamutrf:latest"
@@ -86,5 +86,5 @@ class BirdseyeRSSITestCase(unittest.TestCase):
             container.kill()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

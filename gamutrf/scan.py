@@ -10,7 +10,7 @@ try:
     from gnuradio import gr  # pytype: disable=import-error
     from gnuradio.eng_arg import eng_float  # pytype: disable=import-error
     from gnuradio.eng_arg import intx  # pytype: disable=import-error
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     print(
         "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme)"
     )
@@ -148,6 +148,10 @@ def main():
 
     if options.freq_end > 6e9:
         print("Error: freq_end must be less than 6GHz")
+        sys.exit(1)
+
+    if options.freq_start < 70e6:
+        print("Error: freq_start must be at least 70MHz")
         sys.exit(1)
 
     prom_vars = init_prom_vars()

@@ -39,5 +39,5 @@ class Scan2MP4TestCase(unittest.TestCase):
             self.assertTrue(generate_frames(args, tempdir))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

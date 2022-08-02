@@ -15,7 +15,7 @@ try:
     from gnuradio import fft  # pytype: disable=import-error
     from gnuradio import gr  # pytype: disable=import-error
     from gnuradio.fft import window  # pytype: disable=import-error
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     print(
         "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme)"
     )

@@ -1,40 +1,49 @@
-def api():
-    from gamutrf.api import main
+"""Main entrypoint for GamutRF"""
+from gamutrf.api import main as api_main
+from gamutrf.freqxlator import main as freqxlator_main
+from gamutrf.samples2raw import main as samples2raw_main
+from gamutrf.scan import main as scan_main
+from gamutrf.scan2mp4 import main as scan2mp4_main
+from gamutrf.scan2rtlpow import main as scan2rtlpow_main
+from gamutrf.sigfinder import main as sigfinder_main
+from gamutrf.specgram import main as specgram_main
 
-    main()
+
+def api():
+    """Entrypoint for API"""
+    api_main()
 
 
 def freqxlator():
-    from gamutrf.freqxlator import main
-
-    main()
+    """Entrypoint for freqxlator"""
+    freqxlator_main()
 
 
 def samples2raw():
-    from gamutrf.samples2raw import main
-
-    main()
+    """Entrypoint for samples2raw"""
+    samples2raw_main()
 
 
 def scan():
-    from gamutrf.scan import main
-
-    main()
+    """Entrypoint for scan"""
+    scan_main()
 
 
 def scan2mp4():
-    from gamutrf.scan2mp4 import main
+    """Entrypoint for scan2mp4"""
+    scan2mp4_main()
 
-    main()
+
+def scan2rtlpow():
+    """Entrypoint for scan2rtlpow"""
+    scan2rtlpow_main()
 
 
 def sigfinder():
-    from gamutrf.sigfinder import main
-
-    main()
+    """Entrypoint for sigfinder"""
+    sigfinder_main()
 
 
 def specgram():
-    from gamutrf.specgram import main
-
-    main()
+    """Entrypoint for specgram"""
+    specgram_main()

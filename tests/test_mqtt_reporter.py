@@ -17,5 +17,5 @@ class MQTTReporterTestCase(unittest.TestCase):
             mqtt_reporter.log("/no/such/path", "test", 1, {"test": "data"})
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

@@ -55,5 +55,5 @@ class SDRRecorderTestCase(unittest.TestCase):
         sdr_recorder.tmpdir.cleanup()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

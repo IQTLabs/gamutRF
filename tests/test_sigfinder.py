@@ -206,5 +206,5 @@ class SigFinderTestCase(unittest.TestCase):
                         self.assertGreater(returned.find(test_bytes), -1)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

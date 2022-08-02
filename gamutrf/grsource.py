@@ -9,7 +9,7 @@ try:
     from gnuradio import soapy
     from gnuradio import uhd
     from gnuradio.gr import sizeof_gr_complex
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     print(
         "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme)"
     )

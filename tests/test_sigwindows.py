@@ -26,10 +26,6 @@ class FakeArgs:
 
 class WindowsTestCase(unittest.TestCase):
     @staticmethod
-    def _get_data(data):
-        return os.path.join(TESTDIR, data)
-
-    @staticmethod
     def _test_samples(test_csv, test_freqs, test_ts):
         with open(test_csv, "w", encoding="utf-8") as f:
             samples = []
@@ -49,6 +45,7 @@ class WindowsTestCase(unittest.TestCase):
                 f.write("1\n")
             args = FakeArgs(test_csv, 0, 1e3, 10e3, -40)
             for frame, frame_df in read_csv(args):
+                # TODO tests never get here
                 self.assertEqual(0, frame)
                 self.assertEqual(1, len(frame_df))
 
@@ -105,5 +102,5 @@ class WindowsTestCase(unittest.TestCase):
         self.assertEqual([110, 20], choose_record_signal([20, 20, 20, 20, 110], 2))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

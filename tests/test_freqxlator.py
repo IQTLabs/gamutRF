@@ -13,5 +13,5 @@ class FreqXlatorTestCase(unittest.TestCase):
         argument_parser()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()
