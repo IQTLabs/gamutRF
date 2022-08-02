@@ -1,10 +1,11 @@
 import pytest
 
+from gamutrf.scan import argument_parser
 from gamutrf.scan import main
 
 
 def test_scan_argument_parser():
-    scan.argument_parser()
+    argument_parser()
 
 
 def test_bad_freq(monkeypatch):
@@ -56,4 +57,7 @@ def test_scan_main(monkeypatch):
         "sys.argv",
         ["scan.py", "--updatetimeout=-1"],
     )
-    main()
+    # there is no SDR connected in test, so expected to fail at runtime
+    with pytest.raises(RuntimeError) as pytest_wrapped_e:
+        main()
+    assert pytest_wrapped_e.type == RuntimeError
