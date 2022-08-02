@@ -136,6 +136,7 @@ def main():
     if gr.enable_realtime_scheduling() != gr.RT_OK:
         print("Warning: failed to enable real-time scheduling.")
 
+    print(f"sys.argv: {sys.argv}")
     print(
         f"start: {options.freq_start}, end: {options.freq_end}, rollover: {ROLLOVERHZ}, updatetimeout: {options.updatetimeout}"
     )
