@@ -1,3 +1,4 @@
+import prometheus_client
 import pytest
 
 from gamutrf import scan
@@ -12,6 +13,7 @@ def test_scan_argument_parser():
 
 
 def test_bad_freq(mocker):
+    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
         [
@@ -26,6 +28,7 @@ def test_bad_freq(mocker):
 
 
 def test_bad_rollover(mocker):
+    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
         [
@@ -40,6 +43,7 @@ def test_bad_rollover(mocker):
 
 
 def test_bad_freq_end(mocker):
+    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
         [
@@ -53,6 +57,7 @@ def test_bad_freq_end(mocker):
 
 
 def test_bad_freq_start(mocker):
+    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
         [
@@ -66,6 +71,7 @@ def test_bad_freq_start(mocker):
 
 
 def test_scan_main(mocker):
+    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
     mocker.patch(
         "sys.argv",
         [
