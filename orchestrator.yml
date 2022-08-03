@@ -14,6 +14,11 @@ services:
       - "/dev/i2c-1:/dev/i2c-1"
     ports:
       - '8000:8000'
+    command:
+      # Set correct compass settings for your compass and location
+      - --compass=qmc5883l
+      - --calibration=0
+      - --declination=0
   mqtt:
     restart: always
     image: iqtlabs/gamutrf-mqtt:latest
