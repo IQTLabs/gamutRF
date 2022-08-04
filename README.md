@@ -68,7 +68,7 @@ Workers make recordings that are compressed with zstandard, and are typically in
 
 gamutRF provides a tool to convert a recording or directory of recordings into a spectrogram. For example, to convert all I/Q recordings in /tmp:
 
-```docker run -ti iqtlabs/gamutrf -v /tmp:/tmp gamutrf-specgram /tmp```
+```docker run -ti -v /tmp:/tmp iqtlabs/gamutrf gamutrf-specgram /tmp```
 
 Use the ```--help``` option to change how the spectogram is generated (for example, to change the sample rate).
 

@@ -1,0 +1,134 @@
+#!/bin/bash
+
+function show_help()
+{
+    echo "GamutRF, an application that leverages software defined radios (SDR) to orchestrate the scanning and collecting of signals. For more info visit: https://github.com/IQTLabs/poseidon
+
+Usage: gamutrf [option]
+Options:
+    -h,  help          print this help
+    -i,  install       install GamutRF repo, optionally supply a version, tag, branch, or tarball
+    -r,  run           specify GamutRF tool to run (and any additional args for the tools), options include: 'api', 'freqxlator', 'samples2raw', 'scan', 'scan2mp4', 'scan2rtlpow', 'sigfinder', 'specgram' 
+    -R,  restart       specify 'orchestrator' or 'worker' to restart
+    -s,  start         specify 'orchestrator' or 'worker' to start
+    -S,  stop          specify 'orchestrator' or 'worker' to stop
+    -u,  update        update the GamutRF repo, optionally supply a version, tag, branch, or tarball
+    -V,  version       get the version installed
+
+Environment Variables:
+    VOL_PREFIX         override the installation location
+    DATA_DIR           path used to map data into or out of a tool that is run"
+}
+
+function die()
+{
+    printf '%s\n' "$1" >&2
+    exit 1
+}
+
+function check_args()
+{
+    for req_cmd in docker docker-compose git ; do
+            $req_cmd --help > /dev/null || die "$req_cmd must be installed"
+    done
+
+    if [[ -z "${DATA_DIR}" ]]; then
+        VOLUME_DIR=`pwd`
+    else
+        VOLUME_DIR="${DATA_DIR}"
+    fi
+
+    while :; do
+        case $1 in
+            -h|\?|help)
+                show_help
+                exit
+                ;;
+            -i|install)
+                gamutrfdir="$VOL_PREFIX"/opt/gamutrf
+                if [ -d "$gamutrfdir" ] ; then
+                    echo "GamutRF is already installed at $gamutrfdir"
+                    exit
+                fi
+                mkdir -p "$gamutrfdir" > /dev/null 2>&1
+                if [ -z "$2" ]; then
+                    git clone https://github.com/iqtlabs/gamutrf "$gamutrfdir"
+                    pushd "$gamutrfdir" || exit
+                    git checkout "$(git describe --tags --abbrev=0)"
+                    popd || exit
+                else
+                    if [ -f "$2" ] ; then
+                        tar -C "$gamutrfdir" -xvf "$2" --strip=1
+                    else
+                        git clone https://github.com/iqtlabs/gamutrf "$gamutrfdir"
+                        pushd "$gamutrfdir" || exit
+                        git checkout "$2"
+                        popd || exit
+                    fi
+                fi
+                exit
+                ;;
+            -r|run)
+                if [ -z "$2" ]; then
+                    echo "Specify 'api', 'freqxlator', 'samples2raw', 'scan', 'scan2mp4', 'scan2rtlpow', 'sigfinder', or 'specgram' to run"
+                    exit
+                fi
+                docker run -it -v "$VOLUME_DIR":/data iqtlabs/gamutrf gamutrf-"$2" "${@:3}"
+                # TODO
+                exit
+                ;;
+            -R|restart)
+                if [ -z "$2" ]; then
+                    echo "Specify 'orchestrator' or 'worker' to restart"
+                    exit
+                fi
+                # TODO
+                exit
+                ;;
+            -s|start)
+                if [ -z "$2" ]; then
+                    echo "Specify 'orchestrator' or 'worker' to start"
+                    exit
+                fi
+                # TODO
+                exit
+                ;;
+            -S|stop)
+                if [ -z "$2" ]; then
+                    echo "Specify 'orchestrator' or 'worker' to stop"
+                    exit
+                fi
+                # TODO
+                exit
+                ;;
+            -u|update)
+                # TODO
+                exit
+                ;;
+            -V|version)
+                if [ ! -f "$VOL_PREFIX"/opt/gamutrf/pyproject.toml ]; then
+                    echo "GamutRF not installed!"
+                else
+                    sed '3q;d' "$VOL_PREFIX"/opt/gamutrf/pyproject.toml | cut -d '"' -f 2
+                fi
+                exit
+                ;;
+            ?*)
+                printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+                ;;
+            *)
+                break
+        esac
+        shift
+    done
+}
+
+if [ $# -gt 0 ]; then
+    if [[ ( $# -eq 2 && $1 == "install" ) || ( $# -eq 2 && $1 == "-i" ) || ( $# -gt 1 && $1 == "run" ) || ( $# -gt 1 && $1 == "-r" ) || ( $# -eq 2 && $1 == "restart" ) || ( $# -eq 2 && $1 == "-R" ) || ( $# -eq 2 && $1 == "start" ) || ( $# -eq 2 && $1 == "-s" ) || ( $# -eq 2 && $1 == "stop" ) || ( $# -eq 2 && $1 == "-S" ) || ( $# -eq 2 && $1 == "update" ) || ( $# -eq 2 && $1 == "-U" ) || ( $# -eq 1 ) ]]; then
+        check_args "$@"
+    else
+        show_help
+    fi
+else # print help
+    show_help
+fi
