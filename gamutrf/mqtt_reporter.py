@@ -9,16 +9,13 @@ import paho.mqtt.client as mqtt
 
 
 class MQTTReporter:
-    def __init__(
-        self, name, mqtt_server=None, gps_server=None, compass=False, calibration=0
-    ):
+    def __init__(self, name, mqtt_server=None, gps_server=None, compass=False):
         self.name = name
         self.mqtt_server = mqtt_server
         self.compass = compass
         self.gps_server = gps_server
         self.mqttc = None
         self.heading = "no heading"
-        self.calibration = calibration
 
     @staticmethod
     def log(path, prefix, start_time, record_args):
@@ -39,11 +36,7 @@ class MQTTReporter:
     def get_heading(self):
         try:
             self.heading = str(
-                float(
-                    httpx.get(
-                        f"http://{self.gps_server}:8000/v1/{self.calibration}"
-                    ).text
-                )
+                float(httpx.get(f"http://{self.gps_server}:8000/v1/heading").text)
             )
         except Exception as err:
             logging.error("could not update heading: %s", err)
