@@ -4,20 +4,27 @@ function show_help()
 {
     echo "GamutRF, an application that leverages software defined radios (SDR) to orchestrate the scanning and collecting of signals. For more info visit: https://github.com/IQTLabs/poseidon
 
-Usage: gamutrf [option]
+Usage: gamutrf [option] [additional run arguments]
 Options:
     -h,  help          print this help
     -i,  install       install GamutRF repo, optionally supply a version, tag, branch, or tarball
+    -l,  logs          tail GamutRF logs
     -r,  run           specify GamutRF tool to run (and any additional args for the tools), options include: 'api', 'freqxlator', 'samples2raw', 'scan', 'scan2mp4', 'scan2rtlpow', 'sigfinder', 'specgram' 
     -R,  restart       specify 'orchestrator' or 'worker' to restart
     -s,  start         specify 'orchestrator' or 'worker' to start
     -S,  stop          specify 'orchestrator' or 'worker' to stop
+    -t,  status        get status of GamutRF
     -u,  update        update the GamutRF repo, optionally supply a version, tag, branch, or tarball
     -V,  version       get the version installed
 
 Environment Variables:
-    VOL_PREFIX         override the installation location
-    DATA_DIR           path used to map data into or out of a tool that is run"
+    ANTENNA            label to call the antenna type (default: omni)
+    DATA_DIR           path used to map data into or out of a tool that is run (default: current working directory)
+    FREQ_START         override the starting frequency (default: 70e6)
+    FREQ_END           override the ending frequency (default: 6e9)
+    ORCHESTRATOR       ip address of the host running the orchestrator (default: 192.168.111.10)
+    VOL_PREFIX         override the installation location (default: '')
+    WORKER_NAME        label to call the worker (default: worker1)"
 }
 
 function die()
@@ -28,7 +35,7 @@ function die()
 
 function check_args()
 {
-    for req_cmd in docker docker-compose git ; do
+    for req_cmd in docker docker-compose git uhd_find_devices ; do
             $req_cmd --help > /dev/null || die "$req_cmd must be installed"
     done
 
@@ -37,6 +44,32 @@ function check_args()
     else
         VOLUME_DIR="${DATA_DIR}"
     fi
+    if [[ -z "${FREQ_START}" ]]; then
+        FS=70e6
+    else
+        FS="${FREQ_START}"
+    fi
+    if [[ -z "${FREQ_END}" ]]; then
+        FE=6e9
+    else
+        FE="${FREQ_END}"
+    fi
+    if [[ -z "${ANTENNA}" ]]; then
+        ANT=omni
+    else
+        ANT="${ANTENNA}"
+    fi
+    if [[ -z "${WORKER_NAME}" ]]; then
+        WORKER=worker1
+    else
+        WORKER="${WORKER_NAME}"
+    fi
+    if [[ -z "${ORCHESTRATOR}" ]]; then
+        ORC=192.168.111.10
+    else
+        ORC="${ORCHESTRATOR}"
+    fi
+    GAMUTRF_DIR="$VOL_PREFIX"/opt/gamutrf
 
     while :; do
         case $1 in
@@ -45,27 +78,34 @@ function check_args()
                 exit
                 ;;
             -i|install)
-                gamutrfdir="$VOL_PREFIX"/opt/gamutrf
-                if [ -d "$gamutrfdir" ] ; then
-                    echo "GamutRF is already installed at $gamutrfdir"
+                if [ -d "$GAMUTRF_DIR" ] ; then
+                    echo "GamutRF is already installed at $GAMUTRF_DIR"
                     exit
                 fi
-                mkdir -p "$gamutrfdir" > /dev/null 2>&1
+                mkdir -p "$GAMUTRF_DIR" > /dev/null 2>&1
                 if [ -z "$2" ]; then
-                    git clone https://github.com/iqtlabs/gamutrf "$gamutrfdir"
-                    pushd "$gamutrfdir" || exit
+                    git clone https://github.com/iqtlabs/gamutrf "$GAMUTRF_DIR"
+                    pushd "$GAMUTRF_DIR" || exit
                     git checkout "$(git describe --tags --abbrev=0)"
                     popd || exit
                 else
                     if [ -f "$2" ] ; then
-                        tar -C "$gamutrfdir" -xvf "$2" --strip=1
+                        tar -C "$GAMUTRF_DIR" -xvf "$2" --strip=1
                     else
-                        git clone https://github.com/iqtlabs/gamutrf "$gamutrfdir"
-                        pushd "$gamutrfdir" || exit
+                        git clone https://github.com/iqtlabs/gamutrf "$GAMUTRF_DIR"
+                        pushd "$GAMUTRF_DIR" || exit
                         git checkout "$2"
                         popd || exit
                     fi
                 fi
+                exit
+                ;;
+            -l|logs)
+                if [ -z "$2" ]; then
+                    echo "Specify 'orchestrator' or 'worker' to get logs"
+                    exit
+                fi
+                # TODO
                 exit
                 ;;
             -r|run)
@@ -74,7 +114,6 @@ function check_args()
                     exit
                 fi
                 docker run -it -v "$VOLUME_DIR":/data iqtlabs/gamutrf gamutrf-"$2" "${@:3}"
-                # TODO
                 exit
                 ;;
             -R|restart)
@@ -90,12 +129,41 @@ function check_args()
                     echo "Specify 'orchestrator' or 'worker' to start"
                     exit
                 fi
-                # TODO
+                if [ "$2" == "orchestrator" ]; then
+                    if [ ! -f "$VOL_PREFIX"/opt/gamutrf/orchestrator.yml ]; then
+                        echo "GamutRF not installed!"
+                    else
+                        pushd "$GAMUTRF_DIR" || exit
+                        UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices
+                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker-compose -f orchestrator.yml up -d
+                        popd || exit
+                    fi
+                elif [ "$2" == "worker" ]; then
+                    if [ ! -f "$VOL_PREFIX"/opt/gamutrf/worker.yml ]; then
+                        echo "GamutRF not installed!"
+                    else
+                        pushd "$GAMUTRF_DIR" || exit
+                        UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices
+                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker-compose -f worker.yml up -d
+                        popd || exit
+                    fi
+                else
+                    echo "Specify 'orchestrator' or 'worker' to start"
+                    exit
+                fi
                 exit
                 ;;
             -S|stop)
                 if [ -z "$2" ]; then
                     echo "Specify 'orchestrator' or 'worker' to stop"
+                    exit
+                fi
+                # TODO
+                exit
+                ;;
+            -t|status)
+                if [ -z "$2" ]; then
+                    echo "Specify 'orchestrator' or 'worker' to get status"
                     exit
                 fi
                 # TODO
@@ -124,7 +192,7 @@ function check_args()
 }
 
 if [ $# -gt 0 ]; then
-    if [[ ( $# -eq 2 && $1 == "install" ) || ( $# -eq 2 && $1 == "-i" ) || ( $# -gt 1 && $1 == "run" ) || ( $# -gt 1 && $1 == "-r" ) || ( $# -eq 2 && $1 == "restart" ) || ( $# -eq 2 && $1 == "-R" ) || ( $# -eq 2 && $1 == "start" ) || ( $# -eq 2 && $1 == "-s" ) || ( $# -eq 2 && $1 == "stop" ) || ( $# -eq 2 && $1 == "-S" ) || ( $# -eq 2 && $1 == "update" ) || ( $# -eq 2 && $1 == "-U" ) || ( $# -eq 1 ) ]]; then
+    if [[ ( $# -eq 2 && $1 == "install" ) || ( $# -eq 2 && $1 == "-i" ) || ( $# -eq 2 && $1 == "logs" ) || ( $# -eq 2 && $1 == "-l" ) || ( $# -gt 1 && $1 == "run" ) || ( $# -gt 1 && $1 == "-r" ) || ( $# -eq 2 && $1 == "restart" ) || ( $# -eq 2 && $1 == "-R" ) || ( $# -eq 2 && $1 == "start" ) || ( $# -eq 2 && $1 == "-s" ) || ( $# -eq 2 && $1 == "stop" ) || ( $# -eq 2 && $1 == "-S" ) || ( $# -eq 2 && $1 == "update" ) || ( $# -eq 2 && $1 == "status" ) || ( $# -eq 2 && $1 == "-t" ) ||( $# -eq 2 && $1 == "-U" ) || ( $# -eq 1 ) ]]; then
         check_args "$@"
     else
         show_help
