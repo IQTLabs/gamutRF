@@ -11,7 +11,8 @@ def get_reader(filename):
 
     def zst_reader(x):
         return zstandard.ZstdDecompressor().stream_reader(
-            open(x, "rb"), read_across_frames=True)
+            open(x, "rb"), read_across_frames=True
+        )
 
     def default_reader(x):
         return open(x, "rb")
