@@ -10,7 +10,9 @@ def get_reader(filename):
         return gzip.open(x, "rb")
 
     def zst_reader(x):
-        return zstandard.ZstdDecompressor().stream_reader(open(x, "rb"))
+        return zstandard.ZstdDecompressor().stream_reader(
+            open(x, "rb"), read_across_frames=True
+        )
 
     def default_reader(x):
         return open(x, "rb")
@@ -45,6 +47,7 @@ def read_recording(
     Returns:
         numpy arrays of csingles.
     """
+    read_size = int(sample_rate * sample_secs) * sample_len
     reader = get_reader(filename)
     samples_remaining = 0
     if max_sample_secs:
@@ -55,7 +58,7 @@ def read_recording(
         while True:
             if max_sample_secs and not samples_remaining:
                 break
-            sample_buffer = infile.read(int(sample_rate * sample_secs) * sample_len)
+            sample_buffer = infile.read(read_size)
             buffered_samples = int(len(sample_buffer) / sample_len)
             if buffered_samples == 0:
                 break
