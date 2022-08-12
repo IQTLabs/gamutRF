@@ -158,7 +158,27 @@ function check_args()
                     echo "Specify 'orchestrator' or 'worker' to stop"
                     exit
                 fi
-                # TODO
+                if [ "$2" == "orchestrator" ]; then
+                    if [ ! -f "$VOL_PREFIX"/opt/gamutrf/orchestrator.yml ]; then
+                        echo "GamutRF not installed!"
+                    else
+                        # TODO check if it's running
+                        pushd "$GAMUTRF_DIR" || exit
+                        VOL_PREFIX=/flash/gamutrf/ docker-compose -f orchestrator.yml down
+                        popd || exit
+                    fi
+                elif [ "$2" == "worker" ]; then
+                    if [ ! -f "$VOL_PREFIX"/opt/gamutrf/worker.yml ]; then
+                        echo "GamutRF not installed!"
+                    else
+                        pushd "$GAMUTRF_DIR" || exit
+                        VOL_PREFIX=/flash/ docker-compose -f worker.yml down
+                        popd || exit
+                    fi
+                else
+                    echo "Specify 'orchestrator' or 'worker' to stop"
+                    exit
+                fi
                 exit
                 ;;
             -t|status)
