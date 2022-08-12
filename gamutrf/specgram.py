@@ -73,7 +73,7 @@ def spectral_helper(
             break
         if skip_fft:
             # TODO: assume NFFT is factor of sps.
-            result = np.reshape(i, (NFFT, int(len(i) / NFFT)), order="F")
+            result = i.reshape(-1, int(len(i) / NFFT), order="F")
         else:
             result = stride_windows(i, NFFT, noverlap, axis=0)
             result = detrend(result, detrend_func, axis=0)
@@ -227,6 +227,7 @@ def plot_spectrogram(
 
     plt.sci(im)
     plt.savefig(spectrogram_filename, dpi=dpi)
+    print(f"wrote {spectrogram_filename}")
     # must call this in specific order to avoid pyplot leak
     axes.images.remove(im)
     fig.clear()
@@ -249,6 +250,8 @@ def process_recording(args, recording):
         print(f"skipping {recording}")
         return
     if is_fft(recording):
+        # always in complex float format.
+        sample_dtype = np.dtype([("i", "float32"), ("q", "float32")])
         if not args.skip_fft:
             print(f"skipping precomputed FFT {recording}")
             return
