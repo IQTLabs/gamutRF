@@ -104,8 +104,7 @@ def spectral_helper(
             if mode == "phase":
                 # we unwrap the phase here to handle the onesided vs. twosided case
                 result = np.unwrap(result, axis=0)
-        result = np.apply_along_axis(np.real, 1, result)
-        results.append(result)
+        results.append(np.real(result))
 
     if results:
         lastresult = np.hstack(results)
