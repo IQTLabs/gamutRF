@@ -46,7 +46,6 @@ gamutrf-scan2mp4 = 'gamutrf.__main__:scan2mp4'
 gamutrf-scan2rtlpow = 'gamutrf.__main__:scan2rtlpow'
 gamutrf-sigfinder = 'gamutrf.__main__:sigfinder'
 gamutrf-specgram = 'gamutrf.__main__:specgram'
-gamutrf = 'bin/gamutrf'
 
 [tool.poetry.urls]
 homepage = "https://github.com/IQTLabs/gamutRF"
