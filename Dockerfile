@@ -5,7 +5,7 @@ COPY --from=iqtlabs/gamutrf-base:latest /usr/share/uhd/images /usr/share/uhd/ima
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
-ENV PATH="${PATH}:/root/.poetry/bin"
+ENV PATH="${PATH}:/root/.local/bin"
 RUN mkdir -p /data/gamutrf
 RUN apt-get update && apt-get install --no-install-recommends -yq \
     ca-certificates \
@@ -21,9 +21,10 @@ RUN apt-get update && apt-get install --no-install-recommends -yq \
     wget \
     zstd && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 - && \
-  poetry config virtualenvs.create false
+RUN python3 -m pip install --upgrade pip
+RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.1.15 && \
+    poetry config virtualenvs.create false
 COPY . /gamutrf
 WORKDIR /gamutrf
-RUN poetry install --no-interaction --no-ansi
+RUN rm -rf /usr/lib/python3/dist-packages/pycparser* && poetry install --no-interaction --no-ansi
 CMD ["gamutrf-scan", "--help"]
