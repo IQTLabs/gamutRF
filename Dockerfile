@@ -21,9 +21,10 @@ RUN apt-get update && apt-get install --no-install-recommends -yq \
     wget \
     zstd && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN python3 -m pip install --upgrade pip
 RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.1.15 && \
-  poetry config virtualenvs.create false
+    poetry config virtualenvs.create false
 COPY . /gamutrf
 WORKDIR /gamutrf
-RUN poetry install --no-interaction --no-ansi
+RUN rm -rf /usr/lib/python3/dist-packages/pycparser* && poetry install --no-interaction --no-ansi
 CMD ["gamutrf-scan", "--help"]
