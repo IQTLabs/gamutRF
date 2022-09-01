@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install --no-install-recommends -yq \
     wget \
     zstd && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
+RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.1.15 && \
   poetry config virtualenvs.create false
 COPY . /gamutrf
 WORKDIR /gamutrf
