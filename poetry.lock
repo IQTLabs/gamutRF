@@ -44,7 +44,7 @@ tests_no_zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy 
 
 [[package]]
 name = "bjoern"
-version = "3.2.1"
+version = "3.2.2"
 description = "A screamingly fast Python 2 + 3 WSGI server written in C."
 category = "main"
 optional = false
@@ -896,7 +896,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8 <3.11"
-content-hash = "7bfdb3965a8b379521c1269648d9e61b81e01510a98b843b5765a25339cc2f48"
+content-hash = "b1a80768e374048cb6cd86e1526b86bb3b02353de2057591e0a1d00dd30df1a9"
 
 [metadata.files]
 anyio = [
@@ -912,7 +912,7 @@ attrs = [
     {file = "attrs-22.1.0.tar.gz", hash = "sha256:29adc2665447e5191d0e7c568fde78b21f9672d344281d0c6e1ab085429b22b6"},
 ]
 bjoern = [
-    {file = "bjoern-3.2.1.tar.gz", hash = "sha256:19df818e059cc7ff87ca35b82586989e449a7ec4628866afb40b23be5a9b0c8b"},
+    {file = "bjoern-3.2.2.tar.gz", hash = "sha256:16e5a02a9a17a7f5f8bea0d7c58650e78ab80ead6fe3e390037573d4355baf31"},
 ]
 black = [
     {file = "black-22.8.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ce957f1d6b78a8a231b18e0dd2d94a33d2ba738cd88a7fe64f53f659eea49fdd"},
