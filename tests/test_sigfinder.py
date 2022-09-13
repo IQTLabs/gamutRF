@@ -83,6 +83,8 @@ class FakeFifo:
 class SigFinderTestCase(unittest.TestCase):
     def test_rotate_file_n(self):
 
+        rotate_file_n("notthere.log", 100, require_initial=False)
+
         with tempfile.TemporaryDirectory() as tempdir:
             test_fftgraph = os.path.join(str(tempdir), "fft.png")
 
