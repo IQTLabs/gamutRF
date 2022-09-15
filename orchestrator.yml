@@ -7,7 +7,7 @@ networks:
 services:
   compass:
     restart: always
-    image: iqtlabs/pibackbone-compass:latest
+    image: iqtlabs/pibackbone-compass:v0.4.5
     networks:
       - gamutrf
     devices:
