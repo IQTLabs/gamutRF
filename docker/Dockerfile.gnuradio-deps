@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     g++ \
     gcc \
     git \
+    libarmadillo-dev \
     libbladerf-dev \
     libboost-all-dev \
     libev-dev \
@@ -21,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     libunwind-dev \
     libusb-1.0-0-dev \
     libusb-1.0-0 \
+    libvulkan-dev \
     make \
     netcat \
     pkg-config \
@@ -33,6 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     python3-uhd \
     swig \
     uhd-host \
+    unzip \
     wget
 RUN /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
 WORKDIR /root

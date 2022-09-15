@@ -2,6 +2,7 @@
 import os
 import tempfile
 import unittest
+import zstandard
 
 from gamutrf.sdr_recorder import get_recorder
 
@@ -11,6 +12,14 @@ class SDRRecorderTestCase(unittest.TestCase):
     SAMPLES = 1e3 * 4
 
     def test_sdr_recorder(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sdr_recorder = get_recorder("file:/dev/zero")()
+            sample_file = os.path.join(tmpdir, "test_file.zst")
+            fft_file = os.path.join(tmpdir, "fft_test_file.zst")
+            with open(fft_file, "wb") as f:
+                with zstandard.ZstdCompressor().stream_writer(f) as writer:
+                    writer.write(b"\x00" * 4 * 2048 * 10)
+            sdr_recorder.fft_spectrogram(sample_file, 2048, 1e6, 1e6, 2048)
         with tempfile.TemporaryDirectory() as tmpdir:
             sdr_recorder = get_recorder("file:/dev/zero")()
             record_status, sample_file = sdr_recorder.run_recording(
