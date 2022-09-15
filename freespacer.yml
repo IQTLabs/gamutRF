@@ -7,5 +7,6 @@ services:
     command:
       - "/flash/gamutrf"
       - "90"
+      - "--wait_time=60"
     volumes:
       - "/flash/gamutrf:/flash/gamutrf"
