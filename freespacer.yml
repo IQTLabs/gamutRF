@@ -1,0 +1,11 @@
+version: "3.3"
+services:
+  freespacer:
+    restart: always
+    image: 'iqtlabs/pibackbone-freespacer:v0.4.5'
+    network_mode: "none"
+    command:
+      - "/flash/gamutrf"
+      - "90"
+    volumes:
+      - "/flash/gamutrf:/flash/gamutrf"
