@@ -68,7 +68,7 @@ class MQTTReporter:
                     "gps": "fix",
                 }
             )
-        except (gpsd.NoFixError, AttributeError) as err:
+        except (BrokenPipeError, gpsd.NoFixError, AttributeError) as err:
             logging.error("could not update with GPS: %s", err)
         return publish_args
 
