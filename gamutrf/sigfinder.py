@@ -363,7 +363,8 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
                 l.write("\n".join(lines) + "\n")
                 if rotatelognow:
                     break
-        new_log = args.log.replace(ext, f"{openlogts}{ext}")
+        rotate_file_n(".".join((args.log, "zst")), args.nlog, require_initial=False)
+        new_log = ".".join((args.log, "1"))
         os.rename(args.log, new_log)
         executor.submit(zstd_file, new_log)
 
@@ -452,6 +453,9 @@ def argument_parser():
         default=3600,
         type=int,
         help="rotate scan log after this many seconds",
+    )
+    parser.add_argument(
+        "--nlog", default=10, type=int, help="keep only this many scan.logs"
     )
     parser.add_argument(
         "--logaddr", default="127.0.0.1", type=str, help="UDP stream address"
