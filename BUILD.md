@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - 1 x Raspberry Pi4 running Raspberry Pi OS (64-bit), A port of Debian Bullseye with the Raspberry Pi Desktop (Orchestrator)
-- 1 x Raspberry Pi4 running Raspberry Pi OS Lite (64-bit), A port of Debian Bullseye with no desktop environment (Worker)
+- 1 x Raspberry Pi4 running Ubuntu 22.04.1 LTS Server (64-bit)
 - 1 x [PoE Switch](https://www.amazon.com/gp/product/B087QQ46K4)
 - 1 x [GPS module](https://www.adafruit.com/product/746)
 - 1 x [7" Touchscreen](https://www.amazon.com/dp/B09X2N9C5V)
@@ -242,9 +242,9 @@ Additionally, if you want to use the workers as recorders you'll want to update 
 
 2. Plug in the USB3.1 Flash drive into a USB3 port on the Pi4.
 
-3. Install Ubuntu 22.04.1 LTS Server (64-bit) to the micro SD card.
+3. Install Ubuntu 22.04.1 LTS Server (64-bit) to the micro SD card (NOTE: Raspbian should also work, but has not been tested).
 
-4. Install dependencies:
+4. Install dependencies and configuration.
 ```
 sudo apt-get update
 sudo apt-get -y upgrade
@@ -254,6 +254,7 @@ sudo usermod -aG docker $USER
 sudo apt install -y git python3 python3-pip uhd-host
 pip3 install docker-compose
 sudo /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
+sudo echo "dtoverlay=vc4-kms-v3d-pi4" >> /boot/firmware/config.txt
 git clone https://github.com/IQTLabs/gamutRF
 ```
 
