@@ -242,7 +242,7 @@ Additionally, if you want to use the workers as recorders you'll want to update 
 
 2. Plug in the USB3.1 Flash drive into a USB3 port on the Pi4.
 
-3. Install Raspberry Pi OS Lite (64-bit), a port of Debian Bullseye with no desktop environment to the micro SD card.
+3. Install Ubuntu 22.04.1 LTS Server (64-bit) to the micro SD card.
 
 4. Install dependencies:
 ```
@@ -269,12 +269,12 @@ Copy the UUID of the device from `lsblk -f` (note it will have changed after run
 UUID=a04e77e2-772e-45b0-8590-bfb0741d855d /flash ext4 defaults,auto,users,rw,nofail 0 0
 ```
 
-6. Set static IP address for wired connection (plug ethernet into the PoE switch - PoE port)
+6. Set static IP address for wired connection (plug ethernet into the PoE switch - PoE port). Add the following to the end of `/etc/netplan/50-cloud-init.yaml`: 
 ```
-sudo su -
-echo 'interface eth0' >> /etc/dhcpcd.conf
-echo 'static ip_address=192.168.111.11/24' >> /etc/dhcpcd.conf
-```
+    ethernets:
+        eth0:
+            addresses:
+                - 192.168.111.11/24`
 
 7. Reboot
 ```
