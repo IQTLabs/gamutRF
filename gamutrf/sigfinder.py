@@ -30,7 +30,7 @@ from gamutrf.sigwindows import scipy_find_sig_windows
 from gamutrf.utils import rotate_file_n, MTU, ROLLOVERHZ, SCAN_FRES
 
 SOCKET_TIMEOUT = 1.0
-MB = 1024 * 1024
+MB = int(1.024e6)
 MIN_SOCK_SIZE = MB * 2
 
 PEAK_DBS = {}
