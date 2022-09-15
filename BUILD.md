@@ -334,3 +334,7 @@ RSSI mode will only record signal strength in the form of float.
 cd gamutRF
 UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 WORKER_NAME=worker1 ANTENNA=directional docker-compose -f worker.yml up -d
 ```
+
+## Initiating an API request
+
+If running the orchestrator as a scanner with recorder workers, it will automatically make requests via the API for you based on signals it detects and the workers will start capturing I/Q. However if you want to control what gets recorded or are using workers in RSSI mode you'll need to make manual requests. Browse to the IP of the orchestrator via your browser and make a request with the specifications you desire.
