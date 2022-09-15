@@ -17,12 +17,14 @@ services:
     privileged: true
     devices:
       - /dev/bus/usb:/dev/bus/usb
+      - /dev/dri/renderD128:/dev/dri/renderD128
     volumes:
       - '${VOL_PREFIX}:/data'
     environment:
       - 'WORKER_NAME=${WORKER_NAME}'
       - 'ORCHESTRATOR=${ORCHESTRATOR}'
       - 'ANTENNA=${ANTENNA}'
+      - 'NFFT=2048'
     command:
       - nice
       - '-n'
