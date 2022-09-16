@@ -2,10 +2,11 @@ version: "3.3"
 services:
   freespacer:
     restart: always
-    image: 'iqtlabs/pibackbone-freespacer:v0.4.5'
+    image: 'iqtlabs/pibackbone-freespacer:latest'
     network_mode: "none"
     command:
       - "/flash/gamutrf"
       - "90"
+      - "--wait_time=60"
     volumes:
       - "/flash/gamutrf:/flash/gamutrf"
