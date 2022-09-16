@@ -255,8 +255,9 @@ sudo usermod -aG docker $USER
 sudo apt install -y git python3 python3-pip uhd-host
 pip3 install docker-compose
 sudo /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
-sudo echo "dtoverlay=vc4-kms-v3d-pi4" >> /boot/firmware/config.txt
 git clone https://github.com/IQTLabs/gamutRF
+sudo su -
+echo "dtoverlay=vc4-kms-v3d-pi4" >> /boot/firmware/config.txt
 ```
 
 5. Setup Flash drive
