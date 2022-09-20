@@ -277,7 +277,8 @@ UUID=a04e77e2-772e-45b0-8590-bfb0741d855d /flash ext4 defaults,auto,users,rw,nof
     ethernets:
         eth0:
             addresses:
-                - 192.168.111.11/24`
+                - 192.168.111.11/24
+```
 
 7. Reboot
 ```
