@@ -7,7 +7,6 @@ import time
 from urllib.parse import urlparse
 
 import sigmf
-import zstandard
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
