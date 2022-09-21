@@ -88,27 +88,27 @@ class SDRRecorder:
             matplotlib.use(MPL_BACKEND)
             png_file = sample_file.replace(".zst", ".png")
             logging.info("generating spectrogram: %s", png_file)
-            with open(FFT_FILE, "rb") as f:
-                i = np.frombuffer(f.read(), dtype=np.float32)
-                i = np.roll(i.reshape(-1, nfft).swapaxes(0, 1), int(nfft / 2), 0)
-                fig = plt.figure()
-                fig.set_size_inches(WIDTH, HEIGHT)
-                axes = fig.add_subplot(111)
-                axes.set_xlabel("time (s)")
-                axes.set_ylabel("freq (MHz)")
-                fc = center_freq / 1e6
-                fo = sample_rate / 1e6 / 2
-                extent = (0, sample_count / sample_rate, fc - fo, fc + fo)
-                im = axes.imshow(i, cmap="jget", origin="lower", extent=extent)
-                axes.axis("auto")
-                axes.minorticks_on()
-                plt.sci(im)
-                plt.savefig(png_file, dpi=DPI)
-                axes.images.remove(im)
-                fig.clear()
-                plt.close()
-                plt.cla()
-                plt.clf()
+            i = np.memmap(FFT_FILE, dtype=np.float32, mode='r+')
+            i = np.roll(i.reshape(-1, nfft).swapaxes(0, 1), int(nfft / 2), 0)
+            fig = plt.figure()
+            fig.set_size_inches(WIDTH, HEIGHT)
+            axes = fig.add_subplot(111)
+            axes.set_xlabel("time (s)")
+            axes.set_ylabel("freq (MHz)")
+            fc = center_freq / 1e6
+            fo = sample_rate / 1e6 / 2
+            extent = (0, sample_count / sample_rate, fc - fo, fc + fo)
+            im = axes.imshow(i, cmap="jet", origin="lower", extent=extent)
+            axes.axis("auto")
+            axes.minorticks_on()
+            plt.sci(im)
+            plt.savefig(png_file, dpi=DPI)
+            axes.images.remove(im)
+            fig.clear()
+            plt.close()
+            plt.cla()
+            plt.clf()
+            os.remove(FFT_FILE)
 
     def run_recording(
         self,
