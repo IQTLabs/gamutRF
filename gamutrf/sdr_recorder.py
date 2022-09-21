@@ -21,7 +21,7 @@ NFFT = int(os.getenv("NFFT", "0"))
 SAMPLE_TYPE = "s16"
 MIN_SAMPLE_RATE = int(1e6)
 MAX_SAMPLE_RATE = int(30 * 1e6)
-FFT_FILE = "/dev/shm/fft.dat"
+FFT_FILE = "/dev/shm/fft.dat"  # nosec
 MPL_BACKEND = "cairo"
 
 WIDTH = 11
