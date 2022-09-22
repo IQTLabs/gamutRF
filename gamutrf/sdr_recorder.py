@@ -7,8 +7,8 @@ import time
 from urllib.parse import urlparse
 
 import sigmf
-import zstandard
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 
 from gamutrf.sigwindows import freq_excluded
@@ -21,6 +21,8 @@ NFFT = int(os.getenv("NFFT", "0"))
 SAMPLE_TYPE = "s16"
 MIN_SAMPLE_RATE = int(1e6)
 MAX_SAMPLE_RATE = int(30 * 1e6)
+FFT_FILE = "/dev/shm/fft.dat"  # nosec
+MPL_BACKEND = "cairo"
 
 WIDTH = 11
 HEIGHT = 8
@@ -81,38 +83,32 @@ class SDRRecorder:
         return record_status
 
     @staticmethod
-    def fft_spectrogram(sample_file, sample_count, sample_rate, center_freq, nfft):
-        fft_file = os.path.join(
-            os.path.dirname(sample_file), "fft_" + os.path.basename(sample_file)
-        )
+    def fft_spectrogram(sample_file, fft_file, sample_count, sample_rate, center_freq, nfft):
         if os.path.exists(fft_file):
-            png_file = fft_file.replace(".zst", ".png")
+            matplotlib.use(MPL_BACKEND)
+            png_file = sample_file.replace(".zst", ".png")
             logging.info("generating spectrogram: %s", png_file)
-            with open(fft_file, "rb") as f:
-                with zstandard.ZstdDecompressor().stream_reader(
-                    f, read_across_frames=True
-                ) as reader:
-                    i = np.frombuffer(reader.read(), dtype=np.float32)
-                    i = np.roll(i.reshape(-1, nfft).swapaxes(0, 1), int(nfft / 2), 0)
-
-                    fig = plt.figure()
-                    fig.set_size_inches(WIDTH, HEIGHT)
-                    axes = fig.add_subplot(111)
-                    axes.set_xlabel("time (s)")
-                    axes.set_ylabel("freq (MHz)")
-                    fc = center_freq / 1e6
-                    fo = sample_rate / 1e6 / 2
-                    extent = (0, sample_count / sample_rate, fc - fo, fc + fo)
-                    im = axes.imshow(i, cmap="turbo", origin="lower", extent=extent)
-                    axes.axis("auto")
-                    axes.minorticks_on()
-                    plt.sci(im)
-                    plt.savefig(png_file, dpi=DPI)
-                    axes.images.remove(im)
-                    fig.clear()
-                    plt.close()
-                    plt.cla()
-                    plt.clf()
+            i = np.memmap(FFT_FILE, dtype=np.float32, mode="r+")
+            i = np.roll(i.reshape(-1, nfft).swapaxes(0, 1), int(nfft / 2), 0)
+            fig = plt.figure()
+            fig.set_size_inches(WIDTH, HEIGHT)
+            axes = fig.add_subplot(111)
+            axes.set_xlabel("time (s)")
+            axes.set_ylabel("freq (MHz)")
+            fc = center_freq / 1e6
+            fo = sample_rate / 1e6 / 2
+            extent = (0, sample_count / sample_rate, fc - fo, fc + fo)
+            im = axes.imshow(i, cmap="jet", origin="lower", extent=extent)
+            axes.axis("auto")
+            axes.minorticks_on()
+            plt.sci(im)
+            plt.savefig(png_file, dpi=DPI)
+            axes.images.remove(im)
+            fig.clear()
+            plt.close()
+            plt.cla()
+            plt.clf()
+            os.remove(FFT_FILE)
 
     def run_recording(
         self,
@@ -139,7 +135,7 @@ class SDRRecorder:
             )
             if NFFT:
                 self.fft_spectrogram(
-                    sample_file, sample_count, sample_rate, center_freq, NFFT
+                    sample_file, FFT_FILE, sample_count, sample_rate, center_freq, NFFT
                 )
 
             if sigmf_:
@@ -207,7 +203,9 @@ class EttusRecorder(SDRRecorder):
                     "--nfft_overlap",
                     str(int(NFFT / 2)),
                     "--nfft_ds",
-                    str(int(20)),
+                    str(int(1)),
+                    "--fft_file",
+                    FFT_FILE,
                 ]
             )
         return args

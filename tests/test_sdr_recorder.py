@@ -19,7 +19,7 @@ class SDRRecorderTestCase(unittest.TestCase):
             with open(fft_file, "wb") as f:
                 with zstandard.ZstdCompressor().stream_writer(f) as writer:
                     writer.write(b"\x00" * 4 * 2048 * 10)
-            sdr_recorder.fft_spectrogram(sample_file, 2048, 1e6, 1e6, 2048)
+            sdr_recorder.fft_spectrogram(sample_file, fft_file, 2048, 1e6, 1e6, 2048)
         with tempfile.TemporaryDirectory() as tmpdir:
             sdr_recorder = get_recorder("file:/dev/zero")()
             record_status, sample_file = sdr_recorder.run_recording(

@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install --no-install-recommends -yq \
     mesa-vulkan-drivers \
     python3 \
     python3-dev \
+    libcairo2-dev \
     sox \
     wget \
     zstd && \
