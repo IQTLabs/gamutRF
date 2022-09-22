@@ -90,7 +90,7 @@ class SDRRecorder:
             matplotlib.use(MPL_BACKEND)
             png_file = sample_file.replace(".zst", ".png")
             logging.info("generating spectrogram: %s", png_file)
-            i = np.memmap(FFT_FILE, dtype=np.float32, mode="r+")
+            i = np.memmap(fft_file, dtype=np.float32, mode="r+")
             i = np.roll(i.reshape(-1, nfft).swapaxes(0, 1), int(nfft / 2), 0)
             fig = plt.figure()
             fig.set_size_inches(WIDTH, HEIGHT)
@@ -110,7 +110,7 @@ class SDRRecorder:
             plt.close()
             plt.cla()
             plt.clf()
-            os.remove(FFT_FILE)
+            os.remove(fft_file)
 
     def run_recording(
         self,
