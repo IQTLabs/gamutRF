@@ -83,7 +83,9 @@ class SDRRecorder:
         return record_status
 
     @staticmethod
-    def fft_spectrogram(sample_file, fft_file, sample_count, sample_rate, center_freq, nfft):
+    def fft_spectrogram(
+        sample_file, fft_file, sample_count, sample_rate, center_freq, nfft
+    ):
         if os.path.exists(fft_file):
             matplotlib.use(MPL_BACKEND)
             png_file = sample_file.replace(".zst", ".png")
