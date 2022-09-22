@@ -203,7 +203,7 @@ class EttusRecorder(SDRRecorder):
                     "--nfft",
                     str(NFFT),
                     "--nfft_overlap",
-                    str(int(NFFT / 2)),
+                    str(int(NFFT / 8)),
                     "--nfft_ds",
                     str(int(1)),
                     "--fft_file",
