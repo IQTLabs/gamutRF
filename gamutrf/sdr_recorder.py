@@ -100,9 +100,10 @@ class SDRRecorder:
             fc = center_freq / 1e6
             fo = sample_rate / 1e6 / 2
             extent = (0, sample_count / sample_rate, fc - fo, fc + fo)
-            im = axes.imshow(i, cmap="jet", origin="lower", extent=extent)
+            im = axes.imshow(i, cmap="turbo", origin="lower", extent=extent)
             axes.axis("auto")
             axes.minorticks_on()
+            plt.colorbar(im, ax=axes)
             plt.sci(im)
             plt.savefig(png_file, dpi=DPI)
             axes.images.remove(im)
