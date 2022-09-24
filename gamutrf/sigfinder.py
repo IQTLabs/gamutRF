@@ -5,7 +5,6 @@ import logging
 import os
 import socket
 import subprocess
-import tempfile
 import threading
 import time
 
@@ -27,11 +26,12 @@ from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
-from gamutrf.utils import rotate_file_n, MTU, ROLLOVERHZ, SCAN_FRES
+from gamutrf.utils import rotate_file_n, MTU, SCAN_FRES
 
-SOCKET_TIMEOUT = 1.0
 MB = int(1.024e6)
-MIN_SOCK_SIZE = MB * 2
+MIN_SOCK_SIZE = MB * 32
+FFT_BUFFER_TIME = 3
+BUFF_FILE = "/dev/shm/scanfftbuffer.txt"  # nosec
 
 PEAK_DBS = {}
 
@@ -282,7 +282,7 @@ def zstd_file(uncompressed_file):
     subprocess.check_call(["/usr/bin/zstd", "--rm", uncompressed_file])
 
 
-def process_fft_lines(args, prom_vars, fifo, ext, executor):
+def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
     lastfreq = 0
     fftbuffer = []
     lastbins_history = []
@@ -291,6 +291,7 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
     txt_buf = ""
     last_fft_report = 0
     fft_packets = 0
+    max_scan_pos = 0
 
     while True:
         if os.path.exists(args.log):
@@ -302,13 +303,8 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
         openlogts = int(time.time())
         with open(args.log, mode=mode) as l:
             while True:
-                sock_txt = fifo.read()
                 now = int(time.time())
-                if sock_txt:
-                    fft_packets += 1
-                    txt_buf += sock_txt.decode("utf8")
-                    continue
-                if now - last_fft_report > 5:
+                if now - last_fft_report > FFT_BUFFER_TIME * 2:
                     logging.info(
                         "received %u FFT packets, last freq %f MHz",
                         fft_packets,
@@ -316,20 +312,31 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
                     )
                     fft_packets = 0
                     last_fft_report = now
-                schedule.run_pending()
+                if os.path.exists(buff_file):
+                    with open(buff_file, "r", encoding="utf8") as bf:
+                        txt_buf += bf.read()
+                    fft_packets += 1
+                    os.remove(buff_file)
+                else:
+                    schedule.run_pending()
+                    time.sleep(1)
+                    continue
                 lines = txt_buf.splitlines()
                 if not len(lines) > 1:
-                    time.sleep(0.1)
                     continue
                 if txt_buf.endswith("\n"):
+                    l.write(txt_buf)
                     txt_buf = ""
                 elif lines:
-                    txt_buf = lines[-1]
+                    last_line = lines[-1]
+                    l.write(txt_buf[: -len(last_line)])
+                    txt_buf = last_line
                     lines = lines[:-1]
                 rotatelognow = False
-                for line in lines:
+                splitlines = [line.strip().split() for line in lines]
+                for line in splitlines:
                     try:
-                        ts, freq, pw = [float(x) for x in line.strip().split()]
+                        ts, freq, pw = [float(x) for x in line]
                     except ValueError as err:
                         logging.info("could not parse FFT data: %s: %s", line, err)
                         continue
@@ -342,9 +349,14 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
                     if abs(now - ts) > 60:
                         logging.info("timestamp %f out of range on %s", ts, line)
                         continue
-                    rollover = abs(freq - lastfreq) > ROLLOVERHZ and fftbuffer
+                    scan_pos = (freq - args.freq_start) / (
+                        args.freq_end - args.freq_start
+                    )
+                    rollover = scan_pos < 0.1 and max_scan_pos > 0.9 and fftbuffer
+                    max_scan_pos = max(max_scan_pos, scan_pos)
                     lastfreq = freq
                     if rollover:
+                        max_scan_pos = scan_pos
                         frame_counter.inc()
                         new_lastbins = process_fft(
                             args, prom_vars, ts, fftbuffer, lastbins
@@ -359,8 +371,9 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
                         rotate_age = now - openlogts
                         if rotate_age > args.rotatesecs:
                             rotatelognow = True
+                        if runonce:
+                            return
                     fftbuffer.append((ts, freq, pw))
-                l.write("\n".join(lines) + "\n")
                 if rotatelognow:
                     break
         rotate_file_n(".".join((args.log, "zst")), args.nlog, require_initial=False)
@@ -369,12 +382,10 @@ def process_fft_lines(args, prom_vars, fifo, ext, executor):
         executor.submit(zstd_file, new_log)
 
 
-def udp_proxy(args, fifo_name, buffer_time=1, shutdown_str=None):
+def udp_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_sock:
         udp_sock.bind((args.logaddr, args.logport))
         sock_size = udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
-        # ensure fifo essentially can never block
-        bufsize = sock_size * 100
         logging.info("UDP socket receive size %u", sock_size)
         if sock_size < MIN_SOCK_SIZE:
             logging.warning(
@@ -384,29 +395,34 @@ def udp_proxy(args, fifo_name, buffer_time=1, shutdown_str=None):
         packets_sent = 0
         sock_buf = b""
         last_packet_sent_time = time.time()
-        with open(fifo_name, "wb", buffering=bufsize) as fifo:
-            while True:
-                sock_txt, _ = udp_sock.recvfrom(MTU)
-                if len(sock_txt):
-                    sock_buf += sock_txt
-                    shutdown = (
-                        shutdown_str is not None and sock_buf.find(shutdown_str) != -1
-                    )
-                    now = time.time()
-                    if shutdown or now - last_packet_sent_time > buffer_time:
-                        if packets_sent == 0:
-                            logging.info("received first FFT UDP packet")
-                            # synchronize at the start of a new FFT sample.
-                            first_newline = sock_buf.find(b"\n")
-                            if first_newline != -1:
-                                sock_buf = sock_buf[first_newline + 1 :]
-                        fifo.write(sock_buf)
-                        fifo.flush()
-                        sock_buf = b""
-                        packets_sent += 1
-                        last_packet_sent_time = now
-                        if shutdown:
-                            return
+        tmp_buff_file = os.path.basename(buff_file)
+        tmp_buff_file = buff_file.replace(tmp_buff_file, "." + tmp_buff_file)
+        shutdown = False
+        while True:
+            if shutdown:
+                return
+            sock_txt, _ = udp_sock.recvfrom(MTU - 28)
+            if len(sock_txt):
+                sock_buf += sock_txt
+                shutdown = (
+                    shutdown_str is not None and sock_buf.find(shutdown_str) != -1
+                )
+                now = time.time()
+                if (
+                    shutdown or now - last_packet_sent_time > buffer_time
+                ) and not os.path.exists(buff_file):
+                    if packets_sent == 0:
+                        logging.info("recording first FFT packet")
+                        # synchronize at the start of a new FFT sample.
+                        first_newline = sock_buf.find(b"\n")
+                        if first_newline != -1:
+                            sock_buf = sock_buf[first_newline + 1 :]
+                    with open(tmp_buff_file, "wb") as bf:
+                        bf.write(sock_buf)
+                    os.rename(tmp_buff_file, buff_file)
+                    sock_buf = b""
+                    packets_sent += 1
+                    last_packet_sent_time = now
 
 
 def find_signals(args, prom_vars):
@@ -415,15 +431,9 @@ def find_signals(args, prom_vars):
     except ValueError:
         logging.fatal(f"cannot parse extension from {args.log}")
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        fifo_name = os.path.join(tempdir, "fftfifo")
-        os.mkfifo(fifo_name)
-
-        with concurrent.futures.ProcessPoolExecutor(2) as executor:
-            executor.submit(udp_proxy, args, fifo_name)
-            with open(fifo_name, "rb") as fifo:
-                os.set_blocking(fifo.fileno(), False)
-                process_fft_lines(args, prom_vars, fifo, ext, executor)
+    with concurrent.futures.ProcessPoolExecutor(2) as executor:
+        executor.submit(udp_proxy, args, BUFF_FILE)
+        process_fft_lines(args, prom_vars, BUFF_FILE, ext, executor)
 
 
 def argument_parser():

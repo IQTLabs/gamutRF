@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 
 MTU = 8962
-ROLLOVERHZ = 100e6
 SCAN_FRES = 1e4
 SCAN_FROLL = 1e6
 
@@ -28,6 +27,10 @@ SAMPLE_DTYPES = {
     "u32": ("<u4", "unsigned-integer"),
     "raw": ("<f4", "float"),
 }
+WIDTH = 11
+HEIGHT = 8
+DPI = 75
+MPL_BACKEND = "cairo"
 
 
 def rotate_file_n(initial_name, n, require_initial=True):

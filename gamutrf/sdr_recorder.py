@@ -13,8 +13,7 @@ import matplotlib.pyplot as plt
 
 from gamutrf.sigwindows import freq_excluded
 from gamutrf.sigwindows import parse_freq_excluded
-from gamutrf.utils import ETTUS_ANT
-from gamutrf.utils import ETTUS_ARGS
+from gamutrf.utils import ETTUS_ANT, ETTUS_ARGS, MPL_BACKEND, WIDTH, HEIGHT, DPI
 
 
 NFFT = int(os.getenv("NFFT", "0"))
@@ -22,11 +21,6 @@ SAMPLE_TYPE = "s16"
 MIN_SAMPLE_RATE = int(1e6)
 MAX_SAMPLE_RATE = int(30 * 1e6)
 FFT_FILE = "/dev/shm/fft.dat"  # nosec
-MPL_BACKEND = "cairo"
-
-WIDTH = 11
-HEIGHT = 8
-DPI = 75
 
 
 class SDRRecorder:

@@ -9,7 +9,6 @@ import concurrent.futures
 
 from gamutrf.sigfinder import init_prom_vars
 from gamutrf.sigfinder import process_fft_lines
-from gamutrf.sigfinder import ROLLOVERHZ
 from gamutrf.sigfinder import udp_proxy
 from gamutrf.sigfinder import argument_parser
 from gamutrf.utils import rotate_file_n
@@ -58,28 +57,6 @@ class FakeArgs:
         self.nfftgraph = nfftgraph
 
 
-class EmptyFifo(Exception):
-    pass
-
-
-class FakeFifo:
-    def __init__(self, test_data):
-        self.test_data = test_data
-
-    def read(self):
-        if not self.test_data:
-            raise EmptyFifo
-        test_lines = []
-        if self.test_data[0]:
-            for line in self.test_data[0]:
-                test_lines.append(" ".join((str(i) for i in line)))
-            result = ("\n".join(test_lines) + "\n").encode("utf8")
-        else:
-            result = None
-        self.test_data = self.test_data[1:]
-        return result
-
-
 class SigFinderTestCase(unittest.TestCase):
     def test_rotate_file_n(self):
 
@@ -117,6 +94,7 @@ class SigFinderTestCase(unittest.TestCase):
                 test_log = os.path.join(str(tempdir), "test.csv")
                 test_fftlog = os.path.join(str(tempdir), "fft.csv")
                 test_fftgraph = os.path.join(str(tempdir), "fft.png")
+                buff_file = os.path.join(str(tempdir), "buff_file")
                 args = FakeArgs(
                     test_log,
                     60,
@@ -138,28 +116,14 @@ class SigFinderTestCase(unittest.TestCase):
                     10,
                 )
                 prom_vars = init_prom_vars()
-                line_count = 0
-                test_lines_1 = [
-                    (time.time(), ROLLOVERHZ + (1e5 * i), 0.001) for i in range(1000)
-                ]
-                line_count += len(test_lines_1)
-                test_lines_2 = [
-                    (time.time(), ROLLOVERHZ + (1e5 * (i + line_count)), 0.5)
-                    for i in range(100)
-                ]
-                line_count += len(test_lines_2)
-                test_lines_3 = [
-                    (time.time(), ROLLOVERHZ + (1e5 * (i + line_count)), 0.1)
-                    for i in range(1000)
-                ]
-                line_count += len(test_lines_3)
-                test_lines_4 = [(time.time(), ROLLOVERHZ + 1e6, 0.1)]
-                fifo = FakeFifo(
-                    [test_lines_1, test_lines_2, test_lines_3, test_lines_4, None]
-                )
-                self.assertRaises(
-                    EmptyFifo,
-                    lambda: process_fft_lines(args, prom_vars, fifo, "csv", executor),
+                with open(buff_file, "w", encoding="utf8") as bf:
+                    for _ in range(2):
+                        freq = 100e6
+                        while freq < 400e6:
+                            bf.write(f"{int(time.time())} {int(freq)} 0.001\n")
+                            freq += 1e5
+                process_fft_lines(
+                    args, prom_vars, buff_file, "csv", executor, runonce=True
                 )
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
@@ -187,25 +151,25 @@ class SigFinderTestCase(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as tempdir:
-            fifo_name = os.path.join(tempdir, "fftfifo")
-            os.mkfifo(fifo_name)
-            returned = None
+            buff_file = os.path.join(tempdir, "buff_file")
             test_bytes = b"1, 2, 3\n4, 5, 6\n"
             shutdown_str = b"shutdown\n"
 
             with concurrent.futures.ProcessPoolExecutor(1) as executor:
-                executor.submit(udp_proxy, args, fifo_name, 1, shutdown_str)
-                with open(fifo_name, "rb") as fifo:
-                    os.set_blocking(fifo.fileno(), False)
-                    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                        for _ in range(5):
-                            sock.sendto(test_bytes, (args.logaddr, args.logport))
-                            returned = fifo.read()
-                            if returned and returned.find(test_bytes) != -1:
-                                break
-                            time.sleep(1)
-                        sock.sendto(shutdown_str, (args.logaddr, args.logport))
-                        self.assertGreater(returned.find(test_bytes), -1)
+                executor.submit(udp_proxy, args, buff_file, 1, shutdown_str)
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                    for _ in range(5):
+                        sock.sendto(test_bytes, (args.logaddr, args.logport))
+                        if os.path.exists(buff_file):
+                            break
+                        time.sleep(1)
+                    sock.sendto(shutdown_str, (args.logaddr, args.logport))
+                    with open(buff_file, "rb") as bf:
+                        content = bf.read()
+                    self.assertGreater(
+                        content.find(b"4, 5, 6\n"), -1, (content, test_bytes)
+                    )
+                    os.remove(buff_file)
 
 
 if __name__ == "__main__":  # pragma: no cover

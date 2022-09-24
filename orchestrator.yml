@@ -47,8 +47,8 @@ services:
       - --igain=40
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
-      - --samp-rate=8e6
-      - --nfft=2048
+      - --samp-rate=1e6
+      - --nfft=1024
     healthcheck:
       test: [CMD, "/gamutrf/scanhc.sh", "9000"]
       interval: 10s
@@ -72,7 +72,7 @@ services:
       - --fftgraph=/logs/fft.png
       - --width=10
       - --prominence=2
-      - --threshold=-35
+      - --threshold=-25
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
   watchtower:
