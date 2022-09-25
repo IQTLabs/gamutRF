@@ -57,7 +57,7 @@ class grscan(gr.top_block):
         # Variables
         ##################################################
         self.sweep_freq = sweep_freq = 1 / sweep_sec
-        self.scan_samp_rate = scan_samp_rate = 32000
+        self.scan_samp_rate = scan_samp_rate = 256e3
         self.fft_size = fft_size
         self.center_freq = freq_start
 
@@ -69,15 +69,7 @@ class grscan(gr.top_block):
         def _center_freq_probe():
             while True:
                 val = self.blocks_probe_signal_x_0.level()
-                try:
-                    try:
-                        self.doc.add_next_tick_callback(
-                            functools.partial(self.set_center_freq, val)
-                        )
-                    except AttributeError:
-                        self.set_center_freq(val)
-                except AttributeError:
-                    pass
+                self.set_center_freq(val)
                 time.sleep(1.0 / self.retune_hz)
 
         logging.info(f"will scan from {freq_start} to {freq_end}")

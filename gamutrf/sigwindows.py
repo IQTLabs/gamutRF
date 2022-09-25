@@ -8,8 +8,9 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
+import matplotlib
 import matplotlib.pyplot as plt
-from gamutrf.utils import SCAN_FRES, SCAN_FROLL
+from gamutrf.utils import SCAN_FRES, SCAN_FROLL, WIDTH, HEIGHT, DPI, MPL_BACKEND
 
 
 ROLLOVERHZ = 100e6
@@ -166,7 +167,8 @@ def graph_fft_peaks(graph_path, df, signals):
     if peak_signals:
         peak_signals = f"strongest peak signals: {peak_signals}"
 
-    plt.figure(figsize=(11, 8), dpi=100)
+    matplotlib.use(MPL_BACKEND)
+    plt.figure(figsize=(WIDTH, HEIGHT), dpi=DPI)
     plt.plot(df.freq, df.db, "b", df.freq, df.peaks, "y")
     plt.xlabel("freq (MHz)")
     plt.ylabel("power (dB)")

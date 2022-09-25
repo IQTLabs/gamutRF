@@ -20,7 +20,6 @@ from prometheus_client import Gauge
 from prometheus_client import start_http_server
 
 from gamutrf.grscan import grscan
-from gamutrf.utils import ROLLOVERHZ
 
 
 def init_prom_vars():
@@ -138,12 +137,6 @@ def main():
 
     if options.freq_start > options.freq_end:
         print("Error: freq_start must be less than freq_end")
-        sys.exit(1)
-
-    if options.freq_end - options.freq_start <= ROLLOVERHZ:
-        print(
-            f"Difference between freq_end and freq_start must be greater than {ROLLOVERHZ}"
-        )
         sys.exit(1)
 
     if options.freq_end > 6e9:

@@ -64,10 +64,13 @@ echo "hdmi_cvt=1024 600 60 3 0 0 0" >> /boot/config.txt
 echo "hdmi_group=2" >> /boot/config.txt
 echo "hdmi_mode=87" >> /boot/config.txt
 echo "hdmi_drive=2" >> /boot/config.txt
-echo "net.core.rmem_default=2097152" >> /etc/sysctl.conf
 ```
 
-7. Set options in raspi-config
+7. Add UDP sysctl parameters.
+
+Amend ```/etc/sysctl.conf``` per https://wiki.gnuradio.org/index.php/UDP_Sink
+
+8. Set options in raspi-config
 ```
 sudo raspi-config
 -> Interface Options
@@ -79,13 +82,13 @@ sudo raspi-config
 ```
 Reboot
 
-8. Install GamutRF and BirdsEye
+9. Install GamutRF and BirdsEye
 ```
 cd gamutRF && docker-compose -f orchestrator.yml pull && cd ..
 cd BirdsEye && pip3 install -r requirements.txt && cd ..
 ```
 
-9. Enable GPSD to listen on the external interface
+10. Enable GPSD to listen on the external interface
 
 Change `/lib/systemd/system/gpsd.socket` to match the following:
 ```
@@ -107,7 +110,7 @@ SocketMode=0600
 WantedBy=sockets.target
 ```
 
-10. Add BirdsEye systemd service
+11. Add BirdsEye systemd service
 
 Create `/etc/systemd/system/birdseye.service` to contain the following:
 ```
@@ -127,7 +130,7 @@ ExecStart=/usr/bin/python3 sigscan.py
 WantedBy=multi-user.target
 ```
  
-11. Add GPSD systemd service
+12. Add GPSD systemd service
 
 Create `/etc/systemd/system/gpsd.service` to contain the following:
 ```
@@ -143,7 +146,7 @@ ExecStart=/usr/sbin/gpsd -G -N -n /dev/serial0 -F /var/run/gpsd.sock
 WantedBy=multi-user.target
 ```
 
-12. Add to the end of `/etc/chrony/chrony.conf`:
+13. Add to the end of `/etc/chrony/chrony.conf`:
 ```
 # SHM0 from gpsd is the NMEA data at 9600, so is not very accurate
 refclock SHM 0  delay 0.5 refid NMEA
@@ -156,7 +159,7 @@ refclock PPS /dev/pps0 refid PPS
 allow 192.168.111.0/24
 ```
 
-13. Add to the following sections in `/etc/systemd/system/chronyd.service`:
+14. Add to the following sections in `/etc/systemd/system/chronyd.service`:
 ```
 [Unit]
 StartLimitIntervalSec=30
@@ -166,13 +169,13 @@ StartLimitBurst=5
 Restart=on-failure
 ```
 
-14. Enable the PPS GPIO:
+15. Enable the PPS GPIO:
 ```
 sudo su -
 echo 'pps-gpio' >> /etc/modules
 ```
 
-15. Enable services
+16. Enable services
 ```
 sudo systemctl enable birdseye.service
 sudo systemctl enable gpsd.service
@@ -180,30 +183,30 @@ sudo systemctl enable gpsd.socket
 sudo systemctl daemon-reload
 ```
 
-16. Set static IP address for wired connection (plug ethernet into the PoE switch - non-PoE port)
+17. Set static IP address for wired connection (plug ethernet into the PoE switch - non-PoE port)
 ```
 sudo su -
 echo 'interface eth0' >> /etc/dhcpcd.conf
 echo 'static ip_address=192.168.111.10/24' >> /etc/dhcpcd.conf
 ```
 
-17. Disable bluetooth and wifi (note you'll want to be wired into the switch and have an IP on the `192.168.111.0/24` subnet to maintain remote access to the Orchestrator after you do this)
+18. Disable bluetooth and wifi (note you'll want to be wired into the switch and have an IP on the `192.168.111.0/24` subnet to maintain remote access to the Orchestrator after you do this)
 ```
 sudo rfkill block bluetooth
 sudo rfkill block wlan
 ```
 
-18. Set any [keyboard configuration changes](https://docs.sunfounder.com/projects/ts-7c/en/latest/settings_for_raspberry_pi.html#install-virtual-keyboard-on-raspberry-pi)
+19. Set any [keyboard configuration changes](https://docs.sunfounder.com/projects/ts-7c/en/latest/settings_for_raspberry_pi.html#install-virtual-keyboard-on-raspberry-pi)
 ```
 Raspberry Pi Icon -> Preferences -> Onboard Settings
 ```
 
-19. Reboot
+20. Reboot
 ```
 sudo reboot
 ```
 
-20. Start the orchestrator containers
+21. Start the orchestrator containers
 ```
 cd gamutRF
 UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/gamutrf/ FREQ_START=70e6 FREQ_END=6e9 docker-compose -f orchestrator.yml up -d
