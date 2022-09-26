@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     libusb-1.0-0-dev \
     libusb-1.0-0 \
     libvulkan-dev \
+    libzmq3-dev \
     make \
     netcat \
     pkg-config \
@@ -33,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     python3-pip \
     python3-pygccxml \
     python3-uhd \
+    python3-zmq \
     swig \
     uhd-host \
     unzip \
