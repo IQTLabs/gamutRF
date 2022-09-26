@@ -233,7 +233,7 @@ Additionally, if you want to use the workers as recorders you'll want to update 
       - --fftgraph=/logs/fft.png
       - --width=10
       - --prominence=2
-      - --threshold=-35
+      - --threshold=-25
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
       - --recorder=http://192.168.111.11:8000
