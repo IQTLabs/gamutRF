@@ -134,7 +134,7 @@ $ VOL_PREFIX=/tmp FREQ_START=2.2e9 FREQ_END=2.6e9 docker-compose -f orchestrator
 
 Watch for ```/tmp/fft.png``` to appear, which should contain strong signals similar to this example:
 
-![image](files:fft24test.png)
+![2.4G example](fft24test.png)
 
 If no or only small peaks appear which are not marked as peaks, increase ```gain``` (e.g., from 40 to 45) until peaks are detected.
 
