@@ -13,7 +13,7 @@ jobs:
           fetch-depth: 1
       - name: Install dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ libbladerf-dev libboost-all-dev libev-dev libfftw3-dev libgmp-dev libgsl-dev liblimesuite-dev liblog4cpp5-dev libpython3-dev libspdlog-dev libthrift-dev libuhd-dev libunwind-dev libusb-1.0-0-dev libusb-1.0-0 make pkg-config python3-bladerf python3-mako python3-numpy python3-packaging python3-pip python3-pygccxml python3-uhd software-properties-common sox swig uhd-host wget
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ libzmq3-dev libbladerf-dev libboost-all-dev libev-dev libfftw3-dev libgmp-dev libgsl-dev liblimesuite-dev liblog4cpp5-dev libpython3-dev libspdlog-dev libthrift-dev libuhd-dev libunwind-dev libusb-1.0-0-dev libusb-1.0-0 make pkg-config python3-bladerf python3-mako python3-numpy python3-packaging python3-pip python3-pygccxml python3-uhd python3-zmq software-properties-common sox swig uhd-host wget
           wget -q -O- https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz |tar -zxvf -
           git clone https://github.com/gnuradio/volk -b v2.5.1
           git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
@@ -28,7 +28,7 @@ jobs:
           cmake .. && make -j "$(nproc)" && sudo make install
           cd ../../ && sudo rm -rf SoapySDR
           git clone https://github.com/anarkiwi/gnuradio -b st3 && mkdir -p gnuradio/build && cd gnuradio/build
-          CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON .. && make -j "$(nproc)" && sudo make install 
+          CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON -DENABLE_GR_ZEROMQ=ON .. && make -j "$(nproc)" && sudo make install
           cd ../../ && sudo rm -rf gnuradio
           sudo ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
           sudo ldconfig -v

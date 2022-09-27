@@ -3,7 +3,6 @@ import concurrent.futures
 import json
 import logging
 import os
-import socket
 import subprocess
 import threading
 import time
@@ -14,6 +13,7 @@ import jinja2
 import pandas as pd
 import requests
 import schedule
+import zmq
 
 from prometheus_client import Counter
 from prometheus_client import Gauge
@@ -26,10 +26,9 @@ from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
-from gamutrf.utils import rotate_file_n, MTU, SCAN_FRES
+from gamutrf.utils import rotate_file_n, SCAN_FRES
 
 MB = int(1.024e6)
-MIN_SOCK_SIZE = MB * 32
 FFT_BUFFER_TIME = 3
 BUFF_FILE = "/dev/shm/scanfftbuffer.txt"  # nosec
 
@@ -282,7 +281,7 @@ def zstd_file(uncompressed_file):
     subprocess.check_call(["/usr/bin/zstd", "--rm", uncompressed_file])
 
 
-def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
+def process_fft_lines(args, prom_vars, buff_file, executor, runonce=False):
     lastfreq = 0
     fftbuffer = []
     lastbins_history = []
@@ -382,30 +381,25 @@ def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
         executor.submit(zstd_file, new_log)
 
 
-def udp_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_sock:
-        udp_sock.bind((args.logaddr, args.logport))
-        sock_size = udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
-        logging.info("UDP socket receive size %u", sock_size)
-        if sock_size < MIN_SOCK_SIZE:
-            logging.warning(
-                "suggest sudo sysctl -w net.core.rmem_default=%u on host, to reduce lost packets",
-                MIN_SOCK_SIZE,
-            )
-        packets_sent = 0
-        sock_buf = b""
-        last_packet_sent_time = time.time()
-        tmp_buff_file = os.path.basename(buff_file)
-        tmp_buff_file = buff_file.replace(tmp_buff_file, "." + tmp_buff_file)
-        shutdown = False
-        while True:
-            if shutdown:
-                return
-            sock_txt, _ = udp_sock.recvfrom(MTU - 28)
-            if len(sock_txt):
-                sock_buf += sock_txt
+def fft_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
+    zmq_addr = f"tcp://{args.logaddr}:{args.logport}"
+    logging.info("connecting to %s", zmq_addr)
+    context = zmq.Context()
+    socket = context.socket(zmq.SUB)
+    socket.connect(zmq_addr)
+    socket.setsockopt_string(zmq.SUBSCRIBE, "")
+    packets_sent = 0
+    last_packet_sent_time = time.time()
+    tmp_buff_file = os.path.basename(buff_file)
+    tmp_buff_file = buff_file.replace(tmp_buff_file, "." + tmp_buff_file)
+    shutdown = False
+    while not shutdown:
+        with open(tmp_buff_file, "wb") as bf:
+            while not shutdown:
+                sock_txt = socket.recv()
+                bf.write(sock_txt)
                 shutdown = (
-                    shutdown_str is not None and sock_buf.find(shutdown_str) != -1
+                    shutdown_str is not None and sock_txt.find(shutdown_str) != -1
                 )
                 now = time.time()
                 if (
@@ -413,27 +407,16 @@ def udp_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
                 ) and not os.path.exists(buff_file):
                     if packets_sent == 0:
                         logging.info("recording first FFT packet")
-                        # synchronize at the start of a new FFT sample.
-                        first_newline = sock_buf.find(b"\n")
-                        if first_newline != -1:
-                            sock_buf = sock_buf[first_newline + 1 :]
-                    with open(tmp_buff_file, "wb") as bf:
-                        bf.write(sock_buf)
-                    os.rename(tmp_buff_file, buff_file)
-                    sock_buf = b""
                     packets_sent += 1
                     last_packet_sent_time = now
+                    break
+        os.rename(tmp_buff_file, buff_file)
 
 
 def find_signals(args, prom_vars):
-    try:
-        ext = args.log[args.log.rindex(".") :]
-    except ValueError:
-        logging.fatal(f"cannot parse extension from {args.log}")
-
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
-        executor.submit(udp_proxy, args, BUFF_FILE)
-        process_fft_lines(args, prom_vars, BUFF_FILE, ext, executor)
+        executor.submit(fft_proxy, args, BUFF_FILE)
+        process_fft_lines(args, prom_vars, BUFF_FILE, executor)
 
 
 def argument_parser():
@@ -467,10 +450,6 @@ def argument_parser():
     parser.add_argument(
         "--nlog", default=10, type=int, help="keep only this many scan.logs"
     )
-    parser.add_argument(
-        "--logaddr", default="127.0.0.1", type=str, help="UDP stream address"
-    )
-    parser.add_argument("--logport", default=8001, type=int, help="UDP stream port")
     parser.add_argument(
         "--bin_mhz", default=20, type=int, help="monitoring bin width in MHz"
     )
@@ -539,6 +518,20 @@ def argument_parser():
         type=float,
         default=float(100e6),
         help="Set freq_start [default=%(default)r]",
+    )
+    parser.add_argument(
+        "--logaddr",
+        dest="logaddr",
+        type=str,
+        default="127.0.0.1",
+        help="Log FFT results from this address",
+    )
+    parser.add_argument(
+        "--logport",
+        dest="logport",
+        type=int,
+        default=8001,
+        help="Log FFT results from this port",
     )
     return parser
 
