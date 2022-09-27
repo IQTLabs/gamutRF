@@ -36,6 +36,7 @@ services:
       - gamutrf
     ports:
       - '9001:9000'
+      - '10000:10000'
     cap_add:
       - SYS_NICE
       - SYS_RAWIO
@@ -43,12 +44,13 @@ services:
       - /dev/bus/usb:/dev/bus/usb
     command:
       - gamutrf-scan
-      - --logaddr=sigfinder
+      - --logaddr=0.0.0.0
+      - --logport=10000
       - --igain=40
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
       - --samp-rate=1e6
-      - --nfft=1024
+      - --nfft=2048
     healthcheck:
       test: [CMD, "/gamutrf/scanhc.sh", "9000"]
       interval: 10s
@@ -57,6 +59,7 @@ services:
   sigfinder:
     restart: always
     image: iqtlabs/gamutrf:latest
+    shm_size: 256m
     networks:
       - gamutrf
     ports:
@@ -66,7 +69,8 @@ services:
       - '${VOL_PREFIX}:/logs'
     command:
       - gamutrf-sigfinder
-      - --logaddr=sigfinder
+      - --logaddr=gamutrf
+      - --logport=10000
       - --log=/logs/scan.csv
       - --fftlog=/logs/fft.csv
       - --fftgraph=/logs/fft.png

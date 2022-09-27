@@ -2,18 +2,17 @@
 # -*- coding: utf-8 -*-
 # Derivative work from:
 # https://github.com/ThomasHabets/radiostuff/blob/922944c9a7c9c51a15e369ac07a7f8963b5f67bd/broadband-scan/broadband_scan.grc
-import functools
 import logging
 import sys
 import threading
 import time
 
 try:
-    from gnuradio import network
     from gnuradio import analog  # pytype: disable=import-error
     from gnuradio import blocks  # pytype: disable=import-error
     from gnuradio import fft  # pytype: disable=import-error
     from gnuradio import gr  # pytype: disable=import-error
+    from gnuradio import zeromq  # pytype: disable=import-error
     from gnuradio.fft import window  # pytype: disable=import-error
 except ModuleNotFoundError:  # pragma: no cover
     print(
@@ -22,7 +21,6 @@ except ModuleNotFoundError:  # pragma: no cover
     sys.exit(1)
 
 from gamutrf.grsource import get_source
-from gamutrf.utils import MTU
 
 
 class grscan(gr.top_block):
@@ -34,7 +32,7 @@ class grscan(gr.top_block):
         samp_rate=4e6,
         sweep_sec=30,
         retune_hz=97,
-        logaddr="127.0.0.1",
+        logaddr="0.0.0.0",  # nosec
         logport=8001,
         sdr="ettus",
         sdrargs=None,
@@ -102,16 +100,9 @@ class grscan(gr.top_block):
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(
             freq_end - freq_start
         )
-        self.blocks_udp_sink_0 = network.udp_sink(
-            # https://wiki.gnuradio.org/index.php/UDP_Sink
-            gr.sizeof_char,
-            1,
-            logaddr,
-            logport,
-            0,
-            MTU - 28,
-            True,
-        )
+        zmq_addr = f"tcp://{logaddr}:{logport}"
+        logging.info("serving FFT on %s", zmq_addr)
+        self.zeromq_pub_sink_0 = zeromq.pub_sink(1, 1, zmq_addr, 100, False, -1, "")
         self.blocks_complex_to_mag_0 = blocks.complex_to_mag(fft_size)
         self.blocks_add_const_vxx_0 = blocks.add_const_ff(freq_start)
         self.analog_sig_source_x_0 = analog.sig_source_f(
@@ -138,7 +129,7 @@ class grscan(gr.top_block):
             self.connect(
                 (self.blocks_complex_to_mag_0, 0), (self.habets39_sweepsinkv_0, 0)
             )
-            self.connect((self.habets39_sweepsinkv_0, 0), (self.blocks_udp_sink_0, 0))
+            self.connect((self.habets39_sweepsinkv_0, 0), (self.zeromq_pub_sink_0, 0))
             self.connect((self.source_0, 0), (self.blocks_stream_to_vector_0, 0))
 
     def set_center_freq(self, center_freq):
