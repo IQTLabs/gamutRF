@@ -120,6 +120,26 @@ Run:
 
 To view other options.
 
+## Scanner testing
+
+Currently, the scanner ```gain``` and sigfinder ```threshold``` must be set manually for the general RF environment (e.g. noisy/many signals versus quiet/few signals).
+To establish the correct values and to confirm the scanner is working, initiate a scan over the 2.2-2.6GHz range. As the 2.4GHz spectrum is very busy with legacy WiFi
+and BlueTooth, the probability of seeing signals is high. If in an environment without BlueTooth or WiFi, an alternative is the FM broadcast band (88MHz to 108MHz).
+
+To begin, commence scanning with just the scanner and sigfinder containers:
+
+```
+$ VOL_PREFIX=/tmp FREQ_START=2.2e9 FREQ_END=2.6e9 docker-compose -f orchestrator.yml up gamutrf sigfinder
+```
+
+Watch for ```/tmp/fft.png``` to appear, which should contain strong signals similar to this example.
+
+If no or only small peaks appear which are not marked as peaks, increase ```gain``` (e.g., from 40 to 45) until peaks are detected.
+
+If no peaks appear still, check antenna cabling, or choose a different scan range where signals are expected in your environment.
+
+If peaks appear but are consistently not marked, decrease ```theshold``` (e.g. -25 to -35). If too many peaks are detected (noise detected as peaks), raise ```threshold.```
+
 ## Troubleshooting
 
 #### Containers won't start using Ettus SDRs
