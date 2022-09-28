@@ -6,6 +6,7 @@ import time
 import unittest
 import concurrent.futures
 import zmq
+import zstandard
 
 from gamutrf.sigfinder import init_prom_vars
 from gamutrf.sigfinder import process_fft_lines
@@ -116,12 +117,18 @@ class SigFinderTestCase(unittest.TestCase):
                     10,
                 )
                 prom_vars = init_prom_vars()
-                with open(buff_file, "w", encoding="utf8") as bf:
-                    for _ in range(2):
-                        freq = 100e6
-                        while freq < 400e6:
-                            bf.write(f"{int(time.time())} {int(freq)} 0.001\n")
-                            freq += 1e5
+                context = zstandard.ZstdCompressor()
+                with open(buff_file, "wb") as zbf:
+                    with context.stream_writer(zbf) as bf:
+                        for _ in range(2):
+                            freq = 100e6
+                            while freq < 400e6:
+                                bf.write(
+                                    f"{int(time.time())} {int(freq)} 0.001\n".encode(
+                                        "utf8"
+                                    )
+                                )
+                                freq += 1e5
                 process_fft_lines(args, prom_vars, buff_file, executor, runonce=True)
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
@@ -147,6 +154,7 @@ class SigFinderTestCase(unittest.TestCase):
             100,
             10,
         )
+        zstd_context = zstandard.ZstdDecompressor()
 
         with tempfile.TemporaryDirectory() as tempdir:
             buff_file = os.path.join(tempdir, "buff_file")
@@ -164,8 +172,9 @@ class SigFinderTestCase(unittest.TestCase):
                         break
                     time.sleep(1)
                 socket.send(shutdown_str)
-                with open(buff_file, "rb") as bf:
-                    content = bf.read()
+                with open(buff_file, "rb") as zbf:
+                    with zstd_context.stream_reader(zbf) as bf:
+                        content = bf.read()
                 self.assertGreater(
                     content.find(b"4, 5, 6\n"), -1, (content, test_bytes)
                 )
