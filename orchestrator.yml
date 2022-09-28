@@ -59,7 +59,7 @@ services:
   sigfinder:
     restart: always
     image: iqtlabs/gamutrf:latest
-    shm_size: 256m
+    shm_size: 64m 
     networks:
       - gamutrf
     ports:
