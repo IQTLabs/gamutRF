@@ -5,7 +5,7 @@ RUN git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
 RUN git clone https://github.com/ThomasHabets/gr-habets39
 RUN git clone https://github.com/Nuand/bladeRF.git -b 2021.10
 RUN git clone https://github.com/anarkiwi/lime-tools -b samples
-RUN git clone https://github.com/anarkiwi/mt_rx_samples_to_file -b v1.0.9
+RUN git clone https://github.com/anarkiwi/mt_rx_samples_to_file -b v1.0.10
 WORKDIR /root/mt_rx_samples_to_file
 RUN wget https://sourceforge.net/projects/sigpack/files/sigpack-1.2.7.zip -O sigpack.zip && unzip sigpack.zip && ln -s sigpack-*/sigpack .
 RUN git clone https://github.com/DTolm/VkFFT && cd VkFFT && git checkout 33109a0031c7c005291b81681ec2d1af5c5aefc7
