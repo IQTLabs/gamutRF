@@ -1,15 +1,16 @@
 #!/usr/bin/python3
 
 import os
-import socket
 import tempfile
 import time
 import unittest
 import concurrent.futures
+import zmq
+import zstandard
 
 from gamutrf.sigfinder import init_prom_vars
 from gamutrf.sigfinder import process_fft_lines
-from gamutrf.sigfinder import udp_proxy
+from gamutrf.sigfinder import fft_proxy
 from gamutrf.sigfinder import argument_parser
 from gamutrf.utils import rotate_file_n
 
@@ -116,19 +117,23 @@ class SigFinderTestCase(unittest.TestCase):
                     10,
                 )
                 prom_vars = init_prom_vars()
-                with open(buff_file, "w", encoding="utf8") as bf:
-                    for _ in range(2):
-                        freq = 100e6
-                        while freq < 400e6:
-                            bf.write(f"{int(time.time())} {int(freq)} 0.001\n")
-                            freq += 1e5
-                process_fft_lines(
-                    args, prom_vars, buff_file, "csv", executor, runonce=True
-                )
+                context = zstandard.ZstdCompressor()
+                with open(buff_file, "wb") as zbf:
+                    with context.stream_writer(zbf) as bf:
+                        for _ in range(2):
+                            freq = 100e6
+                            while freq < 400e6:
+                                bf.write(
+                                    f"{int(time.time())} {int(freq)} 0.001\n".encode(
+                                        "utf8"
+                                    )
+                                )
+                                freq += 1e5
+                process_fft_lines(args, prom_vars, buff_file, executor, runonce=True)
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
 
-    def test_udp_proxy(self):
+    def test_fft_proxy(self):
         args = FakeArgs(
             "",
             60,
@@ -149,27 +154,31 @@ class SigFinderTestCase(unittest.TestCase):
             100,
             10,
         )
+        zstd_context = zstandard.ZstdDecompressor()
 
         with tempfile.TemporaryDirectory() as tempdir:
             buff_file = os.path.join(tempdir, "buff_file")
             test_bytes = b"1, 2, 3\n4, 5, 6\n"
             shutdown_str = b"shutdown\n"
+            context = zmq.Context()
+            socket = context.socket(zmq.PUB)
+            socket.bind(f"tcp://{args.logaddr}:{args.logport}")
 
             with concurrent.futures.ProcessPoolExecutor(1) as executor:
-                executor.submit(udp_proxy, args, buff_file, 1, shutdown_str)
-                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                    for _ in range(5):
-                        sock.sendto(test_bytes, (args.logaddr, args.logport))
-                        if os.path.exists(buff_file):
-                            break
-                        time.sleep(1)
-                    sock.sendto(shutdown_str, (args.logaddr, args.logport))
-                    with open(buff_file, "rb") as bf:
+                executor.submit(fft_proxy, args, buff_file, 1, shutdown_str)
+                for _ in range(5):
+                    socket.send(test_bytes)
+                    if os.path.exists(buff_file):
+                        break
+                    time.sleep(1)
+                socket.send(shutdown_str)
+                with open(buff_file, "rb") as zbf:
+                    with zstd_context.stream_reader(zbf) as bf:
                         content = bf.read()
-                    self.assertGreater(
-                        content.find(b"4, 5, 6\n"), -1, (content, test_bytes)
-                    )
-                    os.remove(buff_file)
+                self.assertGreater(
+                    content.find(b"4, 5, 6\n"), -1, (content, test_bytes)
+                )
+                os.remove(buff_file)
 
 
 if __name__ == "__main__":  # pragma: no cover

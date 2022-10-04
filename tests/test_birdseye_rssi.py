@@ -72,6 +72,8 @@ class BirdseyeRSSITestCase(unittest.TestCase):
             container = client.containers.run(
                 test_tag,
                 command=[
+                    "timeout",
+                    "60s",
                     "gamutrf-api",
                     "--rssi_threshold=-100",
                     "--rssi",
@@ -83,7 +85,10 @@ class BirdseyeRSSITestCase(unittest.TestCase):
             )
             self.verify_birdseye_stream(gamutdir, 10e6)
             self.verify_birdseye_stream(gamutdir, 99e6)
-            container.kill()
+            try:
+                container.kill()
+            except requests.exceptions.HTTPError as err:
+                print(str(err))
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -3,7 +3,6 @@ import concurrent.futures
 import json
 import logging
 import os
-import socket
 import subprocess
 import threading
 import time
@@ -14,6 +13,8 @@ import jinja2
 import pandas as pd
 import requests
 import schedule
+import zmq
+import zstandard
 
 from prometheus_client import Counter
 from prometheus_client import Gauge
@@ -26,12 +27,11 @@ from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
-from gamutrf.utils import rotate_file_n, MTU, SCAN_FRES
+from gamutrf.utils import rotate_file_n, SCAN_FRES
 
 MB = int(1.024e6)
-MIN_SOCK_SIZE = MB * 32
 FFT_BUFFER_TIME = 3
-BUFF_FILE = "/dev/shm/scanfftbuffer.txt"  # nosec
+BUFF_FILE = "/dev/shm/scanfftbuffer.txt.zst"  # nosec
 
 PEAK_DBS = {}
 
@@ -282,7 +282,7 @@ def zstd_file(uncompressed_file):
     subprocess.check_call(["/usr/bin/zstd", "--rm", uncompressed_file])
 
 
-def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
+def process_fft_lines(args, prom_vars, buff_file, executor, runonce=False):
     lastfreq = 0
     fftbuffer = []
     lastbins_history = []
@@ -292,6 +292,7 @@ def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
     last_fft_report = 0
     fft_packets = 0
     max_scan_pos = 0
+    context = zstandard.ZstdDecompressor()
 
     while True:
         if os.path.exists(args.log):
@@ -313,8 +314,11 @@ def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
                     fft_packets = 0
                     last_fft_report = now
                 if os.path.exists(buff_file):
-                    with open(buff_file, "r", encoding="utf8") as bf:
-                        txt_buf += bf.read()
+                    logging.info(
+                        "read %u bytes of FFT data", os.stat(buff_file).st_size
+                    )
+                    with context.stream_reader(open(buff_file, "rb")) as bf:
+                        txt_buf += bf.read().decode("utf8")
                     fft_packets += 1
                     os.remove(buff_file)
                 else:
@@ -332,34 +336,31 @@ def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
                     l.write(txt_buf[: -len(last_line)])
                     txt_buf = last_line
                     lines = lines[:-1]
-                rotatelognow = False
-                splitlines = [line.strip().split() for line in lines]
-                for line in splitlines:
-                    try:
-                        ts, freq, pw = [float(x) for x in line]
-                    except ValueError as err:
-                        logging.info("could not parse FFT data: %s: %s", line, err)
-                        continue
-                    if pw < 0 or pw > args.max_raw_power:
-                        logging.info("power %f out of range on %s", pw, line)
-                        continue
-                    # FFT data might appear slightly outside requested range
-                    if freq < args.freq_start or freq > args.freq_end:
-                        continue
-                    if abs(now - ts) > 60:
-                        logging.info("timestamp %f out of range on %s", ts, line)
-                        continue
-                    scan_pos = (freq - args.freq_start) / (
-                        args.freq_end - args.freq_start
+                try:
+                    df = pd.DataFrame(
+                        [line.strip().split() for line in lines],
+                        columns=["ts", "freq", "pw"],
+                        dtype=float,
                     )
-                    rollover = scan_pos < 0.1 and max_scan_pos > 0.9 and fftbuffer
-                    max_scan_pos = max(max_scan_pos, scan_pos)
-                    lastfreq = freq
+                except ValueError as err:
+                    logging.error(str(err))
+                    continue
+                df = df[(df.pw > 0) & (df.pw <= args.max_raw_power)]
+                df = df[(df.freq >= args.freq_start) & (df.freq <= args.freq_end)]
+                df = df[(now - df.ts).abs() < 60]
+                df["scan_pos"] = (df.freq - args.freq_start) / (
+                    args.freq_end - args.freq_start
+                )
+                lastfreq = df.freq.iat[-1]
+                rotatelognow = False
+                for row in df.itertuples():
+                    rollover = row.scan_pos < 0.1 and max_scan_pos > 0.9 and fftbuffer
+                    max_scan_pos = max(max_scan_pos, row.scan_pos)
                     if rollover:
-                        max_scan_pos = scan_pos
+                        max_scan_pos = row.scan_pos
                         frame_counter.inc()
                         new_lastbins = process_fft(
-                            args, prom_vars, ts, fftbuffer, lastbins
+                            args, prom_vars, row.ts, fftbuffer, lastbins
                         )
                         if new_lastbins is not None:
                             lastbins = new_lastbins
@@ -373,7 +374,7 @@ def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
                             rotatelognow = True
                         if runonce:
                             return
-                    fftbuffer.append((ts, freq, pw))
+                    fftbuffer.append((row.ts, row.freq, row.pw))
                 if rotatelognow:
                     break
         rotate_file_n(".".join((args.log, "zst")), args.nlog, require_initial=False)
@@ -382,58 +383,44 @@ def process_fft_lines(args, prom_vars, buff_file, ext, executor, runonce=False):
         executor.submit(zstd_file, new_log)
 
 
-def udp_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_sock:
-        udp_sock.bind((args.logaddr, args.logport))
-        sock_size = udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
-        logging.info("UDP socket receive size %u", sock_size)
-        if sock_size < MIN_SOCK_SIZE:
-            logging.warning(
-                "suggest sudo sysctl -w net.core.rmem_default=%u on host, to reduce lost packets",
-                MIN_SOCK_SIZE,
-            )
-        packets_sent = 0
-        sock_buf = b""
-        last_packet_sent_time = time.time()
-        tmp_buff_file = os.path.basename(buff_file)
-        tmp_buff_file = buff_file.replace(tmp_buff_file, "." + tmp_buff_file)
-        shutdown = False
-        while True:
-            if shutdown:
-                return
-            sock_txt, _ = udp_sock.recvfrom(MTU - 28)
-            if len(sock_txt):
-                sock_buf += sock_txt
-                shutdown = (
-                    shutdown_str is not None and sock_buf.find(shutdown_str) != -1
-                )
-                now = time.time()
-                if (
-                    shutdown or now - last_packet_sent_time > buffer_time
-                ) and not os.path.exists(buff_file):
-                    if packets_sent == 0:
-                        logging.info("recording first FFT packet")
-                        # synchronize at the start of a new FFT sample.
-                        first_newline = sock_buf.find(b"\n")
-                        if first_newline != -1:
-                            sock_buf = sock_buf[first_newline + 1 :]
-                    with open(tmp_buff_file, "wb") as bf:
-                        bf.write(sock_buf)
-                    os.rename(tmp_buff_file, buff_file)
-                    sock_buf = b""
-                    packets_sent += 1
-                    last_packet_sent_time = now
+def fft_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
+    zmq_addr = f"tcp://{args.logaddr}:{args.logport}"
+    logging.info("connecting to %s", zmq_addr)
+    context = zmq.Context()
+    socket = context.socket(zmq.SUB)
+    socket.connect(zmq_addr)
+    socket.setsockopt_string(zmq.SUBSCRIBE, "")
+    packets_sent = 0
+    last_packet_sent_time = time.time()
+    tmp_buff_file = os.path.basename(buff_file)
+    tmp_buff_file = buff_file.replace(tmp_buff_file, "." + tmp_buff_file)
+    shutdown = False
+    context = zstandard.ZstdCompressor()
+    while not shutdown:
+        with open(tmp_buff_file, "wb") as zbf:
+            with context.stream_writer(zbf) as bf:
+                while not shutdown:
+                    sock_txt = socket.recv()
+                    bf.write(sock_txt)
+                    shutdown = (
+                        shutdown_str is not None and sock_txt.find(shutdown_str) != -1
+                    )
+                    now = time.time()
+                    if (
+                        shutdown or now - last_packet_sent_time > buffer_time
+                    ) and not os.path.exists(buff_file):
+                        if packets_sent == 0:
+                            logging.info("recording first FFT packet")
+                        packets_sent += 1
+                        last_packet_sent_time = now
+                        break
+        os.rename(tmp_buff_file, buff_file)
 
 
 def find_signals(args, prom_vars):
-    try:
-        ext = args.log[args.log.rindex(".") :]
-    except ValueError:
-        logging.fatal(f"cannot parse extension from {args.log}")
-
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
-        executor.submit(udp_proxy, args, BUFF_FILE)
-        process_fft_lines(args, prom_vars, BUFF_FILE, ext, executor)
+        executor.submit(fft_proxy, args, BUFF_FILE)
+        process_fft_lines(args, prom_vars, BUFF_FILE, executor)
 
 
 def argument_parser():
@@ -467,10 +454,6 @@ def argument_parser():
     parser.add_argument(
         "--nlog", default=10, type=int, help="keep only this many scan.logs"
     )
-    parser.add_argument(
-        "--logaddr", default="127.0.0.1", type=str, help="UDP stream address"
-    )
-    parser.add_argument("--logport", default=8001, type=int, help="UDP stream port")
     parser.add_argument(
         "--bin_mhz", default=20, type=int, help="monitoring bin width in MHz"
     )
@@ -539,6 +522,20 @@ def argument_parser():
         type=float,
         default=float(100e6),
         help="Set freq_start [default=%(default)r]",
+    )
+    parser.add_argument(
+        "--logaddr",
+        dest="logaddr",
+        type=str,
+        default="127.0.0.1",
+        help="Log FFT results from this address",
+    )
+    parser.add_argument(
+        "--logport",
+        dest="logport",
+        type=int,
+        default=8001,
+        help="Log FFT results from this port",
     )
     return parser
 

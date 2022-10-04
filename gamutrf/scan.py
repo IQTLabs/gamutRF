@@ -88,15 +88,15 @@ def argument_parser():
         "--logaddr",
         dest="logaddr",
         type=str,
-        default="127.0.0.1",
-        help="Log UDP results to this address",
+        default="0.0.0.0",  # nosec
+        help="Log FFT results to this address",
     )
     parser.add_argument(
         "--logport",
         dest="logport",
         type=int,
         default=8001,
-        help="Log UDP results to this port",
+        help="Log FFT results to this port",
     )
     parser.add_argument(
         "--promport",

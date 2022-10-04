@@ -64,10 +64,6 @@ echo "hdmi_cvt=1024 600 60 3 0 0 0" >> /boot/config.txt
 echo "hdmi_group=2" >> /boot/config.txt
 echo "hdmi_mode=87" >> /boot/config.txt
 echo "hdmi_drive=2" >> /boot/config.txt
-echo "net.core.rmem_default=26214400" >> /etc/sysctl.conf
-echo "net.core.rmem_max=104857600" >> /etc/sysctl.conf
-echo "net.core.wmem_default=65536" >> /etc/sysctl.conf
-echo "net.core.wmem_max=104857600" >> /etc/sysctl.conf
 ```
 
 7. Set options in raspi-config
