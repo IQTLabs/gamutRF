@@ -28,7 +28,7 @@ class FakeResponse:
 
 class FakeRequest:
     def __init__(self):
-        self.media = {"worker":"foo", "frequency": "foo", "bandwidth": "foo", "duration": "foo", "repeat":, "-1"}
+        self.media = {"worker":"foo", "frequency": "foo", "bandwidth": "foo", "duration": "foo", "repeat": "-1"}
 
 
 def test_falcon_response():
