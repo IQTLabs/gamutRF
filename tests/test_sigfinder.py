@@ -8,11 +8,36 @@ import concurrent.futures
 import zmq
 import zstandard
 
-from gamutrf.sigfinder import init_prom_vars
-from gamutrf.sigfinder import process_fft_lines
-from gamutrf.sigfinder import fft_proxy
 from gamutrf.sigfinder import argument_parser
+from gamutrf.sigfinder import error_response
+from gamutrf.sigfinder import falcon_response
+from gamutrf.sigfinder import fft_proxy
+from gamutrf.sigfinder import init_prom_vars
+from gamutrf.sigfinder import ok_response
+from gamutrf.sigfinder import process_fft_lines
 from gamutrf.utils import rotate_file_n
+
+
+class FakeResponse:
+    def __init__(self)
+        self.status = 200
+        self.text = ""
+        self.content_type = "text/html"
+
+
+def test_falcon_response():
+    resp = FakeResponse()
+    falcon_response(resp, "test", 500)
+
+
+def test_ok_response():
+    resp = FakeResponse()
+    ok_response(resp)
+
+
+def test_error_response():
+    resp = FakeResponse()
+    error_response(resp)
 
 
 class FakeArgs:
