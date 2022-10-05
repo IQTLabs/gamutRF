@@ -8,6 +8,7 @@ import concurrent.futures
 import zmq
 import zstandard
 
+from gamutrf.sigfinder import Result
 from gamutrf.sigfinder import argument_parser
 from gamutrf.sigfinder import error_response
 from gamutrf.sigfinder import falcon_response
@@ -25,6 +26,11 @@ class FakeResponse:
         self.content_type = "text/html"
 
 
+class FakeRequest:
+    def __init__(self):
+        self.media = {"worker":"foo", "frequency": "foo", "bandwidth": "foo", "duration": "foo", "repeat": "-1"}
+
+
 def test_falcon_response():
     resp = FakeResponse()
     falcon_response(resp, "test", 500)
@@ -38,6 +44,15 @@ def test_ok_response():
 def test_error_response():
     resp = FakeResponse()
     error_response(resp)
+
+
+def test_result_on_post():
+    resp = FakeResponse()
+    req = FakeRequest()
+    result = Result()
+    result.on_post(req, resp)
+    req.media["repeat"] = 2
+    result.on_post(req, resp)
 
 
 class FakeArgs:
