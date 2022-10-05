@@ -19,7 +19,7 @@ from gamutrf.utils import rotate_file_n
 
 
 class FakeResponse:
-    def __init__(self)
+    def __init__(self):
         self.status = 200
         self.text = ""
         self.content_type = "text/html"
