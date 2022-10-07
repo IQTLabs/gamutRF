@@ -1,0 +1,470 @@
+rules:
+- id: missing-assume-yes-switch
+  languages:
+  - dockerfile
+  message: This 'apt-get install' is missing the '-y' switch. This might stall builds
+    because it requires human intervention. Add the '-y' switch.
+  metadata:
+    category: correctness
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3014
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3014
+    technology:
+    - dockerfile
+  patterns:
+  - pattern: "RUN ... apt-get install ... $MULTIFLAG ... \n"
+  - pattern-not: 'RUN ... apt-get install ... --assume-yes ...
+
+      '
+  - pattern-not: 'RUN ... apt-get install ... --yes ...
+
+      '
+  - pattern-not: 'RUN ... apt-get install ... -y ...
+
+      '
+  - metavariable-regex:
+      metavariable: $MULTIFLAG
+      regex: (^([^-])|(-[^y]+)$)
+  severity: WARNING
+- id: use-workdir
+  languages:
+  - dockerfile
+  message: As recommended by Docker's documentation, it is best to use 'WORKDIR' instead
+    of 'RUN cd ...' for improved clarity and reliability. Also, 'RUN cd ...' may not
+    work as expected in a container.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3003
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3003
+    technology:
+    - dockerfile
+  options:
+    implicit_deep_exprstmt: false
+  patterns:
+  - pattern-either:
+    - pattern-inside: 'RUN $ CMD ...
+
+        '
+    - pattern-inside: 'RUN $CMD ... && ...
+
+        '
+  - metavariable-pattern:
+      metavariable: $CMD
+      pattern: cd
+  - focus-metavariable: $CMD
+  severity: WARNING
+- id: missing-pip-no-cache-dir
+  languages:
+  - dockerfile
+  message: This '$PIP install' is missing '--no-cache-dir'. This flag prevents package
+    archives from being kept around, thereby reducing image size. Add '--no-cache-dir'.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3042
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3042
+    technology:
+    - dockerfile
+  patterns:
+  - patterns:
+    - pattern: 'RUN ... $PIP install ...
+
+        '
+    - pattern-not-inside: 'RUN ... $PIP install ... --no-cache-dir ...
+
+        '
+    - pattern-not-inside: 'RUN ... $PIP install . ...
+
+        '
+    - pattern-not-inside: 'ENV ... PIP_NO_CACHE_DIR=$BOOL ...
+
+        ...
+
+        RUN ... $PIP install ...
+
+        '
+    - pattern-not-inside: 'ENV ... PIP_NO_CACHE_DIR ...
+
+        ...
+
+        RUN ... $PIP install ...
+
+        '
+  - metavariable-regex:
+      metavariable: $PIP
+      regex: (pip|pip2|pip3|python -m pip|python3 -m pip)
+  severity: INFO
+- id: avoid-platform-with-from
+  languages:
+  - dockerfile
+  message: Using '--platform' with FROM restricts the image to build on a single platform.
+    Further, this must be the same as the build platform. If you intended to specify
+    the target platform, use the utility 'docker buildx --platform=' instead.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3029
+    - https://docs.docker.com/buildx/working-with-buildx/
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3029
+    technology:
+    - dockerfile
+  pattern: FROM --platform=$PLATFORM $IMAGE
+  severity: INFO
+- fix: '# MAINTAINER $NAME'
+  id: maintainer-is-deprecated
+  languages:
+  - dockerfile
+  message: MAINTAINER has been deprecated.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL4000
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4000
+    technology:
+    - dockerfile
+  pattern: MAINTAINER $NAME
+  severity: INFO
+- id: missing-zypper-clean
+  languages:
+  - dockerfile
+  message: This zypper command does not end with '&& zypper clean'. Running 'zypper
+    clean' will remove cached data and reduce package size. (This must be performed
+    in the same RUN step.)
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3036
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3036
+    technology:
+    - dockerfile
+  patterns:
+  - pattern: RUN ... zypper $COMMAND ...
+  - pattern-not-inside: RUN ... zypper clean
+  - pattern-not-inside: RUN ... zypper clean
+  severity: WARNING
+- id: avoid-latest-version
+  languages:
+  - dockerfile
+  message: Images should be tagged with an explicit version to produce deterministic
+    container images. The 'latest' tag may change the base container without warning.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3007
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3007
+    technology:
+    - dockerfile
+  pattern: FROM $FROM:latest
+  severity: WARNING
+- fix: SHELL ["$SHELL", "-c"]
+  id: use-shell-instruction
+  languages:
+  - dockerfile
+  message: Use the SHELL instruction to set the default shell instead of overwriting
+    '/bin/sh'.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL4005
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4005
+    technology:
+    - dockerfile
+  pattern: 'RUN ln ... $SHELL /bin/sh
+
+    '
+  severity: WARNING
+- id: set-pipefail
+  languages:
+  - dockerfile
+  message: Only the exit code from the final command in this RUN instruction will
+    be evaluated unless 'pipefail' is set. If you want to fail the command at any
+    stage in the pipe, set 'pipefail' by including 'SHELL ["/bin/bash", "-o", "pipefail",
+    "-c"] before the command. If you're using alpine and don't have bash installed,
+    communicate this explicitly with `SHELL ["/bin/ash"]`.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL4006
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4006
+    technology:
+    - dockerfile
+  patterns:
+  - pattern-either:
+    - pattern: RUN ... | ...
+    - pattern: RUN ... || ...
+  - pattern-not-inside: 'SHELL [..., "pipefail", ...]
+
+      ...
+
+      RUN ... | ...
+
+      '
+  - pattern-not-inside: 'SHELL ["/bin/ash", ...]
+
+      ...
+
+      RUN ... | ...
+
+      '
+  severity: WARNING
+- id: missing-image-version
+  languages:
+  - dockerfile
+  message: Images should be tagged with an explicit version to produce deterministic
+    container images.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3006
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3006
+    technology:
+    - dockerfile
+  patterns:
+  - pattern-either:
+    - pattern: FROM $IMAGE
+  - pattern-not: FROM $IMAGE:$VERSION
+  - pattern-not: FROM $IMAGE@$DIGEST
+  - pattern-not: FROM $IMAGE:$VERSION@$DIGEST
+  - pattern-not: FROM scratch
+  severity: WARNING
+- id: missing-dnf-clean-all
+  languages:
+  - dockerfile
+  message: This dnf command does not end with '&& dnf clean all'. Running 'dnf clean
+    all' will remove cached data and reduce package size. (This must be performed
+    in the same RUN step.)
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3038
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3038
+    technology:
+    - dockerfile
+  patterns:
+  - pattern: RUN ... dnf ...
+  - pattern-not-inside: RUN ... && dnf clean all
+  - pattern-not-inside: RUN ... && \ dnf clean all
+  severity: WARNING
+- id: use-either-wget-or-curl
+  languages:
+  - dockerfile
+  message: '''wget'' and ''curl'' are similar tools. Choose one and do not install
+    the other to decrease image size.'
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL4001
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4001
+    technology:
+    - dockerfile
+  pattern-either:
+  - pattern: 'RUN wget ...
+
+      ...
+
+      RUN curl ...
+
+      '
+  - pattern: 'RUN curl ...
+
+      ...
+
+      RUN wget ...
+
+      '
+  severity: INFO
+- id: nonsensical-command
+  languages:
+  - dockerfile
+  message: Some commands such as `$CMD` do not make sense in a container. Do not use
+    these.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3001
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3001
+    technology:
+    - dockerfile
+  patterns:
+  - pattern: RUN $CMD ...
+  - metavariable-regex:
+      metavariable: $CMD
+      regex: (shutdown|service|ps|free|top|kill|mount|ifconfig|nano|vim)
+  severity: WARNING
+- id: prefer-copy-over-add
+  languages:
+  - dockerfile
+  message: The ADD command will accept and include files from a URL and automatically
+    extract archives. This potentially exposes the container to a man-in-the-middle
+    attack or other attacks if a malicious actor can tamper with the source archive.
+    Since ADD can have this and other unexpected side effects, the use of the more
+    explicit COPY command is preferred.
+  metadata:
+    category: best-practice
+    references:
+    - https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    technology:
+    - dockerfile
+  patterns:
+  - pattern: 'ADD $FROM $TO
+
+      '
+  - metavariable-regex:
+      metavariable: $FROM
+      regex: (^[A-Za-z]+:\/\/|.*[.](gz|bz2|zip|tar)$)
+  - focus-metavariable: $FROM
+  severity: INFO
+- id: missing-dnf-assume-yes-switch
+  languages:
+  - dockerfile
+  message: This 'dnf install' is missing the '-y' switch. This might stall builds
+    because it requires human intervention. Add the '-y' switch.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3038
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3038
+    technology:
+    - dockerfile
+  patterns:
+  - pattern: 'RUN ... dnf install ...
+
+      '
+  - pattern-not-inside: 'RUN ... dnf install ... -y ...
+
+      '
+  - pattern-not-inside: 'RUN ... dnf ... --assumeyes ...
+
+      '
+  severity: WARNING
+- id: prefer-json-notation
+  languages:
+  - dockerfile
+  message: Prefer JSON notation when using CMD or ENTRYPOINT. This allows signals
+    to be passed from the OS.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3025
+    - https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#cmd
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3025
+    technology:
+    - dockerfile
+  pattern-either:
+  - patterns:
+    - pattern: CMD $WORD ...
+    - pattern-not-inside: CMD [...]
+  - patterns:
+    - pattern: ENTRYPOINT $WORD ...
+    - pattern-not-inside: ENTRYPOINT [...]
+  severity: INFO
+- id: missing-yum-assume-yes-switch
+  languages:
+  - dockerfile
+  message: This 'yum install' is missing the '-y' switch. This might stall builds
+    because it requires human intervention. Add the '-y' switch.
+  metadata:
+    category: best-practice
+    references:
+    - https://github.com/hadolint/hadolint/wiki/DL3030
+    source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3030
+    technology:
+    - dockerfile
+  patterns:
+  - pattern: 'RUN ... yum install ...
+
+      '
+  - pattern-not: 'RUN ... yum install ... -y ...
+
+      '
+  - pattern-not: 'RUN ... yum ... --assumeyes ...
+
+      '
+  severity: WARNING
+- id: dockerfile-source-not-pinned
+  languages:
+  - dockerfile
+  message: To ensure reproducible builds, pin Dockerfile `FROM` commands to a specific
+    hash. You can find the hash by running `docker pull $IMAGE` and then  specify
+    it with `$IMAGE:$VERSION@sha256:<hash goes here>`
+  metadata:
+    category: best-practice
+    references:
+    - https://stackoverflow.com/a/33511811/4965
+    technology:
+    - docker
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern: FROM $IMAGE:$VERSION@$HASH
+      - metavariable-regex:
+          metavariable: $HASH
+          regex: (?!sha256:)
+    - patterns:
+      - pattern: FROM $IMAGE
+      - pattern: FROM $IMAGE:$VERSION
+      - pattern-not-inside: FROM $IMAGE:$VERSION@$HASH
+  severity: ERROR
+- id: missing-user
+  languages:
+  - dockerfile
+  message: By not specifying a USER, a program in the container may run as 'root'.
+    This is a security hazard. If an attacker can control a process running as root,
+    they may have control over the container. Ensure that the last USER in a Dockerfile
+    is a USER other than 'root'.
+  metadata:
+    category: security
+    confidence: MEDIUM
+    cwe:
+    - 'CWE-269: Improper Privilege Management'
+    impact: MEDIUM
+    likelihood: LOW
+    owasp:
+    - A04:2021 - Insecure Design
+    references:
+    - https://owasp.org/Top10/A04_2021-Insecure_Design
+    subcategory:
+    - audit
+    technology:
+    - dockerfile
+  patterns:
+  - pattern-either:
+    - pattern: CMD ...
+    - pattern: ENTRYPOINT ...
+  - pattern-not-inside: 'USER $USER
+
+      ...
+
+      '
+  severity: ERROR
+- id: secret-in-build-arg
+  languages:
+  - dockerfile
+  message: Docker build time arguments are not suited for secrets, because the argument
+    values are saved with the image. Running `docker image history` on the image will
+    show information on how the image was built, including arguments. If these contain
+    secrets, anyone with access to the docker image can access those secrets.
+  metadata:
+    category: security
+    confidence: LOW
+    cwe:
+    - 'CWE-538: Insertion of Sensitive Information into Externally-Accessible File
+      or Directory'
+    impact: HIGH
+    likelihood: LOW
+    owasp:
+    - A01:2021 - Broken Access Control
+    references:
+    - https://cwe.mitre.org/data/definitions/538.html
+    - https://docs.docker.com/engine/reference/builder/#arg
+    subcategory:
+    - audit
+    technology:
+    - dockerfile
+  patterns:
+  - pattern: ARG $ARG
+  - metavariable-regex:
+      metavariable: $ARG
+      regex: (?i).*(password|secret|token)
+  severity: WARNING
