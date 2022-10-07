@@ -1,3 +1,4 @@
+# nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-base:latest /usr/lib /usr/lib
@@ -33,4 +34,5 @@ WORKDIR /gamutrf
 RUN rm -rf /usr/lib/python3/dist-packages/pycparser* && \
     poetry run pip install pandas==1.5.0 && \
     poetry install --no-interaction --no-ansi
+# nosemgrep:github.workflows.config.missing-user
 CMD ["gamutrf-scan", "--help"]
