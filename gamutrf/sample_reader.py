@@ -6,9 +6,12 @@ import numpy as np
 
 
 def get_reader(filename):
+
+    # nosemgrep:github.workflows.config.useless-inner-function
     def gzip_reader(x):
         return gzip.open(x, "rb")
 
+    # nosemgrep:github.workflows.config.useless-inner-function
     def zst_reader(x):
         return zstandard.ZstdDecompressor().stream_reader(
             open(x, "rb"), read_across_frames=True

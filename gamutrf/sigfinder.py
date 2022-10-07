@@ -323,7 +323,8 @@ def process_fft_lines(args, prom_vars, buff_file, executor, runonce=False):
                     os.remove(buff_file)
                 else:
                     schedule.run_pending()
-                    time.sleep(1)
+                    sleep_time = 1
+                    time.sleep(sleep_time)
                     continue
                 lines = txt_buf.splitlines()
                 if not len(lines) > 1:

@@ -180,7 +180,8 @@ def main():
     tb.start()
     while True:
         prom_vars["last_freq_update"].set(tb.freq_update)
-        time.sleep(1)
+        sleep_time = 1
+        time.sleep(sleep_time)
         if not tb.freq_updated(options.updatetimeout):
             tb.stop()
             break
