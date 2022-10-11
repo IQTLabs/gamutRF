@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import subprocess
@@ -17,6 +18,7 @@ from gamutrf.utils import ETTUS_ANT, ETTUS_ARGS, MPL_BACKEND, WIDTH, HEIGHT, DPI
 
 
 NFFT = int(os.getenv("NFFT", "0"))
+NFFT_OVERLAP = 512
 SAMPLE_TYPE = "s16"
 MIN_SAMPLE_RATE = int(1e6)
 MAX_SAMPLE_RATE = int(30 * 1e6)
@@ -159,11 +161,12 @@ class SDRRecorder:
 
 
 class EttusRecorder(SDRRecorder):
-
-    # def __init__(self):
-    #    super().__init__()
-    #    # TODO: troubleshoot why this doesn't find an Ettus initially, still.
-    #    # subprocess.call(['uhd_find_devices'])
+    def __init__(self):
+        super().__init__()
+        self.worker_subprocess = None
+        self.last_worker_line = None
+        # TODO: troubleshoot why this doesn't find an Ettus initially, still.
+        # subprocess.call(['uhd_find_devices'])
 
     def record_args(
         self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb
@@ -171,18 +174,14 @@ class EttusRecorder(SDRRecorder):
         # Ettus "nsamps" API has an internal limit, so translate "stream for druation".
         duration = round(sample_count / sample_rate)
         rxb = min(rxb, sample_rate)
+
         args = [
             "/usr/local/bin/mt_rx_samples_to_file",
-            "--file",
-            sample_file,
+            "--json",
             "--rate",
             str(sample_rate),
             "--bw",
             str(sample_rate),
-            "--duration",
-            str(duration),
-            "--freq",
-            str(center_freq),
             "--gain",
             str(gain),
             "--args",
@@ -192,31 +191,61 @@ class EttusRecorder(SDRRecorder):
             "--spb",
             str(rxb),
         ]
+
+        json_args = {
+            "file": sample_file,
+            "duration": duration,
+            "freq": center_freq,
+        }
         if NFFT:
-            args.extend(
-                [
-                    "--nfft",
-                    str(NFFT),
-                    "--nfft_overlap",
-                    str(int(NFFT / 8)),
-                    "--nfft_ds",
-                    str(int(1)),
-                    "--fft_file",
-                    FFT_FILE,
-                ]
+            json_args.update(
+                {
+                    "nfft": NFFT,
+                    "nfft_overlap": NFFT_OVERLAP,
+                    "fft_file": FFT_FILE,
+                }
             )
-        return args
+        return (args, json_args)
 
     def write_recording(
         self, sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb
     ):
         # Ettus doesn't need a wrapper, it can do its own zst compression.
         record_status = -1
-        args = self.record_args(
+        args, json_args = self.record_args(
             sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb
         )
-        logging.info("starting recording: %s", args)
-        record_status = subprocess.check_call(args)
+
+        try:
+
+            def worker_read():
+                self.last_worker_line = (
+                    self.worker_subprocess.stdout.readline().decode("utf-8").strip()
+                )
+                logging.info(self.last_worker_line)
+
+            def worker_write(s):
+                self.worker_subprocess.stdin.write(("%s\n" % s).encode("utf-8"))
+                self.worker_subprocess.stdin.flush()
+
+            if self.worker_subprocess is None:
+                logging.info("starting worker subprocess: %s", args)
+                self.worker_subprocess = subprocess.Popen(
+                    args, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+                )
+                worker_read()
+
+            logging.info("starting recording: %s", json_args)
+            worker_write(json.dumps(json_args))
+            worker_read()
+            last_error = json.loads(self.last_worker_line).get("last_error")
+            if not last_error:
+                record_status = 0
+        except (subprocess.SubprocessError, BrokenPipeError, json.decoder.JSONDecodeError) as e:
+            logging.error(e)
+            if self.worker_subprocess:
+                self.worker_subprocess.kill()
+                self.worker_subprocess = None
         return record_status
 
 
