@@ -241,7 +241,11 @@ class EttusRecorder(SDRRecorder):
             last_error = json.loads(self.last_worker_line).get("last_error")
             if not last_error:
                 record_status = 0
-        except (subprocess.SubprocessError, BrokenPipeError, json.decoder.JSONDecodeError) as e:
+        except (
+            subprocess.SubprocessError,
+            BrokenPipeError,
+            json.decoder.JSONDecodeError,
+        ) as e:
             logging.error(e)
             if self.worker_subprocess:
                 self.worker_subprocess.kill()
