@@ -31,6 +31,7 @@ WIDTH = 11
 HEIGHT = 8
 DPI = 75
 MPL_BACKEND = "cairo"
+DS_PIXELS = 256
 
 
 def rotate_file_n(initial_name, n, require_initial=True):
