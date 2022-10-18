@@ -89,22 +89,27 @@ def read_csv(args):
             frames += 1
 
 
-def choose_recorders(signals, recorder_freq_exclusions):
+def choose_recorders(signals, recorder_freq_exclusions, max_recorder_signals):
     suitable_recorders = defaultdict(set)
     for signal in sorted(signals):
         for recorder, excluded in sorted(recorder_freq_exclusions.items()):
             if not freq_excluded(signal, excluded):
                 suitable_recorders[signal].add(recorder)
     recorder_assignments = []
-    busy_recorders = set()
+    busy_count = defaultdict(int)
     for signal, recorders in sorted(suitable_recorders.items(), key=lambda x: x[1]):
         if not recorders:
             continue
+        busy_recorders = set(
+            recorder
+            for recorder, count in busy_count.items()
+            if count >= max_recorder_signals
+        )
         free_recorders = recorders - busy_recorders
         if not free_recorders:
             continue
         recorder = random.choice(list(free_recorders))  # nosec
-        busy_recorders.add(recorder)
+        busy_count[recorder] += 1
         recorder_assignments.append((signal, recorder))
     return recorder_assignments
 
@@ -187,7 +192,7 @@ def get_center(signal_mhz, freq_start_mhz, bin_mhz, record_bw):
     )
 
 
-def choose_record_signal(signals, recorders):
+def choose_record_signal(signals, max_signals):
     recorder_buckets = Counter()
 
     # Convert signals into buckets of record_bw size, count how many of each size
@@ -202,10 +207,10 @@ def choose_record_signal(signals, recorders):
     recorder_freqs = []
     # From least occuring bucket to most occurring, choose a random bucket for each recorder.
     for _count, buckets in sorted(buckets_by_count.items()):
-        while buckets and len(recorder_freqs) < recorders:
+        while buckets and len(recorder_freqs) < max_signals:
             bucket = random.choice(list(buckets))  # nosec
             buckets = buckets.remove(bucket)
             recorder_freqs.append(bucket)
-        if len(recorder_freqs) == recorders:
+        if len(recorder_freqs) == max_signals:
             break
     return recorder_freqs
