@@ -264,9 +264,11 @@ def call_record_signals(args, lastbins_history, prom_vars):
             signals.extend(list(bins))
         recorder_freq_exclusions = get_freq_exclusions(args)
         recorder_count = len(recorder_freq_exclusions)
-        record_signals = choose_record_signal(signals, recorder_count)
+        record_signals = choose_record_signal(
+            signals, recorder_count * args.max_recorder_signals
+        )
         for signal, recorder in choose_recorders(
-            record_signals, recorder_freq_exclusions
+            record_signals, recorder_freq_exclusions, args.max_recorder_signals
         ):
             signal_hz = int(signal * 1e6)
             record_bps = int(args.record_bw_msps * MB)
@@ -537,6 +539,13 @@ def argument_parser():
         type=int,
         default=8001,
         help="Log FFT results from this port",
+    )
+    parser.add_argument(
+        "--max_recorder_signals",
+        dest="max_recorder_signals",
+        type=int,
+        default=1,
+        help="Max number of recordings per worker to request",
     )
     return parser
 

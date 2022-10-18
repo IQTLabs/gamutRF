@@ -70,12 +70,12 @@ class WindowsTestCase(unittest.TestCase):
         recorder_freq_exclusions = {"c1": ((100, 199),), "c2": ((300, 399),)}
         self.assertEqual(
             [(100, "c2"), (200, "c1")],
-            choose_recorders([100, 200], recorder_freq_exclusions),
+            choose_recorders([100, 200], recorder_freq_exclusions, 1),
         )
         recorder_freq_exclusions = {"c1": (), "c2": ((100, 199),)}
         self.assertEqual(
             [(100, "c1"), (200, "c2")],
-            choose_recorders([100, 200], recorder_freq_exclusions),
+            choose_recorders([100, 200], recorder_freq_exclusions, 1),
         )
 
     def test_freq_excluded(self):
