@@ -9,7 +9,7 @@ RUN git clone https://github.com/anarkiwi/mt_rx_samples_to_file -b v1.0.12
 WORKDIR /root/mt_rx_samples_to_file
 RUN wget https://sourceforge.net/projects/sigpack/files/sigpack-1.2.7.zip -O sigpack.zip && unzip sigpack.zip && ln -s sigpack-*/sigpack .
 RUN wget https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp
-RUN git clone https://github.com/DTolm/VkFFT && cd VkFFT && git checkout 33109a0031c7c005291b81681ec2d1af5c5aefc7
+RUN git clone https://github.com/DTolm/VkFFT -b v1.2.30
 WORKDIR /root/SoapyBladeRF/build
 RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/SoapyUHD/build
