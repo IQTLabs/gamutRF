@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import subprocess
+import sys
 import threading
 import time
 
@@ -284,7 +285,9 @@ def zstd_file(uncompressed_file):
     subprocess.check_call(["/usr/bin/zstd", "--rm", uncompressed_file])
 
 
-def process_fft_lines(args, prom_vars, buff_file, executor, runonce=False):
+def process_fft_lines(
+    args, prom_vars, buff_file, executor, proxy_result, runonce=False
+):
     lastfreq = 0
     fftbuffer = []
     lastbins_history = []
@@ -306,6 +309,11 @@ def process_fft_lines(args, prom_vars, buff_file, executor, runonce=False):
         openlogts = int(time.time())
         with open(args.log, mode=mode) as l:
             while True:
+                if not proxy_result.running():
+                    logging.error(
+                        "FFT proxy stopped running: %s", proxy_result.result()
+                    )
+                    sys.exit(-1)
                 now = int(time.time())
                 if now - last_fft_report > FFT_BUFFER_TIME * 2:
                     logging.info(
@@ -354,7 +362,8 @@ def process_fft_lines(args, prom_vars, buff_file, executor, runonce=False):
                 df["scan_pos"] = (df.freq - args.freq_start) / (
                     args.freq_end - args.freq_start
                 )
-                lastfreq = df.freq.iat[-1]
+                if df.size:
+                    lastfreq = df.freq.iat[-1]
                 rotatelognow = False
                 for row in df.itertuples():
                     rollover = row.scan_pos < 0.1 and max_scan_pos > 0.9 and fftbuffer
@@ -422,8 +431,8 @@ def fft_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
 
 def find_signals(args, prom_vars):
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
-        executor.submit(fft_proxy, args, BUFF_FILE)
-        process_fft_lines(args, prom_vars, BUFF_FILE, executor)
+        proxy_result = executor.submit(fft_proxy, args, BUFF_FILE)
+        process_fft_lines(args, prom_vars, BUFF_FILE, executor, proxy_result)
 
 
 def argument_parser():
