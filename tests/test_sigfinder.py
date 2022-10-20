@@ -19,6 +19,11 @@ from gamutrf.sigfinder import process_fft_lines
 from gamutrf.utils import rotate_file_n
 
 
+def null_proxy():
+    for i in range(10):
+        time.sleep(1)
+
+
 class FakeResponse:
     def __init__(self):
         self.status = 200
@@ -138,10 +143,6 @@ class SigFinderTestCase(unittest.TestCase):
         argument_parser()
 
     def test_process_fft_lines(self):
-        def null_proxy():
-            while True:
-                time.sleep(1)
-
         with concurrent.futures.ProcessPoolExecutor(1) as executor:
             proxy_result = executor.submit(null_proxy)
             with tempfile.TemporaryDirectory() as tempdir:
