@@ -362,7 +362,8 @@ def process_fft_lines(
                 df["scan_pos"] = (df.freq - args.freq_start) / (
                     args.freq_end - args.freq_start
                 )
-                lastfreq = df.freq.iat[-1]
+                if df.size:
+                    lastfreq = df.freq.iat[-1]
                 rotatelognow = False
                 for row in df.itertuples():
                     rollover = row.scan_pos < 0.1 and max_scan_pos > 0.9 and fftbuffer
