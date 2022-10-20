@@ -184,7 +184,7 @@ class SigFinderTestCase(unittest.TestCase):
                                 )
                                 freq += 1e5
                 process_fft_lines(
-                    args, prom_vars, buff_file, executor, null_proxy, runonce=True
+                    args, prom_vars, buff_file, executor, proxy_result, runonce=True
                 )
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
