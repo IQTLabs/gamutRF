@@ -138,7 +138,12 @@ class SigFinderTestCase(unittest.TestCase):
         argument_parser()
 
     def test_process_fft_lines(self):
+        def null_proxy():
+            while True:
+                time.sleep(1)
+
         with concurrent.futures.ProcessPoolExecutor(1) as executor:
+            proxy_result = executor.submit(null_proxy)
             with tempfile.TemporaryDirectory() as tempdir:
                 test_log = os.path.join(str(tempdir), "test.csv")
                 test_fftlog = os.path.join(str(tempdir), "fft.csv")
@@ -178,7 +183,9 @@ class SigFinderTestCase(unittest.TestCase):
                                     )
                                 )
                                 freq += 1e5
-                process_fft_lines(args, prom_vars, buff_file, executor, runonce=True)
+                process_fft_lines(
+                    args, prom_vars, buff_file, executor, null_proxy, runonce=True
+                )
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
 
