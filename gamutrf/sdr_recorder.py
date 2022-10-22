@@ -46,7 +46,7 @@ class SDRRecorder:
                 int(float(arg))
             except ValueError:
                 return "Invalid values in request"
-        if freq_excluded(center_freq, parse_freq_excluded(freqs_excluded)):
+        if freq_excluded(int(center_freq), parse_freq_excluded(freqs_excluded)):
             return "Requested frequency is excluded"
         if int(sample_rate) < MIN_SAMPLE_RATE or int(sample_rate) > MAX_SAMPLE_RATE:
             return "sample rate {sample_rate} out of range {MIN_SAMPLE_RATE} to {MAX_SAMPLE_RATE}"
