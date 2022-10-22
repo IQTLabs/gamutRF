@@ -282,7 +282,7 @@ def call_record_signals(args, lastbins_history, prom_vars):
 
 
 def zstd_file(uncompressed_file):
-    subprocess.check_call(["/usr/bin/zstd", "--rm", uncompressed_file])
+    subprocess.check_call(["/usr/bin/zstd", "--force", "--rm", uncompressed_file])
 
 
 def process_fft_lines(
