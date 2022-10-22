@@ -77,6 +77,8 @@ services:
       - --width=10
       - --prominence=2
       - --threshold=-25
+      - --record_secs=1
+      - --max_recorder_signals=5
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
   watchtower:
