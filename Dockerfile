@@ -32,7 +32,7 @@ WORKDIR /gamutrf
 # TODO: https://github.com/python-poetry/poetry/issues/3591
 # Install pandas via pip to get wheel. Disabling the new installer/configuring a wheel source does not work.
 RUN rm -rf /usr/lib/python3/dist-packages/pycparser* && \
-    poetry run pip install pandas==1.5.0 && \
+    poetry run pip install pandas==1.5.1 && \
     poetry install --no-interaction --no-ansi
 # nosemgrep:github.workflows.config.missing-user
 CMD ["gamutrf-scan", "--help"]
