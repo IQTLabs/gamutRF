@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import logging
 import random
+import os
 import time
 from collections import Counter
 from collections import defaultdict
@@ -159,7 +160,7 @@ def scipy_find_sig_windows(df, width, prominence, threshold):
     return [(df.iloc[peak].freq, df.iloc[peak].db) for peak in peaks]
 
 
-def graph_fft_peaks(graph_path, df, signals):
+def graph_fft_peaks(graph_path, df, mean_running_df, signals):
     maxdb = df.db.max()
     df["peaks"] = df.db.min()
     for peak_freq, _ in signals:
@@ -174,16 +175,21 @@ def graph_fft_peaks(graph_path, df, signals):
 
     matplotlib.use(MPL_BACKEND)
     plt.figure(figsize=(WIDTH, HEIGHT), dpi=DPI)
-    plt.plot(df.freq, df.db, "b", df.freq, df.peaks, "y")
+    plt.plot(df.freq, df.db, "b", df.freq, df.peaks, "y", mean_running_df.freq, mean_running_df.db, "k")
     plt.xlabel("freq (MHz)")
     plt.ylabel("power (dB)")
-    plt.legend(("power", "peak status"), loc="upper right")
+    plt.legend(("power", "peak status", "mean power"), loc="upper right")
     time_min = time.ctime(df.ts.min())
     time_max = time.ctime(df.ts.max())
     plt.title(f"gamutRF scanner FFT {time_min} to {time_max}\n{peak_signals}")
-    plt.savefig(graph_path)
+    real_path = os.path.realpath(graph_path)
+    basename = os.path.basename(real_path)
+    dirname = os.path.dirname(real_path)
+    tmp_graph_path = os.path.join(dirname, "." + basename)
+    plt.savefig(tmp_graph_path)
     plt.cla()
     plt.close("all")
+    os.rename(tmp_graph_path, graph_path)
 
 
 def get_center(signal_mhz, freq_start_mhz, bin_mhz, record_bw):
