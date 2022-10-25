@@ -175,7 +175,17 @@ def graph_fft_peaks(graph_path, df, mean_running_df, signals):
 
     matplotlib.use(MPL_BACKEND)
     plt.figure(figsize=(WIDTH, HEIGHT), dpi=DPI)
-    plt.plot(df.freq, df.db, "b", df.freq, df.peaks, "y", mean_running_df.freq, mean_running_df.db, "k")
+    plt.plot(
+        df.freq,
+        df.db,
+        "b",
+        df.freq,
+        df.peaks,
+        "y",
+        mean_running_df.freq,
+        mean_running_df.db,
+        "k",
+    )
     plt.xlabel("freq (MHz)")
     plt.ylabel("power (dB)")
     plt.legend(("power", "peak status", "mean power"), loc="upper right")

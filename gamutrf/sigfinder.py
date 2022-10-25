@@ -381,7 +381,12 @@ def process_fft_lines(
                         max_scan_pos = row.scan_pos
                         frame_counter.inc()
                         new_lastbins = process_fft(
-                            args, prom_vars, row.ts, fftbuffer, lastbins, running_df,
+                            args,
+                            prom_vars,
+                            row.ts,
+                            fftbuffer,
+                            lastbins,
+                            running_df,
                         )
                         if new_lastbins is not None:
                             lastbins = new_lastbins
