@@ -160,7 +160,7 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
         old_bins_prom.labels(bin_freq=obin).inc()
 
 
-def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
+def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df):
     global PEAK_DBS
     df = pd.DataFrame(fftbuffer, columns=["ts", "freq", "db"])
     # resample to SCAN_FRES
@@ -199,9 +199,17 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins):
         df, width=args.width, prominence=args.prominence, threshold=args.threshold
     )
 
+    if running_df is None:
+        running_df = df
+    else:
+        now = time.time()
+        running_df = running_df[running_df.ts >= (now - args.running_fft_secs)]
+        running_df = pd.concat(running_df, df)
+    mean_running_df = running_df[["freq", "db"]].groupby(["freq"]).mean().reset_index()
+
     if args.fftgraph:
         rotate_file_n(args.fftgraph, args.nfftgraph)
-        graph_fft_peaks(args.fftgraph, df, signals)
+        graph_fft_peaks(args.fftgraph, df, mean_running_df, signals)
 
     for peak_freq, peak_db in signals:
         center_freq = get_center(
@@ -298,6 +306,7 @@ def process_fft_lines(
     fft_packets = 0
     max_scan_pos = 0
     context = zstandard.ZstdDecompressor()
+    running_df = None
 
     while True:
         if os.path.exists(args.log):
@@ -372,7 +381,12 @@ def process_fft_lines(
                         max_scan_pos = row.scan_pos
                         frame_counter.inc()
                         new_lastbins = process_fft(
-                            args, prom_vars, row.ts, fftbuffer, lastbins
+                            args,
+                            prom_vars,
+                            row.ts,
+                            fftbuffer,
+                            lastbins,
+                            running_df,
                         )
                         if new_lastbins is not None:
                             lastbins = new_lastbins
@@ -556,6 +570,14 @@ def argument_parser():
         default=1,
         help="Max number of recordings per worker to request",
     )
+    parser.add_argument(
+        "--running_fft_secs",
+        dest="running_fft_secs",
+        type=int,
+        default=900,
+        help="Number of seconds for running FFT average",
+    )
+
     return parser
 
 
