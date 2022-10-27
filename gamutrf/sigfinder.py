@@ -11,6 +11,7 @@ import time
 import bjoern
 import falcon
 import jinja2
+import numpy as np
 import pandas as pd
 import requests
 import schedule
@@ -206,10 +207,18 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df):
         running_df = running_df[running_df.ts >= (now - args.running_fft_secs)]
         running_df = pd.concat(running_df, df)
     mean_running_df = running_df[["freq", "db"]].groupby(["freq"]).mean().reset_index()
+    sample_count_df = df[["freq"]].copy()
+    sample_count_df["freq"] = np.floor(sample_count_df["freq"])
+    sample_count_df["size"] = sample_count_df.groupby("freq").transform("size")
+    sample_count_df["size"] = abs(
+        sample_count_df["size"].mean() - sample_count_df["size"]
+    )
+    sample_count_df["size"].iat[0] = 0
+    sample_count_df["size"].iat[-1] = 0
 
     if args.fftgraph:
         rotate_file_n(args.fftgraph, args.nfftgraph)
-        graph_fft_peaks(args.fftgraph, df, mean_running_df, signals)
+        graph_fft_peaks(args.fftgraph, df, mean_running_df, sample_count_df, signals)
 
     for peak_freq, peak_db in signals:
         center_freq = get_center(
