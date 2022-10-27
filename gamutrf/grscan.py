@@ -8,7 +8,6 @@ import threading
 import time
 
 try:
-    from gnuradio import analog  # pytype: disable=import-error
     from gnuradio import blocks  # pytype: disable=import-error
     from gnuradio import fft  # pytype: disable=import-error
     from gnuradio import gr  # pytype: disable=import-error
@@ -54,19 +53,19 @@ class grscan(gr.top_block):
         ##################################################
         # Variables
         ##################################################
-        self.sweep_freq = sweep_freq = 1 / sweep_sec
-        self.scan_samp_rate = scan_samp_rate = 256e3
         self.fft_size = fft_size
         self.center_freq = freq_start
 
         ##################################################
         # Blocks
         ##################################################
-        self.blocks_probe_signal_x_0 = blocks.probe_signal_f()
 
         def _center_freq_probe():
             while True:
-                val = self.blocks_probe_signal_x_0.level()
+                sweep_pos = (time.time() % self.sweep_sec) / self.sweep_sec
+                val = int(
+                    ((self.freq_end - self.freq_start) * sweep_pos) + self.freq_start
+                )
                 self.set_center_freq(val)
                 time.sleep(1.0 / self.retune_hz)
 
@@ -93,35 +92,17 @@ class grscan(gr.top_block):
         self.fft_vxx_0 = fft.fft_vcc(
             fft_size, True, window.blackmanharris(fft_size), True, 1
         )
-        self.blocks_throttle_0 = blocks.throttle(gr.sizeof_float, scan_samp_rate, True)
         self.blocks_stream_to_vector_0 = blocks.stream_to_vector(
             gr.sizeof_gr_complex, fft_size
-        )
-        self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(
-            freq_end - freq_start
         )
         zmq_addr = f"tcp://{logaddr}:{logport}"
         logging.info("serving FFT on %s", zmq_addr)
         self.zeromq_pub_sink_0 = zeromq.pub_sink(1, 1, zmq_addr, 100, False, -1, "")
         self.blocks_complex_to_mag_0 = blocks.complex_to_mag(fft_size)
-        self.blocks_add_const_vxx_0 = blocks.add_const_ff(freq_start)
-        self.analog_sig_source_x_0 = analog.sig_source_f(
-            scan_samp_rate, analog.GR_SAW_WAVE, sweep_freq, 1, 0, 0
-        )
 
         ##################################################
         # Connections
         ##################################################
-        # Tuning chain
-        self.connect(
-            (self.analog_sig_source_x_0, 0), (self.blocks_multiply_const_vxx_0, 0)
-        )
-        self.connect(
-            (self.blocks_multiply_const_vxx_0, 0), (self.blocks_add_const_vxx_0, 0)
-        )
-        self.connect((self.blocks_add_const_vxx_0, 0), (self.blocks_throttle_0, 0))
-        self.connect((self.blocks_throttle_0, 0), (self.blocks_probe_signal_x_0, 0))
-
         # FFT chain
         if self.habets39_sweepsinkv_0:
             self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
