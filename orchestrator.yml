@@ -81,6 +81,9 @@ services:
       - --max_recorder_signals=5
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
+    environment:
+      - "PEAK_TRIGGER=0"
+      - "PIN_TRIGGER=17"
   watchtower:
     image: containrrr/watchtower:latest
     restart: always
