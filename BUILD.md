@@ -47,8 +47,6 @@ SDA -> PIN3  (SDA)
 6. Install dependencies:
 ```
 sudo apt-get update
-sudo apt-get -y upgrade
-sudo reboot
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
