@@ -34,10 +34,11 @@ from gamutrf.utils import rotate_file_n, SCAN_FRES
 MB = int(1.024e6)
 FFT_BUFFER_TIME = 3
 BUFF_FILE = "/dev/shm/scanfftbuffer.txt.zst"  # nosec
-PEAK_TRIGGER = int(os.environ.get('PEAK_TRIGGER', '0'))
-PIN_TRIGGER = int(os.environ.get('PIN_TRIGGER', '17'))
+PEAK_TRIGGER = int(os.environ.get("PEAK_TRIGGER", "0"))
+PIN_TRIGGER = int(os.environ.get("PIN_TRIGGER", "17"))
 if PEAK_TRIGGER == 1:
     import RPi.GPIO as GPIO
+
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(PIN_TRIGGER, GPIO.OUT)
 
