@@ -20,7 +20,11 @@ class MQTTReporter:
     @staticmethod
     def log(path, prefix, start_time, record_args):
         try:
-            with open(os.path.join(path, f"mqtt-{prefix}-{start_time}.log"), "a+") as f:
+            with open(
+                os.path.join(path, f"mqtt-{prefix}-{start_time}.log"),
+                "a+",
+                encoding="utf-8",
+            ) as f:
                 f.write(f"{json.dumps(record_args)}\n")
         except FileNotFoundError as err:
             logging.error(f"could not write to mqtt rssi log: {err}")

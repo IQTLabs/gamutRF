@@ -61,7 +61,7 @@ def error_response(resp, text="error!"):
 
 def load_template(name):
     path = os.path.join("templates", name)
-    with open(os.path.abspath(path), "r") as fp:
+    with open(os.path.abspath(path), "r", encoding="utf-8") as fp:
         return jinja2.Template(fp.read())
 
 
@@ -222,6 +222,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df):
     mean_running_df = running_df[["freq", "db"]].groupby(["freq"]).mean().reset_index()
     sample_count_df = df[["freq"]].copy()
     sample_count_df["freq"] = np.floor(sample_count_df["freq"])
+    # nosemgrep
     sample_count_df["size"] = sample_count_df.groupby("freq").transform("size")
     sample_count_df["size"] = abs(
         sample_count_df["size"].mean() - sample_count_df["size"]
@@ -338,7 +339,7 @@ def process_fft_lines(
             logging.info(f"opening {args.log}")
             mode = "w"
         openlogts = int(time.time())
-        with open(args.log, mode=mode) as l:
+        with open(args.log, mode=mode, encoding="utf-8") as l:
             while True:
                 if not proxy_result.running():
                     logging.error(

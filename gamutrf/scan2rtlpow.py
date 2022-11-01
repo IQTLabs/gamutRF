@@ -14,7 +14,7 @@ MAX_WORKERS = 4
 
 
 def generate_csv(args):
-    with open(args.outcsv, "w") as outcsv:
+    with open(args.outcsv, "w", encoding="utf-8") as outcsv:
         for frame, frame_df in read_csv(args):
             ts = frame_df["ts"].iat[0]
             dt = datetime.datetime.fromtimestamp(ts)
