@@ -27,12 +27,15 @@ RUN apt-get update && apt-get install --no-install-recommends -yq \
 RUN python3 -m pip install --upgrade pip
 RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.1.15 && \
     poetry config virtualenvs.create false
-COPY . /gamutrf
+COPY pyproject.toml /gamutrf/pyproject.toml
+COPY poetry.lock /gamutrf/poetry.lock
 WORKDIR /gamutrf
 # TODO: https://github.com/python-poetry/poetry/issues/3591
 # Install pandas via pip to get wheel. Disabling the new installer/configuring a wheel source does not work.
 RUN rm -rf /usr/lib/python3/dist-packages/pycparser* && \
-    poetry run pip install pandas==1.5.1 && \
-    poetry install --no-interaction --no-ansi
+    poetry run pip install pandas==1.5.1
+RUN poetry install --no-root --no-interaction --no-ansi
+COPY . /gamutrf
+RUN poetry install --no-interaction --no-ansi
 # nosemgrep:github.workflows.config.missing-user
 CMD ["gamutrf-scan", "--help"]
