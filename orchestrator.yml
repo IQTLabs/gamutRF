@@ -62,7 +62,7 @@ services:
   sigfinder:
     restart: always
     image: iqtlabs/gamutrf:latest
-    shm_size: 64m 
+    shm_size: 128m 
     privileged: true
     networks:
       - gamutrf
