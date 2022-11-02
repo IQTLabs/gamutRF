@@ -160,7 +160,7 @@ def scipy_find_sig_windows(df, width, prominence, threshold):
     return [(df.iloc[peak].freq, df.iloc[peak].db) for peak in peaks]
 
 
-def graph_fft_peaks(graph_path, df, mean_running_df, _sample_count_df, signals):
+def graph_fft_peaks(graph_path, df, mean_running_df, sample_count_df, signals):
     maxdb = df.db.max()
     df["peaks"] = df.db.min()
     for peak_freq, _ in signals:
@@ -184,7 +184,7 @@ def graph_fft_peaks(graph_path, df, mean_running_df, _sample_count_df, signals):
         "y",
         mean_running_df.freq,
         mean_running_df.db,
-        # "k",
+        "k",
         # sample_count_df["freq"],
         # sample_count_df["size"],
         # "c",

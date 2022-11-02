@@ -19,12 +19,28 @@ from gamutrf.utils import ETTUS_ANT
 from gamutrf.utils import ETTUS_ARGS
 
 
+def set_command_time(_x, _y):
+    raise NotImplementedError
+
+
+def clear_command_time(_x):
+    raise NotImplementedError
+
+
+def get_sdr_time_now(_x):
+    return time.time()
+
+
 def get_source(
     grblock, sdr, samp_rate, gain, agc=False, center_freq=None, sdrargs=None
 ):
     logging.info(
         f"initializing SDR {sdr} with sample rate {samp_rate}, gain {gain}, agc {agc}"
     )
+
+    grblock.set_command_time = set_command_time
+    grblock.clear_command_time = clear_command_time
+    grblock.get_sdr_time_now = get_sdr_time_now
 
     url = urlparse(sdr)
     if url.scheme:
@@ -59,6 +75,9 @@ def get_source(
         grblock.source_0.set_gain(gain, 0)
         grblock.source_0.set_rx_agc(agc, 0)
         grblock.freq_setter = lambda x, y: x.set_center_freq(y, 0)
+        grblock.set_command_time = lambda x, y: x.set_command_time(uhd.time_spec_t(y))
+        grblock.clear_command_time = lambda x: x.clear_command_time()
+        grblock.get_sdr_time_now = lambda x: x.get_time_now().get_real_secs()
         return
 
     dev = f"driver={sdr}"

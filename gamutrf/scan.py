@@ -126,6 +126,13 @@ def argument_parser():
         default=10,
         help="seconds to wait for healthy freq updates",
     )
+    parser.add_argument(
+        "--retune-intervals",
+        dest="retune_intervals",
+        type=int,
+        default=1,
+        help="if > 1, then schedule future retuning events in batches",
+    )
     return parser
 
 
@@ -166,6 +173,7 @@ def main():
         sdr=options.sdr,
         sdrargs=options.sdrargs,
         fft_size=options.nfft,
+        retune_intervals=options.retune_intervals,
         habets39=habets39,
     )
 
