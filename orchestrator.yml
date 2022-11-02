@@ -63,6 +63,7 @@ services:
     restart: always
     image: iqtlabs/gamutrf:latest
     shm_size: 64m 
+    privileged: true
     networks:
       - gamutrf
     ports:
