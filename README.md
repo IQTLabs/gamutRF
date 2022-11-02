@@ -37,8 +37,10 @@ While there are other options, these options primarily influence gamutRF's scann
 | -- | -- |
 | --freq-start and --freq-end | Start and end of frequency range to scan in Hz (also used by sigfinger) |
 | --igain | SDR input gain in dB |
+| --samp-rate | Number of samples/sec |
 | --sweep-sec | Time to sweep frequency range in seconds |
 | --retune-hz | Rate at which to retune SDR frequency |
+| --retune-intervals | With an Ettus radio, use the timed command feature to schedule tuning N operations at a time (reduce host CPU requirements). |
 | --nfft | Number of FFT points |
 
 ##### sigfinder
@@ -152,3 +154,13 @@ You may see ```[ERROR] [USB] USB open failed: insufficient permissions``` on ini
 
 * Ensure your hardware can support the I/Q sample rate you have configured (gamutRF has been tested on Pi4 at 20Msps, which is the default recording rate). Also ensure your recording medium (e.g. flash drive, USB hard disk) is not timing out or blocking.
 * If using a Pi4, make sure you are using active cooling and an adequate power supply (no CPU throttling), and you are using a "blue" USB3 port.
+
+#### Scanner repeatedly logs "retune interval ran late"
+
+* ```--retune-hz``` is too fast, or the host is too busy to schedule retuning events in time. Increasing ```--retuning-intervals```, or reducing ```--samp-rate``` (but see below).
+
+#### Scanner repeatedly logs "mean tuning step is greater than --samp-rate/2"
+
+* ```--retune-hz``` may be too slow, or ```--samp-rate``` may be too low, causing non-overlapping FFT windows between retuning points.
+
+
