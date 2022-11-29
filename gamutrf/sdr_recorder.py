@@ -218,7 +218,7 @@ class EttusRecorder(SDRRecorder):
         rxb = min(rxb, sample_rate)
 
         args = [
-            "/usr/local/bin/mt_rx_samples_to_file",
+            "/usr/local/bin/uhd_sample_recorder",
             "--json",
             "--rate",
             str(sample_rate),
