@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     python3-dev \
     libcairo2-dev \
     sox \
+    sudo \
     wget \
     zstd && \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
@@ -34,7 +35,7 @@ WORKDIR /gamutrf
 # TODO: https://github.com/python-poetry/poetry/issues/3591
 # Install pandas via pip to get wheel. Disabling the new installer/configuring a wheel source does not work.
 RUN rm -rf /usr/lib/python3/dist-packages/pycparser* && \
-    poetry run pip install --no-cache-dir pandas==1.5.1
+    poetry run pip install --no-cache-dir pandas==$(grep pandas pyproject.toml | grep -Eo "[0-9\.]+")
 RUN poetry install --no-root --no-interaction --no-ansi
 COPY . /gamutrf
 RUN poetry install --no-interaction --no-ansi
