@@ -38,7 +38,7 @@ docker = "6.0.1"
 pylint = "2.15.7"
 pytest = "7.2.0"
 pytest-cov = "4.0.0"
-pytype = "2022.11.18"
+pytype = "2022.11.29"
 
 [tool.poetry.scripts]
 gamutrf-api = 'gamutrf.__main__:api'
