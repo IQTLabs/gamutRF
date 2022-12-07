@@ -60,7 +60,7 @@ def argument_parser():
         "--samp-rate",
         dest="samp_rate",
         type=eng_float,
-        default=eng_notation.num_to_str(float(4e6)),
+        default=eng_notation.num_to_str(float(4.096e6)),
         help="Set samp_rate [default=%(default)r]",
     )
     parser.add_argument(
@@ -152,6 +152,11 @@ def main():
 
     if options.freq_start < 70e6:
         print("Error: freq_start must be at least 70MHz")
+        sys.exit(1)
+
+    # ensure tuning tags arrive on FFT window boundaries.
+    if options.samp_rate % options.nfft:
+        print("NFFT must be a factor of sample rate")
         sys.exit(1)
 
     prom_vars = init_prom_vars()
