@@ -1,7 +1,5 @@
 FROM iqtlabs/gamutrf-gnuradio:latest
 WORKDIR /root
-RUN git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
-RUN git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
 RUN git clone https://github.com/ThomasHabets/gr-habets39
 RUN git clone https://github.com/Nuand/bladeRF.git -b 2021.10
 RUN git clone https://github.com/anarkiwi/lime-tools -b samples
@@ -10,10 +8,6 @@ WORKDIR /root/uhd_sample_recorder
 RUN ./install-deps.sh && ./build.sh
 WORKDIR /root/uhd_sample_recorder/build
 RUN cp uhd_sample_recorder /usr/local/bin
-WORKDIR /root/SoapyBladeRF/build
-RUN cmake .. && make -j "$(nproc)" && make install
-WORKDIR /root/SoapyUHD/build
-RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/gr-habets39/build
 RUN cmake .. && make install
 WORKDIR /root/bladeRF/host/build

@@ -1,7 +1,6 @@
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
-COPY --from=iqtlabs/gamutrf-base:latest /usr/lib /usr/lib
 COPY --from=iqtlabs/gamutrf-base:latest /usr/share/uhd/images /usr/share/uhd/images
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND noninteractive
@@ -15,11 +14,14 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     gcc \
     git \
     gnuplot \
+    gnuradio \
+    libcairo2-dev \
     libev-dev \
     mesa-vulkan-drivers \
+    pkg-config \
     python3 \
     python3-dev \
-    libcairo2-dev \
+    python3-pip \
     sox \
     sudo \
     wget \
@@ -39,5 +41,7 @@ RUN rm -rf /usr/lib/python3/dist-packages/pycparser* && \
 RUN poetry install --no-root --no-interaction --no-ansi
 COPY . /gamutrf
 RUN poetry install --no-interaction --no-ansi
+RUN python3 -c "from gnuradio import analog, blocks, gr, soapy, zeromq"
+RUN python3 -c "import habets39"
 # nosemgrep:github.workflows.config.missing-user
 CMD ["gamutrf-scan", "--help"]
