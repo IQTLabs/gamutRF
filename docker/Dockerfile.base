@@ -6,6 +6,7 @@ RUN git clone https://github.com/ThomasHabets/gr-habets39
 RUN git clone https://github.com/Nuand/bladeRF.git -b 2021.10
 RUN git clone https://github.com/anarkiwi/lime-tools -b samples
 RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.0
+RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.1
 WORKDIR /root/uhd_sample_recorder
 RUN ./install-deps.sh && ./build.sh
 WORKDIR /root/uhd_sample_recorder/build
@@ -16,11 +17,13 @@ WORKDIR /root/SoapyUHD/build
 RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/gr-habets39/build
 RUN cmake .. && make install
+WORKDIR /root/gr-iqtlabs/build
+RUN cmake .. && make install
 WORKDIR /root/bladeRF/host/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_UDEV_RULES=ON -DENABLE_BACKEND_LIBUSB=TRUE .. && make -j "$(nproc)" && make install
 WORKDIR /root/lime-tools/build
 RUN cmake .. && make install
 RUN ldconfig -v
 RUN ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
-RUN python3 -c "from gnuradio import soapy"
+RUN python3 -c "from gnuradio import soapy, iqtlabs"
 RUN python3 -c "import habets39"
