@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 
 try:
     import habets39  # pytype: disable=import-error
+    from gnuradio import iqtlabs  # pytype: disable=import-error
     from gnuradio import eng_notation  # pytype: disable=import-error
     from gnuradio import gr  # pytype: disable=import-error
     from gnuradio.eng_arg import eng_float  # pytype: disable=import-error
@@ -180,6 +181,7 @@ def main():
         fft_size=options.nfft,
         retune_intervals=options.retune_intervals,
         habets39=habets39,
+        iqtlabs=iqtlabs,
     )
 
     def sig_handler(_sig=None, _frame=None):

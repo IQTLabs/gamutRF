@@ -40,6 +40,7 @@ class grscan(gr.top_block):
         fft_size=1024,
         retune_intervals=1,
         habets39=None,
+        iqtlabs=None,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
@@ -151,6 +152,7 @@ class grscan(gr.top_block):
         self.retune_worker_thread.daemon = True
         self.retune_worker_thread.start()
 
+        self.iqtlabs = None
         self.habets39_sweepsinkv_0 = None
         if habets39:
             self.habets39_sweepsinkv_0 = habets39.sweepsinkv(
