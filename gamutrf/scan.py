@@ -5,7 +5,6 @@ import time
 from argparse import ArgumentParser
 
 try:
-    import habets39  # pytype: disable=import-error
     from gnuradio import iqtlabs  # pytype: disable=import-error
     from gnuradio import eng_notation  # pytype: disable=import-error
     from gnuradio import gr  # pytype: disable=import-error
@@ -28,8 +27,6 @@ def init_prom_vars():
         "freq_start_hz": Gauge("freq_start_hz", "start of scanning range in Hz"),
         "freq_end_hz": Gauge("freq_end_hz", "end of scanning range in Hz"),
         "sweep_sec": Gauge("sweep_sec", "scan sweep rate in seconds"),
-        "retune_hz": Gauge("retune_hz", "retune rate per second"),
-        "last_freq_update": Gauge("last_freq_update", "last frequency update time"),
     }
     return prom_vars
 
@@ -70,13 +67,6 @@ def argument_parser():
         type=intx,
         default=30,
         help="Set sweep_sec [default=%(default)r]",
-    )
-    parser.add_argument(
-        "--retune-hz",
-        dest="retune_hz",
-        type=intx,
-        default=97,
-        help="Set retune rate per second [default=%(default)r]",
     )
     parser.add_argument(
         "--nfft",
@@ -164,7 +154,6 @@ def main():
     prom_vars["freq_start_hz"].set(options.freq_start)
     prom_vars["freq_end_hz"].set(options.freq_end)
     prom_vars["sweep_sec"].set(options.sweep_sec)
-    prom_vars["retune_hz"].set(options.retune_hz)
     start_http_server(options.promport)
 
     tb = grscan(
@@ -173,14 +162,11 @@ def main():
         igain=options.igain,
         samp_rate=options.samp_rate,
         sweep_sec=options.sweep_sec,
-        retune_hz=options.retune_hz,
         logaddr=options.logaddr,
         logport=options.logport,
         sdr=options.sdr,
         sdrargs=options.sdrargs,
         fft_size=options.nfft,
-        retune_intervals=options.retune_intervals,
-        habets39=habets39,
         iqtlabs=iqtlabs,
     )
 
@@ -193,12 +179,4 @@ def main():
     signal.signal(signal.SIGTERM, sig_handler)
 
     tb.start()
-    while True:
-        prom_vars["last_freq_update"].set(tb.freq_update)
-        sleep_time = 1
-        time.sleep(sleep_time)
-        if not tb.freq_updated(options.updatetimeout):
-            tb.stop()
-            break
-
     tb.wait()

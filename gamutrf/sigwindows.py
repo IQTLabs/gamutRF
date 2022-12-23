@@ -192,9 +192,14 @@ def graph_fft_peaks(graph_path, df, mean_running_df, sample_count_df, signals):
     plt.xlabel("freq (MHz)")
     plt.ylabel("power (dB)")
     plt.legend(("power", "peak status", "mean power"), loc="upper right")
-    time_min = time.ctime(df.ts.min())
-    time_max = time.ctime(df.ts.max())
-    plt.title(f"gamutRF scanner FFT {time_min} to {time_max}\n{peak_signals}")
+    ts_min = df.ts.min()
+    ts_max = df.ts.max()
+    time_min = time.ctime(ts_min)
+    time_max = time.ctime(ts_max)
+    duration = ts_max - ts_min
+    plt.title(
+        f"gamutRF scanner FFT {time_min} to {time_max}, {duration}s\n{peak_signals}"
+    )
     real_path = os.path.realpath(graph_path)
     basename = os.path.basename(real_path)
     dirname = os.path.dirname(real_path)

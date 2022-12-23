@@ -13,11 +13,11 @@ See also [instructions on how to build a gamutRF system](BUILD.md).
 
 ## Scanner theory of operation
 
-gamutRF's scanner function is split across two Docker containers which are both run on the orchestrator. The `gamutrf` (scanner) container connects to the SDR and sweeps over a configured frequency range in 30s, retuning at 97Hz, while sampling at 8Msps (all default values which can be changed). For example, to sweep from 5GHz to 6GHz in 30s, it covers approximately 33.3MHz/s, retuning across that 33.3MHz at 97Hz.
+gamutRF's scanner function is split across two Docker containers which are both run on the orchestrator. The `gamutrf` (scanner) container connects to the SDR and sweeps over a configured frequency range in 30s, while sampling at 8.192Msps (all default values which can be changed).
 
-The samples are sent to a [streaming FFT gnuradio block](https://github.com/ThomasHabets/gr-habets39) which emits 2048 FFT points which are sent over UDP to the `sigfinder` container (see below). The FFT block needs to know when the SDR has been retuned to a new frequency, so it uses a gnuradio timestamp and frequency tag provided by the gnuradio UHD driver upon retuning. This tag functionality has been added to the Soapy driver in a gnuradio fork which is part of gamutRF, so that other SDRs may be used as scanners.
+The samples are sent to a [streaming FFT gnuradio block](https://github.com/iqtlabs/gr-iqtlabs) which emits 2048 FFT points which are served over ZMQ to the `sigfinder` container (see below). The FFT block needs to know when the SDR has been retuned to a new frequency, so it uses a gnuradio timestamp and frequency tag provided by the gnuradio UHD driver upon retuning. This tag functionality has been added to the Soapy driver in a gnuradio fork which is part of gamutRF, so that other SDRs may be used as scanners.
 
-The `sigfinder` container consumes these FFT points from UDP packets, does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
+The `sigfinder` container consumes these FFT points from ZMQ, does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
 
 If workers have been provisioned, the orchestrator will then command the workers to make an approximately 10 second I/Q recording at approximately 20Msps of each signal. Each signal peak is assigned a 20MHz bin, which means that if a signal is repeatedly detected with some frequency variation, the assigned recording bin will be constant, and if multiple signals are detected within 20MHz they can be collected simultaneously. A worker by default records at a higher sample rate than the bin size, so that 20MHz signal margins can be recorded.
 
@@ -39,8 +39,6 @@ While there are other options, these options primarily influence gamutRF's scann
 | --igain | SDR input gain in dB |
 | --samp-rate | Number of samples/sec |
 | --sweep-sec | Time to sweep frequency range in seconds |
-| --retune-hz | Rate at which to retune SDR frequency |
-| --retune-intervals | With an Ettus radio, use the timed command feature to schedule tuning N operations at a time (reduce host CPU requirements). |
 | --nfft | Number of FFT points |
 
 ##### sigfinder
@@ -155,12 +153,6 @@ You may see ```[ERROR] [USB] USB open failed: insufficient permissions``` on ini
 * Ensure your hardware can support the I/Q sample rate you have configured (gamutRF has been tested on Pi4 at 20Msps, which is the default recording rate). Also ensure your recording medium (e.g. flash drive, USB hard disk) is not timing out or blocking.
 * If using a Pi4, make sure you are using active cooling and an adequate power supply (no CPU throttling), and you are using a "blue" USB3 port.
 
-#### Scanner repeatedly logs "retune interval ran late"
-
-* ```--retune-hz``` is too fast, or the host is too busy to schedule retuning events in time. Increasing ```--retuning-intervals```, or reducing ```--samp-rate``` (but see below).
-
 #### Scanner repeatedly logs "mean tuning step is greater than --samp-rate/2"
 
-* ```--retune-hz``` may be too slow, or ```--samp-rate``` may be too low, causing non-overlapping FFT windows between retuning points.
-
-
+* ```--sweep-sec``` may be too low (fast), or ```--samp-rate``` may be too low, causing non-overlapping FFT windows between retuning points.

@@ -37,16 +37,12 @@ jobs:
           mkdir -p SoapyUHD/build && cd SoapyUHD/build
           cmake .. && make -j "$(nproc)" && sudo make install
           cd ../../ && sudo rm -rf SoapyUHD
-          mkdir -p gr-habets39/build && cd gr-habets39/build
-          cmake .. && sudo make install
-          cd ../../ && sudo rm -rf gr-habets39
           mkdir -p gr-iqtlabs/build && cd gr-iqtlabs/build
           cmake .. && sudo make install
           cd ../../ && sudo rm -rf gr-iqtlabs
           sudo ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
           sudo ldconfig -v
           python3 -c "from gnuradio import *"
-          python3 -c "import habets39"
           export PATH="${PATH}:$HOME/.local/bin"
           curl -sSL https://install.python-poetry.org | python3 - --version 1.1.15
           poetry config virtualenvs.create false

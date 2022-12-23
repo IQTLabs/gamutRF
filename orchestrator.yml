@@ -49,11 +49,9 @@ services:
       - --igain=40
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
-      - --samp-rate=4.096e6
+      - --samp-rate=8.192e6
       - --nfft=2048
       - --sweep-sec=30
-      - --retune-hz=31
-      - --retune-intervals=4
     healthcheck:
       test: [CMD, "/gamutrf/scanhc.sh", "9000"]
       interval: 10s

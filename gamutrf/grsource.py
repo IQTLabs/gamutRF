@@ -78,6 +78,7 @@ def get_source(
         grblock.set_command_time = lambda x, y: x.set_command_time(uhd.time_spec_t(y))
         grblock.clear_command_time = lambda x: x.clear_command_time()
         grblock.get_sdr_time_now = lambda x: x.get_time_now().get_real_secs()
+        grblock.cmd_port = "command"
         return
 
     dev = f"driver={sdr}"
@@ -97,4 +98,5 @@ def get_source(
     grblock.source_0.set_gain_mode(0, agc)
     grblock.source_0.set_gain(0, gain)
     grblock.freq_setter = lambda x, y: x.set_frequency(0, y)
+    grblock.cmd_port = "cmd"
     return
