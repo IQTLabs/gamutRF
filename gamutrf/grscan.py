@@ -31,6 +31,7 @@ class grscan(gr.top_block):
         sdr="ettus",
         sdrargs=None,
         fft_size=1024,
+        tune_overlap=0.5,
         iqtlabs=None,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
@@ -61,7 +62,7 @@ class grscan(gr.top_block):
         self.retune_fft = None
         if iqtlabs:
             freq_range = freq_end - freq_start
-            tune_step_hz = int(samp_rate / 2)
+            tune_step_hz = int(samp_rate * tune_overlap)
             target_retune_hz = freq_range / self.sweep_sec / tune_step_hz
             fft_rate = int(samp_rate / fft_size)
             tune_step_fft = int(fft_rate / target_retune_hz)

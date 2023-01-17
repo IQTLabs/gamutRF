@@ -118,11 +118,11 @@ def argument_parser():
         help="seconds to wait for healthy freq updates",
     )
     parser.add_argument(
-        "--retune-intervals",
-        dest="retune_intervals",
-        type=int,
-        default=1,
-        help="if > 1, then schedule future retuning events in batches",
+        "--tuneoverlap",
+        dest="tuneoverlap",
+        type=float,
+        default=0.5,
+        help="multiple of samp_rate when retuning",
     )
     return parser
 
@@ -167,6 +167,7 @@ def main():
         sdr=options.sdr,
         sdrargs=options.sdrargs,
         fft_size=options.nfft,
+        tune_overlap=options.tuneoverlap,
         iqtlabs=iqtlabs,
     )
 
