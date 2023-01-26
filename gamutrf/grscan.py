@@ -32,6 +32,7 @@ class grscan(gr.top_block):
         sdrargs=None,
         fft_size=1024,
         tune_overlap=0.5,
+        tune_step_fft=0,
         iqtlabs=None,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
@@ -63,12 +64,17 @@ class grscan(gr.top_block):
         if iqtlabs:
             freq_range = freq_end - freq_start
             tune_step_hz = int(samp_rate * tune_overlap)
-            target_retune_hz = freq_range / self.sweep_sec / tune_step_hz
-            fft_rate = int(samp_rate / fft_size)
-            tune_step_fft = int(fft_rate / target_retune_hz)
-            logging.info(
-                f"tuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps"
-            )
+            if tune_step_fft:
+                logging.info(
+                    f"retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs"
+                )
+            else:
+                target_retune_hz = freq_range / self.sweep_sec / tune_step_hz
+                fft_rate = int(samp_rate / fft_size)
+                tune_step_fft = int(fft_rate / target_retune_hz)
+                logging.info(
+                    f"retuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
+                )
             self.retune_fft = iqtlabs.retune_fft(
                 "rx_freq",
                 fft_size,

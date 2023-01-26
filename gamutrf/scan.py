@@ -64,9 +64,16 @@ def argument_parser():
     parser.add_argument(
         "--sweep-sec",
         dest="sweep_sec",
-        type=intx,
+        type=float,
         default=30,
         help="Set sweep_sec [default=%(default)r]",
+    )
+    parser.add_argument(
+        "--tune-step-fft",
+        dest="tune_step_fft",
+        type=int,
+        default=0,
+        help="tune FFT step (0 is use sweep_sec) [default=%(default)r]",
     )
     parser.add_argument(
         "--nfft",
@@ -168,6 +175,7 @@ def main():
         sdrargs=options.sdrargs,
         fft_size=options.nfft,
         tune_overlap=options.tuneoverlap,
+        tune_step_fft=options.tune_step_fft,
         iqtlabs=iqtlabs,
     )
 
