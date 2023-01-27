@@ -33,7 +33,7 @@ from gamutrf.utils import rotate_file_n, SCAN_FRES
 
 MB = int(1.024e6)
 FFT_BUFFER_TIME = 1
-BUFF_FILE = "/dev/shm/scanfftbuffer.txt.zst"  # nosec
+BUFF_FILE = "scanfftbuffer.txt.zst"  # nosec
 PEAK_TRIGGER = int(os.environ.get("PEAK_TRIGGER", "0"))
 PIN_TRIGGER = int(os.environ.get("PIN_TRIGGER", "17"))
 if PEAK_TRIGGER == 1:
@@ -467,9 +467,10 @@ def fft_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
 
 
 def find_signals(args, prom_vars):
+    buff_file = os.path.join(args.buff_path, BUFF_FILE)
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
-        proxy_result = executor.submit(fft_proxy, args, BUFF_FILE)
-        process_fft_lines(args, prom_vars, BUFF_FILE, executor, proxy_result)
+        proxy_result = executor.submit(fft_proxy, args, buff_file)
+        process_fft_lines(args, prom_vars, buff_file, executor, proxy_result)
 
 
 def argument_parser():
@@ -559,6 +560,13 @@ def argument_parser():
         help="Prometheus client port",
     )
     parser.add_argument(
+        "--port",
+        dest="port",
+        type=int,
+        default=80,
+        help="control webserver port",
+    )
+    parser.add_argument(
         "--freq-end",
         dest="freq_end",
         type=float,
@@ -600,7 +608,13 @@ def argument_parser():
         default=900,
         help="Number of seconds for running FFT average",
     )
-
+    parser.add_argument(
+        "--buff_path",
+        dest="buff_path",
+        type=str,
+        default="/dev/shm",  # nosec
+        help="Path for FFT buffer file",
+    )
     return parser
 
 
@@ -626,4 +640,4 @@ def main():
     app.add_route("/", scanner_form)
     app.add_route("/result", result)
     app.add_route("/requests", active_requests)
-    bjoern.run(app, "0.0.0.0", 80)
+    bjoern.run(app, "0.0.0.0", args.port)  # nosec
