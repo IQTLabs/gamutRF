@@ -47,6 +47,13 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 - --version 1.1.15
           poetry config virtualenvs.create false
           poetry install --no-interaction
+      - name: test gamutrf-samples2raw
+        run: |
+          gamutrf-samples2raw --help && \
+          dd if=/dev/zero of=/tmp/gamutrf_recording_ettus__gain40_1_1Hz_1000000sps.s16 bs=4 count=1000000 && \
+          gamutrf-samples2raw /tmp/gamutrf_recording_ettus__gain40_1_1Hz_1000000sps.s16 --outfmt=float && \
+          dd if=/dev/zero of=/tmp/floats bs=8 count=1000000 && \
+          diff /tmp/gamutrf_recording_ettus__gain40_1_1Hz_1000000sps.raw /tmp/floats
       - name: Code Quality - Black
         run: |
           export PATH="${PATH}:$HOME/.poetry/bin"
