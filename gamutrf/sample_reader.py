@@ -6,7 +6,6 @@ import numpy as np
 
 
 def get_reader(filename):
-
     # nosemgrep:github.workflows.config.useless-inner-function
     def gzip_reader(x):
         return gzip.open(x, "rb")

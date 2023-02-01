@@ -357,7 +357,6 @@ class LimeRecorder(SDRRecorder):
 
 
 class FileTestRecorder(SDRRecorder):
-
     test_file = None
 
     def record_args(
