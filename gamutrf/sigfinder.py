@@ -232,7 +232,9 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df, last_dfs):
 
     if args.fftgraph:
         rotate_file_n(args.fftgraph, args.nfftgraph)
-        graph_fft_peaks(args.fftgraph, df, mean_running_df, sample_count_df, signals, last_dfs)
+        graph_fft_peaks(
+            args.fftgraph, df, mean_running_df, sample_count_df, signals, last_dfs
+        )
 
     for peak_freq, peak_db in signals:
         center_freq = get_center(
@@ -413,7 +415,7 @@ def process_fft_lines(
                             running_df,
                             last_dfs,
                         )
-                        last_dfs = last_dfs[-args.nfftplots:]
+                        last_dfs = last_dfs[-args.nfftplots :]
                         last_dfs.append((last_df.freq, last_df.db))
                         if new_lastbins is not None:
                             lastbins = new_lastbins
