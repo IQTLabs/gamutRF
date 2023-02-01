@@ -168,7 +168,7 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
         old_bins_prom.labels(bin_freq=obin).inc()
 
 
-def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df):
+def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df, last_dfs):
     global PEAK_DBS
     df = pd.DataFrame(fftbuffer, columns=["ts", "freq", "db"])
     # resample to SCAN_FRES
@@ -232,7 +232,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df):
 
     if args.fftgraph:
         rotate_file_n(args.fftgraph, args.nfftgraph)
-        graph_fft_peaks(args.fftgraph, df, mean_running_df, sample_count_df, signals)
+        graph_fft_peaks(args.fftgraph, df, mean_running_df, sample_count_df, signals, last_dfs)
 
     for peak_freq, peak_db in signals:
         center_freq = get_center(
@@ -262,7 +262,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df):
     if old_bins:
         logging.info("old bins: %s", sorted(old_bins))
     update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars)
-    return monitor_bins
+    return (monitor_bins, df)
 
 
 def recorder_req(recorder, recorder_args, timeout):
@@ -330,6 +330,7 @@ def process_fft_lines(
     max_scan_pos = 0
     context = zstandard.ZstdDecompressor()
     running_df = None
+    last_dfs = []
 
     while True:
         if os.path.exists(args.log):
@@ -403,14 +404,17 @@ def process_fft_lines(
                     if rollover:
                         max_scan_pos = row.scan_pos
                         frame_counter.inc()
-                        new_lastbins = process_fft(
+                        new_lastbins, last_df = process_fft(
                             args,
                             prom_vars,
                             row.ts,
                             fftbuffer,
                             lastbins,
                             running_df,
+                            last_dfs,
                         )
+                        last_dfs = last_dfs[-args.nfftplots:]
+                        last_dfs.append((last_df.freq, last_df.db))
                         if new_lastbins is not None:
                             lastbins = new_lastbins
                             if lastbins:
@@ -494,6 +498,9 @@ def argument_parser():
     )
     parser.add_argument(
         "--nfftgraph", default=10, type=int, help="keep last N FFT graphs"
+    )
+    parser.add_argument(
+        "--nfftplots", default=10, type=int, help="last N plots in FFT graphs"
     )
     parser.add_argument(
         "--rotatesecs",
