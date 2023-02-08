@@ -1,7 +1,7 @@
 FROM iqtlabs/gamutrf-gnuradio-deps:latest
 WORKDIR /root
 # includes rx_freq tag - https://github.com/gnuradio/gnuradio/commit/915601c4a5d994532815fbd5c75a3c34f1fbd320
-RUN git clone https://github.com/gnuradio/gnuradio -b v3.10.5.0
+RUN git clone https://github.com/gnuradio/gnuradio -b v3.10.5.1
 WORKDIR /root/gnuradio/build
 RUN CMAKE_CXX_STANDARD=17 cmake -DENABLE_DEFAULT=OFF -DENABLE_PYTHON=ON -DENABLE_GNURADIO_RUNTIME=ON -DENABLE_GR_BLOCKS=ON -DENABLE_GR_FFT=ON -DENABLE_GR_FILTER=ON -DENABLE_GR_ANALOG=ON -DENABLE_GR_UHD=ON -DENABLE_GR_NETWORK=ON -DENABLE_GR_SOAPY=ON -DENABLE_GR_ZEROMQ=ON .. && make -j "$(nproc)" && make install
 RUN ln -s /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
