@@ -78,6 +78,7 @@ class grscan(gr.top_block):
             self.retune_fft = iqtlabs.retune_fft(
                 "rx_freq",
                 fft_size,
+                fft_size,
                 int(samp_rate),
                 int(freq_start),
                 int(freq_end),
