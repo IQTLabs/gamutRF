@@ -76,6 +76,13 @@ def argument_parser():
         help="tune FFT step (0 is use sweep_sec) [default=%(default)r]",
     )
     parser.add_argument(
+        "--skip-tune-step-fft",
+        dest="skip_tune_step_fft",
+        type=int,
+        default=0,
+        help="skip FFT samples on retune [default=%(default)r]",
+    )
+    parser.add_argument(
         "--nfft",
         dest="nfft",
         type=int,
@@ -176,6 +183,7 @@ def main():
         fft_size=options.nfft,
         tune_overlap=options.tuneoverlap,
         tune_step_fft=options.tune_step_fft,
+        skip_tune_step_fft=options.skip_tune_step_fft,
         iqtlabs=iqtlabs,
     )
 

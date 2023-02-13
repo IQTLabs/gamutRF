@@ -90,6 +90,7 @@ class FakeArgs:
         max_recorder_signals,
         running_fft_secs,
         nfftplots,
+        skip_tune_step_fft,
     ):
         self.log = log
         self.rotatesecs = rotatesecs
@@ -113,6 +114,7 @@ class FakeArgs:
         self.max_recorder_signals = max_recorder_signals
         self.running_fft_secs = running_fft_secs
         self.nfftplots = nfftplots
+        self.skip_tune_step_fft = skip_tune_step_fft
 
 
 class SigFinderTestCase(unittest.TestCase):
@@ -175,7 +177,8 @@ class SigFinderTestCase(unittest.TestCase):
                     10,
                     1,
                     1,
-                    1
+                    1,
+                    0,
                 )
                 prom_vars = init_prom_vars()
                 context = zstandard.ZstdCompressor()
@@ -219,6 +222,7 @@ class SigFinderTestCase(unittest.TestCase):
             1,
             1,
             1,
+            0,
         )
         zstd_context = zstandard.ZstdDecompressor()
 
