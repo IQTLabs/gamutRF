@@ -228,7 +228,8 @@ def plot_spectrogram(
     plt.savefig(spectrogram_filename, dpi=dpi)
     print(f"wrote {spectrogram_filename}")
     # must call this in specific order to avoid pyplot leak
-    axes.images.remove(im)
+    # axes.images.remove(im)
+    im.remove()
     fig.clear()
     plt.close()
     plt.cla()
