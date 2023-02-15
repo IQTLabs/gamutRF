@@ -90,8 +90,8 @@ class SDRRecorder:
     def fft_spectrogram(
         sample_file, fft_file, sample_count, sample_rate, center_freq, nfft
     ):
-        def matplotlib_gc(fig, axes, im):
-            axes.images.remove(im)
+        def matplotlib_gc(fig, im):
+            im.remove()
             fig.clear()
             plt.close()
             plt.cla()
@@ -125,7 +125,7 @@ class SDRRecorder:
             plt.colorbar(im, ax=axes)
             plt.sci(im)
             plt.savefig(png_file, dpi=DPI)
-            matplotlib_gc(fig, axes, im)
+            matplotlib_gc(fig, im)
 
         def plot_ds_fft(i, sample_file, extent):
             ds_png_file = sample_file.replace(".zst", ".ds.png")
@@ -138,7 +138,7 @@ class SDRRecorder:
             plt.sci(im)
             plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
             plt.savefig(ds_png_file, dpi=DPI)
-            matplotlib_gc(fig, axes, im)
+            matplotlib_gc(fig, im)
 
         if os.path.exists(fft_file):
             matplotlib.use(MPL_BACKEND)
