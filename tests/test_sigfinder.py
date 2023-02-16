@@ -16,6 +16,7 @@ from gamutrf.sigfinder import fft_proxy
 from gamutrf.sigfinder import init_prom_vars
 from gamutrf.sigfinder import ok_response
 from gamutrf.sigfinder import process_fft_lines
+from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n
 
 
@@ -115,6 +116,7 @@ class FakeArgs:
         self.running_fft_secs = running_fft_secs
         self.nfftplots = nfftplots
         self.skip_tune_step_fft = skip_tune_step_fft
+        self.db_rolling_factor = ROLLING_FACTOR
 
 
 class SigFinderTestCase(unittest.TestCase):

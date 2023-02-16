@@ -29,6 +29,7 @@ from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
+from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n, SCAN_FRES
 
 MB = int(1.024e6)
@@ -179,7 +180,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df, last_dfs):
     df["db"] = df.groupby(["freq"])["db"].mean()
     df = df.reset_index().drop_duplicates(subset=["freq"])
     df = df.sort_values("freq")
-    df = calc_db(df)
+    df = calc_db(df, args.db_rolling_factor)
     freqdiffs = df.freq - df.freq.shift()
     mindiff = freqdiffs.min()
     maxdiff = freqdiffs.max()
@@ -415,8 +416,11 @@ def process_fft_lines(
                             running_df,
                             last_dfs,
                         )
-                        last_dfs = last_dfs[-args.nfftplots :]
-                        last_dfs.append((last_df.freq, last_df.db))
+                        if args.nfftplots:
+                            last_dfs = last_dfs[-args.nfftplots :]
+                            last_dfs.append((last_df.freq, last_df.db))
+                        else:
+                            last_dfs = []
                         if new_lastbins is not None:
                             lastbins = new_lastbins
                             if lastbins:
@@ -623,6 +627,13 @@ def argument_parser():
         type=str,
         default="/dev/shm",  # nosec
         help="Path for FFT buffer file",
+    )
+    parser.add_argument(
+        "--db_rolling_factor",
+        dest="db_rolling_factor",
+        type=float,
+        default=ROLLING_FACTOR,
+        help="Divisor for rolling dB average (or 0 to disable)",
     )
     return parser
 

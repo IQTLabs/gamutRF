@@ -8,7 +8,7 @@ from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import freq_excluded
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import read_csv
-from gamutrf.sigwindows import ROLLOVERHZ
+from gamutrf.sigwindows import ROLLOVERHZ, ROLLING_FACTOR
 
 
 TESTDIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
@@ -22,6 +22,7 @@ class FakeArgs:
         self.nrows = nrows
         self.mindb = mindb
         self.maxframe = 0
+        self.db_rolling_factor = ROLLING_FACTOR
 
 
 class WindowsTestCase(unittest.TestCase):

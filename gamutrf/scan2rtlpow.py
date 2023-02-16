@@ -7,7 +7,7 @@ from statistics import mean
 
 import numpy as np
 
-from gamutrf.sigwindows import CSV
+from gamutrf.sigwindows import CSV, ROLLING_FACTOR
 from gamutrf.sigwindows import read_csv
 
 MAX_WORKERS = 4
@@ -69,6 +69,13 @@ def main():
     )
     parser.add_argument(
         "--fftmax", default=int(10000), type=int, help="max number of FFT bins"
+    )
+    parser.add_argument(
+        "--db_rolling_factor",
+        dest="db_rolling_factor",
+        type=float,
+        default=ROLLING_FACTOR,
+        help="Divisor for rolling dB average (or 0 to disable)",
     )
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
