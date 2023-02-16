@@ -5,7 +5,7 @@ RUN git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
 RUN git clone https://github.com/Nuand/bladeRF.git -b 2021.10
 RUN git clone https://github.com/anarkiwi/lime-tools -b samples
 RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.3
-RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.3
+RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.4
 WORKDIR /root/uhd_sample_recorder
 RUN ./install-deps.sh && ./build.sh
 WORKDIR /root/uhd_sample_recorder/build

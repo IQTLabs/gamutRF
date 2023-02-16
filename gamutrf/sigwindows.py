@@ -62,7 +62,7 @@ def read_csv_chunks(args):
             df = df[
                 (df["frame"] < read_frames) & (df["freq"] >= minmhz)
             ]  # pylint: disable=unsubscriptable-object
-            df = calc_db(df)
+            df = calc_db(df, args.db_rolling_factor)
             df = df[df["db"] >= args.mindb]
             preprocess_frames(df)
             yield df
@@ -73,7 +73,7 @@ def read_csv_chunks(args):
         df = df[
             (df["frame"] < read_frames) & (df["freq"] >= minmhz)
         ]  # pylint: disable=unsubscriptable-object
-        df = calc_db(df)
+        df = calc_db(df, args.db_rolling_factor)
         df = df[df["db"] >= args.mindb]
         preprocess_frames(df)
         yield df
@@ -146,11 +146,12 @@ def freq_excluded(freq, freq_exclusions):
     return False
 
 
-def calc_db(df):
+def calc_db(df, rolling_factor=ROLLING_FACTOR):
     df["db"] = 20 * np.log10(df[df["db"] != 0]["db"])
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     meandb = df["db"].mean()
-    df["db"] = df["db"].rolling(ROLLING_FACTOR).mean().fillna(meandb)
+    if rolling_factor:
+        df["db"] = df["db"].rolling(rolling_factor).mean().fillna(meandb)
     return df
 
 
