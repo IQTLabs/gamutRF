@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from gamutrf.scan2mp4 import generate_frames
-from gamutrf.sigwindows import ROLLOVERHZ
+from gamutrf.sigwindows import ROLLOVERHZ, ROLLING_FACTOR
 
 
 class FakeArgs:
@@ -15,6 +15,7 @@ class FakeArgs:
         self.nrows = nrows
         self.mindb = mindb
         self.maxframe = 0
+        self.db_rolling_factor = ROLLING_FACTOR
 
 
 class Scan2MP4TestCase(unittest.TestCase):
