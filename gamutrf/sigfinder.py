@@ -29,6 +29,7 @@ from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
+from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n, SCAN_FRES
 
 MB = int(1.024e6)
