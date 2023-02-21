@@ -95,7 +95,7 @@ class grscan(gr.top_block):
         )
         zmq_addr = f"tcp://{logaddr}:{logport}"
         logging.info("serving FFT on %s", zmq_addr)
-        self.zeromq_pub_sink_0 = zeromq.pub_sink(1, 1, zmq_addr, 100, False, -1, "")
+        self.zeromq_pub_sink_0 = zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")
         self.blocks_complex_to_mag_0 = blocks.complex_to_mag(fft_size)
 
         ##################################################
