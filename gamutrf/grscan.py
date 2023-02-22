@@ -34,6 +34,7 @@ class grscan(gr.top_block):
         tune_overlap=0.5,
         tune_step_fft=0,
         skip_tune_step_fft=0,
+        fft_roll=False,
         iqtlabs=None,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
@@ -86,6 +87,7 @@ class grscan(gr.top_block):
                 tune_step_hz,
                 tune_step_fft,
                 skip_tune_step_fft,
+                fft_roll,
             )
         self.fft_vxx_0 = fft.fft_vcc(
             fft_size, True, window.blackmanharris(fft_size), True, 1
