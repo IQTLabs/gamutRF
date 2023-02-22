@@ -453,6 +453,8 @@ def fft_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
     last_packet_sent_time = time.time()
     tmp_buff_file = os.path.basename(buff_file)
     tmp_buff_file = buff_file.replace(tmp_buff_file, "." + tmp_buff_file)
+    if os.path.exists(tmp_buff_file):
+        os.remove(tmp_buff_file)
     shutdown = False
     context = zstandard.ZstdCompressor()
     while not shutdown:
@@ -478,6 +480,8 @@ def fft_proxy(args, buff_file, buffer_time=FFT_BUFFER_TIME, shutdown_str=None):
 
 def find_signals(args, prom_vars):
     buff_file = os.path.join(args.buff_path, BUFF_FILE)
+    if os.path.exists(buff_file):
+        os.remove(buff_file)
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
         proxy_result = executor.submit(fft_proxy, args, buff_file)
         process_fft_lines(args, prom_vars, buff_file, executor, proxy_result)
