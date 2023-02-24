@@ -49,7 +49,6 @@ While there are other options, these options primarily influence gamutRF's scann
 | --prominence | Minimum prominence of a peak to be detected (passed to scipy find_peaks()) |
 | --threshold | Minimum threshold in dB of a peak to be detected (passed to scipy find_peaks()) |
 | --bin_width | Bin width in MHz |
-| --max_raw_power | Maximum valid raw power value at each FFT point |
 | --history | Number of scanner cycles over which to prioritize recording of least often observed peaks |
 | --record_bw_msps | Number of samples per second in units of 1024^2 (generally larger than bin size to record signal margins) |
 | --record_secs | Length of time to record I/Q samples in seconds |

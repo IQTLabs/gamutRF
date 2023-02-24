@@ -392,7 +392,6 @@ def process_fft_lines(
                 except ValueError as err:
                     logging.error(str(err))
                     continue
-                df = df[(df.pw > 0) & (df.pw <= args.max_raw_power)]
                 df = df[(df.freq >= args.freq_start) & (df.freq <= args.freq_end)]
                 df = df[(now - df.ts).abs() < 60]
                 df["scan_pos"] = (df.freq - args.freq_start) / (
@@ -523,12 +522,6 @@ def argument_parser():
     )
     parser.add_argument(
         "--bin_mhz", default=20, type=int, help="monitoring bin width in MHz"
-    )
-    parser.add_argument(
-        "--max_raw_power",
-        default=50,
-        type=float,
-        help="maximum raw power permitted from FFT",
     )
     parser.add_argument(
         "--width",
