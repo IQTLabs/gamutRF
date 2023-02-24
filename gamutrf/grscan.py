@@ -88,6 +88,8 @@ class grscan(gr.top_block):
                 tune_step_fft,
                 skip_tune_step_fft,
                 fft_roll,
+                1e-4,
+                1e4,
             )
         self.fft_vxx_0 = fft.fft_vcc(
             fft_size, True, window.blackmanharris(fft_size), True, 1
