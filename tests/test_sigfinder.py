@@ -86,7 +86,6 @@ class FakeArgs:
         fftgraph,
         logaddr,
         logport,
-        max_raw_power,
         nfftgraph,
         max_recorder_signals,
         running_fft_secs,
@@ -110,7 +109,6 @@ class FakeArgs:
         self.fftgraph = fftgraph
         self.logaddr = logaddr
         self.logport = logport
-        self.max_raw_power = max_raw_power
         self.nfftgraph = nfftgraph
         self.max_recorder_signals = max_recorder_signals
         self.running_fft_secs = running_fft_secs
