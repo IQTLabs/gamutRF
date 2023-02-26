@@ -7,7 +7,6 @@ from gamutrf.sdr_recorder import get_recorder
 
 
 class SDRRecorderTestCase(unittest.TestCase):
-
     SAMPLES = 1e3 * 4
 
     def test_sdr_recorder(self):

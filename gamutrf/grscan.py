@@ -88,8 +88,8 @@ class grscan(gr.top_block):
                 tune_step_fft,
                 skip_tune_step_fft,
                 fft_roll,
-                1e-4,
-                1e4,
+                -100,
+                50,
             )
         self.fft_vxx_0 = fft.fft_vcc(
             fft_size, True, window.blackmanharris(fft_size), True, 1
@@ -97,6 +97,7 @@ class grscan(gr.top_block):
         self.blocks_stream_to_vector_0 = blocks.stream_to_vector(
             gr.sizeof_gr_complex, fft_size
         )
+        self.blocks_nlog10_ff_0 = blocks.nlog10_ff(20, fft_size, 0)
         zmq_addr = f"tcp://{logaddr}:{logport}"
         logging.info("serving FFT on %s", zmq_addr)
         self.zeromq_pub_sink_0 = zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")
@@ -110,6 +111,9 @@ class grscan(gr.top_block):
             self.msg_connect((self.retune_fft, "tune"), (self.source_0, self.cmd_port))
             self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
             self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_0, 0))
-            self.connect((self.blocks_complex_to_mag_0, 0), (self.retune_fft, 0))
+            self.connect(
+                (self.blocks_complex_to_mag_0, 0), (self.blocks_nlog10_ff_0, 0)
+            )
+            self.connect((self.blocks_nlog10_ff_0, 0), (self.retune_fft, 0))
             self.connect((self.retune_fft, 0), (self.zeromq_pub_sink_0, 0))
             self.connect((self.source_0, 0), (self.blocks_stream_to_vector_0, 0))
