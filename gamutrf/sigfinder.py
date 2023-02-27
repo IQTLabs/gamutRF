@@ -169,7 +169,9 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
         old_bins_prom.labels(bin_freq=obin).inc()
 
 
-def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df, last_dfs):
+def process_fft(
+    args, scan_config, prom_vars, ts, fftbuffer, lastbins, running_df, last_dfs
+):
     global PEAK_DBS
     df = pd.DataFrame(fftbuffer, columns=["ts", "freq", "db"])
     # resample to SCAN_FRES
@@ -203,7 +205,7 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df, last_dfs):
     peak_dbs = {}
     bin_freq_count = prom_vars["bin_freq_count"]
     last_bin_freq_time = prom_vars["last_bin_freq_time"]
-    freq_start_mhz = args.freq_start / 1e6
+    freq_start_mhz = scan_config["freq_start"] / 1e6
     signals = scipy_find_sig_windows(
         df, width=args.width, prominence=args.prominence, threshold=args.threshold
     )
@@ -234,7 +236,13 @@ def process_fft(args, prom_vars, ts, fftbuffer, lastbins, running_df, last_dfs):
     if args.fftgraph:
         rotate_file_n(args.fftgraph, args.nfftgraph)
         graph_fft_peaks(
-            args.fftgraph, df, mean_running_df, sample_count_df, signals, last_dfs
+            args.fftgraph,
+            df,
+            mean_running_df,
+            sample_count_df,
+            signals,
+            last_dfs,
+            scan_config,
         )
 
     for peak_freq, peak_db in signals:
@@ -334,6 +342,7 @@ def process_fft_lines(
     context = zstandard.ZstdDecompressor()
     running_df = None
     last_dfs = []
+    scan_config = None
 
     while True:
         if os.path.exists(args.log):
@@ -384,19 +393,27 @@ def process_fft_lines(
                     txt_buf = last_line
                     lines = lines[:-1]
                 try:
-                    df = pd.DataFrame(
-                        [line.strip().split() for line in lines],
-                        columns=["ts", "freq", "pw"],
-                        dtype=float,
-                    )
+                    records = []
+                    for line in lines:
+                        line = line.strip()
+                        record = json.loads(line)
+                        ts = float(record["ts"])
+                        buckets = record["buckets"]
+                        scan_config = record["config"]
+                        records.extend(
+                            [
+                                {"ts": ts, "freq": float(freq), "pw": float(pw)}
+                                for freq, pw in buckets.items()
+                            ]
+                        )
+                    df = pd.DataFrame(records)
                 except ValueError as err:
                     logging.error(str(err))
                     continue
-                df = df[(df.freq >= args.freq_start) & (df.freq <= args.freq_end)]
                 df = df[(now - df.ts).abs() < 60]
-                df["scan_pos"] = (df.freq - args.freq_start) / (
-                    args.freq_end - args.freq_start
-                )
+                freq_start = scan_config["freq_start"]
+                freq_end = scan_config["freq_end"]
+                df["scan_pos"] = (df.freq - freq_start) / (freq_end - freq_start)
                 if df.size:
                     lastfreq = df.freq.iat[-1]
                 rotatelognow = False
@@ -408,6 +425,7 @@ def process_fft_lines(
                         frame_counter.inc()
                         new_lastbins, last_df = process_fft(
                             args,
+                            scan_config,
                             prom_vars,
                             row.ts,
                             fftbuffer,
@@ -575,20 +593,6 @@ def argument_parser():
         type=int,
         default=80,
         help="control webserver port",
-    )
-    parser.add_argument(
-        "--freq-end",
-        dest="freq_end",
-        type=float,
-        default=float(1e9),
-        help="Set freq_end [default=%(default)r]",
-    )
-    parser.add_argument(
-        "--freq-start",
-        dest="freq_start",
-        type=float,
-        default=float(100e6),
-        help="Set freq_start [default=%(default)r]",
     )
     parser.add_argument(
         "--logaddr",

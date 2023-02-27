@@ -147,7 +147,6 @@ def freq_excluded(freq, freq_exclusions):
 
 
 def calc_db(df, rolling_factor=ROLLING_FACTOR):
-    df["db"] = 20 * np.log10(df[df["db"] != 0]["db"])
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     meandb = df["db"].mean()
     if rolling_factor:
@@ -162,7 +161,7 @@ def scipy_find_sig_windows(df, width, prominence, threshold):
 
 
 def graph_fft_peaks(
-    graph_path, df, mean_running_df, sample_count_df, signals, last_dfs
+    graph_path, df, mean_running_df, sample_count_df, signals, last_dfs, scan_config
 ):
     maxdb = df.db.max()
     df["peaks"] = df.db.min()
@@ -202,9 +201,9 @@ def graph_fft_peaks(
     time_min = time.ctime(ts_min)
     time_max = time.ctime(ts_max)
     duration = ts_max - ts_min
-    plt.title(
-        f"gamutRF scanner FFT {time_min} to {time_max}, {duration}s\n{peak_signals}"
-    )
+    scan_config_txt = ", ".join([f"{x}: {y}" for x, y in scan_config.items()])
+    title = f"gamutRF scanner FFT {time_min} to {time_max}, {duration}s\n{scan_config_txt}\n{peak_signals}"
+    plt.title(title)
     real_path = os.path.realpath(graph_path)
     basename = os.path.basename(real_path)
     dirname = os.path.dirname(real_path)

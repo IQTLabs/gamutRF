@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 import os
 import tempfile
 import time
@@ -74,8 +75,6 @@ class FakeArgs:
         rotatesecs,
         window,
         threshold,
-        freq_start,
-        freq_end,
         fftlog,
         width,
         prominence,
@@ -96,8 +95,6 @@ class FakeArgs:
         self.rotatesecs = rotatesecs
         self.window = window
         self.threshold = threshold
-        self.freq_start = freq_start
-        self.freq_end = freq_end
         self.fftlog = fftlog
         self.width = width
         self.threshold = threshold
@@ -119,7 +116,6 @@ class FakeArgs:
 
 class SigFinderTestCase(unittest.TestCase):
     def test_rotate_file_n(self):
-
         rotate_file_n("notthere.log", 100, require_initial=False)
 
         with tempfile.TemporaryDirectory() as tempdir:
@@ -161,8 +157,6 @@ class SigFinderTestCase(unittest.TestCase):
                     60,
                     4,
                     -40,
-                    100e6,
-                    400e6,
                     test_fftlog,
                     1,
                     5,
@@ -181,19 +175,35 @@ class SigFinderTestCase(unittest.TestCase):
                 )
                 prom_vars = init_prom_vars()
                 context = zstandard.ZstdCompressor()
+                freq_start = 100e6
+                freq_end = 400e6
+                scan_config = {
+                    "freq_start": freq_start,
+                    "freq_end": freq_end,
+                }
                 with open(buff_file, "wb") as zbf:
                     with context.stream_writer(zbf) as bf:
                         for _ in range(2):
-                            freq = 100e6
-                            while freq < 400e6:
-                                bf.write(
-                                    f"{int(time.time())} {int(freq)} 0.001\n".encode(
-                                        "utf8"
-                                    )
-                                )
+                            output = {
+                                "ts": int(time.time()),
+                                "config": {
+                                    "freq_start": freq_start,
+                                    "freq_end": freq_end,
+                                },
+                                "buckets": {},
+                            }
+                            freq = freq_start
+                            while freq < freq_end:
+                                output["buckets"][str(freq)] = -50
                                 freq += 1e5
+                            bf.write(bytes(json.dumps(output) + "\n", encoding="utf8"))
                 process_fft_lines(
-                    args, prom_vars, buff_file, executor, proxy_result, runonce=True
+                    args,
+                    prom_vars,
+                    buff_file,
+                    executor,
+                    proxy_result,
+                    runonce=True,
                 )
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
@@ -204,8 +214,6 @@ class SigFinderTestCase(unittest.TestCase):
             60,
             4,
             -40,
-            100e6,
-            400e6,
             "",
             None,
             5,
