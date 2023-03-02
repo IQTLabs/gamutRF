@@ -2,7 +2,9 @@
 
 import json
 import os
+import pathlib
 import tempfile
+import threading
 import time
 import unittest
 import concurrent.futures
@@ -145,13 +147,14 @@ class SigFinderTestCase(unittest.TestCase):
         argument_parser()
 
     def test_process_fft_lines(self):
-        with concurrent.futures.ProcessPoolExecutor(1) as executor:
+        with concurrent.futures.ProcessPoolExecutor() as executor:
             proxy_result = executor.submit(null_proxy)
             with tempfile.TemporaryDirectory() as tempdir:
                 test_log = os.path.join(str(tempdir), "test.csv")
                 test_fftlog = os.path.join(str(tempdir), "fft.csv")
                 test_fftgraph = os.path.join(str(tempdir), "fft.png")
                 buff_file = os.path.join(str(tempdir), "buff_file")
+                live_file = pathlib.Path(os.path.join(str(tempdir), "live_file"))
                 args = FakeArgs(
                     test_log,
                     60,
@@ -197,14 +200,25 @@ class SigFinderTestCase(unittest.TestCase):
                                 output["buckets"][str(freq)] = -50
                                 freq += 1e5
                             bf.write(bytes(json.dumps(output) + "\n", encoding="utf8"))
-                process_fft_lines(
-                    args,
-                    prom_vars,
-                    buff_file,
-                    executor,
-                    proxy_result,
-                    runonce=True,
+                live_file.touch()
+                process_thread = threading.Thread(
+                    target=process_fft_lines,
+                    args=(
+                        args,
+                        prom_vars,
+                        buff_file,
+                        executor,
+                        proxy_result,
+                        live_file,
+                    ),
                 )
+                process_thread.start()
+                for i in range(10):
+                    if os.path.exists(test_fftlog) and os.path.exists(test_fftgraph):
+                        break
+                    time.sleep(1)
+                live_file.unlink()
+                process_thread.join()
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
 
@@ -233,6 +247,8 @@ class SigFinderTestCase(unittest.TestCase):
         zstd_context = zstandard.ZstdDecompressor()
 
         with tempfile.TemporaryDirectory() as tempdir:
+            live_file = pathlib.Path(os.path.join(tempdir, "live_file"))
+            live_file.touch()
             buff_file = os.path.join(tempdir, "buff_file")
             test_bytes = b"1, 2, 3\n4, 5, 6\n"
             shutdown_str = b"shutdown\n"
@@ -241,13 +257,13 @@ class SigFinderTestCase(unittest.TestCase):
             socket.bind(f"tcp://{args.logaddr}:{args.logport}")
 
             with concurrent.futures.ProcessPoolExecutor(1) as executor:
-                executor.submit(fft_proxy, args, buff_file, 1, shutdown_str)
+                executor.submit(fft_proxy, args, buff_file, 1, live_file=live_file)
                 for _ in range(5):
                     socket.send(test_bytes)
                     if os.path.exists(buff_file):
                         break
                     time.sleep(1)
-                socket.send(shutdown_str)
+                live_file.unlink()
                 with open(buff_file, "rb") as zbf:
                     with zstd_context.stream_reader(zbf) as bf:
                         content = bf.read()
