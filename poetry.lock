@@ -641,7 +641,7 @@ pyparsing = ">=2.1.4"
 
 [[package]]
 name = "pylint"
-version = "2.16.3"
+version = "2.16.4"
 description = "python code static checker"
 category = "dev"
 optional = false
@@ -1001,7 +1001,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8 <3.11"
-content-hash = "e8fe982fc13574f468d03c391e94ef91e121689556c5aab5ec23d075a44d414a"
+content-hash = "6d2def0fcc90d03c5b8bddef7defab053bd24ceea5e9a97ac411028620e51788"
 
 [metadata.files]
 anyio = [
@@ -1880,8 +1880,8 @@ pydot = [
     {file = "pydot-1.4.2.tar.gz", hash = "sha256:248081a39bcb56784deb018977e428605c1c758f10897a339fce1dd728ff007d"},
 ]
 pylint = [
-    {file = "pylint-2.16.3-py3-none-any.whl", hash = "sha256:3e803be66e3a34c76b0aa1a3cf4714b538335e79bd69718d34fcf36d8fff2a2b"},
-    {file = "pylint-2.16.3.tar.gz", hash = "sha256:0decdf8dfe30298cd9f8d82e9a1542da464db47da60e03641631086671a03621"},
+    {file = "pylint-2.16.4-py3-none-any.whl", hash = "sha256:4a770bb74fde0550fa0ab4248a2ad04e7887462f9f425baa0cd8d3c1d098eaee"},
+    {file = "pylint-2.16.4.tar.gz", hash = "sha256:8841f26a0dbc3503631b6a20ee368b3f5e0e5461a1d95cf15d103dab748a0db3"},
 ]
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
