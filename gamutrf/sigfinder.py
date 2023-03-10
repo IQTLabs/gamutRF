@@ -244,6 +244,7 @@ def process_fft(args, scan_config, prom_vars, df, lastbins, running_df, last_dfs
             scan_config,
         )
 
+    ts = frame_df["ts"].max()
     for peak_freq, peak_db in signals:
         center_freq = get_center(
             peak_freq, freq_start_mhz, args.bin_mhz, args.record_bw_msps
