@@ -90,6 +90,8 @@ class grscan(gr.top_block):
                 fft_roll,
                 -100,
                 50,
+                "",
+                0,
             )
         self.fft_vxx_0 = fft.fft_vcc(
             fft_size, True, window.blackmanharris(fft_size), True, 1
