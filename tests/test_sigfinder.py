@@ -189,6 +189,7 @@ class SigFinderTestCase(unittest.TestCase):
                         for _ in range(2):
                             output = {
                                 "ts": int(time.time()),
+                                "sweep_start": int(time.time()),
                                 "config": {
                                     "freq_start": freq_start,
                                     "freq_end": freq_end,
@@ -200,6 +201,7 @@ class SigFinderTestCase(unittest.TestCase):
                                 output["buckets"][str(freq)] = -50
                                 freq += 1e5
                             bf.write(bytes(json.dumps(output) + "\n", encoding="utf8"))
+                            time.sleep(1)
                 live_file.touch()
                 process_thread = threading.Thread(
                     target=process_fft_lines,
