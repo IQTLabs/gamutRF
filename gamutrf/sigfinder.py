@@ -434,9 +434,9 @@ def process_fft_lines(
                         frame_df = df
                     else:
                         frame_df = pd.concat(
-                            [fftbuffer, df[df["sweep_time"] == last_sweep_start]]
+                            [fftbuffer, df[df["sweep_start"] == last_sweep_start]]
                         )
-                        fftbuffer = df[df["sweep_time"] != last_sweep_time]
+                        fftbuffer = df[df["sweep_start"] != last_sweep_start]
                     last_sweep_start = max_sweep_start
                     frame_counter.inc()
                     new_lastbins, last_df = process_fft(
