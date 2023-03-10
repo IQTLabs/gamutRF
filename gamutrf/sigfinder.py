@@ -171,11 +171,8 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
         old_bins_prom.labels(bin_freq=obin).inc()
 
 
-def process_fft(
-    args, scan_config, prom_vars, ts, fftbuffer, lastbins, running_df, last_dfs
-):
+def process_fft(args, scan_config, prom_vars, ts, df, lastbins, running_df, last_dfs):
     global PEAK_DBS
-    df = pd.DataFrame(fftbuffer, columns=["ts", "freq", "db"])
     # resample to SCAN_FRES
     # ...first frequency
     df["freq"] = (df["freq"] / SCAN_FRES).round() * SCAN_FRES / 1e6
@@ -338,14 +335,14 @@ def process_fft_lines(
     live_file,
 ):
     lastfreq = 0
-    fftbuffer = []
+    fftbuffer = None
     lastbins_history = []
     lastbins = set()
     frame_counter = prom_vars["frame_counter"]
     txt_buf = ""
     last_fft_report = 0
     fft_packets = 0
-    max_scan_pos = 0
+    last_sweep_start = 0
     context = zstandard.ZstdDecompressor()
     running_df = None
     last_dfs = []
@@ -407,12 +404,18 @@ def process_fft_lines(
                         line = line.strip()
                         record = json.loads(line)
                         ts = float(record["ts"])
+                        sweep_start = float(record["sweep_start"])
                         buckets = record["buckets"]
                         scan_config = record["config"]
                         records.extend(
                             [
-                                {"ts": ts, "freq": float(freq), "pw": float(pw)}
-                                for freq, pw in buckets.items()
+                                {
+                                    "ts": ts,
+                                    "freq": float(freq),
+                                    "db": float(db),
+                                    "sweep_start": sweep_start,
+                                }
+                                for freq, db in buckets.items()
                             ]
                         )
                     df = pd.DataFrame(records)
@@ -422,42 +425,49 @@ def process_fft_lines(
                 df = df[(now - df.ts).abs() < 60]
                 freq_start = scan_config["freq_start"]
                 freq_end = scan_config["freq_end"]
-                df["scan_pos"] = (df.freq - freq_start) / (freq_end - freq_start)
                 if df.size:
                     lastfreq = df.freq.iat[-1]
+                max_sweep_start = df["sweep_start"].max()
                 rotatelognow = False
-                for row in df.itertuples():
-                    rollover = row.scan_pos < 0.1 and max_scan_pos > 0.9 and fftbuffer
-                    max_scan_pos = max(max_scan_pos, row.scan_pos)
-                    if rollover:
-                        max_scan_pos = row.scan_pos
-                        frame_counter.inc()
-                        new_lastbins, last_df = process_fft(
-                            args,
-                            scan_config,
-                            prom_vars,
-                            row.ts,
-                            fftbuffer,
-                            lastbins,
-                            running_df,
-                            last_dfs,
+                if max_sweep_start != last_sweep_start:
+                    if fftbuffer is None:
+                        frame_df = df
+                    else:
+                        frame_df = pd.concat(
+                            [fftbuffer, df[df["sweep_time"] == last_sweep_start]]
                         )
-                        if args.nfftplots:
-                            last_dfs = last_dfs[-args.nfftplots :]
-                            last_dfs.append((last_df.freq, last_df.db))
-                        else:
-                            last_dfs = []
-                        if new_lastbins is not None:
-                            lastbins = new_lastbins
-                            if lastbins:
-                                lastbins_history = [lastbins] + lastbins_history
-                                lastbins_history = lastbins_history[: args.history]
-                            call_record_signals(args, lastbins_history, prom_vars)
-                        fftbuffer = []
-                        rotate_age = now - openlogts
-                        if rotate_age > args.rotatesecs:
-                            rotatelognow = True
-                    fftbuffer.append((row.ts, row.freq, row.pw))
+                        fftbuffer = df[df["sweep_time"] != last_sweep_time]
+                    last_sweep_start = max_sweep_start
+                    frame_counter.inc()
+                    new_lastbins, last_df = process_fft(
+                        args,
+                        scan_config,
+                        prom_vars,
+                        frame_df["ts"].max(),
+                        frame_df,
+                        lastbins,
+                        running_df,
+                        last_dfs,
+                    )
+                    if args.nfftplots:
+                        last_dfs = last_dfs[-args.nfftplots :]
+                        last_dfs.append((last_df.freq, last_df.db))
+                    else:
+                        last_dfs = []
+                    if new_lastbins is not None:
+                        lastbins = new_lastbins
+                        if lastbins:
+                            lastbins_history = [lastbins] + lastbins_history
+                            lastbins_history = lastbins_history[: args.history]
+                        call_record_signals(args, lastbins_history, prom_vars)
+                    rotate_age = now - openlogts
+                    if rotate_age > args.rotatesecs:
+                        rotatelognow = True
+                else:
+                    if fftbuffer is None:
+                        fftbuffer = df
+                    else:
+                        fftbuffer = pd.concat([fftbuffer, df])
                 if rotatelognow:
                     break
         rotate_file_n(".".join((args.log, "zst")), args.nlog, require_initial=False)
