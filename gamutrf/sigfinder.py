@@ -171,7 +171,7 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
         old_bins_prom.labels(bin_freq=obin).inc()
 
 
-def process_fft(args, scan_config, prom_vars, ts, df, lastbins, running_df, last_dfs):
+def process_fft(args, scan_config, prom_vars, df, lastbins, running_df, last_dfs):
     global PEAK_DBS
     # resample to SCAN_FRES
     # ...first frequency
@@ -439,11 +439,11 @@ def process_fft_lines(
                         fftbuffer = df[df["sweep_start"] != last_sweep_start]
                     last_sweep_start = max_sweep_start
                     frame_counter.inc()
+                    logging.info("frame with sweep_start %us ago", now - frame_df["sweep_start"].min())
                     new_lastbins, last_df = process_fft(
                         args,
                         scan_config,
                         prom_vars,
-                        frame_df["ts"].max(),
                         frame_df,
                         lastbins,
                         running_df,
