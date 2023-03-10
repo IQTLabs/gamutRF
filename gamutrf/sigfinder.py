@@ -439,7 +439,10 @@ def process_fft_lines(
                         fftbuffer = df[df["sweep_start"] != last_sweep_start]
                     last_sweep_start = max_sweep_start
                     frame_counter.inc()
-                    logging.info("frame with sweep_start %us ago", now - frame_df["sweep_start"].min())
+                    logging.info(
+                        "frame with sweep_start %us ago",
+                        now - frame_df["sweep_start"].min(),
+                    )
                     new_lastbins, last_df = process_fft(
                         args,
                         scan_config,
