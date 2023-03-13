@@ -33,8 +33,10 @@ class grscan(gr.top_block):
         fft_size=1024,
         tune_overlap=0.5,
         tune_step_fft=0,
-        skip_tune_step_fft=0,
+        skip_tune_step=0,
         fft_roll=False,
+        write_samples=0,
+        sample_dir="",
         iqtlabs=None,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
@@ -63,6 +65,7 @@ class grscan(gr.top_block):
         )
 
         self.retune_fft = None
+        self.write_freq_samples_0 = None
         if iqtlabs:
             freq_range = freq_end - freq_start
             tune_step_hz = int(samp_rate * tune_overlap)
@@ -86,13 +89,17 @@ class grscan(gr.top_block):
                 int(freq_end),
                 tune_step_hz,
                 tune_step_fft,
-                skip_tune_step_fft,
+                skip_tune_step,
                 fft_roll,
                 -100,
                 50,
-                "",
-                0,
+                sample_dir,
+                write_samples,
             )
+            if write_samples:
+                self.write_freq_samples_0 = iqtlabs.write_freq_samples(
+                    "rx_freq", fft_size, sample_dir, write_samples, skip_tune_step
+                )
         self.fft_vxx_0 = fft.fft_vcc(
             fft_size, True, window.blackmanharris(fft_size), True, 1
         )
@@ -112,6 +119,10 @@ class grscan(gr.top_block):
         if self.retune_fft:
             self.msg_connect((self.retune_fft, "tune"), (self.source_0, self.cmd_port))
             self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
+            if write_samples:
+                self.connect(
+                    (self.blocks_stream_to_vector_0, 0), (self.write_freq_samples_0, 0)
+                )
             self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_0, 0))
             self.connect(
                 (self.blocks_complex_to_mag_0, 0), (self.blocks_nlog10_ff_0, 0)
