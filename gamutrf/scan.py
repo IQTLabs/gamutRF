@@ -83,6 +83,19 @@ def argument_parser():
         help="skip FFT samples on retune [default=%(default)r]",
     )
     parser.add_argument(
+        "--sample_dir",
+        dest="sample_dir",
+        type=str,
+        default="",
+        help="where to write samples/FFT points",
+    )
+    parser.add_argument(
+        "--write_samples",
+        dest="write_samples",
+        type=int,
+        help="if > 0, write FFT/raw samples to --sample_dir",
+    )
+    parser.add_argument(
         "--nfft",
         dest="nfft",
         type=int,
@@ -184,6 +197,8 @@ def main():
         tune_overlap=options.tuneoverlap,
         tune_step_fft=options.tune_step_fft,
         skip_tune_step=options.skip_tune_step,
+        sample_dir=options.sample_dir,
+        write_samples=options.write_samples,
         iqtlabs=iqtlabs,
     )
 
