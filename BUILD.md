@@ -51,7 +51,6 @@ curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 sudo apt install -y git libjpeg-dev python3 python3-pip python3-tk uhd-host gpsd gpsd-clients chrony pps-tools onboard at-spi2-core tmux
-pip3 install docker-compose
 sudo /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
 git clone https://github.com/IQTLabs/gamutRF
 git clone https://github.com/IQTLabs/BirdsEye
@@ -79,7 +78,7 @@ Reboot
 
 8. Install GamutRF and BirdsEye
 ```
-cd gamutRF && docker-compose -f orchestrator.yml pull && cd ..
+cd gamutRF && docker compose -f orchestrator.yml pull && cd ..
 cd BirdsEye && pip3 install -r requirements.txt && cd ..
 ```
 
@@ -204,11 +203,11 @@ sudo reboot
 20. Start the orchestrator containers
 ```
 cd gamutRF
-UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/gamutrf/ FREQ_START=70e6 FREQ_END=6e9 docker-compose -f orchestrator.yml up -d
+UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/gamutrf/ FREQ_START=70e6 FREQ_END=6e9 docker compose -f orchestrator.yml up -d
 ```
 (optionally add `-f monitoring.yml` if you want additional monitoring containers)
 
-Additionally, if you want to use the workers as recorders you'll want to update `orchestrator.yml` (before running the `docker-compose` command above) under the gamutRF directory to include it. Multiple workers can be assigned to be recorders. Here's an exmaple with two:
+Additionally, if you want to use the workers as recorders you'll want to update `orchestrator.yml` (before running the `docker compose` command above) under the gamutRF directory to include it. Multiple workers can be assigned to be recorders. Here's an exmaple with two:
 ```
   sigfinder:
     restart: always
@@ -251,7 +250,6 @@ curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 sudo apt install -y git python3 python3-pip uhd-host
-pip3 install docker-compose
 sudo /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
 git clone https://github.com/IQTLabs/gamutRF
 sudo su -
@@ -285,7 +283,7 @@ sudo reboot
 
 8. Install GamutRF
 ```
-cd gamutRF && docker-compose -f worker.yml pull && cd ..
+cd gamutRF && docker compose -f worker.yml pull && cd ..
 sudo mkdir -p /flash/gamutrf 
 ```
 
@@ -334,7 +332,7 @@ RSSI mode will only record signal strength in the form of float.
 10. Start GamutRF
 ```
 cd gamutRF
-UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 WORKER_NAME=worker1 ANTENNA=directional docker-compose -f worker.yml up -d
+UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices && VOL_PREFIX=/flash/ ORCHESTRATOR=192.168.111.10 WORKER_NAME=worker1 ANTENNA=directional docker compose -f worker.yml up -d
 ```
 
 ## Initiating an API request
