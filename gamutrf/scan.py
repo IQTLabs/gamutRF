@@ -92,6 +92,7 @@ def argument_parser():
     parser.add_argument(
         "--write_samples",
         dest="write_samples",
+        default=0,
         type=int,
         help="if > 0, write FFT/raw samples to --sample_dir",
     )
