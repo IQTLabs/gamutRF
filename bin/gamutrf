@@ -37,7 +37,7 @@ function die()
 
 function check_args()
 {
-    for req_cmd in docker docker-compose git uhd_find_devices ; do
+    for req_cmd in docker git uhd_find_devices ; do
             $req_cmd --help > /dev/null || die "$req_cmd must be installed"
     done
 
@@ -117,7 +117,7 @@ function check_args()
                         echo "GamutRF not installed!"
                     else
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker-compose -f orchestrator.yml logs -f 
+                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker compose -f orchestrator.yml logs -f 
                         popd || exit
                     fi
                 elif [ "$2" == "worker" ]; then
@@ -125,7 +125,7 @@ function check_args()
                         echo "GamutRF not installed!"
                     else
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker-compose -f worker.yml logs -f
+                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker compose -f worker.yml logs -f
                         popd || exit
                     fi
                 else
@@ -152,9 +152,9 @@ function check_args()
                         echo "GamutRF not installed!"
                     else
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker-compose -f orchestrator.yml down
+                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker compose -f orchestrator.yml down
                         UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices
-                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker-compose -f orchestrator.yml up -d
+                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker compose -f orchestrator.yml up -d
                         popd || exit
                     fi
                 elif [ "$2" == "worker" ]; then
@@ -162,9 +162,9 @@ function check_args()
                         echo "GamutRF not installed!"
                     else
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker-compose -f worker.yml down
+                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker compose -f worker.yml down
                         UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices
-                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker-compose -f worker.yml up -d
+                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker compose -f worker.yml up -d
                         popd || exit
                     fi
                 else
@@ -184,7 +184,7 @@ function check_args()
                     else
                         pushd "$GAMUTRF_DIR" || exit
                         UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices
-                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker-compose -f orchestrator.yml up -d
+                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker compose -f orchestrator.yml up -d
                         popd || exit
                     fi
                 elif [ "$2" == "worker" ]; then
@@ -193,7 +193,7 @@ function check_args()
                     else
                         pushd "$GAMUTRF_DIR" || exit
                         UHD_IMAGES_DIR=/usr/share/uhd/images uhd_find_devices
-                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker-compose -f worker.yml up -d
+                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker compose -f worker.yml up -d
                         popd || exit
                     fi
                 else
@@ -212,7 +212,7 @@ function check_args()
                         echo "GamutRF not installed!"
                     else
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/gamutrf/ docker-compose -f orchestrator.yml down
+                        VOL_PREFIX=/flash/gamutrf/ docker compose -f orchestrator.yml down
                         popd || exit
                     fi
                 elif [ "$2" == "worker" ]; then
@@ -220,7 +220,7 @@ function check_args()
                         echo "GamutRF not installed!"
                     else
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/ docker-compose -f worker.yml down
+                        VOL_PREFIX=/flash/ docker compose -f worker.yml down
                         popd || exit
                     fi
                 else
@@ -239,7 +239,7 @@ function check_args()
                         echo "GamutRF not installed!"
                     else
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker-compose -f orchestrator.yml ps
+                        VOL_PREFIX=/flash/gamutrf/ FREQ_START="$FS" FREQ_END="$FE" docker compose -f orchestrator.yml ps
                         popd || exit
                     fi
                 elif [ "$2" == "worker" ]; then
@@ -247,7 +247,7 @@ function check_args()
                         echo "GamutRF not installed!"
                     else
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker-compose -f worker.yml ps
+                        VOL_PREFIX=/flash/ ORCHESTRATOR="$ORC" WORKER_NAME="$WORKER" ANTENNA="$ANT" docker compose -f worker.yml ps
                         popd || exit
                     fi
                 else
@@ -260,12 +260,12 @@ function check_args()
                 if [ -d "$GAMUTRF_DIR" ] ; then
                     if [ -f "$VOL_PREFIX"/opt/gamutrf/orchestrator.yml ]; then
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/gamutrf/ docker-compose -f orchestrator.yml down
+                        VOL_PREFIX=/flash/gamutrf/ docker compose -f orchestrator.yml down
                         popd || exit
                     fi
                     if [ -f "$VOL_PREFIX"/opt/gamutrf/worker.yml ]; then
                         pushd "$GAMUTRF_DIR" || exit
-                        VOL_PREFIX=/flash/gamutrf/ docker-compose -f worker.yml down
+                        VOL_PREFIX=/flash/gamutrf/ docker compose -f worker.yml down
                         popd || exit
                     fi
                     rm -rf "$GAMUTRF_DIR"
