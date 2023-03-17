@@ -34,11 +34,11 @@ class grscan(gr.top_block):
             return (
                 [
                     blocks.stream_to_vector(
-                        int(fft_batch_size * fft_size), (fft_size), True
+                        gr.sizeof_gr_complex, fft_batch_size*fft_size
                     ),
                     wavelearner.fft(int(fft_batch_size * fft_size), (fft_size), True),
                     blocks.vector_to_stream(
-                        gr.sizeof_gr_complex * fft_size, fft_batch_size
+                        gr.sizeof_gr_complex*fft_size, fft_batch_size
                     ),
                 ],
                 True,
@@ -109,7 +109,7 @@ class grscan(gr.top_block):
                 [
                     blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
                     iqtlabs.write_freq_samples(
-                        "rx_freq", fft_size, sample_dir, write_samples, skip_tune_step
+                        "rx_freq", fft_size, sample_dir, write_samples, skip_tune_step, int(samp_rate),
                     ),
                 ]
             )
