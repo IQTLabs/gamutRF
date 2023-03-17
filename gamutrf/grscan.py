@@ -27,7 +27,7 @@ class grscan(gr.top_block):
 
     def get_fft_blocks(self, fft_size, sdr):
         if sdr == "SoapyAIRT":
-            import wavelearner
+            import wavelearner  # pytype: disable=import-error
 
             fft_batch_size = 256
             return (
