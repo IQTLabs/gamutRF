@@ -25,7 +25,8 @@ class grscan(gr.top_block):
             self.connect((last_block, 0), (block, 0))
             last_block = block
 
-    def get_fft_blocks(self, fft_size, sdr):
+    @staticmethod
+    def get_fft_blocks(fft_size, sdr):
         if sdr == "SoapyAIRT":
             import wavelearner  # pytype: disable=import-error
 
