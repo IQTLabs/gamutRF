@@ -175,7 +175,10 @@ def main():
 
     # ensure tuning tags arrive on FFT window boundaries.
     if options.samp_rate % options.nfft:
-        print("NFFT must be a factor of sample rate")
+        print("NFFT should be a factor of sample rate")
+
+    if options.write_samples and not options.sample_dir:
+        print("Must provide --sample_dir when writing samples/points")
         sys.exit(1)
 
     prom_vars = init_prom_vars()
