@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import logging
+import os
 import sys
 
 try:
@@ -68,6 +69,9 @@ class grscan(gr.top_block):
         skip_tune_step=0,
         write_samples=0,
         sample_dir="",
+        inference_plan_file="",
+        inference_output_dir="",
+        inference_input_len=2048,
         iqtlabs=None,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
@@ -152,6 +156,34 @@ class grscan(gr.top_block):
         logging.info("serving FFT on %s", zmq_addr)
         self.fft_blocks.append((zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")))
 
+        self.inference_blocks = []
+        if sdr == "SoapyAIRT" and inference_plan_file and inference_output_dir:
+            import wavelearner  # pytype: disable=import-error
+
+            inference_batch_size = 128
+            output_len = 1
+            self.inference_blocks = [
+                blocks.stream_to_vector(
+                    gr.sizeof_gr_complex * 1, inference_batch_size * inference_input_len
+                ),
+                wavelearner.inference(
+                    inference_plan_file,
+                    True,
+                    inference_input_len * inference_batch_size,
+                    output_len * inference_batch_size,
+                    inference_batch_size,
+                ),
+                blocks.file_sink(
+                    gr.sizeof_float * output_len * inference_batch_size,
+                    os.path.join(inference_output_dir, "inference.bin"),
+                    False,
+                ),
+            ]
+
         self.msg_connect((retune_fft, "tune"), (self.source_0, self.cmd_port))
-        for pipeline_blocks in (self.fft_blocks, self.samples_blocks):
+        for pipeline_blocks in (
+            self.fft_blocks,
+            self.samples_blocks,
+            self.inference_blocks,
+        ):
             self.connect_blocks(self.source_0, pipeline_blocks)
