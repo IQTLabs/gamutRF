@@ -1,7 +1,6 @@
 import logging
 import signal
 import sys
-import time
 from argparse import ArgumentParser
 
 try:
@@ -152,6 +151,20 @@ def argument_parser():
         default=0.5,
         help="multiple of samp_rate when retuning",
     )
+    parser.add_argument(
+        "--inference_plan_file",
+        dest="inference_plan_file",
+        type=str,
+        default="",
+        help="full path to plan file for wavelearner",
+    )
+    parser.add_argument(
+        "--inference_input_len",
+        dest="inference_input_len",
+        type=int,
+        default=2048,
+        help="vector length for wavelearner",
+    )
     return parser
 
 
@@ -203,6 +216,8 @@ def main():
         skip_tune_step=options.skip_tune_step,
         sample_dir=options.sample_dir,
         write_samples=options.write_samples,
+        inference_plan_file=options.inference_plan_file,
+        inference_input_len=options.inference_input_len,
         iqtlabs=iqtlabs,
     )
 
