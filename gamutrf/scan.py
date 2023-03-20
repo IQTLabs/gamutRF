@@ -159,6 +159,13 @@ def argument_parser():
         help="full path to plan file for wavelearner",
     )
     parser.add_argument(
+        "--inference_output_dir",
+        dest="inference_output_dir",
+        type=str,
+        default="",
+        help="directory for inference output",
+    )
+    parser.add_argument(
         "--inference_input_len",
         dest="inference_input_len",
         type=int,
@@ -217,6 +224,7 @@ def main():
         sample_dir=options.sample_dir,
         write_samples=options.write_samples,
         inference_plan_file=options.inference_plan_file,
+        inference_output_dir=options.inference_output_dir,
         inference_input_len=options.inference_input_len,
         iqtlabs=iqtlabs,
     )
