@@ -20,38 +20,6 @@ from gamutrf.grsource import get_source
 
 
 class grscan(gr.top_block):
-    def connect_blocks(self, first_block, other_blocks):
-        last_block = first_block
-        for block in other_blocks:
-            self.connect((last_block, 0), (block, 0))
-            last_block = block
-
-    @staticmethod
-    def get_fft_blocks(fft_size, sdr):
-        if sdr == "SoapyAIRT":
-            import wavelearner  # pytype: disable=import-error
-
-            fft_batch_size = 256
-            return (
-                [
-                    blocks.stream_to_vector(
-                        gr.sizeof_gr_complex, fft_batch_size * fft_size
-                    ),
-                    wavelearner.fft(int(fft_batch_size * fft_size), (fft_size), True),
-                    blocks.vector_to_stream(
-                        gr.sizeof_gr_complex * fft_size, fft_batch_size
-                    ),
-                ],
-                True,
-            )
-        return (
-            [
-                blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
-                fft.fft_vcc(fft_size, True, window.blackmanharris(fft_size), True, 1),
-            ],
-            False,
-        )
-
     def __init__(
         self,
         freq_end=1e9,
@@ -73,6 +41,7 @@ class grscan(gr.top_block):
         inference_output_dir="",
         inference_input_len=2048,
         iqtlabs=None,
+        wavelearner=None,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
@@ -83,6 +52,7 @@ class grscan(gr.top_block):
         self.freq_start = freq_start
         self.sweep_sec = sweep_sec
         self.fft_size = fft_size
+        self.wavelearner = wavelearner
 
         ##################################################
         # Blocks
@@ -98,9 +68,6 @@ class grscan(gr.top_block):
             center_freq=freq_start,
             sdrargs=sdrargs,
         )
-
-        if not iqtlabs:
-            return
 
         fft_blocks, fft_roll = self.get_fft_blocks(fft_size, sdr)
         self.fft_blocks = fft_blocks + [
@@ -159,16 +126,18 @@ class grscan(gr.top_block):
         self.fft_blocks.append((zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")))
 
         self.inference_blocks = []
-        if sdr == "SoapyAIRT" and inference_plan_file and inference_output_dir:
-            import wavelearner  # pytype: disable=import-error
-
+        if inference_plan_file and inference_output_dir:
+            if not self.wavelearner:
+                raise ValueError(
+                    "trying to use inference but wavelearner not available"
+                )
             inference_batch_size = 128
             output_len = 1
             self.inference_blocks = [
                 blocks.stream_to_vector(
                     gr.sizeof_gr_complex * 1, inference_batch_size * inference_input_len
                 ),
-                wavelearner.inference(
+                self.wavelearner.inference(
                     inference_plan_file,
                     True,
                     inference_input_len * inference_batch_size,
@@ -194,3 +163,34 @@ class grscan(gr.top_block):
             self.inference_blocks,
         ):
             self.connect_blocks(self.source_0, pipeline_blocks)
+
+    def connect_blocks(self, first_block, other_blocks):
+        last_block = first_block
+        for block in other_blocks:
+            self.connect((last_block, 0), (block, 0))
+            last_block = block
+
+    def get_fft_blocks(self, fft_size, sdr):
+        if self.wavelearner:
+            fft_batch_size = 256
+            return (
+                [
+                    blocks.stream_to_vector(
+                        gr.sizeof_gr_complex, fft_batch_size * fft_size
+                    ),
+                    self.wavelearner.fft(
+                        int(fft_batch_size * fft_size), (fft_size), True
+                    ),
+                    blocks.vector_to_stream(
+                        gr.sizeof_gr_complex * fft_size, fft_batch_size
+                    ),
+                ],
+                True,
+            )
+        return (
+            [
+                blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
+                fft.fft_vcc(fft_size, True, window.blackmanharris(fft_size), True, 1),
+            ],
+            False,
+        )

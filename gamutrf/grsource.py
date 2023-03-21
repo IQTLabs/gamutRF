@@ -5,6 +5,7 @@ import time
 from urllib.parse import urlparse
 
 try:
+    import pmt
     from gnuradio import blocks
     from gnuradio import soapy
     from gnuradio import uhd
@@ -51,7 +52,10 @@ def get_source(
             grblock.source_0 = blocks.throttle(sizeof_gr_complex, samp_rate, True)
             grblock.connect((grblock.recording_source_0, 0), (grblock.source_0, 0))
             # TODO: enable setting frequency change tags on the stream, so can test scanner.
+            # grblock.source_0.set_msg_handler(pmt.intern(grblock.cmd_port), grblock.freq_setter)
             grblock.freq_setter = lambda _x, _y: None
+            grblock.cmd_port = "command"
+            grblock.source_0.message_port_register_in(pmt.intern(grblock.cmd_port))
         else:
             raise ValueError("unsupported/missing file location")
         return
