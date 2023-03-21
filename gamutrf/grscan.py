@@ -184,7 +184,7 @@ class grscan(gr.top_block):
                     int(1e9),
                     0,
                     int(samp_rate),
-                )
+                ),
             ]
 
         self.msg_connect((retune_fft, "tune"), (self.source_0, self.cmd_port))
