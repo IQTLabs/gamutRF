@@ -114,8 +114,10 @@ class grscan(gr.top_block):
                     blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
                     iqtlabs.write_freq_samples(
                         "rx_freq",
+                        gr.sizeof_gr_complex,
                         fft_size,
                         sample_dir,
+                        "samples",
                         write_samples,
                         skip_tune_step,
                         int(samp_rate),
@@ -173,11 +175,16 @@ class grscan(gr.top_block):
                     output_len * inference_batch_size,
                     inference_batch_size,
                 ),
-                blocks.file_sink(
-                    gr.sizeof_float * output_len * inference_batch_size,
-                    os.path.join(inference_output_dir, "inference.bin"),
-                    False,
-                ),
+                iqtlabs.write_freq_samples(
+                    "rx_freq",
+                    gr.sizeof_float * output_len,
+                    inference_batch_size,
+                    inference_output_dir,
+                    "inference",
+                    int(1e9),
+                    0,
+                    int(samp_rate),
+                )
             ]
 
         self.msg_connect((retune_fft, "tune"), (self.source_0, self.cmd_port))
