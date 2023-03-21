@@ -67,7 +67,7 @@ $ conda activate anarkiwi-airt
 install gr-iqtlabs
 
 ```
-$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.14
+$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.15
 $ cd gr-iqtlabs
 $ mkdir build
 $ cd build
@@ -103,7 +103,7 @@ $ pip3 install .
 run gamutrf (may need to change sample rate depending on SDR).
 
 ```
-$ gamutrf-scan --sdr=SoapyAIRT --freq-start=300e6 --freq-end=6e9 --tune-step-fft 1024 --samp-rate=100e6 --nfft 256
+$ gamutrf-scan --sdr=SoapyAIRT --freq-start=300e6 --freq-end=6e9 --tune-step-fft 1024 --samp-rate=100e6 --nfft 256 --tuneoverlap 1
 $ gamutrf-sigfinder --promport=9009 --fftgraph fft.png --port 9005 --nfftplots 0 --db_rolling_factor 0 --buff_path $HOME
 ```
 
