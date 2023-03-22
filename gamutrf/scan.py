@@ -201,6 +201,15 @@ def main():
         print("Must provide --sample_dir when writing samples/points")
         sys.exit(1)
 
+    wavelearner = None
+    try:
+        import wavelearner as wavelearner_lib  # pytype: disable=import-error
+
+        wavelearner = wavelearner_lib
+        print("using wavelearner")
+    except ModuleNotFoundError:
+        print("wavelearner not available")
+
     prom_vars = init_prom_vars()
     prom_vars["freq_start_hz"].set(options.freq_start)
     prom_vars["freq_end_hz"].set(options.freq_end)
@@ -227,6 +236,7 @@ def main():
         inference_output_dir=options.inference_output_dir,
         inference_input_len=options.inference_input_len,
         iqtlabs=iqtlabs,
+        wavelearner=wavelearner,
     )
 
     def sig_handler(_sig=None, _frame=None):
