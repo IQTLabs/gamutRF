@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import logging
-import os
 import sys
 
 try:
@@ -177,6 +176,10 @@ class grscan(gr.top_block):
                 [
                     blocks.stream_to_vector(
                         gr.sizeof_gr_complex, fft_batch_size * fft_size
+                    ),
+                    blocks.multiply_const_vff(
+                        [val for val in window.hann(fft_size) for _ in range(2)]
+                        * fft_batch_size
                     ),
                     self.wavelearner.fft(
                         int(fft_batch_size * fft_size), (fft_size), True
