@@ -71,11 +71,9 @@ $ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.15
 $ cd gr-iqtlabs
 $ mkdir build
 $ cd build
-$ cmake ..
+$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/anarkiwi-airt ..
 $ make
-$ sudo make install
-$ ln -s /usr/local/lib/libgnuradio-iqtlabs.so* ~/.conda/envs/anarkiwi-airt/lib
-$ ln -s /usr/local/lib/python3.8/site-packages/gnuradio/iqtlabs ~/.conda/envs/anarkiwi-airt/lib/python3.8/site-packages/gnuradio
+$ make install
 ```
 
 install gr-wavelearner
@@ -85,11 +83,9 @@ $ git clone https://github.com/deepwavedigital/gr-wavelearner
 $ cd gr-wavelearner
 $ mkdir build
 $ cd build
-$ cmake ..
+$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/anarkiwi-airt ..
 $ make
-$ sudo make install
-$ ln -s /usr/local/lib/python3.8/site-packages/wavelearner/ ~/.conda/envs/anarkiwi-airt/lib/python3.8
-$ ln -s /usr/local/lib/libgnuradio-wavelearner.so* ~/.conda/envs/anarkiwi-airt/lib/
+$ make install
 ```
 
 install gamutrf
