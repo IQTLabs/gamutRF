@@ -20,16 +20,17 @@ from gamutrf.utils import ETTUS_ANT
 from gamutrf.utils import ETTUS_ARGS
 
 
-def set_command_time(_x, _y):
-    raise NotImplementedError
+def null_workaround_start_hook(self):
+    return
 
 
-def clear_command_time(_x):
-    raise NotImplementedError
-
-
-def get_sdr_time_now(_x):
-    return time.time()
+def airt_workaround_start_hook(self):
+    logging.info("applying AIRT workarounds")
+    workaround_time = 0.5
+    for rate in (20e6, self.samp_rate):
+        time.sleep(workaround_time)
+        self.source_0.set_sample_rate(0, rate)
+        self.source_0.source.set_bandwidth(0, rate)
 
 
 def get_source(
@@ -39,9 +40,7 @@ def get_source(
         f"initializing SDR {sdr} with sample rate {samp_rate}, gain {gain}, agc {agc}"
     )
 
-    grblock.set_command_time = set_command_time
-    grblock.clear_command_time = clear_command_time
-    grblock.get_sdr_time_now = get_sdr_time_now
+    grblock.workaround_start_hook = null_workaround_start_hook
 
     url = urlparse(sdr)
     if url.scheme:
@@ -53,7 +52,6 @@ def get_source(
             grblock.connect((grblock.recording_source_0, 0), (grblock.source_0, 0))
             # TODO: enable setting frequency change tags on the stream, so can test scanner.
             # grblock.source_0.set_msg_handler(pmt.intern(grblock.cmd_port), grblock.freq_setter)
-            grblock.freq_setter = lambda _x, _y: None
             grblock.cmd_port = "command"
             grblock.source_0.message_port_register_in(pmt.intern(grblock.cmd_port))
         else:
@@ -78,10 +76,6 @@ def get_source(
             grblock.source_0.set_center_freq(center_freq, 0)
         grblock.source_0.set_gain(gain, 0)
         grblock.source_0.set_rx_agc(agc, 0)
-        grblock.freq_setter = lambda x, y: x.set_center_freq(y, 0)
-        grblock.set_command_time = lambda x, y: x.set_command_time(uhd.time_spec_t(y))
-        grblock.clear_command_time = lambda x: x.clear_command_time()
-        grblock.get_sdr_time_now = lambda x: x.get_time_now().get_real_secs()
         grblock.cmd_port = "command"
         return
 
@@ -101,6 +95,7 @@ def get_source(
     grblock.source_0.set_frequency_correction(0, 0)
     grblock.source_0.set_gain_mode(0, agc)
     grblock.source_0.set_gain(0, gain)
-    grblock.freq_setter = lambda x, y: x.set_frequency(0, y)
     grblock.cmd_port = "cmd"
+    if sdr == "SoapyAIRT":
+        grblock.workaround_start_hook = airt_workaround_start_hook
     return
