@@ -152,6 +152,13 @@ def argument_parser():
         help="multiple of samp_rate when retuning",
     )
     parser.add_argument(
+        "--bucket_range",
+        dest="bucket_range",
+        type=float,
+        default=1.0,
+        help="what proportion of FFT buckets to use",
+    )
+    parser.add_argument(
         "--inference_plan_file",
         dest="inference_plan_file",
         type=str,
@@ -232,6 +239,7 @@ def main():
         skip_tune_step=options.skip_tune_step,
         sample_dir=options.sample_dir,
         write_samples=options.write_samples,
+        bucket_range=options.bucket_range,
         inference_plan_file=options.inference_plan_file,
         inference_output_dir=options.inference_output_dir,
         inference_input_len=options.inference_input_len,
