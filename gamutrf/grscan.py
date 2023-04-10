@@ -52,6 +52,7 @@ class grscan(gr.top_block):
         self.sweep_sec = sweep_sec
         self.fft_size = fft_size
         self.wavelearner = wavelearner
+        self.samp_rate = samp_rate
 
         ##################################################
         # Blocks
@@ -197,3 +198,7 @@ class grscan(gr.top_block):
             ],
             False,
         )
+
+    def start(self):
+        super().start()
+        self.workaround_start_hook(self)
