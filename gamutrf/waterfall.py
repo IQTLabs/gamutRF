@@ -15,12 +15,14 @@ import sys
 import shlex
 
 
+sleep_time = 0.5
+
 def read_log(log_file):
     while True:
         line = log_file.readline()
         if not line or not line.endswith('\n'):
             print("WAITING FOR SCANNER...\n")
-            time.sleep(0.5)
+            time.sleep(sleep_time)
             continue
         yield line
 
@@ -207,7 +209,7 @@ def main():
     if not os.path.exists(args.fft_log): 
         print(f"Waiting for {args.fft_log}...")
         while not os.path.exists(args.fft_log): 
-            time.sleep(1)
+            time.sleep(sleep_time)
         print(f"Found {args.fft_log}. Starting waterfall plot.")
     
     # Iterate log
