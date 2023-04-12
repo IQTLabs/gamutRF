@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import sys
+from pathlib import Path
 
 try:
     from gnuradio import blocks  # pytype: disable=import-error
@@ -77,6 +78,7 @@ class grscan(gr.top_block):
         ]
         self.samples_blocks = []
         if write_samples:
+            Path(sample_dir).mkdir(parents=True, exist_ok=True)
             self.samples_blocks.extend(
                 [
                     blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),

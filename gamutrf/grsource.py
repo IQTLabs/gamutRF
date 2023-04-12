@@ -30,7 +30,7 @@ def airt_workaround_start_hook(self):
     for rate in (20e6, self.samp_rate):
         time.sleep(workaround_time)
         self.source_0.set_sample_rate(0, rate)
-        self.source_0.source.set_bandwidth(0, rate)
+        self.source_0.set_bandwidth(0, rate)
 
 
 def get_source(
