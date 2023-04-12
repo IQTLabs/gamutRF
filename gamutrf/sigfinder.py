@@ -198,7 +198,7 @@ def process_fft(args, scan_config, prom_vars, df, lastbins, running_df, last_dfs
         )
         logging.warning(df[freqdiffs > mindiff * 2])
     if args.fftlog:
-        #df.to_csv(args.fftlog, sep="\t", index=False)
+        # df.to_csv(args.fftlog, sep="\t", index=False)
         df.to_csv(args.fftlog, sep="\t", mode="a", header=False, index=False)
     monitor_bins = set()
     peak_dbs = {}
