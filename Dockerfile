@@ -11,7 +11,6 @@ RUN mkdir -p /data/gamutrf
 RUN apt-get update && apt-get install --no-install-recommends -y -q \
     ca-certificates \
     curl \
-    ffmpeg \
     gcc \
     git \
     gnuplot \
