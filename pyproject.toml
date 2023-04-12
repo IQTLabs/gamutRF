@@ -38,14 +38,13 @@ docker = "6.0.1"
 pylint = "2.17.2"
 pytest = "7.3.0"
 pytest-cov = "4.0.0"
-pytype = "2023.3.31"
+pytype = "2023.4.11"
 
 [tool.poetry.scripts]
 gamutrf-api = 'gamutrf.__main__:api'
 gamutrf-freqxlator = 'gamutrf.__main__:freqxlator'
 gamutrf-samples2raw = 'gamutrf.__main__:samples2raw'
 gamutrf-scan = 'gamutrf.__main__:scan'
-gamutrf-scan2mp4 = 'gamutrf.__main__:scan2mp4'
 gamutrf-scan2rtlpow = 'gamutrf.__main__:scan2rtlpow'
 gamutrf-sigfinder = 'gamutrf.__main__:sigfinder'
 gamutrf-specgram = 'gamutrf.__main__:specgram'
