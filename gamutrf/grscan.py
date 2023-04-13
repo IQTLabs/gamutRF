@@ -61,8 +61,7 @@ class grscan(gr.top_block):
         ##################################################
 
         logging.info(f"will scan from {freq_start} to {freq_end}")
-        get_source(
-            self,
+        self.sources, cmd_port, self.workaround_start_hook = get_source(
             sdr,
             samp_rate,
             igain,
@@ -160,16 +159,17 @@ class grscan(gr.top_block):
                 ),
             ]
 
-        self.msg_connect((retune_fft, "tune"), (self.source_0, self.cmd_port))
+        self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
+        self.connect_blocks(self.sources[0], self.sources[1:])
         for pipeline_blocks in (
             self.fft_blocks,
             self.samples_blocks,
             self.inference_blocks,
         ):
-            self.connect_blocks(self.source_0, pipeline_blocks)
+            self.connect_blocks(self.sources[-1], pipeline_blocks)
 
-    def connect_blocks(self, first_block, other_blocks):
-        last_block = first_block
+    def connect_blocks(self, source, other_blocks):
+        last_block = source
         for block in other_blocks:
             self.connect((last_block, 0), (block, 0))
             last_block = block

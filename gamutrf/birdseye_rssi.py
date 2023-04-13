@@ -25,27 +25,22 @@ class BirdsEyeRSSI(gr.top_block):
         self.threshold = args.rssi_threshold
         self.mean_window = args.mean_window
         self.rssi_throttle = rssi_throttle
-        get_source(self, args.sdr, samp_rate, args.gain, agc, center_freq)
-
-        self.network_udp_sink_0 = network.udp_sink(
-            gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 32768, False
-        )
-        self.blocks_nlog10_ff_0 = blocks.nlog10_ff(10, 1, 0)
-        self.blocks_moving_average_xx_0 = blocks.moving_average_ff(
-            self.mean_window, 1 / self.mean_window, 2000, 1
-        )
-        self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(1)
-        self.blocks_add_const_vxx_0 = blocks.add_const_ff(-34)
-        self.keep_one_in_n_0 = blocks.keep_one_in_n(
-            gr.sizeof_float, int(self.rssi_throttle)
+        sources, _cmd_port, _workaround_start_hook = get_source(
+            args.sdr, samp_rate, args.gain, agc, center_freq
         )
 
-        self.connect((self.keep_one_in_n_0, 0), (self.network_udp_sink_0, 0))
-        self.connect((self.blocks_add_const_vxx_0, 0), (self.keep_one_in_n_0, 0))
-        self.connect(
-            (self.blocks_complex_to_mag_squared_0, 0),
-            (self.blocks_moving_average_xx_0, 0),
-        )
-        self.connect((self.blocks_moving_average_xx_0, 0), (self.blocks_nlog10_ff_0, 0))
-        self.connect((self.blocks_nlog10_ff_0, 0), (self.blocks_add_const_vxx_0, 0))
-        self.connect((self.source_0, 0), (self.blocks_complex_to_mag_squared_0, 0))
+        rssi_blocks = sources + [
+            blocks.complex_to_mag_squared(1),
+            blocks.moving_average_ff(self.mean_window, 1 / self.mean_window, 2000, 1),
+            blocks.nlog10_ff(10, 1, 0),
+            blocks.add_const_ff(-34),
+            blocks.keep_one_in_n(gr.sizeof_float, int(self.rssi_throttle)),
+            network.udp_sink(
+                gr.sizeof_float, 1, RSSI_UDP_ADDR, RSSI_UDP_PORT, 0, 32768, False
+            ),
+        ]
+
+        last_block = rssi_blocks[0]
+        for block in rssi_blocks[1:]:
+            self.connect((last_block, 0), (block, 0))
+            last_block = block
