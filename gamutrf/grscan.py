@@ -114,7 +114,7 @@ class grscan(gr.top_block):
             tune_step_fft,
             skip_tune_step,
             fft_roll,
-            -100,
+            -200,
             50,
             sample_dir,
             write_samples,
