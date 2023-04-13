@@ -26,7 +26,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
     def test_birdseye_smoke(self):
         tb = BirdsEyeRSSI(FakeArgs(), 1e3, 1e3)
         tb.start()
-        time.sleep(1)
+        time.sleep(10)
         tb.stop()
         tb.wait()
 
