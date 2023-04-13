@@ -71,10 +71,7 @@ class grscan(gr.top_block):
         )
 
         fft_blocks, fft_roll = self.get_fft_blocks(fft_size, sdr)
-        self.fft_blocks = fft_blocks + [
-            blocks.complex_to_mag(fft_size),
-            blocks.nlog10_ff(20, fft_size, 0),
-        ]
+        self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate)
         self.samples_blocks = []
         if write_samples:
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
@@ -174,6 +171,17 @@ class grscan(gr.top_block):
             self.connect((last_block, 0), (block, 0))
             last_block = block
 
+    def get_db_blocks(self, fft_size, samp_rate):
+        scale = 1.0 / (samp_rate * sum(self.get_window(fft_size)) ** 2)
+        return [
+            blocks.complex_to_mag_squared(fft_size),
+            blocks.multiply_const_vff([scale] * fft_size),
+            blocks.nlog10_ff(10, fft_size, 0),
+        ]
+
+    def get_window(self, fft_size):
+        return window.hann(fft_size)
+
     def get_fft_blocks(self, fft_size, sdr):
         if self.wavelearner:
             fft_batch_size = 256
@@ -183,7 +191,7 @@ class grscan(gr.top_block):
                         gr.sizeof_gr_complex, fft_batch_size * fft_size
                     ),
                     blocks.multiply_const_vff(
-                        [val for val in window.hann(fft_size) for _ in range(2)]
+                        [val for val in self.get_window(fft_size) for _ in range(2)]
                         * fft_batch_size
                     ),
                     self.wavelearner.fft(
@@ -198,7 +206,7 @@ class grscan(gr.top_block):
         return (
             [
                 blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
-                fft.fft_vcc(fft_size, True, window.blackmanharris(fft_size), True, 1),
+                fft.fft_vcc(fft_size, True, self.get_window(fft_size), True, 1),
             ],
             False,
         )
