@@ -69,7 +69,6 @@ def get_source(
                 channels=list(range(0, 1)),
             ),
         )
-        grblock.source_0.set_time_now(uhd.time_spec(time.time()), uhd.ALL_MBOARDS)
         grblock.source_0.set_antenna(ETTUS_ANT, 0)
         grblock.source_0.set_samp_rate(samp_rate)
         if center_freq is not None:
@@ -77,6 +76,15 @@ def get_source(
         grblock.source_0.set_gain(gain, 0)
         grblock.source_0.set_rx_agc(agc, 0)
         grblock.cmd_port = "command"
+
+        now = time.time()
+        now_sec = int(now)
+        now_frac = now - now_sec
+        uhd_now = uhd.time_spec(now_sec, now_frac)
+        grblock.source_0.set_time_now(uhd_now, uhd.ALL_MBOARDS)
+        time_diff = grblock.source_0.get_time_now().get_real_secs() - now
+        if time_diff > 5:
+            raise ValueError("could not set Ettus SDR time successfully")
         return
 
     dev = f"driver={sdr}"
