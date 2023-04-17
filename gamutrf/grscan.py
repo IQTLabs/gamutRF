@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import sys
+from pathlib import Path
 
 try:
     from gnuradio import blocks  # pytype: disable=import-error
@@ -60,8 +61,7 @@ class grscan(gr.top_block):
         ##################################################
 
         logging.info(f"will scan from {freq_start} to {freq_end}")
-        get_source(
-            self,
+        self.sources, cmd_port, self.workaround_start_hook = get_source(
             sdr,
             samp_rate,
             igain,
@@ -71,12 +71,10 @@ class grscan(gr.top_block):
         )
 
         fft_blocks, fft_roll = self.get_fft_blocks(fft_size, sdr)
-        self.fft_blocks = fft_blocks + [
-            blocks.complex_to_mag(fft_size),
-            blocks.nlog10_ff(20, fft_size, 0),
-        ]
+        self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate)
         self.samples_blocks = []
         if write_samples:
+            Path(sample_dir).mkdir(parents=True, exist_ok=True)
             self.samples_blocks.extend(
                 [
                     blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
@@ -116,7 +114,7 @@ class grscan(gr.top_block):
             tune_step_fft,
             skip_tune_step,
             fft_roll,
-            -100,
+            -200,
             50,
             sample_dir,
             write_samples,
@@ -158,19 +156,31 @@ class grscan(gr.top_block):
                 ),
             ]
 
-        self.msg_connect((retune_fft, "tune"), (self.source_0, self.cmd_port))
+        self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
+        self.connect_blocks(self.sources[0], self.sources[1:])
         for pipeline_blocks in (
             self.fft_blocks,
             self.samples_blocks,
             self.inference_blocks,
         ):
-            self.connect_blocks(self.source_0, pipeline_blocks)
+            self.connect_blocks(self.sources[-1], pipeline_blocks)
 
-    def connect_blocks(self, first_block, other_blocks):
-        last_block = first_block
+    def connect_blocks(self, source, other_blocks):
+        last_block = source
         for block in other_blocks:
             self.connect((last_block, 0), (block, 0))
             last_block = block
+
+    def get_db_blocks(self, fft_size, samp_rate):
+        scale = 1.0 / (samp_rate * sum(self.get_window(fft_size)) ** 2)
+        return [
+            blocks.complex_to_mag_squared(fft_size),
+            blocks.multiply_const_vff([scale] * fft_size),
+            blocks.nlog10_ff(10, fft_size, 0),
+        ]
+
+    def get_window(self, fft_size):
+        return window.hann(fft_size)
 
     def get_fft_blocks(self, fft_size, sdr):
         if self.wavelearner:
@@ -181,7 +191,7 @@ class grscan(gr.top_block):
                         gr.sizeof_gr_complex, fft_batch_size * fft_size
                     ),
                     blocks.multiply_const_vff(
-                        [val for val in window.hann(fft_size) for _ in range(2)]
+                        [val for val in self.get_window(fft_size) for _ in range(2)]
                         * fft_batch_size
                     ),
                     self.wavelearner.fft(
@@ -196,7 +206,7 @@ class grscan(gr.top_block):
         return (
             [
                 blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
-                fft.fft_vcc(fft_size, True, window.blackmanharris(fft_size), True, 1),
+                fft.fft_vcc(fft_size, True, self.get_window(fft_size), True, 1),
             ],
             False,
         )

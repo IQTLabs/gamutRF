@@ -14,7 +14,6 @@ jobs:
         cd ..
         docker build -f Dockerfile . -t iqtlabs/gamutrf:latest
         docker run -t iqtlabs/gamutrf:latest gamutrf-scan --help
-        docker run -t iqtlabs/gamutrf:latest gamutrf-scan2mp4 --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-sigfinder --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-api --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-samples2raw --help

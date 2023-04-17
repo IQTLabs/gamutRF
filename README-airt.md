@@ -67,11 +67,11 @@ $ conda activate anarkiwi-airt
 install gr-iqtlabs
 
 ```
-$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.15
+$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.18
 $ cd gr-iqtlabs
 $ mkdir build
 $ cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/anarkiwi-airt ..
+$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV ..
 $ make
 $ make install
 ```
@@ -83,7 +83,7 @@ $ git clone https://github.com/deepwavedigital/gr-wavelearner
 $ cd gr-wavelearner
 $ mkdir build
 $ cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/anarkiwi-airt ..
+$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV ..
 $ make
 $ make install
 ```
