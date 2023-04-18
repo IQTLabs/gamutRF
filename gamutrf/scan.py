@@ -179,6 +179,13 @@ def argument_parser():
         default=2048,
         help="vector length for wavelearner",
     )
+    parser.add_argument(
+        "--tuning_ranges",
+        dest="tuning_ranges",
+        type=str,
+        default="",
+        help="tuning ranges (overriding freq_start and freq_end)",
+    )
     return parser
 
 
@@ -240,6 +247,7 @@ def main():
         sample_dir=options.sample_dir,
         write_samples=options.write_samples,
         bucket_range=options.bucket_range,
+        tuning_ranges=options.tuning_ranges,
         inference_plan_file=options.inference_plan_file,
         inference_output_dir=options.inference_output_dir,
         inference_input_len=options.inference_input_len,

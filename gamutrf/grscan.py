@@ -41,6 +41,7 @@ class grscan(gr.top_block):
         inference_output_dir="",
         inference_input_len=2048,
         bucket_range=1.0,
+        tuning_ranges="",
         iqtlabs=None,
         wavelearner=None,
     ):
@@ -119,6 +120,7 @@ class grscan(gr.top_block):
             sample_dir,
             write_samples,
             bucket_range,
+            tuning_ranges,
         )
         self.fft_blocks.append(retune_fft)
         zmq_addr = f"tcp://{logaddr}:{logport}"
