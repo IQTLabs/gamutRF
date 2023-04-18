@@ -16,6 +16,8 @@ jobs:
           sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ libzmq3-dev libbladerf-dev libboost-all-dev libev-dev libfftw3-dev libgmp-dev libgsl-dev liblimesuite-dev liblog4cpp5-dev libpython3-dev libspdlog-dev libthrift-dev libuhd-dev libunwind-dev libusb-1.0-0-dev libusb-1.0-0 make pkg-config python3-bladerf python3-mako python3-numpy python3-packaging python3-pip python3-pygccxml python3-uhd python3-zmq software-properties-common sox swig uhd-host wget
           wget -q -O- https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz |tar -zxvf -
           grep -h 'git clone' docker/*|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
+          git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
+          git clone https://github.com/gnuradio/gnuradio -b v3.10.6.0
           mkdir -p pybind11-2.5.0/build && cd pybind11-2.5.0/build
           cmake -DPYBIND11_TEST="" .. && make -j "$(nproc)" && sudo make install
           cd ../../ && sudo rm -rf pybind11-2.5.0

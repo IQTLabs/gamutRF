@@ -8,8 +8,6 @@ jobs:
     - name: docker build
       run: |
         cd docker
-        docker build -f Dockerfile.gnuradio-deps . -t iqtlabs/gamutrf-gnuradio-deps:latest
-        docker build -f Dockerfile.gnuradio . -t iqtlabs/gamutrf-gnuradio:latest
         docker build -f Dockerfile.base . -t iqtlabs/gamutrf-base:latest
         docker build -f Dockerfile.airspyfm . -t iqtlabs/gamutrf-airspyfm:latest
         docker build -f Dockerfile.mqtt . -t iqtlabs/gamutrf-mqtt:latest
