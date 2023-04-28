@@ -15,7 +15,7 @@ $ cd gnuradio-feedstock
 $ ./build-locally.py
 ```
 
-choose option 5 (```linux_aarch64_numpy1.20python3.8.____cpython```).
+choose option 6 (```linux_aarch64_numpy1.20python3.9.____cpython```).
 
 tar up ```build_artifacts``` and copy into $HOME on AIRT, as ```anarkiwi-airt-gnuradio```.
 *NOTE:* ensure you do not have $DISPLAY set during the build to avoid a hang.
@@ -41,15 +41,24 @@ channels:
   - defaults
 
 dependencies:
-  - python=3.8
   - cmake
-  - scipy
-  - numpy
   - matplotlib
+  - numpy
+  - opencv
   - pip
   - pybind11
+  - python=3.9
+  - scipy
   - soapysdr-module-airt=0.5.5rc2
   - gnuradio=3.9.8
+
+  - pip:
+    - https://archive.deepwavedigital.com/onnxruntime-gpu/onnxruntime_gpu-1.10.0-cp39-cp39-linux_aarch64.whl
+    - https://archive.deepwavedigital.com/pycuda/pycuda-2020.1-cp39-cp39-linux_aarch64.whl
+    - https://archive.deepwavedigital.com/tensorrt/tensorrt-8.0.1.6-cp39-none-linux_aarch64.whl
+    - https://archive.deepwavedigital.com/pytools/pytools-2022.1.12-py2.py3-none-any.whl
+    - --extra-index-url https://pip.cupy.dev/aarch64
+    - cupy-cuda102
 ```
 
 create conda environment
