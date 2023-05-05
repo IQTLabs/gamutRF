@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 RUN python3 -m pip install --no-cache-dir --upgrade pip
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.1.15
+RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2
 RUN poetry config virtualenvs.create false
 COPY pyproject.toml /gamutrf/pyproject.toml
 COPY poetry.lock /gamutrf/poetry.lock
