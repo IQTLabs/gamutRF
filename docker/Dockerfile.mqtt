@@ -1,5 +1,5 @@
 # TODO secure with certs: https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-the-mosquitto-mqtt-messaging-broker-on-ubuntu-18-04-quickstart
-FROM alpine:3.17
+FROM alpine:3.18
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 RUN apk add --update curl mosquitto && rm -rf /var/cache/apk/*
 COPY mosquitto.conf /etc/mosquitto/mosquitto.conf
