@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     curl \
     gcc \
     git \
-    gnuplot \
     libev-dev \
     mesa-vulkan-drivers \
     python3 \
