@@ -16,7 +16,7 @@ RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/SoapyUHD/build
 RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/gr-iqtlabs/build
-RUN apt-get update && apt-get install -y --no-install-recommends libopencv-dev libblas-dev && cmake .. && make install
+RUN apt-get update && apt-get install -y --no-install-recommends libopencv-dev && cmake .. && make install
 WORKDIR /root/bladeRF/host/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_UDEV_RULES=ON -DENABLE_BACKEND_LIBUSB=TRUE .. && make -j "$(nproc)" && make install
 WORKDIR /root/lime-tools/build
