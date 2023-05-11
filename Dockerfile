@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     python3 \
     python3-dev \
     libcairo2-dev \
+    libblas3 \
+    liblapack3 \
     sox \
     sudo \
     wget \
