@@ -58,6 +58,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     wget \
     zstd && \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
-RUN python3 -c "from gnuradio import blocks, fft, gr, iqtlabs"
+RUN echo "$(find gamutrf -type f -name \*py -print|grep -v waterfall)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
 # nosemgrep:github.workflows.config.missing-user
 CMD ["gamutrf-scan", "--help"]
