@@ -76,7 +76,7 @@ $ conda activate anarkiwi-airt
 install gr-iqtlabs
 
 ```
-$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.21
+$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.22
 $ cd gr-iqtlabs
 $ mkdir build
 $ cd build
