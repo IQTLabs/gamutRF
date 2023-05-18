@@ -28,7 +28,7 @@ def null_workaround_start_hook(self):
 def airt_workaround_start_hook(self):
     logging.info("applying AIRT workarounds")
     workaround_time = 0.5
-    for rate in (20e6, self.samp_rate):
+    for rate in (15.625e6, self.samp_rate):
         time.sleep(workaround_time)
         self.sources[0].set_sample_rate(0, rate)
         self.sources[0].set_bandwidth(0, rate)
