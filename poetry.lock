@@ -119,6 +119,25 @@ jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
+name = "caerus"
+version = "0.1.9"
+description = "Python package caerus"
+category = "main"
+optional = false
+python-versions = ">=3"
+files = [
+    {file = "caerus-0.1.9-py3-none-any.whl", hash = "sha256:8c7442390839787cc084508fd8004cee169dc2a62e43b06b2c287b550a43f400"},
+    {file = "caerus-0.1.9.tar.gz", hash = "sha256:06b793c4537b663438270ea740c65eafe72d987ad18e942c85bab1bfc6a3a216"},
+]
+
+[package.dependencies]
+matplotlib = "*"
+numpy = "*"
+pandas = "*"
+tqdm = "*"
+wget = "*"
+
+[[package]]
 name = "cairocffi"
 version = "1.5.1"
 description = "cffi-based cairo bindings for Python"
@@ -602,17 +621,18 @@ falcon = "*"
 
 [[package]]
 name = "findpeaks"
-version = "2.4.6"
+version = "2.4.7"
 description = "findpeaks is for the detection of peaks and valleys in a 1D vector and 2D array (image)."
 category = "main"
 optional = false
 python-versions = ">=3"
 files = [
-    {file = "findpeaks-2.4.6-py3-none-any.whl", hash = "sha256:25164616cb0f32f179f270b89c94a49abdf5ead993b5d819cc642beb69ccb5fc"},
-    {file = "findpeaks-2.4.6.tar.gz", hash = "sha256:a560f2d65415b5504844d019eba964560b7815baafe930d6d633c98e76cd4088"},
+    {file = "findpeaks-2.4.7-py3-none-any.whl", hash = "sha256:591f626edf89fd15f03cdb09685e674bd7dec882d1a876974f9a0dec7826f68b"},
+    {file = "findpeaks-2.4.7.tar.gz", hash = "sha256:3101618fc43f9919ed385ee58b5c6bb0c0d954a8d9c95ca0baf82bdffd2f32df"},
 ]
 
 [package.dependencies]
+caerus = ">=0.1.9"
 matplotlib = "*"
 numpy = "*"
 pandas = "*"
@@ -2082,6 +2102,17 @@ optional = ["python-socks", "wsaccel"]
 test = ["websockets"]
 
 [[package]]
+name = "wget"
+version = "3.2"
+description = "pure python download utility"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "wget-3.2.zip", hash = "sha256:35e630eca2aa50ce998b9b1a127bb26b30dfee573702782aa982f875e3f16061"},
+]
+
+[[package]]
 name = "wrapt"
 version = "1.15.0"
 description = "Module for decorators, wrappers and monkey patching."
@@ -2244,4 +2275,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8 <3.11"
-content-hash = "5dbc51d4b3d29fe6d23bdbdcad470940ab2c92720c67da0052ee48c954ed5077"
+content-hash = "fb1baa0042a5820ded9dac2587eb0f070748b6eea0fd4a6f2a4efdc34f2f5323"
