@@ -154,7 +154,6 @@ class SigFinderTestCase(unittest.TestCase):
                 test_log = os.path.join(str(tempdir), "test.csv")
                 test_fftlog = os.path.join(str(tempdir), "fft.csv")
                 test_fftgraph = os.path.join(str(tempdir), "fft.png")
-                live_file = pathlib.Path(os.path.join(str(tempdir), "live_file"))
                 args = FakeArgs(
                     test_log,
                     60,
@@ -177,7 +176,7 @@ class SigFinderTestCase(unittest.TestCase):
                     0,
                     str(tempdir),
                 )
-                zmqr = ZmqReceiver(live_file, args, executor, proxy=null_proxy)
+                zmqr = ZmqReceiver(args.logaddr, args.logport, proxy=null_proxy)
                 prom_vars = init_prom_vars()
                 context = zstandard.ZstdCompressor()
                 freq_start = 100e6
@@ -204,7 +203,6 @@ class SigFinderTestCase(unittest.TestCase):
                                 freq += 1e5
                             bf.write(bytes(json.dumps(output) + "\n", encoding="utf8"))
                             time.sleep(1)
-                live_file.touch()
                 process_thread = threading.Thread(
                     target=process_scans,
                     args=(
@@ -219,7 +217,7 @@ class SigFinderTestCase(unittest.TestCase):
                     if os.path.exists(test_fftlog) and os.path.exists(test_fftgraph):
                         break
                     time.sleep(1)
-                live_file.unlink()
+                zmqr.stop()
                 process_thread.join()
                 self.assertTrue(os.path.exists(test_fftlog))
                 self.assertTrue(os.path.exists(test_fftgraph))
@@ -260,7 +258,14 @@ class SigFinderTestCase(unittest.TestCase):
             socket.bind(f"tcp://{args.logaddr}:{args.logport}")
 
             with concurrent.futures.ProcessPoolExecutor(1) as executor:
-                executor.submit(fft_proxy, args, buff_file, 1, live_file=live_file)
+                executor.submit(
+                    fft_proxy,
+                    args.logaddr,
+                    args.logport,
+                    buff_file,
+                    1,
+                    live_file=live_file,
+                )
                 for _ in range(5):
                     socket.send(test_bytes)
                     if os.path.exists(buff_file):

@@ -3,9 +3,7 @@ import concurrent.futures
 import json
 import logging
 import os
-import pathlib
 import subprocess
-import tempfile
 import threading
 import time
 
@@ -388,11 +386,6 @@ def process_scans(args, prom_vars, executor, zmqr):
         executor.submit(zstd_file, new_log)
 
 
-def find_signals(args, prom_vars, executor, live_file):
-    zmqr = ZmqReceiver(live_file, args, executor)
-    process_scans(args, prom_vars, executor, zmqr)
-
-
 def argument_parser():
     parser = argparse.ArgumentParser(
         description="watch a scan UDP stream and find signals"
@@ -543,25 +536,22 @@ def main():
     app.add_route("/requests", active_requests)
     start_http_server(args.promport)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        live_file = pathlib.Path(os.path.join(tmpdir, "live_file"))
-        live_file.touch()
-
-        with concurrent.futures.ProcessPoolExecutor(2) as executor:
-            x = threading.Thread(
-                target=find_signals,
-                args=(
-                    args,
-                    prom_vars,
-                    executor,
-                    live_file,
-                ),
-            )
-            x.start()
-            try:
-                bjoern.run(app, "0.0.0.0", args.port)  # nosec
-            except KeyboardInterrupt:
-                logging.info("interrupt!")
-                live_file.unlink()
-                executor.shutdown()
-                x.join()
+    with concurrent.futures.ProcessPoolExecutor(2) as executor:
+        zmqr = ZmqReceiver(args.logaddr, args.logport, buff_path=args.buff_path)
+        x = threading.Thread(
+            target=process_scans,
+            args=(
+                args,
+                prom_vars,
+                executor,
+                zmqr,
+            ),
+        )
+        x.start()
+        try:
+            bjoern.run(app, "0.0.0.0", args.port)  # nosec
+        except KeyboardInterrupt:
+            logging.info("interrupt!")
+            zmqr.stop()
+            executor.shutdown()
+            x.join()
