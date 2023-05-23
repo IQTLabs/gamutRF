@@ -16,8 +16,6 @@ import numpy as np
 import pandas as pd
 import requests
 import schedule
-import zmq
-import zstandard
 
 from prometheus_client import Counter
 from prometheus_client import Gauge
@@ -32,10 +30,10 @@ from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
 from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n, SCAN_FRES
+from gamutrf.zmqreceiver import ZmqReceiver
+
 
 MB = int(1.024e6)
-FFT_BUFFER_TIME = 1
-BUFF_FILE = "scanfftbuffer.txt.zst"  # nosec
 PEAK_TRIGGER = int(os.environ.get("PEAK_TRIGGER", "0"))
 PIN_TRIGGER = int(os.environ.get("PIN_TRIGGER", "17"))
 if PEAK_TRIGGER == 1:
@@ -170,7 +168,7 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
         old_bins_prom.labels(bin_freq=obin).inc()
 
 
-def process_fft(args, scan_config, prom_vars, df, lastbins, running_df, last_dfs):
+def process_scan(args, scan_config, prom_vars, df, lastbins, running_df, last_dfs):
     global PEAK_DBS
     # resample to SCAN_FRES
     # ...first frequency
@@ -330,27 +328,12 @@ def zstd_file(uncompressed_file):
     subprocess.check_call(["/usr/bin/zstd", "--force", "--rm", uncompressed_file])
 
 
-def process_fft_lines(
-    args,
-    prom_vars,
-    buff_file,
-    executor,
-    proxy_result,
-    live_file,
-):
-    lastfreq = 0
-    fftbuffer = None
+def process_scans(args, prom_vars, executor, zmqr):
     lastbins_history = []
     lastbins = set()
     frame_counter = prom_vars["frame_counter"]
-    txt_buf = ""
-    last_fft_report = 0
-    fft_packets = 0
-    last_sweep_start = 0
-    context = zstandard.ZstdDecompressor()
     running_df = None
     last_dfs = []
-    scan_config = None
 
     while True:
         if os.path.exists(args.log):
@@ -362,120 +345,42 @@ def process_fft_lines(
         openlogts = int(time.time())
         with open(args.log, mode=mode, encoding="utf-8") as l:
             while True:
-                if not live_file.exists():
-                    return
-                if not proxy_result.running():
-                    logging.error(
-                        "FFT proxy stopped running: %s", proxy_result.result()
-                    )
+                if not zmqr.healthy():
                     return
                 now = int(time.time())
-                if now - last_fft_report > FFT_BUFFER_TIME * 2:
-                    logging.info(
-                        "received %u FFT packets, last freq %f MHz",
-                        fft_packets,
-                        lastfreq / 1e6,
-                    )
-                    fft_packets = 0
-                    last_fft_report = now
-                if os.path.exists(buff_file):
-                    logging.info(
-                        "read %u bytes of FFT data", os.stat(buff_file).st_size
-                    )
-                    with context.stream_reader(open(buff_file, "rb")) as bf:
-                        txt_buf += bf.read().decode("utf8")
-                    fft_packets += 1
-                    os.remove(buff_file)
-                else:
+                scan_config, frame_df = zmqr.read_buff(l)
+                if frame_df is None:
                     schedule.run_pending()
                     sleep_time = 1
                     time.sleep(sleep_time)
                     continue
-                lines = txt_buf.splitlines()
-                if not len(lines) > 1:
-                    continue
-                if txt_buf.endswith("\n"):
-                    l.write(txt_buf)
-                    txt_buf = ""
-                elif lines:
-                    last_line = lines[-1]
-                    l.write(txt_buf[: -len(last_line)])
-                    txt_buf = last_line
-                    lines = lines[:-1]
-                try:
-                    records = []
-                    for line in lines:
-                        line = line.strip()
-                        record = json.loads(line)
-                        ts = float(record["ts"])
-                        sweep_start = float(record["sweep_start"])
-                        buckets = record["buckets"]
-                        scan_config = record["config"]
-                        records.extend(
-                            [
-                                {
-                                    "ts": ts,
-                                    "freq": float(freq),
-                                    "db": float(db),
-                                    "sweep_start": sweep_start,
-                                }
-                                for freq, db in buckets.items()
-                            ]
-                        )
-                    df = pd.DataFrame(records)
-                except ValueError as err:
-                    logging.error(str(err))
-                    continue
-                df = df[(now - df.ts).abs() < 60]
-                freq_start = scan_config["freq_start"]
-                freq_end = scan_config["freq_end"]
-                if df.size:
-                    lastfreq = df.freq.iat[-1]
-                max_sweep_start = df["sweep_start"].max()
-                rotatelognow = False
-                if max_sweep_start != last_sweep_start:
-                    if fftbuffer is None:
-                        frame_df = df
-                    else:
-                        frame_df = pd.concat(
-                            [fftbuffer, df[df["sweep_start"] == last_sweep_start]]
-                        )
-                        fftbuffer = df[df["sweep_start"] != last_sweep_start]
-                    last_sweep_start = max_sweep_start
-                    frame_counter.inc()
-                    logging.info(
-                        "frame with sweep_start %us ago",
-                        now - frame_df["sweep_start"].min(),
-                    )
-                    new_lastbins, last_df = process_fft(
-                        args,
-                        scan_config,
-                        prom_vars,
-                        frame_df,
-                        lastbins,
-                        running_df,
-                        last_dfs,
-                    )
-                    if args.nfftplots:
-                        last_dfs = last_dfs[-args.nfftplots :]
-                        last_dfs.append((last_df.freq, last_df.db))
-                    else:
-                        last_dfs = []
-                    if new_lastbins is not None:
-                        lastbins = new_lastbins
-                        if lastbins:
-                            lastbins_history = [lastbins] + lastbins_history
-                            lastbins_history = lastbins_history[: args.history]
-                        call_record_signals(args, lastbins_history, prom_vars)
-                    rotate_age = now - openlogts
-                    if rotate_age > args.rotatesecs:
-                        rotatelognow = True
+                frame_counter.inc()
+                logging.info(
+                    "frame with sweep_start %us ago",
+                    now - frame_df["sweep_start"].min(),
+                )
+                new_lastbins, last_df = process_scan(
+                    args,
+                    scan_config,
+                    prom_vars,
+                    frame_df,
+                    lastbins,
+                    running_df,
+                    last_dfs,
+                )
+                if args.nfftplots:
+                    last_dfs = last_dfs[-args.nfftplots :]
+                    last_dfs.append((last_df.freq, last_df.db))
                 else:
-                    if fftbuffer is None:
-                        fftbuffer = df
-                    else:
-                        fftbuffer = pd.concat([fftbuffer, df])
-                if rotatelognow:
+                    last_dfs = []
+                if new_lastbins is not None:
+                    lastbins = new_lastbins
+                    if lastbins:
+                        lastbins_history = [lastbins] + lastbins_history
+                        lastbins_history = lastbins_history[: args.history]
+                call_record_signals(args, lastbins_history, prom_vars)
+                rotate_age = now - openlogts
+                if rotate_age > args.rotatesecs:
                     break
         rotate_file_n(".".join((args.log, "zst")), args.nlog, require_initial=False)
         new_log = ".".join((args.log, "1"))
@@ -483,52 +388,9 @@ def process_fft_lines(
         executor.submit(zstd_file, new_log)
 
 
-def fft_proxy(
-    args, buff_file, buffer_time=FFT_BUFFER_TIME, live_file=None, poll_timeout=1
-):
-    zmq_addr = f"tcp://{args.logaddr}:{args.logport}"
-    logging.info("connecting to %s", zmq_addr)
-    zmq_context = zmq.Context()
-    socket = zmq_context.socket(zmq.SUB)
-    socket.connect(zmq_addr)
-    socket.setsockopt_string(zmq.SUBSCRIBE, "")
-    packets_sent = 0
-    last_packet_sent_time = time.time()
-    tmp_buff_file = os.path.basename(buff_file)
-    tmp_buff_file = buff_file.replace(tmp_buff_file, "." + tmp_buff_file)
-    if os.path.exists(tmp_buff_file):
-        os.remove(tmp_buff_file)
-    context = zstandard.ZstdCompressor()
-    shutdown = False
-    while not shutdown:
-        with open(tmp_buff_file, "wb") as zbf:
-            with context.stream_writer(zbf) as bf:
-                while not shutdown:
-                    shutdown = live_file is not None and not live_file.exists()
-                    try:
-                        sock_txt = socket.recv(flags=zmq.NOBLOCK)
-                    except zmq.error.Again:
-                        time.sleep(poll_timeout)
-                        continue
-                    bf.write(sock_txt)
-                    now = time.time()
-                    if (
-                        shutdown or now - last_packet_sent_time > buffer_time
-                    ) and not os.path.exists(buff_file):
-                        if packets_sent == 0:
-                            logging.info("recording first FFT packet")
-                        packets_sent += 1
-                        last_packet_sent_time = now
-                        break
-        os.rename(tmp_buff_file, buff_file)
-
-
 def find_signals(args, prom_vars, executor, live_file):
-    buff_file = os.path.join(args.buff_path, BUFF_FILE)
-    if os.path.exists(buff_file):
-        os.remove(buff_file)
-    proxy_result = executor.submit(fft_proxy, args, buff_file, live_file=live_file)
-    process_fft_lines(args, prom_vars, buff_file, executor, proxy_result, live_file)
+    zmqr = ZmqReceiver(live_file, args, executor)
+    process_scans(args, prom_vars, executor, zmqr)
 
 
 def argument_parser():
