@@ -1,6 +1,35 @@
+"""
+Retrieve streaming scanner FFT results from a gr-iqtlabs/gamutRF scanner.
+
+Example usage:
+
+    from gamutrf.zmqreceiver import ZmqReceiver
+    zmqr = ZmqReceiver("127.0.0.1", 3306)
+
+    while True:
+        scan_config, frame_df = zmqr.read_buffer()
+        if frame_df is None:
+            # no new scan result yet
+            time.sleep(1)
+        ...
+
+    zmqr.stop()
+
+scan_config and frame_df will be None if the next full scan has not been received yet,
+and scan updates are automatically processed in the background to avoid ZMQ tranport
+overflows.
+
+frame_df is a pandas DataFrame with the results of a full scan, and scan_config
+is a python dict containing scan metadata - the contents of the "config" dict, from
+https://github.com/IQTLabs/gr-iqtlabs/blob/main/grc/iqtlabs_retune_fft.block.yml.
+"""
+
+import concurrent.futures
+import tempfile
 import json
 import logging
 import os
+import pathlib
 import time
 import zmq
 import zstandard
@@ -11,9 +40,9 @@ BUFF_FILE = "scanfftbuffer.txt.zst"  # nosec
 
 
 def fft_proxy(
-    args, buff_file, buffer_time=FFT_BUFFER_TIME, live_file=None, poll_timeout=1
+    addr, port, buff_file, buffer_time=FFT_BUFFER_TIME, live_file=None, poll_timeout=1
 ):
-    zmq_addr = f"tcp://{args.logaddr}:{args.logport}"
+    zmq_addr = f"tcp://{addr}:{port}"
     logging.info("connecting to %s", zmq_addr)
     zmq_context = zmq.Context()
     socket = zmq_context.socket(zmq.SUB)
@@ -51,18 +80,28 @@ def fft_proxy(
 
 
 class ZmqReceiver:
-    def __init__(self, live_file, args, executor, proxy=fft_proxy):
-        self.live_file = live_file
-        self.buff_file = os.path.join(args.buff_path, BUFF_FILE)
+    def __init__(self, addr, port, buff_path=None, proxy=fft_proxy):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.live_file = pathlib.Path(os.path.join(self.tmpdir.name, "live_file"))
+        self.live_file.touch()
+        if buff_path is None:
+            buff_path = self.tmpdir.name
+        self.buff_file = os.path.join(buff_path, BUFF_FILE)
         self.context = zstandard.ZstdDecompressor()
         self.txt_buf = ""
         self.fftbuffer = None
         self.last_sweep_start = 0
         if os.path.exists(self.buff_file):
             os.remove(self.buff_file)
-        self.proxy_result = executor.submit(
-            proxy, args, self.buff_file, live_file=live_file
+        self.executor = concurrent.futures.ProcessPoolExecutor(1)
+        self.proxy_result = self.executor.submit(
+            proxy, addr, port, self.buff_file, live_file=self.live_file
         )
+
+    def stop(self):
+        self.live_file.unlink()
+        self.executor.shutdown()
+        self.tmpdir.cleanup()
 
     def healthy(self):
         return os.path.exists(self.live_file) and self.proxy_result.running()
