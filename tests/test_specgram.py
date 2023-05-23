@@ -44,7 +44,7 @@ class FakeArgs:
 
 
 class SpecgramTestCase(unittest.TestCase):
-    def test_process_fft_lines(self):
+    def test_process_recordings(self):
         with tempfile.TemporaryDirectory() as tempdir:
             recording = os.path.join(str(tempdir), "testrecording_100Hz_1000sps.raw")
             (

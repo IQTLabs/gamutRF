@@ -15,15 +15,15 @@ from gamutrf.sigfinder import Result
 from gamutrf.sigfinder import argument_parser
 from gamutrf.sigfinder import error_response
 from gamutrf.sigfinder import falcon_response
-from gamutrf.sigfinder import fft_proxy
 from gamutrf.sigfinder import init_prom_vars
 from gamutrf.sigfinder import ok_response
-from gamutrf.sigfinder import process_fft_lines
+from gamutrf.sigfinder import process_scans
 from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n
+from gamutrf.zmqreceiver import fft_proxy, ZmqReceiver
 
 
-def null_proxy():
+def null_proxy(*args, **kwargs):
     for i in range(10):
         time.sleep(1)
 
@@ -92,6 +92,7 @@ class FakeArgs:
         running_fft_secs,
         nfftplots,
         skip_tune_step_fft,
+        buff_path,
     ):
         self.log = log
         self.rotatesecs = rotatesecs
@@ -114,6 +115,7 @@ class FakeArgs:
         self.nfftplots = nfftplots
         self.skip_tune_step_fft = skip_tune_step_fft
         self.db_rolling_factor = ROLLING_FACTOR
+        self.buff_path = buff_path
 
 
 class SigFinderTestCase(unittest.TestCase):
@@ -146,14 +148,12 @@ class SigFinderTestCase(unittest.TestCase):
     def test_argument_parser(self):
         argument_parser()
 
-    def test_process_fft_lines(self):
+    def test_process_scans(self):
         with concurrent.futures.ProcessPoolExecutor() as executor:
-            proxy_result = executor.submit(null_proxy)
             with tempfile.TemporaryDirectory() as tempdir:
                 test_log = os.path.join(str(tempdir), "test.csv")
                 test_fftlog = os.path.join(str(tempdir), "fft.csv")
                 test_fftgraph = os.path.join(str(tempdir), "fft.png")
-                buff_file = os.path.join(str(tempdir), "buff_file")
                 live_file = pathlib.Path(os.path.join(str(tempdir), "live_file"))
                 args = FakeArgs(
                     test_log,
@@ -175,7 +175,9 @@ class SigFinderTestCase(unittest.TestCase):
                     1,
                     1,
                     0,
+                    str(tempdir),
                 )
+                zmqr = ZmqReceiver(live_file, args, executor, proxy=null_proxy)
                 prom_vars = init_prom_vars()
                 context = zstandard.ZstdCompressor()
                 freq_start = 100e6
@@ -184,7 +186,7 @@ class SigFinderTestCase(unittest.TestCase):
                     "freq_start": freq_start,
                     "freq_end": freq_end,
                 }
-                with open(buff_file, "wb") as zbf:
+                with open(zmqr.buff_file, "wb") as zbf:
                     with context.stream_writer(zbf) as bf:
                         for _ in range(2):
                             output = {
@@ -204,14 +206,12 @@ class SigFinderTestCase(unittest.TestCase):
                             time.sleep(1)
                 live_file.touch()
                 process_thread = threading.Thread(
-                    target=process_fft_lines,
+                    target=process_scans,
                     args=(
                         args,
                         prom_vars,
-                        buff_file,
                         executor,
-                        proxy_result,
-                        live_file,
+                        zmqr,
                     ),
                 )
                 process_thread.start()
@@ -245,6 +245,7 @@ class SigFinderTestCase(unittest.TestCase):
             1,
             1,
             0,
+            "",
         )
         zstd_context = zstandard.ZstdDecompressor()
 
