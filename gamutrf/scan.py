@@ -25,6 +25,9 @@ def init_prom_vars():
     prom_vars = {
         "freq_start_hz": Gauge("freq_start_hz", "start of scanning range in Hz"),
         "freq_end_hz": Gauge("freq_end_hz", "end of scanning range in Hz"),
+        "igain": Gauge("igain", "input gain"),
+        "tune_overlap": Gauge("tune_overlap", "multiple of samp_rate when retuning"),
+        "tune_step_fft": Gauge("tune_step_fft", "tune FFT step (0 is use sweep_sec)"),
         "sweep_sec": Gauge("sweep_sec", "scan sweep rate in seconds"),
     }
     return prom_vars
@@ -189,6 +192,64 @@ def argument_parser():
     return parser
 
 
+def run_loop(options, prom_vars, wavelearner):
+    running = True
+    reconfigured = False
+
+    def sig_handler(_sig=None, _frame=None):
+        running = False
+
+    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+
+    freq_start = options.freq_start
+    freq_end = options.freq_end
+    tuning_ranges = options.tuning_ranges
+    igain = options.igain
+    sweep_sec = options.sweep_sec
+    tune_overlap = options.tuneoverlap
+    tune_step_fft = options.tune_step_fft
+
+    while running:
+        prom_vars["freq_start_hz"].set(freq_start)
+        prom_vars["freq_end_hz"].set(freq_end)
+        prom_vars["igain"].set(igain)
+        prom_vars["sweep_sec"].set(sweep_sec)
+        prom_vars["tune_overlap"].set(tune_overlap)
+        prom_vars["tune_step_fft"].set(tune_step_fft)
+
+        tb = grscan(
+            freq_end=freq_end,
+            freq_start=freq_start,
+            tuning_ranges=tuning_ranges,
+            igain=igain,
+            sweep_sec=sweep_sec,
+            tune_overlap=tune_overlap,
+            tune_step_fft=tune_step_fft,
+            samp_rate=options.samp_rate,
+            logaddr=options.logaddr,
+            logport=options.logport,
+            sdr=options.sdr,
+            sdrargs=options.sdrargs,
+            fft_size=options.nfft,
+            skip_tune_step=options.skip_tune_step,
+            sample_dir=options.sample_dir,
+            write_samples=options.write_samples,
+            bucket_range=options.bucket_range,
+            inference_plan_file=options.inference_plan_file,
+            inference_output_dir=options.inference_output_dir,
+            inference_input_len=options.inference_input_len,
+            iqtlabs=iqtlabs,
+            wavelearner=wavelearner,
+        )
+        tb.start()
+        while running and not reconfigured:
+            time.sleep(1)
+
+        tb.stop()
+        tb.wait()
+
+
 def main():
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
     options = argument_parser().parse_args()
@@ -225,43 +286,6 @@ def main():
         print("wavelearner not available")
 
     prom_vars = init_prom_vars()
-    prom_vars["freq_start_hz"].set(options.freq_start)
-    prom_vars["freq_end_hz"].set(options.freq_end)
-    prom_vars["sweep_sec"].set(options.sweep_sec)
     start_http_server(options.promport)
 
-    tb = grscan(
-        freq_end=options.freq_end,
-        freq_start=options.freq_start,
-        igain=options.igain,
-        samp_rate=options.samp_rate,
-        sweep_sec=options.sweep_sec,
-        logaddr=options.logaddr,
-        logport=options.logport,
-        sdr=options.sdr,
-        sdrargs=options.sdrargs,
-        fft_size=options.nfft,
-        tune_overlap=options.tuneoverlap,
-        tune_step_fft=options.tune_step_fft,
-        skip_tune_step=options.skip_tune_step,
-        sample_dir=options.sample_dir,
-        write_samples=options.write_samples,
-        bucket_range=options.bucket_range,
-        tuning_ranges=options.tuning_ranges,
-        inference_plan_file=options.inference_plan_file,
-        inference_output_dir=options.inference_output_dir,
-        inference_input_len=options.inference_input_len,
-        iqtlabs=iqtlabs,
-        wavelearner=wavelearner,
-    )
-
-    def sig_handler(_sig=None, _frame=None):
-        tb.stop()
-        tb.wait()
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, sig_handler)
-    signal.signal(signal.SIGTERM, sig_handler)
-
-    tb.start()
-    tb.wait()
+    run_loop(options, prom_vars, wavelearner)
