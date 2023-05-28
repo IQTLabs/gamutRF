@@ -52,7 +52,8 @@ jobs:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
         run: |
           poetry run pytest --cov-report term-missing --cov=. --cov-report=xml tests/
-      - name: Upload coverage
+      - if: ${{ github.action_repository == 'IQTLabs/gamutRF' }}
+        name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
