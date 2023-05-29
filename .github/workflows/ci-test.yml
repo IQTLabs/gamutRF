@@ -56,4 +56,5 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
-          fail_ci_if_error: false
+          fail_ci_if_error: true
+        if: github.repository == 'iqtlabs/gamutrf'
