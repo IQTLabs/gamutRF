@@ -4,7 +4,10 @@ COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 WORKDIR /gamutrf
-COPY . /gamutrf
+COPY gamutrf gamutrf/
+COPY bin bin/
+COPY templates templates/
+COPY poetry.lock pyproject.toml README.md /gamutrf/
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # TODO: https://github.com/python-poetry/poetry/issues/3591
 # Install pandas via pip to get wheel. Disabling the new installer/configuring a wheel source does not work.
@@ -29,7 +32,7 @@ FROM ubuntu:22.04
 COPY --from=installer /usr/local /usr/local
 COPY --from=installer /gamutrf /gamutrf
 COPY --from=installer /root/.local /root/.local
-COPY --from=iqtlabs/gamutrf-base:latest /usr/share/uhd/images /usr/share/uhd/imagesa
+COPY --from=iqtlabs/gamutrf-base:latest /usr/share/uhd/images /usr/share/uhd/images
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
