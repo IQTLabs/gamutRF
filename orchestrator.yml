@@ -53,7 +53,7 @@ services:
       - --nfft=2048
       - --sweep-sec=30
     healthcheck:
-      test: [CMD, "/gamutrf/scanhc.sh", "9000"]
+      test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
       timeout: 10s
       retries: 3
