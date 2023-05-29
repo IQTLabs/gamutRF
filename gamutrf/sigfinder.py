@@ -168,14 +168,6 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
 
 def process_scan(args, scan_config, prom_vars, df, lastbins, running_df, last_dfs):
     global PEAK_DBS
-    # resample to SCAN_FRES
-    # ...first frequency
-    df["freq"] = (df["freq"] / SCAN_FRES).round() * SCAN_FRES / 1e6
-    df = df.set_index("freq")
-    # ...then power
-    df["db"] = df.groupby(["freq"])["db"].mean()
-    df = df.reset_index().drop_duplicates(subset=["freq"])
-    df = df.sort_values("freq")
     df = calc_db(df, args.db_rolling_factor)
     freqdiffs = df.freq - df.freq.shift()
     mindiff = freqdiffs.min()
@@ -537,7 +529,9 @@ def main():
     start_http_server(args.promport)
 
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
-        zmqr = ZmqReceiver(args.logaddr, args.logport, buff_path=args.buff_path)
+        zmqr = ZmqReceiver(
+            args.logaddr, args.logport, buff_path=args.buff_path, scan_fres=SCAN_FRES
+        )
         x = threading.Thread(
             target=process_scans,
             args=(

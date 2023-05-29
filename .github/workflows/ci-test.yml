@@ -6,7 +6,6 @@ jobs:
 
   ci-test:
     runs-on: ubuntu-22.04
-
     steps:
       - uses: actions/checkout@v3
         with:
@@ -23,7 +22,25 @@ jobs:
           version: 1.4.2
       - name: Get dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ gnuradio-dev libev-dev libboost-all-dev libuhd-dev libunwind-dev make pkg-config software-properties-common sox swig uhd-host wget libopencv-dev
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            g++ \
+            gcc \
+            git \
+            gnuradio-dev \
+            libboost-all-dev \
+            libev-dev \
+            libopencv-dev \
+            libuhd-dev \
+            libunwind-dev \
+            make \
+            pkg-config \
+            python3-zmq \
+            software-properties-common \
+            sox \
+            uhd-host \
+            wget
           grep -h 'git clone' docker/*|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
       - name: Install dependencies
         run: |
@@ -34,8 +51,6 @@ jobs:
           poetry config virtualenvs.create false && \
           poetry install --no-interaction
       - name: test gamutrf-samples2raw
-        env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
         run: |
           gamutrf-samples2raw --help && \
           dd if=/dev/zero of=/tmp/gamutrf_recording_ettus__gain40_1_1Hz_1000000sps.s16 bs=4 count=1000000 && \
@@ -48,9 +63,10 @@ jobs:
       - name: Code Quality - Pylint
         run: |
           poetry run pylint --fail-under=6 gamutrf/
+      - name: Code Quality - Pytype
+        run: |
+          poetry run pytype -v2 -k gamutrf/
       - name: Test with pytest
-        env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
         run: |
           poetry run pytest --cov-report term-missing --cov=. --cov-report=xml tests/
       - name: Upload coverage
