@@ -4,7 +4,7 @@ Retrieve streaming scanner FFT results from a gr-iqtlabs/gamutRF scanner.
 Example usage:
 
     from gamutrf.zmqreceiver import ZmqReceiver
-    zmqr = ZmqReceiver("127.0.0.1", 3306)
+    zmqr = ZmqReceiver("127.0.0.1", 8001)
 
     while True:
         scan_config, frame_df = zmqr.read_buffer()
@@ -80,7 +80,9 @@ def fft_proxy(
 
 
 class ZmqReceiver:
-    def __init__(self, addr, port, buff_path=None, proxy=fft_proxy):
+    def __init__(
+        self, addr="127.0.0.1", port=8001, buff_path=None, proxy=fft_proxy, scan_fres=0
+    ):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.live_file = pathlib.Path(os.path.join(self.tmpdir.name, "live_file"))
         self.live_file.touch()
@@ -91,6 +93,7 @@ class ZmqReceiver:
         self.txt_buf = ""
         self.fftbuffer = None
         self.last_sweep_start = 0
+        self.scan_fres = scan_fres
         if os.path.exists(self.buff_file):
             os.remove(self.buff_file)
         self.executor = concurrent.futures.ProcessPoolExecutor(1)
@@ -148,6 +151,17 @@ class ZmqReceiver:
             return lines
         return None
 
+    def frame_resample(self, df):
+        # resample to SCAN_FRES
+        # ...first frequency
+        df["freq"] = (df["freq"] / self.scan_fres).round() * self.scan_fres / 1e6
+        df = df.set_index("freq")
+        # ...then power
+        df["db"] = df.groupby(["freq"])["db"].mean()
+        df = df.reset_index().drop_duplicates(subset=["freq"])
+        df = df.sort_values("freq")
+        return df
+
     def read_new_frame_df(self, df):
         frame_df = None
         df = df[(time.time() - df.ts).abs() < 60]
@@ -169,6 +183,8 @@ class ZmqReceiver:
                     self.fftbuffer = df
                 else:
                     self.fftbuffer = pd.concat([self.fftbuffer, df])
+        if self.scan_fres:
+            frame_df = self.frame_resample(frame_df)
         return frame_df
 
     def read_buff(self, log=None):

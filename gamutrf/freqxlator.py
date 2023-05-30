@@ -24,9 +24,10 @@ try:
     from gnuradio.filter import firdes
     from gnuradio.filter import freq_xlating_fir_filter_ccc
     from pmt import PMT_NIL  # pytype: disable=import-error
-except ModuleNotFoundError:
+except ModuleNotFoundError as err:
     print(
-        "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme)"
+        "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme): %s"
+        % err
     )
     sys.exit(1)
 

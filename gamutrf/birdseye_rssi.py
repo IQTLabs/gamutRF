@@ -4,9 +4,10 @@ try:
     from gnuradio import blocks
     from gnuradio import gr
     from gnuradio import network
-except ModuleNotFoundError:
+except ModuleNotFoundError as err:
     print(
-        "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme)"
+        "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme): %s"
+        % err
     )
     sys.exit(1)
 
