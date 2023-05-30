@@ -11,9 +11,10 @@ try:
     from gnuradio import uhd
     from gnuradio.gr import sizeof_gr_complex
     from gnuradio import iqtlabs
-except ModuleNotFoundError:  # pragma: no cover
+except ModuleNotFoundError as err:  # pragma: no cover
     print(
-        "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme)"
+        "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme): %s"
+        % err
     )
     sys.exit(1)
 

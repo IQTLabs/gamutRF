@@ -209,7 +209,6 @@ class API:
 
     def run_recorder(self, record_func):
         logging.info("run recorder")
-        start_time = time.time()
         while True:
             logging.info("awaiting request")
             if self.arguments.enable_rssi:

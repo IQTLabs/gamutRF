@@ -10,9 +10,10 @@ try:
     from gnuradio import gr  # pytype: disable=import-error
     from gnuradio import zeromq  # pytype: disable=import-error
     from gnuradio.fft import window  # pytype: disable=import-error
-except ModuleNotFoundError:  # pragma: no cover
+except ModuleNotFoundError as err:  # pragma: no cover
     print(
-        "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme)"
+        "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme): %s"
+        % err
     )
     sys.exit(1)
 
