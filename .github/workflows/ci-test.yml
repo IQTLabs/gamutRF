@@ -48,6 +48,12 @@ jobs:
       - name: Code Quality - Pylint
         run: |
           poetry run pylint --fail-under=6 gamutrf/
+      - name: Code Quality - Pytype
+        env:
+          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
+        run: |
+          sudo pip3 install pytype=="$(grep -E "pytype = " pyproject.toml | grep -Eo "[0-9\.]+")" && \
+            pytype -k gamutrf/
       - name: Test with pytest
         env:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
