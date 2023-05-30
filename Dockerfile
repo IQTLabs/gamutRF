@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip && \
     poetry run pip install --no-cache-dir pandas==$(grep pandas pyproject.toml | grep -Eo "[0-9\.]+") && \
-    poetry install --no-interaction --no-ansi
+    poetry install --no-interaction --no-dev --no-ansi
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04
