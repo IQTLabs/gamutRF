@@ -75,7 +75,7 @@ jobs:
     - name: run semgrep
       run: |
         mkdir -p /home/runner/reports/ && \
-          semgrep --verbose --config=.github/workflows/config/semgrep-python.yml --json -o /home/runner/reports/semgrep.out --severity ERROR ./ || true
+          semgrep --verbose --config=.github/workflows/config/semgrep-python.yml --json -o /home/runner/reports/semgrep.out --severity ERROR ./
     - name: scan
       id: py_scan
       run: |
