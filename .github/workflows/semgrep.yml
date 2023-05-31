@@ -24,7 +24,6 @@ jobs:
         sudo apt install jq && \
         python3 -m pip install --upgrade pip && \
         python3 -m pip install semgrep && \
-        python3 -m pip install --upgrade urllib3 && \
         mkdir /home/runner/reports/ && \
         cd ${GITHUB_WORKSPACE}/ && \
         semgrep --config=.github/workflows/config/semgrep-dockerfile.yml  --json -o /home/runner/reports/semgrep.out \
