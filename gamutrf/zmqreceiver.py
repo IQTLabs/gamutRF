@@ -178,13 +178,13 @@ class ZmqReceiver:
                     )
                     self.fftbuffer = df[df["sweep_start"] != self.last_sweep_start]
                 self.last_sweep_start = max_sweep_start
+                if self.scan_fres:
+                    frame_df = self.frame_resample(frame_df)
             else:
                 if self.fftbuffer is None:
                     self.fftbuffer = df
                 else:
                     self.fftbuffer = pd.concat([self.fftbuffer, df])
-        if self.scan_fres:
-            frame_df = self.frame_resample(frame_df)
         return frame_df
 
     def read_buff(self, log=None):
