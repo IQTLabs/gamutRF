@@ -21,16 +21,15 @@ jobs:
         python-version: '3.10'
     - name: scan
       id: d_scan
+      env:
+        DEBIAN_FRONTEND: noninteractive
       run: |
-        export DEBIAN_FRONTEND=noninteractive && \
-        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections && \
         sudo apt-get update && \
         sudo apt install jq && \
-        pip install --upgrade pip && \
-        pip install semgrep && \
+        python3 -m pip install semgrep && \
         mkdir /home/runner/reports/ && \
         cd ${GITHUB_WORKSPACE}/ && \
-        semgrep --config=.github/workflows/config/semgrep-dockerfile.yml  --json -o /home/runner/reports/semgrep.out \
+        semgrep --config=.github/workflows/config/semgrep-dockerfile.yml --json -o /home/runner/reports/semgrep.out \
         --severity ERROR ./ &&\
         echo "## Validation Issues Found (Docker) :whale: " >> /home/runner/reports/docker-msg && \
         cat /home/runner/reports/semgrep.out | jq -r --arg ws "$GITHUB_WORKSPACE" --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA" '.results[] | "**File:** [\(.path | sub($ws; "."; "g"))](\(.path | sub($ws; $url; "g"))#L\(.start.line)) \n**Line Number:** \(.start.line) \n**Statement(s):** \n``` \n\(.extra.lines) \n``` \n**Rule:** \n\(.extra.message)\n\n"' >> /home/runner/reports/docker-msg && \
