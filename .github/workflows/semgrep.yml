@@ -15,19 +15,20 @@ jobs:
       with:
         repository: ${{ github.event.pull_request.head.repo.full_name }}
         ref: ${{ github.event.pull_request.head.ref }}
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: install semgrep
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo apt-get update && sudo apt-get install jq && python3 -m pip install semgrep 
     - name: scan
       id: d_scan
       run: |
-        export DEBIAN_FRONTEND=noninteractive && \
-        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections && \
-        sudo apt-get update && \
-        sudo apt install jq && \
-        python3 -m pip install --upgrade pip && \
-        python3 -m pip install semgrep && \
-        python3 -m pip install --upgrade urllib3 && \
         mkdir /home/runner/reports/ && \
-        cd ${GITHUB_WORKSPACE}/ && \
-        semgrep --config=.github/workflows/config/semgrep-dockerfile.yml  --json -o /home/runner/reports/semgrep.out \
+        semgrep --config=.github/workflows/config/semgrep-dockerfile.yml --json -o /home/runner/reports/semgrep.out \
         --severity ERROR ./ &&\
         echo "## Validation Issues Found (Docker) :whale: " >> /home/runner/reports/docker-msg && \
         cat /home/runner/reports/semgrep.out | jq -r --arg ws "$GITHUB_WORKSPACE" --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA" '.results[] | "**File:** [\(.path | sub($ws; "."; "g"))](\(.path | sub($ws; $url; "g"))#L\(.start.line)) \n**Line Number:** \(.start.line) \n**Statement(s):** \n``` \n\(.extra.lines) \n``` \n**Rule:** \n\(.extra.message)\n\n"' >> /home/runner/reports/docker-msg && \
@@ -62,20 +63,20 @@ jobs:
       with:
         repository: ${{ github.event.pull_request.head.repo.full_name }}
         ref: ${{ github.event.pull_request.head.ref }}
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: install semgrep
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo apt-get update && sudo apt-get install jq && python3 -m pip install semgrep
     - name: scan
       id: py_scan
       run: |
-        export DEBIAN_FRONTEND=noninteractive && \
-        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections && \
-        sudo apt-get update && \
-        sudo apt install jq && \
-        python3 -m pip install --upgrade pip && \
-        python3 -m pip install semgrep && \
-        python3 -m pip install --upgrade urllib3 && \
         mkdir -p /home/runner/reports/ && \
-        cd ${GITHUB_WORKSPACE}/ && \
-        semgrep --config=.github/workflows/config/semgrep-python.yml  --json -o /home/runner/reports/semgrep.out \
-        --severity ERROR ./ && \
+        semgrep --config=.github/workflows/config/semgrep-python.yml --json -o /home/runner/reports/semgrep.out --severity ERROR ./ && \
         echo "## Validation Issues Found (Python) :snake: " >> /home/runner/reports/python-msg && \
         cat /home/runner/reports/semgrep.out | jq -r --arg ws "$GITHUB_WORKSPACE" --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA" '.results[] | "**File:** [\(.path | sub($ws; "."; "g"))](\(.path | sub($ws; $url; "g"))#L\(.start.line)) \n**Line Number:** \(.start.line) \n**Statement(s):** \n``` \n\(.extra.lines) \n``` \n**Rule:** \n\(.extra.message)\n\n"' >> /home/runner/reports/python-msg && \
         echo "::set-output name=python-found-count::$(cat /home/runner/reports/semgrep.out | jq '.results | length')"
