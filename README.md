@@ -119,6 +119,13 @@ Run:
 
 To view other options.
 
+## API access
+
+gamutRF supports two separate APIs - for receiving scanner updates, and making scanner configuration changes.
+
+* scanner update API: described in [zmqreceiver.py](gamutrf/zmqreceiver.py). Receives real time scanner updates and config.
+* scanner config API: allows RESTful updates to any CLI argument. Eg, ```wget -O- "http://localhost:9001/reconf?freq_start=1e9&freq_end=2e9"``` causes the scanner to reset and scan 1e9 to 2e9Hz. Any config change causes the scanner's gnuradio flowgraph to restart.
+
 ## Scanner testing
 
 Currently, the scanner ```gain``` and sigfinder ```threshold``` must be set manually for the general RF environment (e.g. noisy/many signals versus quiet/few signals).
