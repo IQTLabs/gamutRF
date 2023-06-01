@@ -201,6 +201,18 @@ def argument_parser():
         default="",
         help="tuning ranges (overriding freq_start and freq_end)",
     )
+    parser.add_argument(
+        "--scaling",
+        dest="scaling",
+        type=str,
+        default="spectrum",
+        help="""Same as --scaling parameter in scipy.signal.spectrogram(). 
+        Selects between computing the power spectral density ('density') 
+        where `Sxx` has units of V**2/Hz and computing the power
+        spectrum ('spectrum') where `Sxx` has units of V**2, if `x`
+        is measured in V and `fs` is measured in Hz. Defaults to
+        'spectrum'.""",
+    )
     return parser
 
 
@@ -219,6 +231,9 @@ def check_options(options):
 
     if options.write_samples and not options.sample_dir:
         return "Must provide --sample_dir when writing samples/points"
+
+    if options.scaling not in ["spectrum", "density"]:
+        return "scaling must be 'spectrum' or 'density'"
 
     return ""
 
@@ -267,6 +282,7 @@ def run_loop(options, prom_vars, wavelearner):
             inference_plan_file=handler.options.inference_plan_file,
             inference_output_dir=handler.options.inference_output_dir,
             inference_input_len=handler.options.inference_input_len,
+            scaling=handler.options.scaling,
             iqtlabs=iqtlabs,
             wavelearner=wavelearner,
         )
