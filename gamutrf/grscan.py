@@ -43,6 +43,7 @@ class grscan(gr.top_block):
         inference_input_len=2048,
         bucket_range=1.0,
         tuning_ranges="",
+        scaling="spectrum",
         iqtlabs=None,
         wavelearner=None,
     ):
@@ -73,7 +74,7 @@ class grscan(gr.top_block):
         )
 
         fft_blocks, fft_roll = self.get_fft_blocks(fft_size, sdr)
-        self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate)
+        self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate, scaling)
         self.samples_blocks = []
         if write_samples:
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
@@ -174,8 +175,13 @@ class grscan(gr.top_block):
             self.connect((last_block, 0), (block, 0))
             last_block = block
 
-    def get_db_blocks(self, fft_size, samp_rate):
-        scale = 1.0 / (samp_rate * sum(self.get_window(fft_size)) ** 2)
+    def get_db_blocks(self, fft_size, samp_rate, scaling):
+        if scaling == "density":
+            scale = 1.0 / (samp_rate * sum(self.get_window(fft_size)) ** 2)
+        elif scaling == "spectrum":
+            scale = 1.0 / (sum(self.get_window(fft_size)) ** 2)
+        else:
+            raise ValueError("scaling must be 'spectrum' or 'density'")
         return [
             blocks.complex_to_mag_squared(fft_size),
             blocks.multiply_const_vff([scale] * fft_size),
