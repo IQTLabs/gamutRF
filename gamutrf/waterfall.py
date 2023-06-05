@@ -89,18 +89,24 @@ def main():
     psd_y_edyes = None
     background = None
     top_n_lns = None
-    ax = None
-    ax_psd = None
-    min_psd_ln = None
-    max_psd_ln = None
-    mean_psd_ln = None
-    current_psd_ln = None
-    peak_lns = None
-    mesh = None
-    sm = None
-    cbar = None
-    cbar_ax = None
+
     fig = plt.figure(figsize=(28, 10), dpi=100)
+    ax_psd: matplotlib.axes.Axes
+    ax: matplotlib.axes.Axes
+    mesh: matplotlib.collections.QuadMesh
+    cbar_ax: matplotlib.axes.Axes
+    cbar: matplotlib.colorbar.Colorbar
+    sm: matplotlib.cm.ScalarMappable
+    peak_lns: matplotlib.lines.Line2D
+    current_psd_ln: matplotlib.lines.Line2D
+    mean_psd_ln: matplotlib.lines.Line2D
+    min_psd_ln: matplotlib.lines.Line2D
+    max_psd_ln: matplotlib.lines.Line2D
+
+    title_text = {}
+    psd_title = ax_psd.text(
+        0.5, 1.05, "", transform=ax_psd.transAxes, va="center", ha="center"
+    )
 
     # SCALING
     min_freq /= scale
@@ -248,12 +254,6 @@ def main():
             title = ax.text(
                 0.5, 1.05, "", transform=ax.transAxes, va="center", ha="center"
             )
-
-            # PSD TITLE
-            psd_title = ax_psd.text(
-                0.5, 1.05, "", transform=ax_psd.transAxes, va="center", ha="center"
-            )
-            title_text = {}
 
             ax_psd.yaxis.set_animated(True)
             cbar_ax.yaxis.set_animated(True)
