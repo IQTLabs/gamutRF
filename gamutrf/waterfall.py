@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import matplotlib
+
 matplotlib.use("GTK3Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,60 +20,45 @@ from timeit import default_timer as timer
 
 from gamutrf.zmqreceiver import ZmqReceiver
 
+
 def draw_waterfall(mesh, fig, ax, data, cmap):
     mesh.set_array(cmap(data))
     ax.draw_artist(mesh)
+
 
 def draw_title(ax, title, title_text):
     title_text["Time"] = str(datetime.datetime.now())
     title.set_text(str(title_text))
     ax.draw_artist(title)
 
+
 def argument_parser():
     parser = argparse.ArgumentParser(description="waterfall plotter from scan data")
     parser.add_argument(
-        "--min_freq", 
-        default=300e6, 
-        type=float, 
-        help="Minimum frequency for plot."
+        "--min_freq", default=300e6, type=float, help="Minimum frequency for plot."
     )
     parser.add_argument(
-        "--max_freq", 
-        default=6e9, 
-        type=float, 
-        help="Maximum frequency for plot."
+        "--max_freq", default=6e9, type=float, help="Maximum frequency for plot."
     )
     parser.add_argument(
-        "--sampling_rate", 
-        default=100e6, 
-        type=float, 
-        help="Sampling rate."
+        "--sampling_rate", default=100e6, type=float, help="Sampling rate."
+    )
+    parser.add_argument("--nfft", default=256, type=int, help="FFT length.")
+    parser.add_argument(
+        "--n_detect", default=0, type=int, help="Number of detected signals to plot."
     )
     parser.add_argument(
-        "--nfft", 
-        default=256, 
-        type=int, 
-        help="FFT length."
-    )
-    parser.add_argument(
-        "--n_detect", 
-        default=0, 
-        type=int, 
-        help="Number of detected signals to plot."
-    )
-    parser.add_argument(
-        "--plot_snr", 
-        action="store_true", 
-        help="Plot SNR rather than power."
+        "--plot_snr", action="store_true", help="Plot SNR rather than power."
     )
     return parser
+
 
 def main():
     # ARG PARSE PARAMETERS
     parser = argument_parser()
     args = parser.parse_args()
     min_freq = args.min_freq
-    max_freq = args.max_freq  
+    max_freq = args.max_freq
     plot_snr = args.plot_snr
     top_n = args.n_detect
     fft_len = args.nfft
@@ -89,9 +75,7 @@ def main():
     scale = 1e6
     zmq_sleep_time = 1
 
-    freq_resolution = (
-        sampling_rate / fft_len
-    )  
+    freq_resolution = sampling_rate / fft_len
     draw_rate = 1
     y_label_skip = 3
     global init_fig
@@ -107,17 +91,19 @@ def main():
     min_freq /= scale
     max_freq /= scale
     freq_resolution /= scale
-    scan_fres_resolution = 1e4  
-    
+    scan_fres_resolution = 1e4
+
     # ZMQ
     zmqr = ZmqReceiver(
-        addr="127.0.0.1", 
-        port=8001, 
+        addr="127.0.0.1",
+        port=8001,
         scan_fres=scan_fres_resolution,
     )
+
     def sig_handler(_sig=None, _frame=None):
         zmqr.stop()
         sys.exit(0)
+
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
@@ -134,16 +120,14 @@ def main():
     freq_data = np.empty(X.shape)
     freq_data.fill(np.nan)
 
-    def onresize(event): 
+    def onresize(event):
         global init_fig
         init_fig = True
 
-    fig.canvas.mpl_connect('resize_event', onresize)
+    fig.canvas.mpl_connect("resize_event", onresize)
 
-    while True: 
-
-        if init_fig: 
-
+    while True:
+        if init_fig:
             # RESET FIGURE
             fig.clf()
             plt.tight_layout()
@@ -154,15 +138,19 @@ def main():
             # PSD
             XX, YY = np.meshgrid(
                 np.linspace(
-                    min_freq, max_freq, int((max_freq - min_freq) / (freq_resolution) + 1)
+                    min_freq,
+                    max_freq,
+                    int((max_freq - min_freq) / (freq_resolution) + 1),
                 ),
                 np.linspace(db_min, db_max, psd_db_resolution),
             )
 
             psd_x_edges = XX[0]
             psd_y_edges = YY[:, 0]
-            
-            mesh_psd = ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
+
+            mesh_psd = ax_psd.pcolormesh(
+                XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
+            )
             (peak_lns,) = ax_psd.plot(
                 X[0],
                 db_min * np.ones(freq_data.shape[1]),
@@ -220,14 +208,18 @@ def main():
             top_n_lns = []
             for _ in range(top_n):
                 (ln,) = ax.plot(
-                    [X[0][0]] * len(Y[:, 0]), Y[:, 0], color="brown", linestyle=":", alpha=0
+                    [X[0][0]] * len(Y[:, 0]),
+                    Y[:, 0],
+                    color="brown",
+                    linestyle=":",
+                    alpha=0,
                 )
                 top_n_lns.append(ln)
 
             ax.set_xlabel("MHz")
             ax.set_ylabel("Time")
 
-            # COLORBAR 
+            # COLORBAR
             sm = plt.cm.ScalarMappable(cmap=cmap)
             sm.set_clim(vmin=db_min, vmax=db_max)
 
@@ -237,27 +229,17 @@ def main():
             cbar = fig.colorbar(sm, cax=cbar_ax)
             cbar.set_label("dB", rotation=0)
 
-            # SPECTROGRAM TITLE 
+            # SPECTROGRAM TITLE
             title = ax.text(
-                0.5, 
-                1.05, 
-                "", 
-                transform=ax.transAxes, 
-                va="center", 
-                ha="center"
+                0.5, 1.05, "", transform=ax.transAxes, va="center", ha="center"
             )
 
-            # PSD TITLE 
+            # PSD TITLE
             psd_title = ax_psd.text(
-                0.5, 
-                1.05, 
-                "", 
-                transform=ax_psd.transAxes, 
-                va="center", 
-                ha="center"
+                0.5, 1.05, "", transform=ax_psd.transAxes, va="center", ha="center"
             )
             title_text = {}
-            
+
             ax_psd.yaxis.set_animated(True)
             cbar_ax.yaxis.set_animated(True)
             ax.yaxis.set_animated(True)
@@ -271,26 +253,32 @@ def main():
 
             for ln in top_n_lns:
                 ln.set_alpha(0.75)
-            
+
             init_fig = False
 
-        else: 
-
-
+        else:
             scan_config, scan_df = zmqr.read_buff()
 
-            if scan_df is not None: 
-
+            if scan_df is not None:
                 scan_df = scan_df[(scan_df.freq > min_freq) & (scan_df.freq < max_freq)]
-                if scan_df.empty: 
-                    print(f"Scan is outside specified frequency range ({min_freq} to {max_freq}).")
+                if scan_df.empty:
+                    print(
+                        f"Scan is outside specified frequency range ({min_freq} to {max_freq})."
+                    )
                     continue
 
-                idx = round((scan_df.freq - min_freq) / freq_resolution).values.flatten().astype(int)
-                
+                idx = (
+                    round((scan_df.freq - min_freq) / freq_resolution)
+                    .values.flatten()
+                    .astype(int)
+                )
+
                 freq_data = np.roll(freq_data, -1, axis=0)
                 freq_data[-1, :] = np.nan
-                freq_data[-1][idx] = round(scan_df.freq / freq_resolution).values.flatten() * freq_resolution
+                freq_data[-1][idx] = (
+                    round(scan_df.freq / freq_resolution).values.flatten()
+                    * freq_resolution
+                )
 
                 db = scan_df.db.values.flatten()
 
@@ -298,21 +286,18 @@ def main():
                 db_data[-1, :] = np.nan
                 db_data[-1][idx] = db
 
-
                 data, xedge, yedge = np.histogram2d(
                     freq_data[~np.isnan(freq_data)].flatten(),
                     db_data[~np.isnan(db_data)].flatten(),
                     density=False,
                     bins=[psd_x_edges, psd_y_edges],
-                ) 
+                )
                 heatmap = gaussian_filter(data, sigma=2)
                 data = heatmap
-                data /= np.max(data)  
-                #data /= np.max(data, axis=1)[:,None]
-                
+                data /= np.max(data)
+                # data /= np.max(data, axis=1)[:,None]
 
                 fig.canvas.restore_region(background)
-                
 
                 top_n_bins = freq_bins[
                     np.argsort(np.nanvar(db_data - np.nanmin(db_data, axis=0), axis=0))[
@@ -324,10 +309,8 @@ def main():
                     ln.set_xdata([top_n_bins[i]] * len(Y[:, 0]))
 
                 fig.canvas.blit(ax.yaxis.axes.figure.bbox)
-                
-                row_time = datetime.datetime.fromtimestamp(
-                    scan_df.ts.iloc[-1]
-                )
+
+                row_time = datetime.datetime.fromtimestamp(scan_df.ts.iloc[-1])
 
                 if counter % y_label_skip == 0:
                     y_labels.append(row_time)
@@ -344,26 +327,28 @@ def main():
 
                 counter += 1
                 if counter % draw_rate == 0:
-
                     draw_rate = 1
 
                     db_min = np.nanmin(db_data)
                     db_max = np.nanmax(db_data)
 
-
                     XX, YY = np.meshgrid(
                         np.linspace(
-                            min_freq, max_freq, int((max_freq - min_freq) / (freq_resolution) + 1)
+                            min_freq,
+                            max_freq,
+                            int((max_freq - min_freq) / (freq_resolution) + 1),
                         ),
                         np.linspace(db_min, db_max, psd_db_resolution),
                     )
 
                     psd_x_edges = XX[0]
                     psd_y_edges = YY[:, 0]
-                    
-                    mesh_psd = ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
 
-                    #db_norm = db_data
+                    mesh_psd = ax_psd.pcolormesh(
+                        XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
+                    )
+
+                    # db_norm = db_data
                     db_norm = (db_data - db_min) / (db_max - db_min)
                     if plot_snr:
                         db_norm = ((db_data - np.nanmin(db_data, axis=0)) - snr_min) / (
@@ -371,17 +356,16 @@ def main():
                         )
 
                     peaks, properties = find_peaks(
-                        db_data[-1], 
-                        height=np.nanmean(db_data, axis=0), 
-                        width=3, 
-                        prominence=(0,20), 
-                        rel_height=0.7, 
-                        wlen=120
+                        db_data[-1],
+                        height=np.nanmean(db_data, axis=0),
+                        width=3,
+                        prominence=(0, 20),
+                        rel_height=0.7,
+                        wlen=120,
                     )
-                    
 
                     ax_psd.set_ylim(db_min, db_max)
-                    
+
                     mesh_psd.set_array(cmap_psd(data.T))
                     min_psd_ln.set_ydata(np.nanmin(db_data, axis=0))
                     max_psd_ln.set_ydata(np.nanmax(db_data, axis=0))
@@ -390,51 +374,66 @@ def main():
                     peak_lns.set_xdata(psd_x_edges[peaks])
                     peak_lns.set_ydata(properties["width_heights"])
 
-                    
                     ax_psd.draw_artist(mesh_psd)
                     if len(peaks) > 0:
                         vl = ax_psd.vlines(
-                            x=psd_x_edges[peaks], 
+                            x=psd_x_edges[peaks],
                             ymin=db_data[-1][peaks] - properties["prominences"],
-                            ymax = db_data[-1][peaks], 
-                            color = "white"
+                            ymax=db_data[-1][peaks],
+                            color="white",
                         )
                         ax_psd.draw_artist(vl)
                         vl = ax_psd.vlines(
-                            x=np.concatenate((psd_x_edges[properties["left_ips"].astype(int)],psd_x_edges[properties["right_ips"].astype(int)])), 
+                            x=np.concatenate(
+                                (
+                                    psd_x_edges[properties["left_ips"].astype(int)],
+                                    psd_x_edges[properties["right_ips"].astype(int)],
+                                )
+                            ),
                             ymin=db_min,
-                            ymax = np.tile(db_data[-1][peaks],2), 
-                            color = "white"
+                            ymax=np.tile(db_data[-1][peaks], 2),
+                            color="white",
                         )
                         ax_psd.draw_artist(vl)
-                        for l_ips, r_ips, p in zip(psd_x_edges[properties["left_ips"].astype(int)],psd_x_edges[properties["right_ips"].astype(int)],db_data[-1][peaks]):
-                            shaded = ax_psd.fill_between([l_ips,r_ips], db_min, p, alpha=0.7)
+                        for l_ips, r_ips, p in zip(
+                            psd_x_edges[properties["left_ips"].astype(int)],
+                            psd_x_edges[properties["right_ips"].astype(int)],
+                            db_data[-1][peaks],
+                        ):
+                            shaded = ax_psd.fill_between(
+                                [l_ips, r_ips], db_min, p, alpha=0.7
+                            )
                             ax_psd.draw_artist(shaded)
                         hl = ax_psd.hlines(
-                            y=properties["width_heights"], 
-                            xmin=psd_x_edges[properties["left_ips"].astype(int)], 
-                            xmax=psd_x_edges[properties["right_ips"].astype(int)], 
-                            color="white"
+                            y=properties["width_heights"],
+                            xmin=psd_x_edges[properties["left_ips"].astype(int)],
+                            xmax=psd_x_edges[properties["right_ips"].astype(int)],
+                            color="white",
                         )
                         ax_psd.draw_artist(hl)
-                        for l_ips, r_ips, p in zip(psd_x_edges[properties["left_ips"].astype(int)],psd_x_edges[properties["right_ips"].astype(int)],peaks):
+                        for l_ips, r_ips, p in zip(
+                            psd_x_edges[properties["left_ips"].astype(int)],
+                            psd_x_edges[properties["right_ips"].astype(int)],
+                            peaks,
+                        ):
                             txt = ax_psd.text(
-                                l_ips + ((r_ips - l_ips)/2), 
-                                (0.15 * (db_max - db_min))+db_min, 
-                                f"f={l_ips + ((r_ips - l_ips)/2):.0f}MHz", 
-                                size=10, 
-                                ha="center", 
-                                color="white", 
-                                rotation=40
+                                l_ips + ((r_ips - l_ips) / 2),
+                                (0.15 * (db_max - db_min)) + db_min,
+                                f"f={l_ips + ((r_ips - l_ips)/2):.0f}MHz",
+                                size=10,
+                                ha="center",
+                                color="white",
+                                rotation=40,
                             )
                             ax_psd.draw_artist(txt)
                             txt = ax_psd.text(
-                                l_ips + ((r_ips - l_ips)/2), 
-                                (0.05 * (db_max - db_min))+db_min, 
-                                f"BW={r_ips - l_ips:.0f}MHz", 
-                                size=10, ha="center", 
-                                color="white", 
-                                rotation=40
+                                l_ips + ((r_ips - l_ips) / 2),
+                                (0.05 * (db_max - db_min)) + db_min,
+                                f"BW={r_ips - l_ips:.0f}MHz",
+                                size=10,
+                                ha="center",
+                                color="white",
+                                rotation=40,
                             )
                             ax_psd.draw_artist(txt)
 
@@ -443,10 +442,10 @@ def main():
                     ax_psd.draw_artist(max_psd_ln)
                     ax_psd.draw_artist(mean_psd_ln)
                     ax_psd.draw_artist(current_psd_ln)
-                    
+
                     draw_waterfall(mesh, fig, ax, db_norm, cmap)
                     draw_title(ax_psd, psd_title, title_text)
-                    
+
                     sm.set_clim(vmin=db_min, vmax=db_max)
                     cbar.update_normal(sm)
                     cbar.draw_all()
@@ -464,14 +463,15 @@ def main():
                     fig.canvas.blit(cbar_ax.bbox)
                     fig.canvas.blit(fig.bbox)
                     fig.canvas.flush_events()
-                    
+
                     print(f"Plotting {row_time}")
 
                 print("\n")
 
-            else: 
+            else:
                 print("Waiting for scanner (ZMQ)...")
                 time.sleep(zmq_sleep_time)
+
 
 if __name__ == "__main__":
     main()
