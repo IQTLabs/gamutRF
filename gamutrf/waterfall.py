@@ -19,8 +19,6 @@ from timeit import default_timer as timer
 
 from gamutrf.zmqreceiver import ZmqReceiver
 
-sleep_time = 0.5
-
 def draw_waterfall(mesh, fig, ax, data, cmap):
     mesh.set_array(cmap(data))
     ax.draw_artist(mesh)
@@ -89,6 +87,7 @@ def main():
     snr_max = 50
     waterfall_height = 100  # number of waterfall rows
     scale = 1e6
+    zmq_sleep_time = 1
 
     freq_resolution = (
         sampling_rate / fft_len
@@ -472,7 +471,7 @@ def main():
 
             else: 
                 print("Waiting for scanner (ZMQ)...")
-                time.sleep(1)
+                time.sleep(zmq_sleep_time)
 
 if __name__ == "__main__":
     main()
