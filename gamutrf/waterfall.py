@@ -86,9 +86,9 @@ def main():
     y_ticks = []
     y_labels = []
     psd_x_edges = None
-    psd_y_edyes = None
+    psd_y_edges = None
     background = None
-    top_n_lns = None
+    top_n_lns = []
 
     fig = plt.figure(figsize=(28, 10), dpi=100)
     ax_psd: matplotlib.axes.Axes
