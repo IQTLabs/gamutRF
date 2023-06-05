@@ -78,13 +78,28 @@ def main():
     freq_resolution = sampling_rate / fft_len
     draw_rate = 1
     y_label_skip = 3
+    psd_db_resolution = 90
     global init_fig
     init_fig = True
     points = [0]
     counter = 0
     y_ticks = []
     y_labels = []
-    psd_db_resolution = 90
+    psd_x_edges = None
+    psd_y_edyes = None
+    background = None
+    top_n_lns = None
+    ax = None
+    ax_psd = None
+    min_psd_ln = None
+    max_psd_ln = None
+    mean_psd_ln = None
+    current_psd_ln = None
+    peak_lns = None
+    mesh = None
+    sm = None
+    cbar = None
+    cbar_ax = None
     fig = plt.figure(figsize=(28, 10), dpi=100)
 
     # SCALING
