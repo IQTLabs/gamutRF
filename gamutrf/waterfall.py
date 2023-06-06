@@ -1,24 +1,19 @@
-import argparse
-import datetime
-import matplotlib
-
-matplotlib.use("GTK3Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-import os
-import shlex
 import signal
-import subprocess
 import sys
 import time
 
-from findpeaks import findpeaks
-from matplotlib.widgets import RangeSlider, TextBox
+import argparse
+import datetime
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+
 from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import find_peaks
-from timeit import default_timer as timer
 
 from gamutrf.zmqreceiver import ZmqReceiver
+
+matplotlib.use("GTK3Agg")
 
 
 def draw_waterfall(mesh, fig, ax, data, cmap):
@@ -116,8 +111,7 @@ def main():
 
     # ZMQ
     zmqr = ZmqReceiver(
-        addr="127.0.0.1",
-        port=8001,
+        scanners=[("127.0.0.1", 8001)],
         scan_fres=scan_fres_resolution,
     )
 
@@ -272,9 +266,10 @@ def main():
             init_fig = False
 
         else:
-            scan_config, scan_df = zmqr.read_buff()
+            scan_configs, scan_df = zmqr.read_buff()
 
             if scan_df is not None:
+                scan_config = scan_configs[0]
                 scan_df = scan_df[(scan_df.freq > min_freq) & (scan_df.freq < max_freq)]
                 if scan_df.empty:
                     print(

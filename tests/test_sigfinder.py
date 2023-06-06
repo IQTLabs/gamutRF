@@ -176,7 +176,7 @@ class SigFinderTestCase(unittest.TestCase):
                     0,
                     str(tempdir),
                 )
-                zmqr = ZmqReceiver(args.logaddr, args.logport, proxy=null_proxy)
+                zmqr = ZmqReceiver(scanners=[(args.logaddr, args.logport)], proxy=null_proxy)
                 prom_vars = init_prom_vars()
                 context = zstandard.ZstdCompressor()
                 freq_start = 100e6
