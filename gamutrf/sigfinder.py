@@ -338,12 +338,13 @@ def process_scans(args, prom_vars, executor, zmqr):
                 if not zmqr.healthy():
                     return
                 now = int(time.time())
-                scan_config, frame_df = zmqr.read_buff(l)
+                scan_configs, frame_df = zmqr.read_buff(l)
                 if frame_df is None:
                     schedule.run_pending()
                     sleep_time = 1
                     time.sleep(sleep_time)
                     continue
+                scan_config = scan_configs[0]
                 frame_counter.inc()
                 logging.info(
                     "frame with sweep_start %us ago",
@@ -530,7 +531,9 @@ def main():
 
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
         zmqr = ZmqReceiver(
-            args.logaddr, args.logport, buff_path=args.buff_path, scan_fres=SCAN_FRES
+            scanners=[(args.logaddr, args.logport)],
+            buff_path=args.buff_path,
+            scan_fres=SCAN_FRES,
         )
         x = threading.Thread(
             target=process_scans,

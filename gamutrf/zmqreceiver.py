@@ -4,10 +4,10 @@ Retrieve streaming scanner FFT results from a gr-iqtlabs/gamutRF scanner.
 Example usage:
 
     from gamutrf.zmqreceiver import ZmqReceiver
-    zmqr = ZmqReceiver("127.0.0.1", 8001)
+    zmqr = ZmqReceiver(scanners=[("127.0.0.1", 8001)])
 
     while True:
-        scan_config, frame_df = zmqr.read_buffer()
+        scan_configs, frame_df = zmqr.read_buffer()
         if frame_df is None:
             # no new scan result yet
             time.sleep(1)
@@ -15,12 +15,12 @@ Example usage:
 
     zmqr.stop()
 
-scan_config and frame_df will be None if the next full scan has not been received yet,
+scan_configs and frame_df will be None if the next full scan has not been received yet,
 and scan updates are automatically processed in the background to avoid ZMQ tranport
 overflows.
 
-frame_df is a pandas DataFrame with the results of a full scan, and scan_config
-is a python dict containing scan metadata - the contents of the "config" dict, from
+frame_df is a pandas DataFrame with the results of a full scan, and scan_configs is a
+list of python dicts containing scan metadata - the contents of the "config" dict, from
 https://github.com/IQTLabs/gr-iqtlabs/blob/main/grc/iqtlabs_retune_fft.block.yml.
 """
 
@@ -81,7 +81,11 @@ def fft_proxy(
 
 class ZmqReceiver:
     def __init__(
-        self, addr="127.0.0.1", port=8001, buff_path=None, proxy=fft_proxy, scan_fres=0
+        self,
+        scanners=[("127.0.0.1", 8001)],
+        buff_path=None,
+        proxy=fft_proxy,
+        scan_fres=0,
     ):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.live_file = pathlib.Path(os.path.join(self.tmpdir.name, "live_file"))
@@ -97,6 +101,7 @@ class ZmqReceiver:
         if os.path.exists(self.buff_file):
             os.remove(self.buff_file)
         self.executor = concurrent.futures.ProcessPoolExecutor(1)
+        (addr, port) = scanners[0]
         self.proxy_result = self.executor.submit(
             proxy, addr, port, self.buff_file, live_file=self.live_file
         )
@@ -199,4 +204,4 @@ class ZmqReceiver:
             if lines:
                 scan_config, df = self.lines_to_df(lines)
                 frame_df = self.read_new_frame_df(df)
-        return (scan_config, frame_df)
+        return ([scan_config], frame_df)
