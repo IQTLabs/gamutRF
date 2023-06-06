@@ -145,7 +145,7 @@ class grscan(gr.top_block):
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
             Path(inference_output_dir, "images").mkdir(parents=True, exist_ok=True)
             self.inference_blocks = [
-                blocks.stream_to_vector(gr.sizeof_float*fft_size, 1),
+                blocks.stream_to_vector(gr.sizeof_float * fft_size, 1),
                 iqtlabs.image_inference(
                     tag="rx_freq",
                     vlen=fft_size,
@@ -155,13 +155,13 @@ class grscan(gr.top_block):
                     convert_alpha=255,
                     norm_alpha=0,
                     norm_beta=1,
-                    norm_type=32, # cv::NORM_MINMAX = 32 
-                    colormap=16, # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20, 
-                    interpolation=1, # cv::INTER_LINEAR = 1, 
+                    norm_type=32,  # cv::NORM_MINMAX = 32
+                    colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
+                    interpolation=1,  # cv::INTER_LINEAR = 1,
                     flip=0,
                 ),
                 blocks.stream_to_vector(gr.sizeof_char * output_vlen, 1),
-                # FOR DEBUG 
+                # FOR DEBUG
                 iqtlabs.write_freq_samples(
                     "rx_freq",
                     gr.sizeof_char * output_vlen,
