@@ -79,40 +79,82 @@ def fft_proxy(
         os.rename(tmp_buff_file, buff_file)
 
 
-class ZmqReceiver:
+class ZmqScanner:
     def __init__(
         self,
-        scanners=[("127.0.0.1", 8001)],
-        buff_path=None,
-        proxy=fft_proxy,
-        scan_fres=0,
+        buff_path,
+        proxy,
+        addr,
+        port,
+        live_file,
+        executor,
     ):
-        self.tmpdir = tempfile.TemporaryDirectory()
-        self.live_file = pathlib.Path(os.path.join(self.tmpdir.name, "live_file"))
-        self.live_file.touch()
-        if buff_path is None:
-            buff_path = self.tmpdir.name
-        self.buff_file = os.path.join(buff_path, BUFF_FILE)
+        self.buff_file = os.path.join(buff_path, "_".join((addr, str(port), BUFF_FILE)))
+        if os.path.exists(self.buff_file):
+            os.remove(self.buff_file)
+        self.addr = addr
+        self.port = port
         self.context = zstandard.ZstdDecompressor()
         self.txt_buf = ""
         self.fftbuffer = None
         self.last_sweep_start = 0
-        self.scan_fres = scan_fres
-        if os.path.exists(self.buff_file):
-            os.remove(self.buff_file)
-        self.executor = concurrent.futures.ProcessPoolExecutor(1)
-        (addr, port) = scanners[0]
-        self.proxy_result = self.executor.submit(
-            proxy, addr, port, self.buff_file, live_file=self.live_file
+        self.proxy_result = executor.submit(
+            proxy, addr, port, self.buff_file, live_file=live_file
         )
 
-    def stop(self):
-        self.live_file.unlink()
-        self.executor.shutdown()
-        self.tmpdir.cleanup()
-
     def healthy(self):
-        return os.path.exists(self.live_file) and self.proxy_result.running()
+        return self.proxy_result.running()
+
+    def __str__(self):
+        return f"ZmqScanner on {self.addr}:{self.port}"
+
+    def read_buff_file(self):
+        if os.path.exists(self.buff_file):
+            logging.info("read %u bytes of FFT data", os.stat(self.buff_file).st_size)
+            with self.context.stream_reader(open(self.buff_file, "rb")) as bf:
+                self.txt_buf += bf.read().decode("utf8")
+            os.remove(self.buff_file)
+            return True
+        return False
+
+    def txtbuf_to_lines(self, log):
+        lines = self.txt_buf.splitlines()
+        if len(lines) > 1:
+            if self.txt_buf.endswith("\n"):
+                if log:
+                    log.write(self.txt_buf)
+                self.txt_buf = ""
+            elif lines:
+                last_line = lines[-1]
+                if log:
+                    log.write(self.txt_buf[: -len(last_line)])
+                self.txt_buf = last_line
+                lines = lines[:-1]
+            return lines
+        return None
+
+    def read_new_frame_df(self, df):
+        frame_df = None
+        df = df[(time.time() - df.ts).abs() < 60]
+        if df.size:
+            lastfreq = df.freq.iat[-1]
+            logging.info("last frequency read %f MHz", lastfreq / 1e6)
+            max_sweep_start = df["sweep_start"].max()
+            if max_sweep_start != self.last_sweep_start:
+                if self.fftbuffer is None:
+                    frame_df = df
+                else:
+                    frame_df = pd.concat(
+                        [self.fftbuffer, df[df["sweep_start"] == self.last_sweep_start]]
+                    )
+                    self.fftbuffer = df[df["sweep_start"] != self.last_sweep_start]
+                self.last_sweep_start = max_sweep_start
+            else:
+                if self.fftbuffer is None:
+                    self.fftbuffer = df
+                else:
+                    self.fftbuffer = pd.concat([self.fftbuffer, df])
+        return frame_df
 
     def lines_to_df(self, lines):
         try:
@@ -140,68 +182,89 @@ class ZmqReceiver:
             logging.error(str(err))
             return (None, None)
 
-    def txtbuf_to_lines(self, log):
-        lines = self.txt_buf.splitlines()
-        if len(lines) > 1:
-            if self.txt_buf.endswith("\n"):
-                if log:
-                    log.write(self.txt_buf)
-                self.txt_buf = ""
-            elif lines:
-                last_line = lines[-1]
-                if log:
-                    log.write(self.txt_buf[: -len(last_line)])
-                self.txt_buf = last_line
-                lines = lines[:-1]
-            return lines
-        return None
-
-    def frame_resample(self, df):
-        # resample to SCAN_FRES
-        # ...first frequency
-        df["freq"] = (df["freq"] / self.scan_fres).round() * self.scan_fres / 1e6
-        df = df.set_index("freq")
-        # ...then power
-        df["db"] = df.groupby(["freq"])["db"].mean()
-        df = df.reset_index().drop_duplicates(subset=["freq"])
-        df = df.sort_values("freq")
-        return df
-
-    def read_new_frame_df(self, df):
-        frame_df = None
-        df = df[(time.time() - df.ts).abs() < 60]
-        if df.size:
-            lastfreq = df.freq.iat[-1]
-            logging.info("last frequency read %f MHz", lastfreq / 1e6)
-            max_sweep_start = df["sweep_start"].max()
-            if max_sweep_start != self.last_sweep_start:
-                if self.fftbuffer is None:
-                    frame_df = df
-                else:
-                    frame_df = pd.concat(
-                        [self.fftbuffer, df[df["sweep_start"] == self.last_sweep_start]]
-                    )
-                    self.fftbuffer = df[df["sweep_start"] != self.last_sweep_start]
-                self.last_sweep_start = max_sweep_start
-                if self.scan_fres:
-                    frame_df = self.frame_resample(frame_df)
-            else:
-                if self.fftbuffer is None:
-                    self.fftbuffer = df
-                else:
-                    self.fftbuffer = pd.concat([self.fftbuffer, df])
-        return frame_df
-
-    def read_buff(self, log=None):
+    def read_buff(self, log):
         scan_config = None
         frame_df = None
-        if os.path.exists(self.buff_file):
-            logging.info("read %u bytes of FFT data", os.stat(self.buff_file).st_size)
-            with self.context.stream_reader(open(self.buff_file, "rb")) as bf:
-                self.txt_buf += bf.read().decode("utf8")
-            os.remove(self.buff_file)
+        if self.read_buff_file():
             lines = self.txtbuf_to_lines(log)
             if lines:
                 scan_config, df = self.lines_to_df(lines)
                 frame_df = self.read_new_frame_df(df)
-        return ([scan_config], frame_df)
+        return scan_config, frame_df
+
+
+class ZmqReceiver:
+    def __init__(
+        self,
+        scanners=[("127.0.0.1", 8001)],
+        buff_path=None,
+        proxy=fft_proxy,
+        scan_fres=0,
+    ):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.live_file = pathlib.Path(os.path.join(self.tmpdir.name, "live_file"))
+        self.live_file.touch()
+        if buff_path is None:
+            buff_path = self.tmpdir.name
+        self.scan_fres = scan_fres
+        self.executor = concurrent.futures.ProcessPoolExecutor(len(scanners))
+        self.scanners = []
+        self.last_results = []
+        for addr, port in scanners:
+            self.scanners.append(
+                ZmqScanner(buff_path, proxy, addr, port, self.live_file, self.executor)
+            )
+
+    def stop(self):
+        self.live_file.unlink()
+        self.executor.shutdown()
+        self.tmpdir.cleanup()
+
+    def healthy(self):
+        if os.path.exists(self.live_file):
+            for scanner in self.scanners:
+                if not scanner.healthy():
+                    return False
+            return True
+        return False
+
+    def frame_resample(self, df):
+        if df is not None:
+            # resample to SCAN_FRES
+            # ...first frequency
+            df["freq"] = (df["freq"] / self.scan_fres).round() * self.scan_fres / 1e6
+            df = df.set_index("freq")
+            # ...then power
+            df["db"] = df.groupby(["freq"])["db"].mean()
+            df = df.reset_index().drop_duplicates(subset=["freq"])
+            return df.sort_values("freq")
+        return df
+
+    def read_buff(self, log=None):
+        results = [scanner.read_buff(log) for scanner in self.scanners]
+        if self.last_results:
+            for i, result in enumerate(results):
+                _scan_config, df = result
+                if df is not None:
+                    self.last_results[i] = result
+                    logging.info("%s got scan result", self.scanners[i])
+        else:
+            self.last_results = results
+
+        scan_configs = []
+        dfs = []
+
+        for scan_config, df in self.last_results:
+            scan_configs.append(scan_config)
+            if df is not None:
+                dfs.append(df)
+
+        df = None
+        if len(dfs) == len(self.scanners):
+            logging.info("all scanners got result")
+            df = pd.concat(dfs)
+            if self.scan_fres:
+                df = self.frame_resample(df)
+            self.last_results = []
+
+        return (scan_configs, df)

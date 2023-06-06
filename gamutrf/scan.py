@@ -202,6 +202,13 @@ def argument_parser():
         help="tuning ranges (overriding freq_start and freq_end)",
     )
     parser.add_argument(
+        "--description",
+        dest="description",
+        type=str,
+        default="",
+        help="optional text description to provide with scanner updates",
+    )
+    parser.add_argument(
         "--scaling",
         dest="scaling",
         type=str,
@@ -283,6 +290,7 @@ def run_loop(options, prom_vars, wavelearner):
             inference_output_dir=handler.options.inference_output_dir,
             inference_input_len=handler.options.inference_input_len,
             scaling=handler.options.scaling,
+            description=handler.options.description,
             iqtlabs=iqtlabs,
             wavelearner=wavelearner,
         )

@@ -3,6 +3,7 @@ import concurrent.futures
 import json
 import logging
 import os
+import re
 import subprocess
 import threading
 import time
@@ -166,7 +167,7 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
         old_bins_prom.labels(bin_freq=obin).inc()
 
 
-def process_scan(args, scan_config, prom_vars, df, lastbins, running_df, last_dfs):
+def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_dfs):
     global PEAK_DBS
     df = calc_db(df, args.db_rolling_factor)
     freqdiffs = df.freq - df.freq.shift()
@@ -195,7 +196,9 @@ def process_scan(args, scan_config, prom_vars, df, lastbins, running_df, last_df
     peak_dbs = {}
     bin_freq_count = prom_vars["bin_freq_count"]
     last_bin_freq_time = prom_vars["last_bin_freq_time"]
-    freq_start_mhz = scan_config["freq_start"] / 1e6
+    freq_start_mhz = (
+        min([scan_config["freq_start"] for scan_config in scan_configs]) / 1e6
+    )
     signals = scipy_find_sig_windows(
         df, width=args.width, prominence=args.prominence, threshold=args.threshold
     )
@@ -232,7 +235,7 @@ def process_scan(args, scan_config, prom_vars, df, lastbins, running_df, last_df
             sample_count_df,
             signals,
             last_dfs,
-            scan_config,
+            scan_configs,
         )
 
     ts = df["ts"].max()
@@ -344,7 +347,6 @@ def process_scans(args, prom_vars, executor, zmqr):
                     sleep_time = 1
                     time.sleep(sleep_time)
                     continue
-                scan_config = scan_configs[0]
                 frame_counter.inc()
                 logging.info(
                     "frame with sweep_start %us ago",
@@ -352,7 +354,7 @@ def process_scans(args, prom_vars, executor, zmqr):
                 )
                 new_lastbins, last_df = process_scan(
                     args,
-                    scan_config,
+                    scan_configs,
                     prom_vars,
                     frame_df,
                     lastbins,
@@ -470,18 +472,11 @@ def argument_parser():
         help="control webserver port",
     )
     parser.add_argument(
-        "--logaddr",
-        dest="logaddr",
+        "--scanners",
+        dest="scanners",
         type=str,
-        default="127.0.0.1",
-        help="Log FFT results from this address",
-    )
-    parser.add_argument(
-        "--logport",
-        dest="logport",
-        type=int,
-        default=8001,
-        help="Log FFT results from this port",
+        default="127.0.0.1:8001",
+        help="Connect to gamutRF scanners at these addresses",
     )
     parser.add_argument(
         "--max_recorder_signals",
@@ -514,9 +509,23 @@ def argument_parser():
     return parser
 
 
+def parse_scanners(args_scanners):
+    scanner_re = re.compile(r"^(.+):(\d+)$")
+    scanners = []
+    for scanner_str in args_scanners.split(","):
+        scanner_match = scanner_re.match(scanner_str)
+        if not scanner_match:
+            raise ValueError(
+                f"invalid scanner address: {scanner_str} from {args_scanners}"
+            )
+        scanners.append((scanner_match.group(1), int(scanner_match.group(2))))
+    return scanners
+
+
 def main():
     parser = argument_parser()
     args = parser.parse_args()
+    scanners = parse_scanners(args.scanners)
 
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
     prom_vars = init_prom_vars()
@@ -531,7 +540,7 @@ def main():
 
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
         zmqr = ZmqReceiver(
-            scanners=[(args.logaddr, args.logport)],
+            scanners=scanners,
             buff_path=args.buff_path,
             scan_fres=SCAN_FRES,
         )

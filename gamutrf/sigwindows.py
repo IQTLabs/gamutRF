@@ -161,7 +161,7 @@ def scipy_find_sig_windows(df, width, prominence, threshold):
 
 
 def graph_fft_peaks(
-    graph_path, df, mean_running_df, sample_count_df, signals, last_dfs, scan_config
+    graph_path, df, mean_running_df, sample_count_df, signals, last_dfs, scan_configs
 ):
     maxdb = df.db.max()
     df["peaks"] = df.db.min()
@@ -201,7 +201,12 @@ def graph_fft_peaks(
     time_min = time.ctime(ts_min)
     time_max = time.ctime(ts_max)
     duration = ts_max - ts_min
-    scan_config_txt = ", ".join([f"{x}: {y}" for x, y in scan_config.items()])
+    scan_config_txt = ", ".join(
+        [
+            ", ".join([f"{x}: {y}" for x, y in scan_config.items()])
+            for scan_config in scan_configs
+        ]
+    )
     title = f"gamutRF scanner FFT {time_min} to {time_max}, {duration}s\n{scan_config_txt}\n{peak_signals}"
     plt.title(title)
     real_path = os.path.realpath(graph_path)

@@ -221,7 +221,7 @@ Additionally, if you want to use the workers as recorders you'll want to update 
       - '${VOL_PREFIX}:/logs'
     command:
       - gamutrf-sigfinder
-      - --logaddr=sigfinder
+      - --scanners=sigfinder:8001
       - --log=/logs/scan.csv
       - --fftlog=/logs/fft.csv
       - --fftgraph=/logs/fft.png
