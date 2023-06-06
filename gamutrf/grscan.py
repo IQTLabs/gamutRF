@@ -75,6 +75,8 @@ class grscan(gr.top_block):
 
         fft_blocks, fft_roll = self.get_fft_blocks(fft_size, sdr)
         self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate, scaling)
+        self.fft_to_inference_block = self.fft_blocks[-1]
+
         self.samples_blocks = []
         if write_samples:
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
@@ -137,35 +139,65 @@ class grscan(gr.top_block):
                 )
             inference_batch_size = 128
             output_len = 1
+            x = 800
+            y = 600
+            output_vlen = x * y * 3
+            Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
+            Path(inference_output_dir, "images").mkdir(parents=True, exist_ok=True)
             self.inference_blocks = [
-                blocks.stream_to_vector(
-                    gr.sizeof_gr_complex * 1, inference_batch_size * inference_input_len
+                blocks.stream_to_vector(gr.sizeof_float * fft_size, 1),
+                iqtlabs.image_inference(
+                    tag="rx_freq",
+                    vlen=fft_size,
+                    x=x,
+                    y=y,
+                    image_dir=str(Path(inference_output_dir, "images")),
+                    convert_alpha=255,
+                    norm_alpha=0,
+                    norm_beta=1,
+                    norm_type=32,  # cv::NORM_MINMAX = 32
+                    colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
+                    interpolation=1,  # cv::INTER_LINEAR = 1,
+                    flip=0,
                 ),
-                self.wavelearner.inference(
-                    inference_plan_file,
-                    True,
-                    inference_input_len * inference_batch_size,
-                    output_len * inference_batch_size,
-                    inference_batch_size,
-                ),
+                blocks.stream_to_vector(gr.sizeof_char * output_vlen, 1),
+                # FOR DEBUG
                 iqtlabs.write_freq_samples(
                     "rx_freq",
-                    gr.sizeof_float * output_len,
-                    inference_batch_size,
+                    gr.sizeof_char * output_vlen,
+                    1,
                     inference_output_dir,
                     "inference",
-                    int(1e9),
+                    output_vlen,
                     0,
                     int(samp_rate),
                 ),
+                # TODO: fix sizes
+                # self.wavelearner.inference(
+                #     inference_plan_file,
+                #     True,
+                #     inference_input_len * inference_batch_size,
+                #     output_len * inference_batch_size,
+                #     inference_batch_size,
+                # ),
+                # iqtlabs.write_freq_samples(
+                #     "rx_freq",
+                #     gr.sizeof_float * output_len,
+                #     inference_batch_size,
+                #     inference_output_dir,
+                #     "inference",
+                #     int(1e9),
+                #     0,
+                #     int(samp_rate),
+                # ),
             ]
 
         self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
         self.connect_blocks(self.sources[0], self.sources[1:])
+        self.connect_blocks(self.fft_to_inference_block, self.inference_blocks)
         for pipeline_blocks in (
             self.fft_blocks,
             self.samples_blocks,
-            self.inference_blocks,
         ):
             self.connect_blocks(self.sources[-1], pipeline_blocks)
 
