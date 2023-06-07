@@ -7158,24 +7158,6 @@ rules:
     - python
   pattern: open("=~/^\/tmp.*/", ...)
   severity: WARNING
-- id: arbitrary-sleep
-  languages:
-  - python
-  message: time.sleep() call; did you mean to leave this in?
-  metadata:
-    category: best-practice
-    technology:
-    - python
-  patterns:
-  - pattern-not: time.sleep($F(...))
-  - pattern-either:
-    - pattern: 'time.sleep($X: int)
-
-        '
-    - pattern: 'time.sleep($X: float)
-
-        '
-  severity: ERROR
 - id: python-debugger-found
   languages:
   - python

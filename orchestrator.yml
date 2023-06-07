@@ -71,8 +71,7 @@ services:
       - '${VOL_PREFIX}:/logs'
     command:
       - gamutrf-sigfinder
-      - --logaddr=gamutrf
-      - --logport=10000
+      - --scanners=gamutrf:10000
       - --log=/logs/scan.csv
       - --fftlog=/logs/fft.csv
       - --fftgraph=/logs/fft.png
