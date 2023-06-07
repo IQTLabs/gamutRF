@@ -11,7 +11,7 @@ import numpy as np
 from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import find_peaks
 
-from gamutrf.zmqreceiver import ZmqReceiver
+from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 matplotlib.use("GTK3Agg")
 
@@ -44,6 +44,12 @@ def argument_parser():
     )
     parser.add_argument(
         "--plot_snr", action="store_true", help="Plot SNR rather than power."
+    )
+    parser.add_argument(
+        "--scanners",
+        default="127.0.0.1:8001",
+        type=str,
+        help="Scanner endpoints to use.",
     )
     return parser
 
@@ -111,7 +117,7 @@ def main():
 
     # ZMQ
     zmqr = ZmqReceiver(
-        scanners=[("127.0.0.1", 8001)],
+        scanners=parse_scanners(args.scanners),
         scan_fres=scan_fres_resolution,
     )
 
