@@ -30,6 +30,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import time
 import zmq
 import zstandard
@@ -37,6 +38,19 @@ import pandas as pd
 
 FFT_BUFFER_TIME = 1
 BUFF_FILE = "scanfftbuffer.txt.zst"  # nosec
+
+
+def parse_scanners(args_scanners):
+    scanner_re = re.compile(r"^(.+):(\d+)$")
+    scanners = []
+    for scanner_str in args_scanners.split(","):
+        scanner_match = scanner_re.match(scanner_str)
+        if not scanner_match:
+            raise ValueError(
+                f"invalid scanner address: {scanner_str} from {args_scanners}"
+            )
+        scanners.append((scanner_match.group(1), int(scanner_match.group(2))))
+    return scanners
 
 
 def fft_proxy(

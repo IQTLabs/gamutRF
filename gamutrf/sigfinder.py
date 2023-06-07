@@ -3,7 +3,6 @@ import concurrent.futures
 import json
 import logging
 import os
-import re
 import subprocess
 import threading
 import time
@@ -29,7 +28,7 @@ from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import scipy_find_sig_windows
 from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n, SCAN_FRES
-from gamutrf.zmqreceiver import ZmqReceiver
+from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 
 MB = int(1.024e6)
@@ -507,19 +506,6 @@ def argument_parser():
         help="Divisor for rolling dB average (or 0 to disable)",
     )
     return parser
-
-
-def parse_scanners(args_scanners):
-    scanner_re = re.compile(r"^(.+):(\d+)$")
-    scanners = []
-    for scanner_str in args_scanners.split(","):
-        scanner_match = scanner_re.match(scanner_str)
-        if not scanner_match:
-            raise ValueError(
-                f"invalid scanner address: {scanner_str} from {args_scanners}"
-            )
-        scanners.append((scanner_match.group(1), int(scanner_match.group(2))))
-    return scanners
 
 
 def main():
