@@ -34,9 +34,10 @@ FFT_FILE = "/dev/shm/fft.dat"  # nosec
 
 
 class SDRRecorder:
-    def __init__(self):
+    def __init__(self, sdrargs):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.zst_fifo = os.path.join(self.tmpdir.name, "zstfifo")
+        self.sdrargs = sdrargs
         os.mkfifo(self.zst_fifo)
 
     @staticmethod
@@ -203,12 +204,14 @@ class SDRRecorder:
 
 
 class EttusRecorder(SDRRecorder):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, sdrargs):
+        super().__init__(sdrargs)
         self.worker_subprocess = None
         self.last_worker_line = None
         # TODO: troubleshoot why this doesn't find an Ettus initially, still.
         # subprocess.call(['uhd_find_devices'])
+        if not self.sdrargs:
+            self.sdrargs = ETTUS_ARGS
 
     def record_args(
         self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb
@@ -227,7 +230,7 @@ class EttusRecorder(SDRRecorder):
             "--gain",
             str(gain),
             "--args",
-            ETTUS_ARGS,
+            self.sdrargs,
             "--ant",
             ETTUS_ANT,
             "--spb",
@@ -357,14 +360,12 @@ class LimeRecorder(SDRRecorder):
 
 
 class FileTestRecorder(SDRRecorder):
-    test_file = None
-
     def record_args(
         self, sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb
     ):
         args = [
             "dd",
-            f"if={urlparse(self.test_file).path}",
+            f"if={urlparse(self.sdrargs).path}",
             f"of={sample_file}",
             f"count={int(sample_count)}",
             f"bs={int(sample_rate)}",
@@ -379,10 +380,8 @@ RECORDER_MAP = {
 }
 
 
-def get_recorder(recorder_name):
+def get_recorder(recorder_name, sdrargs=None):
     try:
-        return RECORDER_MAP[recorder_name]()
+        return RECORDER_MAP[recorder_name](sdrargs)
     except KeyError:
-        recorder = FileTestRecorder
-        recorder.test_file = recorder_name
-        return recorder
+        return FileTestRecorder(recorder_name)

@@ -60,6 +60,12 @@ def argument_parser():
         default="ettus",
     )
     parser.add_argument(
+        "--sdrargs",
+        help=f"optional SDR arguments",
+        type=str,
+        default="",
+    )
+    parser.add_argument(
         "--freq_excluded",
         "-e",
         help='Freq range to exclude in MHz (e.g. "100-200")',
@@ -199,7 +205,7 @@ class API:
             True,
         )
         self.q = queue.Queue(self.arguments.qsize)
-        self.sdr_recorder = get_recorder(self.arguments.sdr)
+        self.sdr_recorder = get_recorder(self.arguments.sdr, self.arguments.sdrargs)
         self.start_time = time.time()
         cors = CORS(allow_all_origins=True)
         self.app = falcon.App(middleware=[cors.middleware])

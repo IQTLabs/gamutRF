@@ -9,16 +9,19 @@ from gamutrf.sdr_recorder import get_recorder
 class SDRRecorderTestCase(unittest.TestCase):
     SAMPLES = 1e3 * 4
 
+    def get_file_recorder(self):
+        return get_recorder("file:/dev/zero")
+
     def test_sdr_recorder(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            sdr_recorder = get_recorder("file:/dev/zero")()
+            sdr_recorder = self.get_file_recorder()
             sample_file = os.path.join(tmpdir, "test_file.zst")
             fft_file = os.path.join(tmpdir, "fft_test_file.zst")
             with open(fft_file, "wb") as f:
                 f.write(b"\x00" * 4 * 2048 * 10)
             sdr_recorder.fft_spectrogram(sample_file, fft_file, 2048, 1e6, 1e6, 2048)
         with tempfile.TemporaryDirectory() as tmpdir:
-            sdr_recorder = get_recorder("file:/dev/zero")()
+            sdr_recorder = self.get_file_recorder()
             record_status, sample_file = sdr_recorder.run_recording(
                 tmpdir,
                 self.SAMPLES,
@@ -35,7 +38,7 @@ class SDRRecorderTestCase(unittest.TestCase):
             self.assertTrue(os.path.exists(sample_file))
             sdr_recorder.tmpdir.cleanup()
         with tempfile.TemporaryDirectory() as tmpdir:
-            sdr_recorder = get_recorder("file:/dev/zero")()
+            sdr_recorder = self.get_file_recorder()
             # TODO: sigmf 1.0.0 can't parse .zst files, but it can write the metadata fine.
             record_status, sample_file = sdr_recorder.run_recording(
                 tmpdir,
@@ -54,7 +57,7 @@ class SDRRecorderTestCase(unittest.TestCase):
             self.assertTrue(os.path.exists(sample_file + ".sigmf-meta"))
             sdr_recorder.tmpdir.cleanup()
 
-        sdr_recorder = get_recorder("file:/dev/zero")()
+        sdr_recorder = self.get_file_recorder()
         self.assertNotEqual(None, sdr_recorder.validate_request([], 1e6, 0, 0))
         self.assertNotEqual(None, sdr_recorder.validate_request([], 1e6, 1, 1))
         self.assertEqual(None, sdr_recorder.validate_request([], 1e6, 1e6, 1e6))
