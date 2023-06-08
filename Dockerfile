@@ -64,7 +64,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     zstd && \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 WORKDIR /gamutrf
-RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print|grep -v waterfall)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
+RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
 RUN ldd /usr/local/bin/uhd_sample_recorder
 # nosemgrep:github.workflows.config.missing-user
 CMD ["gamutrf-scan", "--help"]
