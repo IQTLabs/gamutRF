@@ -47,6 +47,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     libcairo2 \
     libev4 \
     libfftw3-3 \
+    libgl1 \
+    libglib2.0-0 \
     liblapack3 \
     libopencv-core4.5d \
     libopencv-imgcodecs4.5d \
