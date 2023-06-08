@@ -9,7 +9,7 @@ Options:
     -h,  help          print this help
     -i,  install       install GamutRF repo, optionally supply a version, tag, branch, or tarball
     -l,  logs          tail GamutRF logs
-    -r,  run           specify GamutRF tool to run (and any additional args for the tools), options include: 'api', 'freqxlator', 'samples2raw', 'scan', 'scan2rtlpow', 'sigfinder', 'specgram'
+    -r,  run           specify GamutRF tool to run (and any additional args for the tools), options include: 'api', 'freqxlator', 'samples2raw', 'scan', 'sigfinder', 'specgram'
     -R,  restart       specify 'orchestrator' or 'worker' to restart
     -s,  start         specify 'orchestrator' or 'worker' to start
     -S,  stop          specify 'orchestrator' or 'worker' to stop
@@ -136,7 +136,7 @@ function check_args()
                 ;;
             -r|run)
                 if [ -z "$2" ]; then
-                    echo "Specify 'api', 'freqxlator', 'samples2raw', 'scan', 'scan2rtlpow', 'sigfinder', or 'specgram' to run"
+                    echo "Specify 'api', 'freqxlator', 'samples2raw', 'scan', 'sigfinder', or 'specgram' to run"
                     exit
                 fi
                 docker run -it -v "$VOLUME_DIR":/data iqtlabs/gamutrf:"$VERS" gamutrf-"$2" "${@:3}"
