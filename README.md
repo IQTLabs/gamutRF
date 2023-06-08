@@ -55,6 +55,10 @@ While there are other options, these options primarily influence gamutRF's scann
 | --fftlog | Log raw output of CSV to this file, which will be rotated every --rotatesecs |
 | --fftgraph | Graph the most recent FFT signal and peaks to this PNG file (will keep the last --nfftgraph versions) |
 
+### Running multiple radios on the same machine
+
+gamutRF supports the use of multiple radios on the same machine, whether for scanning or recording. When using multiple Ettus SDRs, assign a specific radio to a specific container by specifying the ```serial``` UHD driver argument. To list all connected Ettus radios, run ```uhd_find_devices```. Then add the ```--sdrargs``` argument to the specific container. For example, ```--sdrargs num_recv_frames=960,recv_frame_size=16360,type=b200,serial=12345678```.
+
 ### Manually initiating worker actions
 
 The orchestrator has a web interface on port 80. You can use this to command a worker to start an I/Q sample recording or start a RSSI stream.
@@ -152,13 +156,15 @@ If peaks appear but are consistently not marked, decrease ```theshold``` (e.g. -
 
 #### Containers won't start using Ettus SDRs
 
-You may see ```[ERROR] [USB] USB open failed: insufficient permissions``` on initial startup with Ettus SDRs. These devices download firmware and switch USB identities when first powered up. Restart the affected container to work around this.
+##### ```[ERROR] [USB] USB open failed: insufficient permissions```
+
+Ettus SDRs download firmware and switch USB identities when first powered up. Restart the affected container to work around this.
+
+##### ```[ERROR] [UHD] An unexpected exception was caught in a task loop.The task loop will now exit, things may not work.boost: mutex lock failed in pthread_mutex_lock: Invalid argument```
+
+UHD driver arguments ```num_recv_frames``` or ```recv_frame_size``` may be too high. The defaults are defined as ETTUS_ARGS in [utils.py](gamutrf/utils.py). Try reducing one or both via ```--sdrargs```. For example, ```--sdrargs num_recv_frames=64,recv_frame_size=8200,type=b200```.
 
 #### "O"s or warnings about overflows in SDR containers
 
 * Ensure your hardware can support the I/Q sample rate you have configured (gamutRF has been tested on Pi4 at 20Msps, which is the default recording rate). Also ensure your recording medium (e.g. flash drive, USB hard disk) is not timing out or blocking.
 * If using a Pi4, make sure you are using active cooling and an adequate power supply (no CPU throttling), and you are using a "blue" USB3 port.
-
-#### Scanner repeatedly logs "mean tuning step is greater than --samp-rate/2"
-
-* ```--sweep-sec``` may be too low (fast), or ```--samp-rate``` may be too low, causing non-overlapping FFT windows between retuning points.
