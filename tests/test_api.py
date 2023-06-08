@@ -11,6 +11,7 @@ class FakeArgs:
         self.mqtt_server = ""
         self.qsize = 2
         self.sdr = "/dev/null"
+        self.sdrargs = ""
         self.path = ""
         self.gain = -40
         self.agc = False
@@ -46,14 +47,12 @@ def test_report_rssi():
 def test_serve_recording():
     app = api.API(FakeArgs())
     app.q.put({"center_freq": 1e6, "sample_count": 1e6})
-    app.sdr_recorder = app.sdr_recorder()
     app.serve_recording(app.record)
 
 
 def test_serve_rssi():
     app = api.API(FakeArgs())
     app.q.put({"center_freq": 1e6, "sample_count": 1e6, "sample_rate": 1e6})
-    app.sdr_recorder = app.sdr_recorder()
     app.serve_rssi()
 
 
