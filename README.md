@@ -5,7 +5,9 @@ An SDR orchestrated scanner and collector.
 gamutRF is a system enabling a compact network of one or more modest machines (such as Pi4s), each with their own USB SDR (such as an Ettus
 B200mini or a BladeRF XA9), to operate collectively as a configurable wideband scanner and I/Q sample recorder.
 
-A gamutRF "orchestrator" machine can scan 0.1GHz to 6GHz in 30 seconds to identify signals, and then command potentially many gamutRF "workers" to make I/Q sample recordings for later analysis.
+A gamutRF system comprises an "orchestrator" machine which typically runs at least one scanner service (typically scanning 0.1GHz to 6GHz in 30s) and the sigfinder service, which then
+can command potentially many gamutRF "workers" to make I/Q sample recordings for later analysis. sigfinder can command multiple scanners which can be on the same machine or be connected
+over a network.
 
 gamutRF provides tools to work with I/Q sample recordings, and to also record GPS location/compass metadata for the system itself. gamutRF typically runs on networks of Raspberry Pi4s, but can also run on x86 machines, and is based on gnuradio.
 
@@ -13,15 +15,13 @@ See also [instructions on how to build a gamutRF system](BUILD.md).
 
 ## Scanner theory of operation
 
-gamutRF's scanner function is split across two Docker containers which are both run on the orchestrator. The `gamutrf` (scanner) container connects to the SDR and sweeps over a configured frequency range in 30s, while sampling at 8.192Msps (all default values which can be changed).
+gamutRF's scanner container connects to a local SDR and sweeps over a configured frequency range or ranges collecting samples. The samples are sent an FFT block, and then to a [streaming retuning gnuradio block](https://github.com/iqtlabs/gr-iqtlabs), which aggregates and then serves the frequency-annotated FFT points as JSON objects over ZMQ to the "sigfinder" container (see below) and also commands the source SDR block to retune to a new frequency in the range when enough FFT points have been accumulated.
 
-The samples are sent to a [streaming FFT gnuradio block](https://github.com/iqtlabs/gr-iqtlabs) which emits 2048 FFT points which are served over ZMQ to the `sigfinder` container (see below). The FFT block needs to know when the SDR has been retuned to a new frequency, so it uses a gnuradio timestamp and frequency tag provided by the gnuradio UHD driver upon retuning. This tag functionality has been added to the Soapy driver in a gnuradio fork which is part of gamutRF, so that other SDRs may be used as scanners.
+The sigfinder container consumes these FFT points over ZMQ (potentially from many scanners), does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
 
-The `sigfinder` container consumes these FFT points from ZMQ, does some noise processing (correcting FFT points to be in frequency order, computing mean power over 10kHz, and then a rolling mean over 1MHz) and then submits them to [scipy.signals.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
+If workers have been provisioned, the sigfinder will then command the workers to make an approximately 10 second I/Q recording at approximately 20Msps of each signal. Each signal peak is assigned a 20MHz bin, which means that if a signal is repeatedly detected with some frequency variation, the assigned recording bin will be constant, and if multiple signals are detected within 20MHz they can be collected simultaneously. A worker by default records at a higher sample rate than the bin size, so that 20MHz signal margins can be recorded.
 
-If workers have been provisioned, the orchestrator will then command the workers to make an approximately 10 second I/Q recording at approximately 20Msps of each signal. Each signal peak is assigned a 20MHz bin, which means that if a signal is repeatedly detected with some frequency variation, the assigned recording bin will be constant, and if multiple signals are detected within 20MHz they can be collected simultaneously. A worker by default records at a higher sample rate than the bin size, so that 20MHz signal margins can be recorded.
-
-As there will almost certainly be more signals than workers available, the orchestrator will prioritize signals that it least often observed over a configurable number of scanner cycles. It is possible to configure this to `off` so that the recording choice will be random. It is also possible to configure the workers to tell the orchestrator to exclude that worker from certain frequency ranges (if for example the worker SDR cannot handle some part of the frequency spectrum scanned).
+As there will almost certainly be more signals than workers available, sigfinder will prioritize signals that it least often observed over a configurable number of scanner cycles. It is possible to configure this to `off` so that the recording choice will be random. It is also possible to configure the workers to tell the sigfinder to exclude that worker from certain frequency ranges (if for example the worker SDR cannot handle some part of the frequency spectrum scanned).
 
 ## Operating gamutRF
 
@@ -35,11 +35,17 @@ While there are other options, these options primarily influence gamutRF's scann
 
 | Option | Description |
 | -- | -- |
-| --freq-start and --freq-end | Start and end of frequency range to scan in Hz (also used by sigfinger) |
+| --freq-start and --freq-end | Start and end of frequency range to scan in Hz |
+| --tuning_ranges | Overrides --freq-start and --freq-end if present. A comma separated list of ranges in Hz to scan, for example ```2.2e9-2.6e9,5.1e9-5.9e9``` |
 | --igain | SDR input gain in dB |
 | --samp-rate | Number of samples/sec |
-| --sweep-sec | Time to sweep frequency range in seconds |
+| --tuneoverlap | For each retune interval, advance center frequency by N * --samp_rate |
+| --sweep-sec | Attempt to sweep frequency range within N seconds (effectively, best guess for --tune-step-fft) |
+| --tune-step-fft | Overrides --sweep-sec if present. Retune to next interval every N FFT points |
+| --skip-tune-step | Discard N FFT points after retuning |
 | --nfft | Number of FFT points |
+| --write_samples | If > 0, write N samples to disk after retuning, in --sample_dir as a zstd compressed file |
+| --description | Optionally provide text description along with streaming scanner updates, to the sigfinder |
 
 ##### sigfinder
 
@@ -54,6 +60,7 @@ While there are other options, these options primarily influence gamutRF's scann
 | --record_secs | Length of time to record I/Q samples in seconds |
 | --fftlog | Log raw output of CSV to this file, which will be rotated every --rotatesecs |
 | --fftgraph | Graph the most recent FFT signal and peaks to this PNG file (will keep the last --nfftgraph versions) |
+| --scanners | Comma separated list of scanner ZMQ endpoints to use, for example --scanners=127.0.0.1:8001,127.0.0.1:9002 |
 
 ### Running multiple radios on the same machine
 
