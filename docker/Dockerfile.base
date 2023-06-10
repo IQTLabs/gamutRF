@@ -25,7 +25,10 @@ RUN cmake .. && make install
 FROM iqtlabs/gnuradio:3.10.6
 ENV DEBIAN_FRONTEND noninteractive
 COPY --from=builder /usr/local /usr/local
-RUN apt-get update && apt-get install -y --no-install-recommends libopencv && apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libopencv-core4.5d \
+    libopencv-imgcodecs4.5d \
+    libopencv-imgproc4.5d && apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 RUN ldconfig -v
 RUN ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
 RUN python3 -c "from gnuradio import soapy, iqtlabs"
