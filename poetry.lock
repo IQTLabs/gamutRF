@@ -164,13 +164,14 @@ wget = "*"
 
 [[package]]
 name = "cairocffi"
-version = "1.5.1"
+version = "1.6.0"
 description = "cffi-based cairo bindings for Python"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "cairocffi-1.5.1.tar.gz", hash = "sha256:071ab7b72e3533300b0bfd55a52056b4ffdc1ed6e656779e2aced9b709b8a295"},
+    {file = "cairocffi-1.6.0-py3-none-any.whl", hash = "sha256:fec979f3e904c1a38350b06dcc91d3c15f9a4954e618a068761622e3a0d5058c"},
+    {file = "cairocffi-1.6.0.tar.gz", hash = "sha256:e7f21ea1546a5d490ceba77b6216c1393d7e0a7856e292864a88a7506092bf4d"},
 ]
 
 [package.dependencies]
@@ -179,7 +180,7 @@ cffi = ">=1.1.0"
 [package.extras]
 doc = ["sphinx", "sphinx_rtd_theme"]
 test = ["flake8", "isort", "numpy", "pikepdf", "pytest"]
-xcb = ["xcffib (>=0.3.2)"]
+xcb = ["xcffib (>=1.4.0)"]
 
 [[package]]
 name = "certifi"
