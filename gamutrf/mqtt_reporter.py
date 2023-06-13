@@ -34,8 +34,6 @@ class MQTTReporter:
         self.mqttc = mqtt.Client()
         self.mqttc.connect(self.mqtt_server)
         self.mqttc.loop_start()
-        if self.gps_server:
-            gpsd.connect(host=self.gps_server, port=2947)
 
     def get_heading(self):
         try:
@@ -61,6 +59,8 @@ class MQTTReporter:
         try:
             if self.compass:
                 self.get_heading()
+            if gpsd.gpsd_stream is None:
+                gpsd.connect(host=self.gps_server, port=2947)
             packet = gpsd.get_current()
             publish_args.update(
                 {
