@@ -103,6 +103,9 @@ def argument_parser():
     parser.add_argument(
         "--rssi_threshold", help="RSSI reporting threshold", default=-45, type=float
     )
+    parser.add_argument(
+        "--use_mavlink_gps", help="Use external Pixhawk/MAVLINK GPS", default=False, type=bool
+    )
     arg_parser = parser.add_mutually_exclusive_group(required=False)
     arg_parser.add_argument(
         "--agc", dest="agc", action="store_true", default=True, help="use AGC"
@@ -199,10 +202,11 @@ class API:
     def __init__(self, arguments):
         self.arguments = arguments
         self.mqtt_reporter = MQTTReporter(
-            self.arguments.name,
-            self.arguments.mqtt_server,
-            ORCHESTRATOR,
-            True,
+            name = self.arguments.name,
+            mqtt_server = self.arguments.mqtt_server,
+            gps_server = ORCHESTRATOR,
+            compass = True,
+            use_mavlink_gps = self.arguments.use_mavlink_gps
         )
         self.q = queue.Queue(self.arguments.qsize)
         self.sdr_recorder = get_recorder(self.arguments.sdr, self.arguments.sdrargs)
