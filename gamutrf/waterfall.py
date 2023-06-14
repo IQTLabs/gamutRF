@@ -168,6 +168,7 @@ def main():
     mean_psd_ln: matplotlib.lines.Line2D
     min_psd_ln: matplotlib.lines.Line2D
     max_psd_ln: matplotlib.lines.Line2D
+    psd_title: matplotlib.text.Text
 
     title_text = {}
 
