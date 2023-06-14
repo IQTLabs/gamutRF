@@ -201,10 +201,9 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_d
     signals = []
     for scan_config in scan_configs:
         scan_df = df[
-            (df.freq >= scan_config["freq_start"])
-            & (df.freq <= scan_config["freq_end"])
+            (df.freq >= scan_config["freq_start"] / 1e6)
+            & (df.freq <= scan_config["freq_end"] / 1e6)
         ]
-        assert not scan_df.empty
         signals.extend(
             scipy_find_sig_windows(
                 scan_df,
