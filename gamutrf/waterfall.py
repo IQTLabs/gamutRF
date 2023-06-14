@@ -20,10 +20,9 @@ from scipy.signal import find_peaks
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 matplotlib.use("GTK3Agg")
-warnings.filterwarnings(action='ignore', message='Mean of empty slice')
-warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
-warnings.filterwarnings(action='ignore', message='Degrees of freedom <= 0 for slice.')
-
+warnings.filterwarnings(action="ignore", message="Mean of empty slice")
+warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
+warnings.filterwarnings(action="ignore", message="Degrees of freedom <= 0 for slice.")
 
 
 def draw_waterfall(mesh, fig, ax, data, cmap):
@@ -36,15 +35,17 @@ def draw_title(ax, title, title_text):
     title.set_text(str(title_text))
     ax.draw_artist(title)
 
-def filter_peaks(peaks, properties): 
-    for i in range(len(peaks) - 1, -1, -1): #start from end of list
-        for j in range(len(peaks)): 
 
-            if i == j: 
+def filter_peaks(peaks, properties):
+    for i in range(len(peaks) - 1, -1, -1):  # start from end of list
+        for j in range(len(peaks)):
+            if i == j:
                 continue
-            if (properties["left_ips"][i] > properties["left_ips"][j]) and (properties["right_ips"][i] < properties["right_ips"][j]): 
+            if (properties["left_ips"][i] > properties["left_ips"][j]) and (
+                properties["right_ips"][i] < properties["right_ips"][j]
+            ):
                 peaks = np.delete(peaks, i)
-                for k in properties: 
+                for k in properties:
                     properties[k] = np.delete(properties[k], i)
 
                 break
@@ -52,6 +53,7 @@ def filter_peaks(peaks, properties):
                 # properties["right_ips"] = np.delete(properties["right_ips"], i)
                 # properties["width_heights"] = np.delete(properties["width_heights"], i)
     return peaks, properties
+
 
 def argument_parser():
     parser = argparse.ArgumentParser(description="waterfall plotter from scan data")
@@ -72,13 +74,19 @@ def argument_parser():
         "--plot_snr", action="store_true", help="Plot SNR rather than power."
     )
     parser.add_argument(
-        "--detection_type", default="", type=str, help="Detection type to plot (wideband, narrowband)."
+        "--detection_type",
+        default="",
+        type=str,
+        help="Detection type to plot (wideband, narrowband).",
     )
     parser.add_argument(
         "--save_path", default="", type=str, help="Path to save screenshots."
     )
     parser.add_argument(
-        "--save_time", default=1, type=int, help="Save screenshot every save_time minutes. Only used if save_path also defined."
+        "--save_time",
+        default=1,
+        type=int,
+        help="Save screenshot every save_time minutes. Only used if save_path also defined.",
     )
 
     parser.add_argument(
@@ -104,18 +112,17 @@ def main():
     save_time = args.save_time
     detection_type = args.detection_type
 
-    if save_path: 
+    if save_path:
         Path(save_path).mkdir(parents=True, exist_ok=True)
 
     detection_type = detection_type.lower()
-    if detection_type: 
-        if detection_type in ["wb", "wide band", "wideband"]: 
+    if detection_type:
+        if detection_type in ["wb", "wide band", "wideband"]:
             detection_type = "wideband"
-        elif detection_type in ["nb", "narrow band", "narrowband"]: 
+        elif detection_type in ["nb", "narrow band", "narrowband"]:
             detection_type = "narrowband"
-        else: 
+        else:
             raise ValueError("detection_type must be 'narrowband' or 'wideband'")
-
 
     # OTHER PARAMETERS
     cmap = plt.get_cmap("viridis")
@@ -190,7 +197,7 @@ def main():
         ),
         np.linspace(1, waterfall_height, waterfall_height),
     )
-    
+
     freq_bins = X[0]
     db_data = np.empty(X.shape)
     db_data.fill(np.nan)
@@ -333,8 +340,9 @@ def main():
             scan_configs, scan_df = zmqr.read_buff()
 
             if scan_df is not None:
-
-                scan_df = scan_df[(scan_df.freq >= min_freq) & (scan_df.freq <= max_freq)]
+                scan_df = scan_df[
+                    (scan_df.freq >= min_freq) & (scan_df.freq <= max_freq)
+                ]
                 if scan_df.empty:
                     print(
                         f"Scan is outside specified frequency range ({min_freq} to {max_freq})."
@@ -386,9 +394,9 @@ def main():
 
                 scan_time = scan_df.ts.iloc[-1]
                 scan_times.append(scan_time)
-                if len(scan_times) > waterfall_height: 
+                if len(scan_times) > waterfall_height:
                     remove_time = scan_times.pop(0)
-                    if save_path: 
+                    if save_path:
                         scan_config_history.pop(remove_time)
                         assert len(scan_config_history) <= waterfall_height
                 row_time = datetime.datetime.fromtimestamp(scan_time)
@@ -406,7 +414,7 @@ def main():
 
                 ax.set_yticks(y_ticks, labels=y_labels)
 
-                if save_path: 
+                if save_path:
                     scan_config_history[scan_time] = scan_configs
 
                 counter += 1
@@ -440,7 +448,7 @@ def main():
                             snr_max - snr_min
                         )
 
-                    #ax_psd.clear()
+                    # ax_psd.clear()
 
                     ax_psd.set_ylim(db_min, db_max)
                     mesh_psd.set_array(cmap_psd(data.T))
@@ -451,15 +459,14 @@ def main():
                     mean_psd_ln.set_ydata(np.nanmean(db_data, axis=0))
                     ax_psd.draw_artist(mesh_psd)
 
-                    if detection_type: 
-
+                    if detection_type:
                         # NARROWBAND SIGNAL DETECT
 
                         if detection_type == "narrowband":
                             peaks, properties = find_peaks(
                                 db_data[-1],
                                 height=np.nanmean(db_data, axis=0),
-                                width=(1,10),
+                                width=(1, 10),
                                 prominence=10,
                                 rel_height=0.7,
                                 wlen=120,
@@ -469,33 +476,29 @@ def main():
                         elif detection_type == "wideband":
                             peaks, properties = find_peaks(
                                 db_data[-1],
-                                height=np.nanmean(db_data, axis=0)+1,
+                                height=np.nanmean(db_data, axis=0) + 1,
                                 width=10,
                                 prominence=(0, 20),
                                 rel_height=0.7,
                                 wlen=120,
                             )
 
-
                         peaks, properties = filter_peaks(peaks, properties)
-
 
                         # print(f"{peaks=}")
                         # print(f"{properties=}")
                         peak_lns.set_xdata(psd_x_edges[peaks])
                         peak_lns.set_ydata(properties["width_heights"])
 
-                        
                         for child in ax_psd.get_children():
                             if isinstance(child, LineCollection):
                                 child.remove()
-                            if isinstance(child, Text): 
+                            if isinstance(child, Text):
                                 child.set_visible(False)
                                 del child
 
-
                         if len(peaks) > 0:
-                        #if False: 
+                            # if False:
                             vl_center = ax_psd.vlines(
                                 x=psd_x_edges[peaks],
                                 ymin=db_data[-1][peaks] - properties["prominences"],
@@ -507,7 +510,9 @@ def main():
                                 x=np.concatenate(
                                     (
                                         psd_x_edges[properties["left_ips"].astype(int)],
-                                        psd_x_edges[properties["right_ips"].astype(int)],
+                                        psd_x_edges[
+                                            properties["right_ips"].astype(int)
+                                        ],
                                     )
                                 ),
                                 ymin=db_min,
@@ -568,7 +573,7 @@ def main():
 
                     sm.set_clim(vmin=db_min, vmax=db_max)
                     cbar.update_normal(sm)
-                    #cbar.draw_all()
+                    # cbar.draw_all()
                     cbar_ax.draw_artist(cbar_ax.yaxis)
                     fig.canvas.blit(cbar_ax.yaxis.axes.figure.bbox)
                     ax_psd.draw_artist(ax_psd.yaxis)
@@ -586,21 +591,27 @@ def main():
 
                     print(f"Plotting {row_time}")
 
-                    if save_path:        
-
-                        if last_save_time is None: 
+                    if save_path:
+                        if last_save_time is None:
                             last_save_time = datetime.datetime.now()
 
-                        if datetime.datetime.now() - last_save_time > datetime.timedelta(minutes=save_time): 
-                            waterfall_save_path = str(Path(save_path, f"waterfall_{scan_time}.png"))
+                        if (
+                            datetime.datetime.now() - last_save_time
+                            > datetime.timedelta(minutes=save_time)
+                        ):
+                            waterfall_save_path = str(
+                                Path(save_path, f"waterfall_{scan_time}.png")
+                            )
                             fig.savefig(waterfall_save_path)
 
                             save_scan_configs = {
-                                "start": scan_config_history[scan_times[-1]], 
-                                "end": scan_config_history[scan_times[0]]
+                                "start": scan_config_history[scan_times[-1]],
+                                "end": scan_config_history[scan_times[0]],
                             }
-                            config_save_path = str(Path(save_path, f"config_{scan_time}.json"))
-                            with open(config_save_path, 'w') as f: 
+                            config_save_path = str(
+                                Path(save_path, f"config_{scan_time}.json")
+                            )
+                            with open(config_save_path, "w") as f:
                                 json.dump(save_scan_configs, f)
 
                             last_save_time = datetime.datetime.now()
@@ -615,4 +626,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
