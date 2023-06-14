@@ -198,9 +198,21 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_d
     freq_start_mhz = (
         min([scan_config["freq_start"] for scan_config in scan_configs]) / 1e6
     )
-    signals = scipy_find_sig_windows(
-        df, width=args.width, prominence=args.prominence, threshold=args.threshold
-    )
+    signals = []
+    for scan_config in scan_configs:
+        scan_df = df[
+            (df.freq >= scan_config["freq_start"])
+            & (df.freq <= scan_config["freq_end"])
+        ]
+        assert not scan_df.empty
+        signals.extend(
+            scipy_find_sig_windows(
+                scan_df,
+                width=args.width,
+                prominence=args.prominence,
+                threshold=args.threshold,
+            )
+        )
 
     if PEAK_TRIGGER == 1 and signals:
         led_sleep = 0.2
