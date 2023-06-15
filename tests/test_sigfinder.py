@@ -194,6 +194,7 @@ class SigFinderTestCase(unittest.TestCase):
                                 "config": {
                                     "freq_start": freq_start,
                                     "freq_end": freq_end,
+                                    "sample_rate": int(1e6),
                                 },
                                 "buckets": {},
                             }
