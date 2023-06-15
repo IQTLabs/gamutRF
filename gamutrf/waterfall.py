@@ -1,13 +1,13 @@
-import signal
-import sys
-import time
-
 import argparse
+import csv
 import datetime
 import json
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import signal
+import sys
+import time
 import warnings
 
 from matplotlib.artist import Artist
@@ -114,7 +114,10 @@ def main():
     detection_type = args.detection_type
 
     if save_path:
-        Path(save_path).mkdir(parents=True, exist_ok=True)
+        Path(save_path, "waterfall").mkdir(parents=True, exist_ok=True)
+
+    if save_path and detection_type:
+        Path(save_path, "detections").mkdir(parents=True, exist_ok=True)
 
     detection_type = detection_type.lower()
     if detection_type:
@@ -164,6 +167,9 @@ def main():
     vl_edges = None
     hl = None
     detection_text = []
+    previous_scan_config = None
+    detection_config_save_path = None
+    detection_save_path = None
 
     plt.rcParams["savefig.facecolor"] = "#2A3459"
     plt.rcParams["figure.facecolor"] = "#2A3459"
@@ -516,6 +522,66 @@ def main():
 
                         peaks, properties = filter_peaks(peaks, properties)
 
+                        if save_path:
+                            if (
+                                previous_scan_config is None
+                                or previous_scan_config != scan_configs
+                            ):
+                                previous_scan_config = scan_configs
+                                detection_config_save_path = str(
+                                    Path(
+                                        save_path,
+                                        "detections",
+                                        f"detections_scan_config_{scan_time}.json",
+                                    )
+                                )
+                                with open(detection_config_save_path, "w") as f:
+                                    json.dump(
+                                        {
+                                            "timestamp": scan_time,
+                                            "min_freq": min_freq,
+                                            "max_freq": max_freq,
+                                            "scan_configs": scan_configs,
+                                        },
+                                        f,
+                                        indent=4,
+                                    )
+                                detection_save_path = str(
+                                    Path(
+                                        save_path,
+                                        "detections",
+                                        f"detections_{scan_time}.csv",
+                                    )
+                                )
+                                with open(detection_save_path, "w") as detection_csv:
+                                    writer = csv.writer(detection_csv)
+                                    writer.writerow(
+                                        [
+                                            "timestamp",
+                                            "start_freq",
+                                            "end_freq",
+                                            "dB",
+                                            "type",
+                                        ]
+                                    )
+
+                            with open(detection_save_path, "a") as detection_csv:
+                                writer = csv.writer(detection_csv)
+                                for i in range(len(peaks)):
+                                    writer.writerow(
+                                        [
+                                            scan_time,  # timestamp
+                                            psd_x_edges[
+                                                properties["left_ips"][i].astype(int)
+                                            ],  # start_freq
+                                            psd_x_edges[
+                                                properties["right_ips"][i].astype(int)
+                                            ],  # end_freq
+                                            properties["peak_heights"][i],  # dB
+                                            detection_type,  # type
+                                        ]
+                                    )
+
                         peak_lns.set_xdata(psd_x_edges[peaks])
                         peak_lns.set_ydata(properties["width_heights"])
 
@@ -632,19 +698,23 @@ def main():
                             > datetime.timedelta(minutes=save_time)
                         ):
                             waterfall_save_path = str(
-                                Path(save_path, f"waterfall_{scan_time}.png")
+                                Path(
+                                    save_path, "waterfall", f"waterfall_{scan_time}.png"
+                                )
                             )
                             fig.savefig(waterfall_save_path)
 
                             save_scan_configs = {
-                                "start": scan_config_history[scan_times[-1]],
-                                "end": scan_config_history[scan_times[0]],
+                                "start_scan_timestamp": scan_times[0],
+                                "start_scan_config": scan_config_history[scan_times[0]],
+                                "end_scan_timestamp": scan_times[-1],
+                                "end_scan_config": scan_config_history[scan_times[-1]],
                             }
                             config_save_path = str(
-                                Path(save_path, f"config_{scan_time}.json")
+                                Path(save_path, "waterfall", f"config_{scan_time}.json")
                             )
                             with open(config_save_path, "w") as f:
-                                json.dump(save_scan_configs, f)
+                                json.dump(save_scan_configs, f, indent=4)
 
                             last_save_time = datetime.datetime.now()
                             print(f"Saving {waterfall_save_path}")
