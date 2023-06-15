@@ -155,6 +155,7 @@ def main():
     vl_center = None
     vl_edges = None
     hl = None
+    detection_text = []
 
     fig = plt.figure(figsize=(28, 10), dpi=100)
     ax_psd: matplotlib.axes.Axes
@@ -200,6 +201,7 @@ def main():
     )
 
     freq_bins = X[0]
+    marker_distance = 0.1  # len(freq_bins)/100
     db_data = np.empty(X.shape)
     db_data.fill(np.nan)
     freq_data = np.empty(X.shape)
@@ -253,7 +255,7 @@ def main():
                 color="red",
                 marker=",",
                 linestyle=":",
-                markevery=10,
+                markevery=marker_distance,
                 label="max",
             )
             (min_psd_ln,) = ax_psd.plot(
@@ -262,7 +264,7 @@ def main():
                 color="pink",
                 marker=",",
                 linestyle=":",
-                markevery=10,
+                markevery=marker_distance,
                 label="min",
             )
             (mean_psd_ln,) = ax_psd.plot(
@@ -273,7 +275,7 @@ def main():
                 markersize=8,
                 fillstyle="none",
                 linestyle=":",
-                markevery=20,
+                markevery=marker_distance,
                 label="mean",
             )
             (current_psd_ln,) = ax_psd.plot(
@@ -284,7 +286,7 @@ def main():
                 markersize=8,
                 fillstyle="none",
                 linestyle=":",
-                markevery=10,
+                markevery=marker_distance,
                 label="current",
             )
             ax_psd.legend(loc="center left", bbox_to_anchor=(1, 0.5))
@@ -494,9 +496,10 @@ def main():
                         for child in ax_psd.get_children():
                             if isinstance(child, LineCollection):
                                 child.remove()
-                            if isinstance(child, Text):
-                                child.set_visible(False)
-                                del child
+
+                        for i in range(len(detection_text) - 1, -1, -1):
+                            detection_text[i].set_visible(False)
+                            detection_text.pop(i)
 
                         if len(peaks) > 0:
                             # if False:
@@ -551,6 +554,7 @@ def main():
                                     color="white",
                                     rotation=40,
                                 )
+                                detection_text.append(txt)
                                 ax_psd.draw_artist(txt)
                                 txt = ax_psd.text(
                                     l_ips + ((r_ips - l_ips) / 2),
@@ -561,6 +565,7 @@ def main():
                                     color="white",
                                     rotation=40,
                                 )
+                                detection_text.append(txt)
                                 ax_psd.draw_artist(txt)
 
                     ax_psd.draw_artist(peak_lns)
