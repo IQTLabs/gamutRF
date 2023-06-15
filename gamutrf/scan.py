@@ -163,14 +163,14 @@ def argument_parser():
         "--tuneoverlap",
         dest="tuneoverlap",
         type=float,
-        default=0.5,
+        default=0.85,
         help="multiple of samp_rate when retuning",
     )
     parser.add_argument(
         "--bucket_range",
         dest="bucket_range",
         type=float,
-        default=1.0,
+        default=0.85,
         help="what proportion of FFT buckets to use",
     )
     parser.add_argument(

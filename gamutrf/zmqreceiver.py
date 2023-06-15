@@ -147,9 +147,10 @@ class ZmqScanner:
             return lines
         return None
 
-    def read_new_frame_df(self, df):
+    def read_new_frame_df(self, df, discard_time):
         frame_df = None
-        df = df[(time.time() - df.ts).abs() < 60]
+        if discard_time:
+            df = df[(time.time() - df.ts).abs() < discard_time]
         if df.size:
             lastfreq = df.freq.iat[-1]
             logging.info("last frequency read %f MHz", lastfreq / 1e6)
@@ -196,14 +197,14 @@ class ZmqScanner:
             logging.error(str(err))
             return (None, None)
 
-    def read_buff(self, log):
+    def read_buff(self, log, discard_time):
         scan_config = None
         frame_df = None
         if self.read_buff_file():
             lines = self.txtbuf_to_lines(log)
             if lines:
                 scan_config, df = self.lines_to_df(lines)
-                frame_df = self.read_new_frame_df(df)
+                frame_df = self.read_new_frame_df(df, discard_time)
         return scan_config, frame_df
 
 
@@ -254,8 +255,8 @@ class ZmqReceiver:
             return df.sort_values("freq")
         return df
 
-    def read_buff(self, log=None):
-        results = [scanner.read_buff(log) for scanner in self.scanners]
+    def read_buff(self, log=None, discard_time=0):
+        results = [scanner.read_buff(log, discard_time) for scanner in self.scanners]
         if self.last_results:
             for i, result in enumerate(results):
                 _scan_config, df = result

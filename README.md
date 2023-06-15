@@ -171,6 +171,10 @@ Ettus SDRs download firmware and switch USB identities when first powered up. Re
 
 UHD driver arguments ```num_recv_frames``` or ```recv_frame_size``` may be too high. The defaults are defined as ETTUS_ARGS in [utils.py](gamutrf/utils.py). Try reducing one or both via ```--sdrargs```. For example, ```--sdrargs num_recv_frames=64,recv_frame_size=8200,type=b200```.
 
+#### Scanner with Ettus SDR shows implausible low power at approx 100MHz intervals
+
+Ettus radios may need extra time to produce good data when being retuned rapidly by the scanner. Try adding ```--skip-tune-step=1024``` to the scanner command line and increase the value until the power dips disappear. This parameter will slow down the scan speed.
+
 #### "O"s or warnings about overflows in SDR containers
 
 * Ensure your hardware can support the I/Q sample rate you have configured (gamutRF has been tested on Pi4 at 20Msps, which is the default recording rate). Also ensure your recording medium (e.g. flash drive, USB hard disk) is not timing out or blocking.
