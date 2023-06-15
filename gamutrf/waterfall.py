@@ -7,7 +7,6 @@ import datetime
 import json
 import matplotlib
 import matplotlib.pyplot as plt
-import mplcyberpunk
 import numpy as np
 import warnings
 
@@ -127,8 +126,6 @@ def main():
             raise ValueError("detection_type must be 'narrowband' or 'wideband'")
 
     # OTHER PARAMETERS
-    # plt.rcParams['savefig.facecolor'] = "#2A3459"
-    # plt.style.use("cyberpunk")
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
     db_min = -220
@@ -144,8 +141,9 @@ def main():
     y_label_skip = 3
     psd_db_resolution = 90
     base = 20
+    n_ticks = min(((max_freq / scale - min_freq / scale) / 100) * 5, 20)
     major_tick_separator = base * round(
-        ((max_freq / scale - min_freq / scale) / 20) / base
+        ((max_freq / scale - min_freq / scale) / n_ticks) / base
     )
     minor_tick_separator = AutoMinorLocator()
 
@@ -175,12 +173,9 @@ def main():
     plt.rcParams["xtick.color"] = text_color
     plt.rcParams["ytick.color"] = text_color
     plt.rcParams["axes.facecolor"] = text_color
+
     fig = plt.figure(figsize=(28, 10), dpi=100)
-    # plt.style.use('dark_background')
-    # plt.rcParams['axes.facecolor'] = 'g'
-    plt.rcParams["savefig.facecolor"] = "#2A3459"
-    plt.rcParams["figure.facecolor"] = "#2A3459"
-    # plt.rcParams['savefig.facecolor'] = "#2A3459"
+
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
     mesh: matplotlib.collections.QuadMesh
@@ -193,8 +188,6 @@ def main():
     min_psd_ln: matplotlib.lines.Line2D
     max_psd_ln: matplotlib.lines.Line2D
     psd_title: matplotlib.text.Text
-
-    # plt.style.use("seaborn-dark")
 
     title_text = {}
 
@@ -354,8 +347,7 @@ def main():
             ax_psd.xaxis.set_major_locator(MultipleLocator(major_tick_separator))
             ax_psd.xaxis.set_major_formatter("{x:.0f}")
             ax_psd.xaxis.set_minor_locator(minor_tick_separator)
-            print(f"{major_tick_separator=}")
-            print(f"{minor_tick_separator=}")
+
             ax_psd.yaxis.set_animated(True)
             cbar_ax.yaxis.set_animated(True)
             ax.yaxis.set_animated(True)
@@ -524,8 +516,6 @@ def main():
 
                         peaks, properties = filter_peaks(peaks, properties)
 
-                        # print(f"{peaks=}")
-                        # print(f"{properties=}")
                         peak_lns.set_xdata(psd_x_edges[peaks])
                         peak_lns.set_ydata(properties["width_heights"])
 
