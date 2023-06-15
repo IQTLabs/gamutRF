@@ -7,12 +7,14 @@ import datetime
 import json
 import matplotlib
 import matplotlib.pyplot as plt
+import mplcyberpunk
 import numpy as np
 import warnings
 
+from matplotlib.artist import Artist
 from matplotlib.collections import LineCollection
 from matplotlib.text import Text
-from matplotlib.artist import Artist
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from pathlib import Path
 from scipy.ndimage import gaussian_filter
 from scipy.signal import find_peaks
@@ -31,7 +33,7 @@ def draw_waterfall(mesh, fig, ax, data, cmap):
 
 
 def draw_title(ax, title, title_text):
-    title_text["Time"] = str(datetime.datetime.now())
+    title_text["Time"] = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     title.set_text(str(title_text))
     ax.draw_artist(title)
 
@@ -125,6 +127,8 @@ def main():
             raise ValueError("detection_type must be 'narrowband' or 'wideband'")
 
     # OTHER PARAMETERS
+    #plt.rcParams['savefig.facecolor'] = "#2A3459"
+    #plt.style.use("cyberpunk")
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
     db_min = -220
@@ -139,6 +143,10 @@ def main():
     draw_rate = 1
     y_label_skip = 3
     psd_db_resolution = 90
+    base = 20
+    major_tick_separator = base * round(((max_freq/scale - min_freq/scale)/20)/base)
+    minor_tick_separator = AutoMinorLocator()
+    
     global init_fig
     init_fig = True
     points = [0]
@@ -157,7 +165,20 @@ def main():
     hl = None
     detection_text = []
 
+    plt.rcParams['savefig.facecolor'] = "#2A3459"
+    plt.rcParams["figure.facecolor"] = "#2A3459"
+    text_color = "#d2d5dd"
+    plt.rcParams['text.color'] = text_color
+    plt.rcParams['axes.labelcolor'] = text_color
+    plt.rcParams['xtick.color'] = text_color
+    plt.rcParams['ytick.color'] = text_color
+    plt.rcParams['axes.facecolor'] = text_color
     fig = plt.figure(figsize=(28, 10), dpi=100)
+    #plt.style.use('dark_background')
+    #plt.rcParams['axes.facecolor'] = 'g'
+    plt.rcParams['savefig.facecolor'] = "#2A3459"
+    plt.rcParams["figure.facecolor"] = "#2A3459"
+    #plt.rcParams['savefig.facecolor'] = "#2A3459"
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
     mesh: matplotlib.collections.QuadMesh
@@ -170,6 +191,8 @@ def main():
     min_psd_ln: matplotlib.lines.Line2D
     max_psd_ln: matplotlib.lines.Line2D
     psd_title: matplotlib.text.Text
+
+    #plt.style.use("seaborn-dark")
 
     title_text = {}
 
@@ -323,6 +346,14 @@ def main():
                 0.5, 1.05, "", transform=ax.transAxes, va="center", ha="center"
             )
 
+            ax.xaxis.set_major_locator(MultipleLocator(major_tick_separator))
+            ax.xaxis.set_major_formatter('{x:.0f}')
+            ax.xaxis.set_minor_locator(minor_tick_separator)
+            ax_psd.xaxis.set_major_locator(MultipleLocator(major_tick_separator))
+            ax_psd.xaxis.set_major_formatter('{x:.0f}')
+            ax_psd.xaxis.set_minor_locator(minor_tick_separator)
+            print(f"{major_tick_separator=}")
+            print(f"{minor_tick_separator=}")
             ax_psd.yaxis.set_animated(True)
             cbar_ax.yaxis.set_animated(True)
             ax.yaxis.set_animated(True)
@@ -405,7 +436,7 @@ def main():
                 row_time = datetime.datetime.fromtimestamp(scan_time)
 
                 if counter % y_label_skip == 0:
-                    y_labels.append(row_time)
+                    y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
                 else:
                     y_labels.append("")
                 y_ticks.append(waterfall_height)
@@ -478,7 +509,8 @@ def main():
                         # WIDEBAND SIGNAL DETECT
                         elif detection_type == "wideband":
                             peaks, properties = find_peaks(
-                                db_data[-1],
+                                db_data[-1],#db_data[-1] - np.nanmin(db_data, axis=0),#db_data[-1],
+                                #height=np.nanmean(db_data, axis=0) - np.nanmin(db_data, axis=0),
                                 height=np.nanmean(db_data, axis=0) + 1,
                                 width=10,
                                 prominence=(0, 20),
