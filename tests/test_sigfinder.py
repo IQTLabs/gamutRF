@@ -183,6 +183,7 @@ class SigFinderTestCase(unittest.TestCase):
                 scan_config = {
                     "freq_start": freq_start,
                     "freq_end": freq_end,
+                    "sample_rate": int(1e6),
                 }
                 with open(zmqr.scanners[0].buff_file, "wb") as zbf:
                     with context.stream_writer(zbf) as bf:
@@ -193,6 +194,7 @@ class SigFinderTestCase(unittest.TestCase):
                                 "config": {
                                     "freq_start": freq_start,
                                     "freq_end": freq_end,
+                                    "sample_rate": int(1e6),
                                 },
                                 "buckets": {},
                             }

@@ -212,6 +212,10 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_d
                 threshold=args.threshold,
             )
         )
+    min_samp_rate = (
+        min([scan_config["sample_rate"] for scan_config in scan_configs]) / 1e6
+    )
+    df.loc[freqdiffs > min_samp_rate * 2, "db"] = np.nan
 
     if PEAK_TRIGGER == 1 and signals:
         led_sleep = 0.2
