@@ -399,7 +399,7 @@ def main():
                     remove_time = scan_times.pop(0)
                     if save_path:
                         scan_config_history.pop(remove_time)
-                        #assert len(scan_config_history) <= waterfall_height
+                        # assert len(scan_config_history) <= waterfall_height
                 row_time = datetime.datetime.fromtimestamp(scan_time)
 
                 if counter % y_label_skip == 0:
