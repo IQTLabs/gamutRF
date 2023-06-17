@@ -226,7 +226,7 @@ class EttusRecorder(SDRRecorder):
                     "--fftnull",
                     "--novkfft",
                     "--nfft",
-                    "0"
+                    "0",
                 ]
             )
         except subprocess.CalledProcessError:
