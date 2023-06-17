@@ -5,6 +5,7 @@ import os
 import queue
 import socket
 import struct
+import sys
 import threading
 import time
 
@@ -333,5 +334,8 @@ def main():
     level_int = {"CRITICAL": 50, "ERROR": 40, "WARNING": 30, "INFO": 20, "DEBUG": 10}
     level = level_int.get(arguments.loglevel.upper(), 0)
     logging.basicConfig(level=level, format="%(asctime)s %(message)s")
-    app = API(arguments)
+    try:
+        app = API(arguments)
+    except ValueError:
+        sys.exit(1)
     app.run()

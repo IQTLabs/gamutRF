@@ -208,10 +208,29 @@ class EttusRecorder(SDRRecorder):
         super().__init__(sdrargs)
         self.worker_subprocess = None
         self.last_worker_line = None
-        # TODO: troubleshoot why this doesn't find an Ettus initially, still.
-        # subprocess.call(['uhd_find_devices'])
         if not self.sdrargs:
             self.sdrargs = ETTUS_ARGS
+        try:
+            subprocess.check_call(
+                [
+                    "/usr/local/bin/uhd_sample_recorder",
+                    "--rate",
+                    str(1e6),
+                    "--args",
+                    self.sdrargs,
+                    "--ant",
+                    ETTUS_ANT,
+                    "--duration",
+                    "1",
+                    "--null",
+                    "--fftnull",
+                    "--novkfft",
+                    "--nfft",
+                    "0",
+                ]
+            )
+        except subprocess.CalledProcessError:
+            raise ValueError
 
     def record_args(
         self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb
