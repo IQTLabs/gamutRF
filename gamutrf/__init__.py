@@ -1,4 +1,6 @@
 from importlib import metadata
 
-
-__version__ = metadata.version("gamutrf")
+try:
+    __version__ = metadata.version("gamutrf")
+except metadata.PackageNotFoundError:
+    __version__ = "UNKNOWN"
