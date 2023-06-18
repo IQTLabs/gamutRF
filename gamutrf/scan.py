@@ -174,6 +174,33 @@ def argument_parser():
         help="what proportion of FFT buckets to use",
     )
     parser.add_argument(
+        "--db_clamp_floor",
+        dest="db_clamp_floor",
+        type=float,
+        default=-200,
+        help="clamp dB output floor",
+    )
+    parser.add_argument(
+        "--db_clamp_ceil",
+        dest="db_clamp_ceil",
+        type=float,
+        default=50,
+        help="clamp dB output ceil",
+    )
+    parser.add_argument(
+        "--dc_block_len",
+        dest="dc_block_len",
+        type=int,
+        default=0,
+        help="if > 0, use dc_block_cc filter with length",
+    )
+    parser.add_argument(
+        "--dc_block_long",
+        dest="dc_block_long",
+        action="store_true",
+        help="Use dc_block_cc long form",
+    )
+    parser.add_argument(
         "--inference_plan_file",
         dest="inference_plan_file",
         type=str,
@@ -286,6 +313,10 @@ def run_loop(options, prom_vars, wavelearner):
             sample_dir=handler.options.sample_dir,
             write_samples=handler.options.write_samples,
             bucket_range=handler.options.bucket_range,
+            db_clamp_floor=handler.options.db_clamp_floor,
+            db_clamp_ceil=handler.options.db_clamp_ceil,
+            dc_block_len=handler.options.dc_block_len,
+            dc_block_long=handler.options.dc_block_long,
             inference_plan_file=handler.options.inference_plan_file,
             inference_output_dir=handler.options.inference_output_dir,
             inference_input_len=handler.options.inference_input_len,
