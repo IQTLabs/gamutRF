@@ -737,7 +737,7 @@ def main():
         save_path,
         args.save_time,
         detection_type,
-        args.scanner,
+        args.scanners,
     )
 
 
