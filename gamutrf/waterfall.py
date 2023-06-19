@@ -351,9 +351,15 @@ def waterfall(
             init_fig = False
 
         else:
-            scan_configs, scan_df = zmqr.read_buff()
+            time.sleep(0.1)
+            results = []
+            while True:
+                scan_configs, scan_df = zmqr.read_buff()
+                if scan_df is None:
+                    break
+                results.append((scan_configs, scan_df))
 
-            if scan_df is not None:
+            for scan_configs, scan_df in results:
                 scan_df = scan_df[
                     (scan_df.freq >= min_freq) & (scan_df.freq <= max_freq)
                 ]
@@ -698,10 +704,6 @@ def waterfall(
 
                             last_save_time = datetime.datetime.now()
                             logging.info(f"Saving {waterfall_save_path}")
-
-            else:
-                logging.info("Waiting for scanner (ZMQ)...")
-                time.sleep(zmq_sleep_time)
 
 
 def main():
