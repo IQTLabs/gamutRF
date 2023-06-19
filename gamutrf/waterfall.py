@@ -2,19 +2,18 @@ import argparse
 import csv
 import datetime
 import json
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
+import logging
 import signal
 import sys
 import time
 import warnings
-
-from matplotlib.artist import Artist
-from matplotlib.collections import LineCollection
-from matplotlib.text import Text
-from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from pathlib import Path
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.collections import LineCollection
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
 from scipy.signal import find_peaks
 
@@ -100,6 +99,8 @@ def argument_parser():
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
+
     # ARG PARSE PARAMETERS
     parser = argument_parser()
     args = parser.parse_args()
@@ -152,7 +153,6 @@ def main():
 
     global init_fig
     init_fig = True
-    points = [0]
     counter = 0
     y_ticks = []
     y_labels = []
@@ -378,7 +378,7 @@ def main():
                     (scan_df.freq >= min_freq) & (scan_df.freq <= max_freq)
                 ]
                 if scan_df.empty:
-                    print(
+                    logging.info(
                         f"Scan is outside specified frequency range ({min_freq} to {max_freq})."
                     )
                     continue
@@ -687,7 +687,7 @@ def main():
                     fig.canvas.blit(fig.bbox)
                     fig.canvas.flush_events()
 
-                    print(f"Plotting {row_time}")
+                    logging.info(f"Plotting {row_time}")
 
                     if save_path:
                         if last_save_time is None:
@@ -717,12 +717,10 @@ def main():
                                 json.dump(save_scan_configs, f, indent=4)
 
                             last_save_time = datetime.datetime.now()
-                            print(f"Saving {waterfall_save_path}")
-
-                print("\n")
+                            logging.info(f"Saving {waterfall_save_path}")
 
             else:
-                print("Waiting for scanner (ZMQ)...")
+                logging.info("Waiting for scanner (ZMQ)...")
                 time.sleep(zmq_sleep_time)
 
 
