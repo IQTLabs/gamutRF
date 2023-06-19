@@ -88,7 +88,6 @@ def argument_parser():
         type=int,
         help="Save screenshot every save_time minutes. Only used if save_path also defined.",
     )
-
     parser.add_argument(
         "--scanners",
         default="127.0.0.1:8001",
@@ -98,37 +97,18 @@ def argument_parser():
     return parser
 
 
-def main():
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
-
-    # ARG PARSE PARAMETERS
-    parser = argument_parser()
-    args = parser.parse_args()
-    min_freq = args.min_freq
-    max_freq = args.max_freq
-    plot_snr = args.plot_snr
-    top_n = args.n_detect
-    fft_len = args.nfft
-    sampling_rate = args.sampling_rate
-    save_path = args.save_path
-    save_time = args.save_time
-    detection_type = args.detection_type
-
-    if save_path:
-        Path(save_path, "waterfall").mkdir(parents=True, exist_ok=True)
-
-    if save_path and detection_type:
-        Path(save_path, "detections").mkdir(parents=True, exist_ok=True)
-
-    detection_type = detection_type.lower()
-    if detection_type:
-        if detection_type in ["wb", "wide band", "wideband"]:
-            detection_type = "wideband"
-        elif detection_type in ["nb", "narrow band", "narrowband"]:
-            detection_type = "narrowband"
-        else:
-            raise ValueError("detection_type must be 'narrowband' or 'wideband'")
-
+def waterfall(
+    min_freq,
+    max_freq,
+    plot_snr,
+    top_n,
+    fft_len,
+    sampling_rate,
+    save_path,
+    save_time,
+    detection_type,
+    scanners,
+):
     # OTHER PARAMETERS
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
@@ -205,7 +185,7 @@ def main():
 
     # ZMQ
     zmqr = ZmqReceiver(
-        scanners=parse_scanners(args.scanners),
+        scanners=parse_scanners(scanners),
         scan_fres=scan_fres_resolution,
     )
 
@@ -371,9 +351,15 @@ def main():
             init_fig = False
 
         else:
-            scan_configs, scan_df = zmqr.read_buff()
+            time.sleep(0.1)
+            results = []
+            while True:
+                scan_configs, scan_df = zmqr.read_buff()
+                if scan_df is None:
+                    break
+                results.append((scan_configs, scan_df))
 
-            if scan_df is not None:
+            for scan_configs, scan_df in results:
                 scan_df = scan_df[
                     (scan_df.freq >= min_freq) & (scan_df.freq <= max_freq)
                 ]
@@ -719,9 +705,40 @@ def main():
                             last_save_time = datetime.datetime.now()
                             logging.info(f"Saving {waterfall_save_path}")
 
+
+def main():
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
+
+    parser = argument_parser()
+    args = parser.parse_args()
+    save_path = args.save_path
+    detection_type = args.detection_type
+
+    if save_path:
+        Path(save_path, "waterfall").mkdir(parents=True, exist_ok=True)
+
+        if detection_type:
+            Path(save_path, "detections").mkdir(parents=True, exist_ok=True)
+
+            detection_type = detection_type.lower()
+            if detection_type in ["wb", "wide band", "wideband"]:
+                detection_type = "wideband"
+            elif detection_type in ["nb", "narrow band", "narrowband"]:
+                detection_type = "narrowband"
             else:
-                logging.info("Waiting for scanner (ZMQ)...")
-                time.sleep(zmq_sleep_time)
+                raise ValueError("detection_type must be 'narrowband' or 'wideband'")
+    waterfall(
+        args.min_freq,
+        args.max_freq,
+        args.plot_snr,
+        args.n_detect,
+        args.nfft,
+        args.sampling_rate,
+        save_path,
+        args.save_time,
+        detection_type,
+        args.scanner,
+    )
 
 
 if __name__ == "__main__":
