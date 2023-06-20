@@ -34,6 +34,7 @@ def init_prom_vars():
         "tune_overlap": Gauge("tune_overlap", "multiple of samp_rate when retuning"),
         "tune_step_fft": Gauge("tune_step_fft", "tune FFT step (0 is use sweep_sec)"),
         "sweep_sec": Gauge("sweep_sec", "scan sweep rate in seconds"),
+        "run_timestamp": Gauge("run_timestamp", "updated when flowgraph is running"),
     }
     return prom_vars
 
@@ -328,6 +329,7 @@ def run_loop(options, prom_vars, wavelearner):
         tb.start()
         while running and reconfigures == handler.reconfigures:
             idle_time = 1
+            prom_vars["run_timestamp"].set(time.time()),
             time.sleep(idle_time)
 
         while reconfigures != handler.reconfigures:
