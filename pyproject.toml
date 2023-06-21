@@ -53,6 +53,8 @@ gamutrf-scan = 'gamutrf.__main__:scan'
 gamutrf-sigfinder = 'gamutrf.__main__:sigfinder'
 gamutrf-specgram = 'gamutrf.__main__:specgram'
 
+gamutrf-waterfall = 'gamutrf.__main__:waterfall'
+
 [tool.poetry.urls]
 homepage = "https://github.com/IQTLabs/gamutRF"
 

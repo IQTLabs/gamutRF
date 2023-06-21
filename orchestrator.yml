@@ -73,8 +73,6 @@ services:
       - gamutrf-sigfinder
       - --scanners=gamutrf:10000
       - --log=/logs/scan.csv
-      - --fftlog=/logs/fft.csv
-      - --fftgraph=/logs/fft.png
       - --width=10
       - --prominence=2
       - --threshold=-25
@@ -83,6 +81,22 @@ services:
     environment:
       - "PEAK_TRIGGER=0"
       - "PIN_TRIGGER=17"
+  waterfall:
+    restart: always
+    image: iqtlabs/gamutrf:latest
+    networks:
+      - gamutrf
+    ports:
+      - '9003:9003'
+    volumes:
+      - '${VOL_PREFIX}:/logs'
+    command:
+      - gamutrf-waterfall
+      - --scanners=gamutrf:10000
+      - --save_path=/logs
+      - --port=9003
+      - --min_freq=100e6
+      - --max_freq=1e9
   watchtower:
     image: containrrr/watchtower:latest
     restart: always
