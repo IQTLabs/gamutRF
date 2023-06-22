@@ -299,7 +299,7 @@ class API:
         logging.info(f"got request {record_args}")
         if self.arguments.rssi_external:
             logging.info("proxying external RSSI")
-            self.proxy_rssi("0.0.0.0", record_args)
+            self.proxy_rssi("0.0.0.0", record_args)  # nosec
         else:
             center_freq = int(record_args["center_freq"])
             try:
