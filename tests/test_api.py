@@ -21,6 +21,7 @@ class FakeArgs:
         self.antenna = "0"
         self.rssi_throttle = 1
         self.rssi_threshold = -100
+        self.rssi_external = False
         self.mean_window = 100
 
 
