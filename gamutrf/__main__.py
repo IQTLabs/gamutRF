@@ -5,6 +5,7 @@ from gamutrf.samples2raw import main as samples2raw_main
 from gamutrf.scan import main as scan_main
 from gamutrf.sigfinder import main as sigfinder_main
 from gamutrf.specgram import main as specgram_main
+from gamutrf.waterfall import main as waterfall_main
 
 
 def api():
@@ -35,3 +36,8 @@ def sigfinder():
 def specgram():
     """Entrypoint for specgram"""
     specgram_main()
+
+
+def waterfall():
+    """Entrypoint for waterfall"""
+    waterfall_main()
