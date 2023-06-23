@@ -213,6 +213,12 @@ def argument_parser():
         type=int,
         help="If set, serve waterfall on this port.",
     )
+    parser.add_argument(
+        "--rotate_secs",
+        default=900,
+        type=int,
+        help="If > 0, rotate save directories every N seconds",
+    )
     return parser
 
 
@@ -390,12 +396,13 @@ def waterfall(
     top_n,
     fft_len,
     sampling_rate,
-    save_path,
+    base_save_path,
     save_time,
     detection_type,
     scanners,
     engine,
     savefig_path,
+    rotate_secs,
 ):
     matplotlib.use(engine)
 
@@ -501,6 +508,7 @@ def waterfall(
         init_fig = True
 
     fig.canvas.mpl_connect("resize_event", onresize)
+    save_path = base_save_path
 
     while True:
         (
@@ -550,6 +558,13 @@ def waterfall(
                 if scan_df is None:
                     break
                 results.append((scan_configs, scan_df))
+
+            if base_save_path and rotate_secs:
+                save_path = os.path.join(
+                    base_save_path, str(int(time.time() / rotate_secs) * rotate_secs)
+                )
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path)
 
             for scan_configs, scan_df in results:
                 scan_df = scan_df[
@@ -909,6 +924,7 @@ def main():
             args.scanners,
             engine,
             savefig_path,
+            args.rotate_secs,
         )
 
 
