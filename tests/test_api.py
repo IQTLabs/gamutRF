@@ -23,6 +23,7 @@ class FakeArgs:
         self.rssi_threshold = -100
         self.rssi_external = False
         self.mean_window = 100
+        self.rotate_secs = 3600
 
 
 @pytest.fixture(scope="module")

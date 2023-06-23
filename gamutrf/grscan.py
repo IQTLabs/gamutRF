@@ -53,6 +53,7 @@ class grscan(gr.top_block):
         dc_block_long=False,
         db_clamp_floor=-200,
         db_clamp_ceil=50,
+        rotate_secs=0,
         iqtlabs=None,
         wavelearner=None,
     ):
@@ -103,6 +104,7 @@ class grscan(gr.top_block):
                         write_samples,
                         skip_tune_step,
                         int(samp_rate),
+                        rotate_secs,
                     ),
                 ]
             )
@@ -137,6 +139,7 @@ class grscan(gr.top_block):
             bucket_range,
             tuning_ranges,
             description,
+            rotate_secs,
         )
         self.fft_blocks.append(retune_fft)
         zmq_addr = f"tcp://{logaddr}:{logport}"

@@ -34,10 +34,11 @@ FFT_FILE = "/dev/shm/fft.dat"  # nosec
 
 
 class SDRRecorder:
-    def __init__(self, sdrargs):
+    def __init__(self, sdrargs, rotate_secs):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.zst_fifo = os.path.join(self.tmpdir.name, "zstfifo")
         self.sdrargs = sdrargs
+        self.rotate_secs = rotate_secs
         os.mkfifo(self.zst_fifo)
 
     @staticmethod
@@ -165,10 +166,15 @@ class SDRRecorder:
         sdr,
         antenna,
     ):
-        epoch_time = str(int(time.time()))
+        epoch_time = int(time.time())
         meta_time = datetime.datetime.utcnow().isoformat() + "Z"
+        if self.rotate_secs:
+            ts_dir = int(epoch_time / self.rotate_secs) * self.rotate_secs
+            path = os.path.join(path, str(ts_dir))
+            if not os.path.exists(path):
+                os.makedirs(path)
         sample_file = self.get_sample_file(
-            path, epoch_time, center_freq, sample_rate, sdr, antenna, gain
+            path, str(epoch_time), center_freq, sample_rate, sdr, antenna, gain
         )
         record_status = -1
         try:
@@ -204,8 +210,8 @@ class SDRRecorder:
 
 
 class EttusRecorder(SDRRecorder):
-    def __init__(self, sdrargs):
-        super().__init__(sdrargs)
+    def __init__(self, sdrargs, rotate_secs):
+        super().__init__(sdrargs, rotate_secs)
         self.worker_subprocess = None
         self.last_worker_line = None
         if not self.sdrargs:
@@ -399,8 +405,8 @@ RECORDER_MAP = {
 }
 
 
-def get_recorder(recorder_name, sdrargs=None):
+def get_recorder(recorder_name, sdrargs=None, rotate_secs=0):
     try:
-        return RECORDER_MAP[recorder_name](sdrargs)
+        return RECORDER_MAP[recorder_name](sdrargs, rotate_secs)
     except KeyError:
-        return FileTestRecorder(recorder_name)
+        return FileTestRecorder(recorder_name, rotate_secs)
