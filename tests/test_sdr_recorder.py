@@ -10,7 +10,7 @@ class SDRRecorderTestCase(unittest.TestCase):
     SAMPLES = 1e3 * 4
 
     def get_file_recorder(self):
-        return get_recorder("file:/dev/zero")
+        return get_recorder("file:/dev/zero", 3600)
 
     def test_sdr_recorder(self):
         with tempfile.TemporaryDirectory() as tmpdir:

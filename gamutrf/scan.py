@@ -140,6 +140,13 @@ def argument_parser():
         help="API server port",
     )
     parser.add_argument(
+        "--rotate_secs",
+        dest="rotate_secs",
+        type=int,
+        default=900,
+        help="rotate storage directories every N seconds",
+    )
+    parser.add_argument(
         "--sdr",
         dest="sdr",
         type=str,
@@ -322,6 +329,7 @@ def run_loop(options, prom_vars, wavelearner):
             inference_output_dir=handler.options.inference_output_dir,
             inference_input_len=handler.options.inference_input_len,
             scaling=handler.options.scaling,
+            rotate_secs=handler.options.rotate_secs,
             description=handler.options.description,
             iqtlabs=iqtlabs,
             wavelearner=wavelearner,

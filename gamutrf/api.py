@@ -54,6 +54,12 @@ def argument_parser():
         "--port", "-p", help="Port to run the API webserver on", type=int, default=8000
     )
     parser.add_argument(
+        "--rotate_secs",
+        help="If > 0, rotate storage directories every N seconds",
+        type=int,
+        default=3600,
+    )
+    parser.add_argument(
         "--sdr",
         "-s",
         help=f"Specify SDR to record with {list(RECORDER_MAP.keys())} or file",
@@ -220,7 +226,9 @@ class API:
             True,
         )
         self.q = queue.Queue(self.arguments.qsize)
-        self.sdr_recorder = get_recorder(self.arguments.sdr, self.arguments.sdrargs)
+        self.sdr_recorder = get_recorder(
+            self.arguments.sdr, self.arguments.sdrargs, self.arguments.rotate_secs
+        )
         self.start_time = time.time()
         cors = CORS(allow_all_origins=True)
         self.app = falcon.App(middleware=[cors.middleware])
