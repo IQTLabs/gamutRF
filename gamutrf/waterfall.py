@@ -388,6 +388,56 @@ def reset_fig(
     )
 
 
+def init_fig(
+    engine, base, scale, min_freq, max_freq, freq_resolution, waterfall_height
+):
+    matplotlib.use(engine)
+    cmap = plt.get_cmap("viridis")
+    cmap_psd = plt.get_cmap("turbo")
+    minor_tick_separator = AutoMinorLocator()
+    n_ticks = min(((max_freq / scale - min_freq / scale) / 100) * 5, 20)
+    major_tick_separator = base * round(
+        ((max_freq / scale - min_freq / scale) / n_ticks) / base
+    )
+
+    plt.rcParams["savefig.facecolor"] = "#2A3459"
+    plt.rcParams["figure.facecolor"] = "#2A3459"
+    text_color = "#d2d5dd"
+    plt.rcParams["text.color"] = text_color
+    plt.rcParams["axes.labelcolor"] = text_color
+    plt.rcParams["xtick.color"] = text_color
+    plt.rcParams["ytick.color"] = text_color
+    plt.rcParams["axes.facecolor"] = text_color
+
+    fig = plt.figure(figsize=(28, 10), dpi=100)
+
+    X, Y = np.meshgrid(
+        np.linspace(
+            min_freq, max_freq, int((max_freq - min_freq) / freq_resolution + 1)
+        ),
+        np.linspace(1, waterfall_height, waterfall_height),
+    )
+
+    freq_bins = X[0]
+    db_data = np.empty(X.shape)
+    db_data.fill(np.nan)
+    freq_data = np.empty(X.shape)
+    freq_data.fill(np.nan)
+
+    return (
+        fig,
+        X,
+        Y,
+        freq_bins,
+        db_data,
+        freq_data,
+        minor_tick_separator,
+        major_tick_separator,
+        cmap,
+        cmap_psd,
+    )
+
+
 def waterfall(
     min_freq,
     max_freq,
@@ -403,11 +453,7 @@ def waterfall(
     rotate_secs,
     zmqr,
 ):
-    matplotlib.use(engine)
-
     # OTHER PARAMETERS
-    cmap = plt.get_cmap("viridis")
-    cmap_psd = plt.get_cmap("turbo")
     db_min = -220
     db_max = -150
     snr_min = 0
@@ -420,16 +466,7 @@ def waterfall(
     y_label_skip = 3
     psd_db_resolution = 90
     base = 20
-    n_ticks = min(((max_freq / scale - min_freq / scale) / 100) * 5, 20)
-    major_tick_separator = base * round(
-        ((max_freq / scale - min_freq / scale) / n_ticks) / base
-    )
-    minor_tick_separator = AutoMinorLocator()
 
-    global need_reset_fig
-    need_reset_fig = True
-    global running
-    running = True
     counter = 0
     y_ticks = []
     y_labels = []
@@ -440,17 +477,14 @@ def waterfall(
     detection_text = []
     previous_scan_config = None
     save_path = base_save_path
+    marker_distance = 0.1  # len(freq_bins)/100
 
-    plt.rcParams["savefig.facecolor"] = "#2A3459"
-    plt.rcParams["figure.facecolor"] = "#2A3459"
-    text_color = "#d2d5dd"
-    plt.rcParams["text.color"] = text_color
-    plt.rcParams["axes.labelcolor"] = text_color
-    plt.rcParams["xtick.color"] = text_color
-    plt.rcParams["ytick.color"] = text_color
-    plt.rcParams["axes.facecolor"] = text_color
+    title_text = {}
 
-    fig = plt.figure(figsize=(28, 10), dpi=100)
+    # SCALING
+    min_freq /= scale
+    max_freq /= scale
+    freq_resolution /= scale
 
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
@@ -465,27 +499,25 @@ def waterfall(
     max_psd_ln: matplotlib.lines.Line2D
     psd_title: matplotlib.text.Text
 
-    title_text = {}
-
-    # SCALING
-    min_freq /= scale
-    max_freq /= scale
-    freq_resolution /= scale
-
-    # PREPARE SPECTROGRAM
-    X, Y = np.meshgrid(
-        np.linspace(
-            min_freq, max_freq, int((max_freq - min_freq) / freq_resolution + 1)
-        ),
-        np.linspace(1, waterfall_height, waterfall_height),
+    (
+        fig,
+        X,
+        Y,
+        freq_bins,
+        db_data,
+        freq_data,
+        minor_tick_separator,
+        major_tick_separator,
+        cmap,
+        cmap_psd,
+    ) = init_fig(
+        engine, base, scale, min_freq, max_freq, freq_resolution, waterfall_height
     )
 
-    freq_bins = X[0]
-    marker_distance = 0.1  # len(freq_bins)/100
-    db_data = np.empty(X.shape)
-    db_data.fill(np.nan)
-    freq_data = np.empty(X.shape)
-    freq_data.fill(np.nan)
+    global need_reset_fig
+    need_reset_fig = True
+    global running
+    running = True
 
     def onresize(_event):
         global need_reset_fig
