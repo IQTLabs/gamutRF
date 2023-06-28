@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import signal
-import sys
 import tempfile
 import threading
 import time
@@ -399,10 +398,10 @@ def waterfall(
     base_save_path,
     save_time,
     detection_type,
-    scanners,
     engine,
     savefig_path,
     rotate_secs,
+    zmqr,
 ):
     matplotlib.use(engine)
 
@@ -429,6 +428,8 @@ def waterfall(
 
     global init_fig
     init_fig = True
+    global running
+    running = True
     counter = 0
     y_ticks = []
     y_labels = []
@@ -442,6 +443,7 @@ def waterfall(
     hl = None
     detection_text = []
     previous_scan_config = None
+    save_path = base_save_path
 
     plt.rcParams["savefig.facecolor"] = "#2A3459"
     plt.rcParams["figure.facecolor"] = "#2A3459"
@@ -473,20 +475,6 @@ def waterfall(
     min_freq /= scale
     max_freq /= scale
     freq_resolution /= scale
-    scan_fres_resolution = 1e4
-
-    # ZMQ
-    zmqr = ZmqReceiver(
-        scanners=parse_scanners(scanners),
-        scan_fres=scan_fres_resolution,
-    )
-
-    def sig_handler(_sig=None, _frame=None):
-        zmqr.stop()
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, sig_handler)
-    signal.signal(signal.SIGTERM, sig_handler)
 
     # PREPARE SPECTROGRAM
     X, Y = np.meshgrid(
@@ -507,10 +495,16 @@ def waterfall(
         global init_fig
         init_fig = True
 
-    fig.canvas.mpl_connect("resize_event", onresize)
-    save_path = base_save_path
+    def sig_handler(_sig=None, _frame=None):
+        global running
+        running = False
 
-    while True:
+    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+
+    fig.canvas.mpl_connect("resize_event", onresize)
+
+    while zmqr.healthy() and running:
         (
             ax,
             ax_psd,
@@ -550,7 +544,7 @@ def waterfall(
             Y,
         )
         init_fig = False
-        while not init_fig:
+        while zmqr.healthy() and running and not init_fig:
             time.sleep(0.1)
             results = []
             while True:
@@ -848,6 +842,8 @@ def waterfall(
                             scan_config_history,
                         )
 
+    zmqr.stop()
+
 
 class FlaskHandler:
     def __init__(self, savefig_path, port, refresh=5):
@@ -911,6 +907,11 @@ def main():
             flask = FlaskHandler(savefig_path, args.port)
             flask.start()
 
+        zmqr = ZmqReceiver(
+            scanners=parse_scanners(args.scanners),
+            scan_fres=1e4,
+        )
+
         waterfall(
             args.min_freq,
             args.max_freq,
@@ -921,10 +922,10 @@ def main():
             args.save_path,
             args.save_time,
             detection_type,
-            args.scanners,
             engine,
             savefig_path,
             args.rotate_secs,
+            zmqr,
         )
 
 
