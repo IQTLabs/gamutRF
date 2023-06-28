@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 import pandas as pd
-from gamutrf.waterfall import waterfall
+from gamutrf.waterfall import argument_parser, waterfall
 
 
 class FakeZmqReceiver:
@@ -29,6 +29,9 @@ class FakeZmqReceiver:
 
 
 class UtilsTestCase(unittest.TestCase):
+    def test_arg_parser(self):
+        self.assertTrue(argument_parser())
+
     def test_run_waterfall(self):
         with tempfile.TemporaryDirectory() as tempdir:
             savefig = os.path.join(tempdir, "test.png")
