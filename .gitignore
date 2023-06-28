@@ -50,7 +50,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-tests/gamutrf_test_dir/*.tar*
+
 
 # Translations
 *.mo
@@ -132,6 +132,7 @@ dmypy.json
 *.csv
 *.mp4
 *.png
+tests/gamutrf_test_dir/*.tar*
 
 # Temporary files
 *.swo
