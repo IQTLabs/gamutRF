@@ -433,14 +433,10 @@ def waterfall(
     counter = 0
     y_ticks = []
     y_labels = []
-    background = None
     top_n_lns = []
     last_save_time = None
     scan_config_history = {}
     scan_times = []
-    vl_center = None
-    vl_edges = None
-    hl = None
     detection_text = []
     previous_scan_config = None
     save_path = base_save_path
@@ -766,7 +762,7 @@ def waterfall(
                                     [l_ips, r_ips], db_min, p, alpha=0.7
                                 )
                                 ax_psd.draw_artist(shaded)
-                            hl = ax_psd.hlines(
+                            _hl = ax_psd.hlines(
                                 y=properties["width_heights"],
                                 xmin=psd_x_edges[properties["left_ips"].astype(int)],
                                 xmax=psd_x_edges[properties["right_ips"].astype(int)],
