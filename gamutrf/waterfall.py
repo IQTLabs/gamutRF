@@ -426,8 +426,8 @@ def waterfall(
     )
     minor_tick_separator = AutoMinorLocator()
 
-    global init_fig
-    init_fig = True
+    global need_reset_fig
+    need_reset_fig = True
     global running
     running = True
     counter = 0
@@ -488,8 +488,8 @@ def waterfall(
     freq_data.fill(np.nan)
 
     def onresize(_event):
-        global init_fig
-        init_fig = True
+        global need_reset_fig
+        need_reset_fig = True
 
     def sig_handler(_sig=None, _frame=None):
         global running
@@ -539,8 +539,8 @@ def waterfall(
             X,
             Y,
         )
-        init_fig = False
-        while zmqr.healthy() and running and not init_fig:
+        need_reset_fig = False
+        while zmqr.healthy() and running and not need_reset_fig:
             time.sleep(0.1)
             results = []
             while True:
