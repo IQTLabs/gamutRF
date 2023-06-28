@@ -1,0 +1,67 @@
+import time
+import os
+import pytest
+import unittest
+
+from gamutrf.compress_dirs import check_tld
+from gamutrf.compress_dirs import tar_directories
+from gamutrf.compress_dirs import argument_parser 
+
+TESTDIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/gamutrf_test_dir")
+
+class FakeArgs:
+    def __init__(
+        self,
+        dir,
+        delete,
+        compress,
+        threshold_seconds
+    ):
+        self.dir=dir
+        self.delete=delete
+        self.compress=compress
+        self.threshold_seconds=threshold_seconds
+
+
+def test_argument_parser():
+    argument_parser()
+
+def test_check_valid_tld():
+    args=FakeArgs(TESTDIR, False, True, 300)
+    folders=check_tld(TESTDIR, args)
+    assert("00001" in folders)
+    assert("00002" in folders)
+    assert("00003" in folders)
+    assert("scan.csv" not in folders)
+
+def test_check_invalid_tld():
+    INVALID_TESTDIR=TESTDIR+"_invalid"
+    args=FakeArgs(INVALID_TESTDIR, False, True, 300)
+    folders=check_tld(TESTDIR, args)
+    assert(folders.__sizeof__ == 0)
+
+def test_tar_directories():
+    #Test without compression
+    args=FakeArgs(TESTDIR, False, False, 300)
+    folders=check_tld(TESTDIR, args)
+    tarred_files = tar_directories(folders,args)
+    assert("00001.tar" in tarred_files)
+    assert("00002.tar" in tarred_files)
+    assert("00003.tar" in tarred_files)
+    assert(os.path.exists(os.join(TESTDIR, "00001.tar")))
+    assert(os.path.exists(os.join(TESTDIR, "00002.tar")))
+    assert(os.path.exists(os.join(TESTDIR, "00003.tar")))
+
+    #Test with compression
+    args=FakeArgs(TESTDIR, False, True, 300)
+    folders=check_tld(TESTDIR, args)
+    tarred_files = tar_directories(folders,args)
+    assert("00001.tar.gz" in tarred_files)
+    assert("00002.tar.gz" in tarred_files)
+    assert("00003.tar.gz" in tarred_files)
+    assert(os.path.exists(os.join(TESTDIR, "00001.tar.gz")))
+    assert(os.path.exists(os.join(TESTDIR, "00002.tar.gz")))
+    assert(os.path.exists(os.join(TESTDIR, "00003.tar.gz")))
+
+if __name__ == "__main__":
+    unittest.main()

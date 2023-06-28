@@ -4,8 +4,10 @@ import os
 import time
 import tarfile
 import gzip
+import subprocess
 
 def check_tld(top_dir, args):
+
     if not os.path.exists(top_dir):
         print(f"Top-level directory '{top_dir}' does not exist.")
         return []
@@ -69,21 +71,35 @@ def tar_directories(dir_paths, args):
     
     return tar_filenames
 
+def export_to_path(filename, export_path, args):
+    
+    base_filename=os.path.basename(filename)
+    exported_filepath=os.path.join(export_path, base_filename)
+
+    rsync_cmd=f'rsync -rqhPu {filename} {export_path}'
+    p=subprocess.Popen(rsync_cmd.split())
+
+    print(f'Exported {filename} to {exported_filepath}')
+
+    return exported_filepath
+
 def argument_parser():
+
     parser = argparse.ArgumentParser(description="tar and compress recording directories")
     parser.add_argument(
         "dir", default="", type=str, help="Top level directory containing recordings"
     )
-    parser.add_argument("--compress", dest="compress", action="store_true" help="compress (gzip) directories")
+    parser.add_argument("--compress", dest="compress", action="store_true", help="compress (gzip) directories")
     parser.add_argument("--delete", dest="delete", action="store_true", help="delete after compressing")
     parser.add_argument("--threshold_seconds", dest="threshold_seconds", type=int, help="delete after compressing")
-    parser.set_defaults(dir="", dont_compress=False, delete=False, threshold_seconds=300)
+    parser.add_argument("--export", dest="export_path", type=str, help="internal or external path to export to after processing")
+    parser.set_defaults(dir="", dont_compress=False, delete=False, threshold_seconds=300, export_path="")
+
     return parser
 
 
 def main():
-    parser = argument_parser()
-    args = parser.parse_args()
+    args = argument_parser().parse_args()
 
     # Check for valid subdirs
     valid_folders = check_tld(args.dir, args)
@@ -95,6 +111,13 @@ def main():
         for filename in tarred_filenames:
             print(filename)
         print('...finished processing files')
+        if args.export_path != "":
+            print(f'Exporting tar files to {args.export_path}')
+            exported_filepath = export_to_path(args.dir, args.export_path, args)
+            print(f'...done exporting to {args.export_path}')
     else:
         print("No valid folders found.")
+
+if __name__ == "__main__":
+    main()
 
