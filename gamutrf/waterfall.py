@@ -762,7 +762,7 @@ def waterfall(
                                     [l_ips, r_ips], db_min, p, alpha=0.7
                                 )
                                 ax_psd.draw_artist(shaded)
-                            _hl = ax_psd.hlines(
+                            hl = ax_psd.hlines(
                                 y=properties["width_heights"],
                                 xmin=psd_x_edges[properties["left_ips"].astype(int)],
                                 xmax=psd_x_edges[properties["right_ips"].astype(int)],
