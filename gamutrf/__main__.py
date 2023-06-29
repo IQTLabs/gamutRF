@@ -1,5 +1,6 @@
 """Main entrypoint for GamutRF"""
 from gamutrf.api import main as api_main
+from gamutrf.compress_dirs import main as compress_dirs_main
 from gamutrf.freqxlator import main as freqxlator_main
 from gamutrf.samples2raw import main as samples2raw_main
 from gamutrf.scan import main as scan_main
@@ -11,6 +12,11 @@ from gamutrf.waterfall import main as waterfall_main
 def api():
     """Entrypoint for API"""
     api_main()
+
+
+def compress_dirs():
+    """Entrypoint for compress_dirs"""
+    compress_dirs_main()
 
 
 def freqxlator():

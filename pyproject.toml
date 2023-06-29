@@ -52,6 +52,7 @@ gamutrf-scan = 'gamutrf.__main__:scan'
 
 gamutrf-sigfinder = 'gamutrf.__main__:sigfinder'
 gamutrf-specgram = 'gamutrf.__main__:specgram'
+gamutrf-compress_dirs = 'gamutrf.__main__:compress_dirs'
 
 gamutrf-waterfall = 'gamutrf.__main__:waterfall'
 
