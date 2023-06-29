@@ -64,6 +64,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-          verbose: true # optional (default = false)
+          verbose: false # optional (default = false)
           fail_ci_if_error: false
         if: github.repository == 'iqtlabs/gamutrf'
