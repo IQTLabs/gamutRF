@@ -19,5 +19,6 @@ jobs:
         docker run -t iqtlabs/gamutrf:latest gamutrf-samples2raw --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-freqxlator --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-waterfall --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-compress_dirs --help
         sudo apt-get update && sudo apt-get install -qy python3-pip
         docker compose -f orchestrator.yml -f worker.yml -f monitoring.yml -f specgram.yml build
