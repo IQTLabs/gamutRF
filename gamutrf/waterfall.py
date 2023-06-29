@@ -109,6 +109,8 @@ def save_detections(
                 f,
                 indent=4,
             )
+
+    if not os.path.exists(detection_save_path):
         with open(detection_save_path, "w", encoding="utf8") as detection_csv:
             writer = csv.writer(detection_csv)
             writer.writerow(
