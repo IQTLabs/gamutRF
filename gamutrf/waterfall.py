@@ -78,20 +78,23 @@ def save_detections(
     psd_x_edges,
     detection_type,
 ):
+    detection_save_dir = Path(save_path, "detections")
+
     detection_config_save_path = str(
         Path(
-            save_path,
-            "detections",
+            detection_save_dir,
             f"detections_scan_config_{scan_time}.json",
         )
     )
     detection_save_path = str(
         Path(
-            save_path,
-            "detections",
+            detection_save_dir,
             f"detections_{scan_time}.csv",
         )
     )
+
+    if not os.path.exists(detection_save_dir):
+        os.makedirs(detection_save_dir)
 
     if previous_scan_config is None or previous_scan_config != scan_configs:
         previous_scan_config = scan_configs
@@ -146,8 +149,12 @@ def save_waterfall(
         last_save_time = now
 
     if now - last_save_time > datetime.timedelta(minutes=save_time):
+        waterfall_save_dir = Path(save_path, "waterfall")
+        if not os.path.exists(waterfall_save_dir):
+            os.makedirs(waterfall_save_dir)
+
         waterfall_save_path = str(
-            Path(save_path, "waterfall", f"waterfall_{scan_time}.png")
+            Path(waterfall_save_dir, f"waterfall_{scan_time}.png")
         )
         safe_savefig(waterfall_save_path)
 
@@ -157,7 +164,7 @@ def save_waterfall(
             "end_scan_timestamp": scan_times[-1],
             "end_scan_config": scan_config_history[scan_times[-1]],
         }
-        config_save_path = str(Path(save_path, "waterfall", f"config_{scan_time}.json"))
+        config_save_path = str(Path(waterfall_save_dir, f"config_{scan_time}.json"))
         with open(config_save_path, "w", encoding="utf8") as f:
             json.dump(save_scan_configs, f, indent=4)
 
