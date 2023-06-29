@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import signal
-import sys
 import tempfile
 import threading
 import time
@@ -79,20 +78,23 @@ def save_detections(
     psd_x_edges,
     detection_type,
 ):
+    detection_save_dir = Path(save_path, "detections")
+
     detection_config_save_path = str(
         Path(
-            save_path,
-            "detections",
+            detection_save_dir,
             f"detections_scan_config_{scan_time}.json",
         )
     )
     detection_save_path = str(
         Path(
-            save_path,
-            "detections",
+            detection_save_dir,
             f"detections_{scan_time}.csv",
         )
     )
+
+    if not os.path.exists(detection_save_dir):
+        os.makedirs(detection_save_dir)
 
     if previous_scan_config is None or previous_scan_config != scan_configs:
         previous_scan_config = scan_configs
@@ -107,6 +109,8 @@ def save_detections(
                 f,
                 indent=4,
             )
+
+    if not os.path.exists(detection_save_path):
         with open(detection_save_path, "w", encoding="utf8") as detection_csv:
             writer = csv.writer(detection_csv)
             writer.writerow(
@@ -147,8 +151,12 @@ def save_waterfall(
         last_save_time = now
 
     if now - last_save_time > datetime.timedelta(minutes=save_time):
+        waterfall_save_dir = Path(save_path, "waterfall")
+        if not os.path.exists(waterfall_save_dir):
+            os.makedirs(waterfall_save_dir)
+
         waterfall_save_path = str(
-            Path(save_path, "waterfall", f"waterfall_{scan_time}.png")
+            Path(waterfall_save_dir, f"waterfall_{scan_time}.png")
         )
         safe_savefig(waterfall_save_path)
 
@@ -158,7 +166,7 @@ def save_waterfall(
             "end_scan_timestamp": scan_times[-1],
             "end_scan_config": scan_config_history[scan_times[-1]],
         }
-        config_save_path = str(Path(save_path, "waterfall", f"config_{scan_time}.json"))
+        config_save_path = str(Path(waterfall_save_dir, f"config_{scan_time}.json"))
         with open(config_save_path, "w", encoding="utf8") as f:
             json.dump(save_scan_configs, f, indent=4)
 
@@ -389,6 +397,56 @@ def reset_fig(
     )
 
 
+def init_fig(
+    engine, base, scale, min_freq, max_freq, freq_resolution, waterfall_height
+):
+    matplotlib.use(engine)
+    cmap = plt.get_cmap("viridis")
+    cmap_psd = plt.get_cmap("turbo")
+    minor_tick_separator = AutoMinorLocator()
+    n_ticks = min(((max_freq / scale - min_freq / scale) / 100) * 5, 20)
+    major_tick_separator = base * round(
+        ((max_freq / scale - min_freq / scale) / n_ticks) / base
+    )
+
+    plt.rcParams["savefig.facecolor"] = "#2A3459"
+    plt.rcParams["figure.facecolor"] = "#2A3459"
+    text_color = "#d2d5dd"
+    plt.rcParams["text.color"] = text_color
+    plt.rcParams["axes.labelcolor"] = text_color
+    plt.rcParams["xtick.color"] = text_color
+    plt.rcParams["ytick.color"] = text_color
+    plt.rcParams["axes.facecolor"] = text_color
+
+    fig = plt.figure(figsize=(28, 10), dpi=100)
+
+    X, Y = np.meshgrid(
+        np.linspace(
+            min_freq, max_freq, int((max_freq - min_freq) / freq_resolution + 1)
+        ),
+        np.linspace(1, waterfall_height, waterfall_height),
+    )
+
+    freq_bins = X[0]
+    db_data = np.empty(X.shape)
+    db_data.fill(np.nan)
+    freq_data = np.empty(X.shape)
+    freq_data.fill(np.nan)
+
+    return (
+        fig,
+        X,
+        Y,
+        freq_bins,
+        db_data,
+        freq_data,
+        minor_tick_separator,
+        major_tick_separator,
+        cmap,
+        cmap_psd,
+    )
+
+
 def waterfall(
     min_freq,
     max_freq,
@@ -399,16 +457,12 @@ def waterfall(
     base_save_path,
     save_time,
     detection_type,
-    scanners,
     engine,
     savefig_path,
     rotate_secs,
+    zmqr,
 ):
-    matplotlib.use(engine)
-
     # OTHER PARAMETERS
-    cmap = plt.get_cmap("viridis")
-    cmap_psd = plt.get_cmap("turbo")
     db_min = -220
     db_max = -150
     snr_min = 0
@@ -421,38 +475,25 @@ def waterfall(
     y_label_skip = 3
     psd_db_resolution = 90
     base = 20
-    n_ticks = min(((max_freq / scale - min_freq / scale) / 100) * 5, 20)
-    major_tick_separator = base * round(
-        ((max_freq / scale - min_freq / scale) / n_ticks) / base
-    )
-    minor_tick_separator = AutoMinorLocator()
 
-    global init_fig
-    init_fig = True
     counter = 0
     y_ticks = []
     y_labels = []
-    background = None
     top_n_lns = []
     last_save_time = None
     scan_config_history = {}
     scan_times = []
-    vl_center = None
-    vl_edges = None
-    hl = None
     detection_text = []
     previous_scan_config = None
+    save_path = base_save_path
+    marker_distance = 0.1  # len(freq_bins)/100
 
-    plt.rcParams["savefig.facecolor"] = "#2A3459"
-    plt.rcParams["figure.facecolor"] = "#2A3459"
-    text_color = "#d2d5dd"
-    plt.rcParams["text.color"] = text_color
-    plt.rcParams["axes.labelcolor"] = text_color
-    plt.rcParams["xtick.color"] = text_color
-    plt.rcParams["ytick.color"] = text_color
-    plt.rcParams["axes.facecolor"] = text_color
+    title_text = {}
 
-    fig = plt.figure(figsize=(28, 10), dpi=100)
+    # SCALING
+    min_freq /= scale
+    max_freq /= scale
+    freq_resolution /= scale
 
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
@@ -467,50 +508,40 @@ def waterfall(
     max_psd_ln: matplotlib.lines.Line2D
     psd_title: matplotlib.text.Text
 
-    title_text = {}
-
-    # SCALING
-    min_freq /= scale
-    max_freq /= scale
-    freq_resolution /= scale
-    scan_fres_resolution = 1e4
-
-    # ZMQ
-    zmqr = ZmqReceiver(
-        scanners=parse_scanners(scanners),
-        scan_fres=scan_fres_resolution,
+    (
+        fig,
+        X,
+        Y,
+        freq_bins,
+        db_data,
+        freq_data,
+        minor_tick_separator,
+        major_tick_separator,
+        cmap,
+        cmap_psd,
+    ) = init_fig(
+        engine, base, scale, min_freq, max_freq, freq_resolution, waterfall_height
     )
 
+    global need_reset_fig
+    need_reset_fig = True
+    global running
+    running = True
+
+    def onresize(_event):
+        global need_reset_fig
+        need_reset_fig = True
+
     def sig_handler(_sig=None, _frame=None):
-        zmqr.stop()
-        sys.exit(0)
+        global running
+        running = False
 
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    # PREPARE SPECTROGRAM
-    X, Y = np.meshgrid(
-        np.linspace(
-            min_freq, max_freq, int((max_freq - min_freq) / freq_resolution + 1)
-        ),
-        np.linspace(1, waterfall_height, waterfall_height),
-    )
-
-    freq_bins = X[0]
-    marker_distance = 0.1  # len(freq_bins)/100
-    db_data = np.empty(X.shape)
-    db_data.fill(np.nan)
-    freq_data = np.empty(X.shape)
-    freq_data.fill(np.nan)
-
-    def onresize(_event):
-        global init_fig
-        init_fig = True
-
     fig.canvas.mpl_connect("resize_event", onresize)
-    save_path = base_save_path
 
-    while True:
+    while zmqr.healthy() and running:
         (
             ax,
             ax_psd,
@@ -549,8 +580,8 @@ def waterfall(
             X,
             Y,
         )
-        init_fig = False
-        while not init_fig:
+        need_reset_fig = False
+        while zmqr.healthy() and running and not need_reset_fig:
             time.sleep(0.1)
             results = []
             while True:
@@ -848,6 +879,8 @@ def waterfall(
                             scan_config_history,
                         )
 
+    zmqr.stop()
+
 
 class FlaskHandler:
     def __init__(self, savefig_path, port, refresh=5):
@@ -911,6 +944,11 @@ def main():
             flask = FlaskHandler(savefig_path, args.port)
             flask.start()
 
+        zmqr = ZmqReceiver(
+            scanners=parse_scanners(args.scanners),
+            scan_fres=1e4,
+        )
+
         waterfall(
             args.min_freq,
             args.max_freq,
@@ -921,10 +959,10 @@ def main():
             args.save_path,
             args.save_time,
             detection_type,
-            args.scanners,
             engine,
             savefig_path,
             args.rotate_secs,
+            zmqr,
         )
 
 

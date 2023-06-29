@@ -335,12 +335,19 @@ def zstd_file(uncompressed_file):
     subprocess.check_call(["/usr/bin/zstd", "--force", "--rm", uncompressed_file])
 
 
+class ScanProcessor:
+    def __init__(self, args, prom_vars):
+        self.args = args
+        self.prom_vars = prom_vars
+        self.lastbins_history = []
+        self.lastbins = set()
+        self.frame_counter = self.prom_vars["frame_counter"]
+        self.running_df = None
+        self.last_dfs = []
+
+
 def process_scans(args, prom_vars, executor, zmqr):
-    lastbins_history = []
-    lastbins = set()
-    frame_counter = prom_vars["frame_counter"]
-    running_df = None
-    last_dfs = []
+    sp = ScanProcessor(args, prom_vars)
 
     while True:
         if os.path.exists(args.log):
@@ -349,19 +356,21 @@ def process_scans(args, prom_vars, executor, zmqr):
         else:
             logging.info(f"opening {args.log}")
             mode = "w"
-        openlogts = int(time.time())
+        deadline = int(time.time()) + args.rotatesecs
         with open(args.log, mode=mode, encoding="utf-8") as l:
             while True:
+                now = int(time.time())
                 if not zmqr.healthy():
                     return
-                now = int(time.time())
+                if now > deadline:
+                    break
                 scan_configs, frame_df = zmqr.read_buff(l)
                 if frame_df is None:
                     schedule.run_pending()
                     sleep_time = 1
                     time.sleep(sleep_time)
                     continue
-                frame_counter.inc()
+                sp.frame_counter.inc()
                 logging.info(
                     "frame with sweep_start %us ago",
                     now - frame_df["sweep_start"].min(),
@@ -371,24 +380,21 @@ def process_scans(args, prom_vars, executor, zmqr):
                     scan_configs,
                     prom_vars,
                     frame_df,
-                    lastbins,
-                    running_df,
-                    last_dfs,
+                    sp.lastbins,
+                    sp.running_df,
+                    sp.last_dfs,
                 )
                 if args.nfftplots:
-                    last_dfs = last_dfs[-args.nfftplots :]
-                    last_dfs.append((last_df.freq, last_df.db))
+                    sp.last_dfs = sp.last_dfs[-args.nfftplots :]
+                    sp.last_dfs.append((last_df.freq, last_df.db))
                 else:
-                    last_dfs = []
+                    sp.last_dfs = []
                 if new_lastbins is not None:
-                    lastbins = new_lastbins
-                    if lastbins:
-                        lastbins_history = [lastbins] + lastbins_history
-                        lastbins_history = lastbins_history[: args.history]
-                call_record_signals(args, lastbins_history, prom_vars)
-                rotate_age = now - openlogts
-                if rotate_age > args.rotatesecs:
-                    break
+                    sp.lastbins = new_lastbins
+                    if sp.lastbins:
+                        sp.lastbins_history = [sp.lastbins] + sp.lastbins_history
+                        sp.lastbins_history = sp.lastbins_history[: args.history]
+                call_record_signals(args, sp.lastbins_history, prom_vars)
         rotate_file_n(".".join((args.log, "zst")), args.nlog, require_initial=False)
         new_log = ".".join((args.log, "1"))
         os.rename(args.log, new_log)
