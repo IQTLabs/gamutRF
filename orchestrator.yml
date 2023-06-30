@@ -52,6 +52,7 @@ services:
       - --samp-rate=8.192e6
       - --nfft=2048
       - --sweep-sec=30
+      - --skip-tune-step=1024
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
@@ -73,9 +74,6 @@ services:
       - gamutrf-sigfinder
       - --scanners=gamutrf:10000
       - --log=/logs/scan.csv
-      - --width=10
-      - --prominence=2
-      - --threshold=-25
       - --record_secs=1
       - --max_recorder_signals=5
     environment:
