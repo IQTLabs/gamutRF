@@ -18,8 +18,8 @@ from flask import Flask, current_app
 from matplotlib.collections import LineCollection
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
-from scipy.signal import find_peaks
 
+from gamutrf.peak_finder import get_peak_finder
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
@@ -456,7 +456,7 @@ def waterfall(
     sampling_rate,
     base_save_path,
     save_time,
-    detection_type,
+    peak_finder,
     engine,
     savefig_path,
     rotate_secs,
@@ -717,33 +717,8 @@ def waterfall(
                     mean_psd_ln.set_ydata(np.nanmean(db_data, axis=0))
                     ax_psd.draw_artist(mesh_psd)
 
-                    if detection_type:
-                        # NARROWBAND SIGNAL DETECT
-
-                        if detection_type == "narrowband":
-                            peaks, properties = find_peaks(
-                                db_data[-1],
-                                height=np.nanmean(db_data, axis=0),
-                                width=(1, 10),
-                                prominence=10,
-                                rel_height=0.7,
-                                wlen=120,
-                            )
-
-                        # WIDEBAND SIGNAL DETECT
-                        elif detection_type == "wideband":
-                            peaks, properties = find_peaks(
-                                db_data[
-                                    -1
-                                ],  # db_data[-1] - np.nanmin(db_data, axis=0),#db_data[-1],
-                                # height=np.nanmean(db_data, axis=0) - np.nanmin(db_data, axis=0),
-                                height=np.nanmean(db_data, axis=0) + 1,
-                                width=10,
-                                prominence=(0, 20),
-                                rel_height=0.7,
-                                wlen=120,
-                            )
-
+                    if peak_finder:
+                        peaks, properties = peak_finder.find_peaks(db_data[-1])
                         peaks, properties = filter_peaks(peaks, properties)
 
                         if save_path:
@@ -757,7 +732,7 @@ def waterfall(
                                 peaks,
                                 properties,
                                 psd_x_edges,
-                                detection_type,
+                                peak_finder.name,
                             )
 
                         peak_lns.set_xdata(psd_x_edges[peaks])
@@ -917,21 +892,15 @@ def main():
 
     parser = argument_parser()
     args = parser.parse_args()
-    detection_type = args.detection_type
+    detection_type = args.detection_type.lower()
+    peak_finder = None
 
     if args.save_path:
         Path(args.save_path, "waterfall").mkdir(parents=True, exist_ok=True)
 
         if detection_type:
             Path(args.save_path, "detections").mkdir(parents=True, exist_ok=True)
-
-            detection_type = detection_type.lower()
-            if detection_type in ["wb", "wide band", "wideband"]:
-                detection_type = "wideband"
-            elif detection_type in ["nb", "narrow band", "narrowband"]:
-                detection_type = "narrowband"
-            else:
-                raise ValueError("detection_type must be 'narrowband' or 'wideband'")
+            peak_finder = get_peak_finder(detection_type)
 
     with tempfile.TemporaryDirectory() as tempdir:
         flask = None
@@ -958,7 +927,7 @@ def main():
             args.sampling_rate,
             args.save_path,
             args.save_time,
-            detection_type,
+            peak_finder,
             engine,
             savefig_path,
             args.rotate_secs,

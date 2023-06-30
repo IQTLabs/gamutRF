@@ -25,7 +25,7 @@ from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
-from gamutrf.sigwindows import scipy_find_sig_windows
+from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n, SCAN_FRES
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
@@ -204,14 +204,13 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_d
             (df.freq >= scan_config["freq_start"] / 1e6)
             & (df.freq <= scan_config["freq_end"] / 1e6)
         ]
-        signals.extend(
-            scipy_find_sig_windows(
-                scan_df,
-                width=args.width,
-                prominence=args.prominence,
-                threshold=args.threshold,
+        if args.detection_type:
+            signals.extend(
+                find_sig_windows(
+                    scan_df,
+                    detection_type=args.detection_type,
+                )
             )
-        )
     min_samp_rate = (
         min([scan_config["sample_rate"] for scan_config in scan_configs]) / 1e6
     )
@@ -439,24 +438,6 @@ def argument_parser():
         "--bin_mhz", default=20, type=int, help="monitoring bin width in MHz"
     )
     parser.add_argument(
-        "--width",
-        default=10,
-        type=int,
-        help=f"minimum signal width to detect a peak (multiple of {SCAN_FRES / 1e6} MHz, e.g. 10 is {10 * SCAN_FRES / 1e6} MHz)",
-    )
-    parser.add_argument(
-        "--threshold",
-        default=-35,
-        type=float,
-        help="minimum signal finding threshold (dB)",
-    )
-    parser.add_argument(
-        "--prominence",
-        default=2,
-        type=float,
-        help="minimum peak prominence (see scipy.signal.find_peaks)",
-    )
-    parser.add_argument(
         "--history",
         default=5,
         type=int,
@@ -525,6 +506,12 @@ def argument_parser():
         type=float,
         default=ROLLING_FACTOR,
         help="Divisor for rolling dB average (or 0 to disable)",
+    )
+    parser.add_argument(
+        "--detection_type",
+        default="narrowband",
+        type=str,
+        help="Detection type to plot (wideband, narrowband).",
     )
     return parser
 

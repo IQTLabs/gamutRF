@@ -8,9 +8,9 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
-from scipy.signal import find_peaks
 import matplotlib
 import matplotlib.pyplot as plt
+from gamutrf.peak_finder import get_peak_finder
 from gamutrf.utils import SCAN_FRES, SCAN_FROLL, WIDTH, HEIGHT, DPI, MPL_BACKEND
 
 
@@ -85,10 +85,14 @@ def calc_db(df, rolling_factor=ROLLING_FACTOR):
     return df
 
 
-def scipy_find_sig_windows(df, width, prominence, threshold):
-    data = df.db.to_numpy()
-    peaks, _ = find_peaks(data, prominence=prominence, width=(width,), height=threshold)
-    return [(df.iloc[peak].freq, df.iloc[peak].db) for peak in peaks]
+def find_sig_windows(df, detection_type):
+    if detection_type:
+        peak_finder = get_peak_finder(detection_type)
+        if peak_finder:
+            data = df.db.to_numpy()
+            peaks, _ = peak_finder.find_peaks(data)
+            return [(df.iloc[peak].freq, df.iloc[peak].db) for peak in peaks]
+    return []
 
 
 def graph_fft_peaks(
