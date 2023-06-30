@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import cv2
 import logging
-import numpy as np
 import sys
 from pathlib import Path
+import numpy as np
 
 try:
-    from gnuradio import filter  # pytype: disable=import-error
+    from gnuradio import filter as grfilter  # pytype: disable=import-error
     from gnuradio import blocks  # pytype: disable=import-error
     from gnuradio import fft  # pytype: disable=import-error
     from gnuradio import gr  # pytype: disable=import-error
@@ -44,7 +43,6 @@ class grscan(gr.top_block):
         sample_dir="",
         inference_plan_file="",
         inference_output_dir="",
-        inference_input_len=2048,
         bucket_range=1.0,
         tuning_ranges="",
         scaling="spectrum",
@@ -84,7 +82,7 @@ class grscan(gr.top_block):
         )
 
         fft_blocks, fft_roll = self.get_fft_blocks(
-            fft_size, sdr, dc_block_len, dc_block_long
+            fft_size, dc_block_len, dc_block_long
         )
         self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate, scaling)
         self.fft_to_inference_block = self.fft_blocks[-1]
@@ -261,11 +259,11 @@ class grscan(gr.top_block):
     def get_window(self, fft_size):
         return window.hann(fft_size)
 
-    def get_fft_blocks(self, fft_size, sdr, dc_block_len, dc_block_long):
+    def get_fft_blocks(self, fft_size, dc_block_len, dc_block_long):
         fft_blocks = []
         fft_roll = False
         if dc_block_len:
-            fft_blocks.append(filter.dc_blocker_cc(dc_block_len, dc_block_long))
+            fft_blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
         if self.wavelearner:
             fft_batch_size = 256
             fft_roll = True

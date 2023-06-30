@@ -223,13 +223,6 @@ def argument_parser():
         help="directory for inference output",
     )
     parser.add_argument(
-        "--inference_input_len",
-        dest="inference_input_len",
-        type=int,
-        default=2048,
-        help="vector length for wavelearner",
-    )
-    parser.add_argument(
         "--tuning_ranges",
         dest="tuning_ranges",
         type=str,
@@ -327,7 +320,6 @@ def run_loop(options, prom_vars, wavelearner):
             dc_block_long=handler.options.dc_block_long,
             inference_plan_file=handler.options.inference_plan_file,
             inference_output_dir=handler.options.inference_output_dir,
-            inference_input_len=handler.options.inference_input_len,
             scaling=handler.options.scaling,
             rotate_secs=handler.options.rotate_secs,
             description=handler.options.description,

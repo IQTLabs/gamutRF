@@ -1,24 +1,16 @@
 #!/usr/bin/python3
-import logging
 import random
-import os
-import time
 from collections import Counter
 from collections import defaultdict
 
 import numpy as np
-import pandas as pd
-from scipy.signal import find_peaks
-import matplotlib
-import matplotlib.pyplot as plt
-from gamutrf.utils import SCAN_FRES, SCAN_FROLL, WIDTH, HEIGHT, DPI, MPL_BACKEND
+from gamutrf.peak_finder import get_peak_finder
+from gamutrf.utils import SCAN_FRES, SCAN_FROLL
 
 
 ROLLOVERHZ = 100e6
 CSV = ".csv"
 ROLLING_FACTOR = int(SCAN_FROLL / SCAN_FRES)
-
-logging.getLogger("matplotlib.font_manager").disabled = True
 
 
 def choose_recorders(signals, recorder_freq_exclusions, max_recorder_signals):
@@ -85,69 +77,14 @@ def calc_db(df, rolling_factor=ROLLING_FACTOR):
     return df
 
 
-def scipy_find_sig_windows(df, width, prominence, threshold):
-    data = df.db.to_numpy()
-    peaks, _ = find_peaks(data, prominence=prominence, width=(width,), height=threshold)
-    return [(df.iloc[peak].freq, df.iloc[peak].db) for peak in peaks]
-
-
-def graph_fft_peaks(
-    graph_path, df, mean_running_df, sample_count_df, signals, last_dfs, scan_configs
-):
-    maxdb = df.db.max()
-    df["peaks"] = df.db.min()
-    for peak_freq, _ in signals:
-        df.loc[df.freq == peak_freq, "peaks"] = maxdb
-
-    peak_df = df[df.peaks == maxdb].sort_values("db", ascending=False)[:5]
-    peak_signals = ",".join(
-        ["%.1f MHz %.1f dB" % (row.freq, row.db) for row in peak_df.itertuples()]
-    )
-    if peak_signals:
-        peak_signals = f"strongest peak signals: {peak_signals}"
-
-    matplotlib.use(MPL_BACKEND)
-    plt.figure(figsize=(WIDTH, HEIGHT), dpi=DPI)
-    plt.plot(
-        df.freq,
-        df.db,
-        "b",
-        df.freq,
-        df.peaks,
-        "y",
-        mean_running_df.freq,
-        mean_running_df.db,
-        "k",
-        # sample_count_df["freq"],
-        # sample_count_df["size"],
-        # "c",
-    )
-    for x, y in last_dfs:
-        plt.plot(x, y)
-    plt.xlabel("freq (MHz)")
-    plt.ylabel("power (dB)")
-    plt.legend(("power", "peak status", "mean power"), loc="upper right")
-    ts_min = df.ts.min()
-    ts_max = df.ts.max()
-    time_min = time.ctime(ts_min)
-    time_max = time.ctime(ts_max)
-    duration = ts_max - ts_min
-    scan_config_txt = ", ".join(
-        [
-            ", ".join([f"{x}: {y}" for x, y in scan_config.items()])
-            for scan_config in scan_configs
-        ]
-    )
-    title = f"gamutRF scanner FFT {time_min} to {time_max}, {duration}s\n{scan_config_txt}\n{peak_signals}"
-    plt.title(title)
-    real_path = os.path.realpath(graph_path)
-    basename = os.path.basename(real_path)
-    dirname = os.path.dirname(real_path)
-    tmp_graph_path = os.path.join(dirname, "." + basename)
-    plt.savefig(tmp_graph_path)
-    plt.cla()
-    plt.close("all")
-    os.rename(tmp_graph_path, graph_path)
+def find_sig_windows(df, detection_type):
+    if detection_type:
+        peak_finder = get_peak_finder(detection_type)
+        if peak_finder:
+            data = df.db.to_numpy()
+            peaks, _ = peak_finder.find_peaks(data)
+            return [(df.iloc[peak].freq, df.iloc[peak].db) for peak in peaks]
+    return []
 
 
 def get_center(signal_mhz, freq_start_mhz, bin_mhz, record_bw):

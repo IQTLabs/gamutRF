@@ -51,15 +51,11 @@ While there are other options, these options primarily influence gamutRF's scann
 
 | Option | Description |
 | -- | -- |
-| --width | Minimum width of a peak to be detected in 0.01MHz increments (passed to scipy find_peaks()) |
-| --prominence | Minimum prominence of a peak to be detected (passed to scipy find_peaks()) |
-| --threshold | Minimum threshold in dB of a peak to be detected (passed to scipy find_peaks()) |
 | --bin_width | Bin width in MHz |
 | --history | Number of scanner cycles over which to prioritize recording of least often observed peaks |
 | --record_bw_msps | Number of samples per second in units of 1024^2 (generally larger than bin size to record signal margins) |
 | --record_secs | Length of time to record I/Q samples in seconds |
 | --fftlog | Log raw output of CSV to this file, which will be rotated every --rotatesecs |
-| --fftgraph | Graph the most recent FFT signal and peaks to this PNG file (will keep the last --nfftgraph versions) |
 | --scanners | Comma separated list of scanner ZMQ endpoints to use, for example --scanners=127.0.0.1:8001,127.0.0.1:9002 |
 
 ### Running multiple radios on the same machine
@@ -139,7 +135,7 @@ gamutRF supports two separate APIs - for receiving scanner updates, and making s
 
 ## Scanner testing
 
-Currently, the scanner ```gain``` and sigfinder ```threshold``` must be set manually for the general RF environment (e.g. noisy/many signals versus quiet/few signals).
+Currently, the scanner ```gain``` must be set manually for the general RF environment (e.g. noisy/many signals versus quiet/few signals).
 To establish the correct values and to confirm the scanner is working, initiate a scan over the 2.2-2.6GHz range. As the 2.4GHz spectrum is very busy with legacy WiFi
 and BlueTooth, the probability of seeing signals is high. If in an environment without BlueTooth or WiFi, an alternative is the FM broadcast band (88MHz to 108MHz).
 
@@ -156,8 +152,6 @@ Watch for ```/tmp/fft.png``` to appear, which should contain strong signals simi
 If no or only small peaks appear which are not marked as peaks, increase ```gain``` (e.g., from 40 to 45) until peaks are detected.
 
 If no peaks appear still, check antenna cabling, or choose a different scan range where signals are expected in your environment.
-
-If peaks appear but are consistently not marked, decrease ```theshold``` (e.g. -25 to -35). If too many peaks are detected (noise detected as peaks), raise ```threshold.```
 
 ## Troubleshooting
 

@@ -11,7 +11,6 @@ import bjoern
 import falcon
 import jinja2
 import numpy as np
-import pandas as pd
 import requests
 import schedule
 
@@ -23,9 +22,8 @@ from gamutrf.sigwindows import calc_db
 from gamutrf.sigwindows import choose_record_signal
 from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import get_center
-from gamutrf.sigwindows import graph_fft_peaks
 from gamutrf.sigwindows import parse_freq_excluded
-from gamutrf.sigwindows import scipy_find_sig_windows
+from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n, SCAN_FRES
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
@@ -166,7 +164,7 @@ def update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars):
         old_bins_prom.labels(bin_freq=obin).inc()
 
 
-def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_dfs):
+def process_scan(args, scan_configs, prom_vars, df, lastbins):
     global PEAK_DBS
     df = calc_db(df, args.db_rolling_factor)
     freqdiffs = df.freq - df.freq.shift()
@@ -204,14 +202,13 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_d
             (df.freq >= scan_config["freq_start"] / 1e6)
             & (df.freq <= scan_config["freq_end"] / 1e6)
         ]
-        signals.extend(
-            scipy_find_sig_windows(
-                scan_df,
-                width=args.width,
-                prominence=args.prominence,
-                threshold=args.threshold,
+        if args.detection_type:
+            signals.extend(
+                find_sig_windows(
+                    scan_df,
+                    detection_type=args.detection_type,
+                )
             )
-        )
     min_samp_rate = (
         min([scan_config["sample_rate"] for scan_config in scan_configs]) / 1e6
     )
@@ -222,35 +219,6 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_d
         GPIO.output(PIN_TRIGGER, GPIO.HIGH)
         time.sleep(led_sleep)
         GPIO.output(PIN_TRIGGER, GPIO.LOW)
-
-    if running_df is None:
-        running_df = df
-    else:
-        now = time.time()
-        running_df = running_df[running_df.ts >= (now - args.running_fft_secs)]
-        running_df = pd.concat(running_df, df)
-    mean_running_df = running_df[["freq", "db"]].groupby(["freq"]).mean().reset_index()
-    sample_count_df = df[["freq"]].copy()
-    sample_count_df["freq"] = np.floor(sample_count_df["freq"])
-    # nosemgrep
-    sample_count_df["size"] = sample_count_df.groupby("freq").transform("size")
-    sample_count_df["size"] = abs(
-        sample_count_df["size"].mean() - sample_count_df["size"]
-    )
-    sample_count_df["size"].iat[0] = 0
-    sample_count_df["size"].iat[-1] = 0
-
-    if args.fftgraph:
-        rotate_file_n(args.fftgraph, args.nfftgraph)
-        graph_fft_peaks(
-            args.fftgraph,
-            df,
-            mean_running_df,
-            sample_count_df,
-            signals,
-            last_dfs,
-            scan_configs,
-        )
 
     ts = df["ts"].max()
     for peak_freq, peak_db in signals:
@@ -281,7 +249,7 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins, running_df, last_d
     if old_bins:
         logging.info("old bins: %s", sorted(old_bins))
     update_prom_vars(peak_dbs, new_bins, old_bins, prom_vars)
-    return (monitor_bins, df)
+    return monitor_bins
 
 
 def recorder_req(recorder, recorder_args, timeout):
@@ -342,8 +310,6 @@ class ScanProcessor:
         self.lastbins_history = []
         self.lastbins = set()
         self.frame_counter = self.prom_vars["frame_counter"]
-        self.running_df = None
-        self.last_dfs = []
 
 
 def process_scans(args, prom_vars, executor, zmqr):
@@ -375,20 +341,13 @@ def process_scans(args, prom_vars, executor, zmqr):
                     "frame with sweep_start %us ago",
                     now - frame_df["sweep_start"].min(),
                 )
-                new_lastbins, last_df = process_scan(
+                new_lastbins = process_scan(
                     args,
                     scan_configs,
                     prom_vars,
                     frame_df,
                     sp.lastbins,
-                    sp.running_df,
-                    sp.last_dfs,
                 )
-                if args.nfftplots:
-                    sp.last_dfs = sp.last_dfs[-args.nfftplots :]
-                    sp.last_dfs.append((last_df.freq, last_df.db))
-                else:
-                    sp.last_dfs = []
                 if new_lastbins is not None:
                     sp.lastbins = new_lastbins
                     if sp.lastbins:
@@ -415,18 +374,6 @@ def argument_parser():
         help="if defined, path to log last complete FFT frame",
     )
     parser.add_argument(
-        "--fftgraph",
-        default="",
-        type=str,
-        help="if defined, path to write graph of most recent FFT and detected peaks",
-    )
-    parser.add_argument(
-        "--nfftgraph", default=10, type=int, help="keep last N FFT graphs"
-    )
-    parser.add_argument(
-        "--nfftplots", default=10, type=int, help="last N plots in FFT graphs"
-    )
-    parser.add_argument(
         "--rotatesecs",
         default=3600,
         type=int,
@@ -437,24 +384,6 @@ def argument_parser():
     )
     parser.add_argument(
         "--bin_mhz", default=20, type=int, help="monitoring bin width in MHz"
-    )
-    parser.add_argument(
-        "--width",
-        default=10,
-        type=int,
-        help=f"minimum signal width to detect a peak (multiple of {SCAN_FRES / 1e6} MHz, e.g. 10 is {10 * SCAN_FRES / 1e6} MHz)",
-    )
-    parser.add_argument(
-        "--threshold",
-        default=-35,
-        type=float,
-        help="minimum signal finding threshold (dB)",
-    )
-    parser.add_argument(
-        "--prominence",
-        default=2,
-        type=float,
-        help="minimum peak prominence (see scipy.signal.find_peaks)",
     )
     parser.add_argument(
         "--history",
@@ -506,13 +435,6 @@ def argument_parser():
         help="Max number of recordings per worker to request",
     )
     parser.add_argument(
-        "--running_fft_secs",
-        dest="running_fft_secs",
-        type=int,
-        default=900,
-        help="Number of seconds for running FFT average",
-    )
-    parser.add_argument(
         "--buff_path",
         dest="buff_path",
         type=str,
@@ -525,6 +447,12 @@ def argument_parser():
         type=float,
         default=ROLLING_FACTOR,
         help="Divisor for rolling dB average (or 0 to disable)",
+    )
+    parser.add_argument(
+        "--detection_type",
+        default="narrowband",
+        type=str,
+        help="Detection type to plot (wideband, narrowband).",
     )
     return parser
 
