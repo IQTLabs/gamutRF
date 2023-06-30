@@ -202,11 +202,12 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins):
             (df.freq >= scan_config["freq_start"] / 1e6)
             & (df.freq <= scan_config["freq_end"] / 1e6)
         ]
+        logging.info(args.detection_type)
         if args.detection_type:
             signals.extend(
                 find_sig_windows(
                     scan_df,
-                    detection_type=args.detection_type,
+                    args.detection_type,
                 )
             )
     min_samp_rate = (
@@ -445,7 +446,7 @@ def argument_parser():
         "--db_rolling_factor",
         dest="db_rolling_factor",
         type=float,
-        default=ROLLING_FACTOR,
+        default=0,
         help="Divisor for rolling dB average (or 0 to disable)",
     )
     parser.add_argument(

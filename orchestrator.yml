@@ -51,7 +51,7 @@ services:
       - '--freq-end=${FREQ_END}'
       - --samp-rate=8.192e6
       - --nfft=2048
-      - --sweep-sec=30
+      - --sweep-sec=10
       - --skip-tune-step=1024
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
@@ -73,9 +73,11 @@ services:
     command:
       - gamutrf-sigfinder
       - --scanners=gamutrf:10000
-      - --log=/logs/scan.csv
+      - --log=/logs/scan.log
+      - --detection_type=narrowband
       - --record_secs=1
       - --max_recorder_signals=5
+      - --db_rolling_factor=0
     environment:
       - "PEAK_TRIGGER=0"
       - "PIN_TRIGGER=17"
@@ -93,8 +95,10 @@ services:
       - --scanners=gamutrf:10000
       - --save_path=/logs
       - --port=9003
-      - --min_freq=100e6
-      - --max_freq=1e9
+      - --detection_type=narrowband
+      - --sampling_rate=8.192e6
+      - '--min_freq=${FREQ_START}'
+      - '--max_freq=${FREQ_END}'
   watchtower:
     image: containrrr/watchtower:latest
     restart: always

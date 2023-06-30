@@ -20,6 +20,7 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
 
 from gamutrf.peak_finder import get_peak_finder
+from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ, SCAN_FRES
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
@@ -179,13 +180,13 @@ def save_waterfall(
 def argument_parser():
     parser = argparse.ArgumentParser(description="waterfall plotter from scan data")
     parser.add_argument(
-        "--min_freq", default=300e6, type=float, help="Minimum frequency for plot."
+        "--min_freq", default=MIN_FREQ, type=float, help="Minimum frequency for plot."
     )
     parser.add_argument(
-        "--max_freq", default=6e9, type=float, help="Maximum frequency for plot."
+        "--max_freq", default=MAX_FREQ, type=float, help="Maximum frequency for plot."
     )
     parser.add_argument(
-        "--sampling_rate", default=100e6, type=float, help="Sampling rate."
+        "--sampling_rate", default=SAMP_RATE, type=float, help="Sampling rate."
     )
     parser.add_argument("--nfft", default=256, type=int, help="FFT length.")
     parser.add_argument(
@@ -915,7 +916,7 @@ def main():
 
         zmqr = ZmqReceiver(
             scanners=parse_scanners(args.scanners),
-            scan_fres=1e4,
+            scan_fres=SCAN_FRES,
         )
 
         waterfall(

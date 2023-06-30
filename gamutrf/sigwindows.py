@@ -81,8 +81,8 @@ def find_sig_windows(df, detection_type):
     if detection_type:
         peak_finder = get_peak_finder(detection_type)
         if peak_finder:
-            data = df.db.to_numpy()
-            peaks, _ = peak_finder.find_peaks(data)
+            db_data = df.db.to_numpy()
+            peaks, _ = peak_finder.find_peaks(db_data)
             return [(df.iloc[peak].freq, df.iloc[peak].db) for peak in peaks]
     return []
 
