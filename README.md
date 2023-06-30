@@ -56,7 +56,6 @@ While there are other options, these options primarily influence gamutRF's scann
 | --record_bw_msps | Number of samples per second in units of 1024^2 (generally larger than bin size to record signal margins) |
 | --record_secs | Length of time to record I/Q samples in seconds |
 | --fftlog | Log raw output of CSV to this file, which will be rotated every --rotatesecs |
-| --fftgraph | Graph the most recent FFT signal and peaks to this PNG file (will keep the last --nfftgraph versions) |
 | --scanners | Comma separated list of scanner ZMQ endpoints to use, for example --scanners=127.0.0.1:8001,127.0.0.1:9002 |
 
 ### Running multiple radios on the same machine
