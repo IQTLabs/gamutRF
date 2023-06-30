@@ -76,10 +76,8 @@ class FakeArgs:
         log,
         rotatesecs,
         window,
-        threshold,
         fftlog,
-        width,
-        prominence,
+        detection_type,
         bin_mhz,
         record_bw_msps,
         history,
@@ -96,11 +94,8 @@ class FakeArgs:
         self.log = log
         self.rotatesecs = rotatesecs
         self.window = window
-        self.threshold = threshold
         self.fftlog = fftlog
-        self.width = width
-        self.threshold = threshold
-        self.prominence = prominence
+        self.detection_type = detection_type
         self.bin_mhz = bin_mhz
         self.record_bw_msps = record_bw_msps
         self.history = history
@@ -156,10 +151,8 @@ class SigFinderTestCase(unittest.TestCase):
                     test_log,
                     60,
                     4,
-                    -40,
                     test_fftlog,
-                    1,
-                    5,
+                    "narrowband",
                     20,
                     21,
                     1,
@@ -228,10 +221,8 @@ class SigFinderTestCase(unittest.TestCase):
             "",
             60,
             4,
-            -40,
             "",
-            None,
-            5,
+            "narrowband",
             20,
             21,
             1,
