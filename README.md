@@ -136,16 +136,16 @@ gamutRF supports two separate APIs - for receiving scanner updates, and making s
 ## Scanner testing
 
 Currently, the scanner ```gain``` must be set manually for the general RF environment (e.g. noisy/many signals versus quiet/few signals).
-To establish the correct values and to confirm the scanner is working, initiate a scan over the 2.2-2.6GHz range. As the 2.4GHz spectrum is very busy with legacy WiFi
+To establish the correct values and to confirm the scanner is working, initiate a scan over the 2.3-2.6GHz range. As the 2.4GHz spectrum is very busy with legacy WiFi
 and BlueTooth, the probability of seeing signals is high. If in an environment without BlueTooth or WiFi, an alternative is the FM broadcast band (88MHz to 108MHz).
 
-To begin, commence scanning with just the scanner and sigfinder containers:
+To begin, commence scanning with just the scanner and waterfall containers:
 
 ```
-$ VOL_PREFIX=/tmp FREQ_START=2.2e9 FREQ_END=2.6e9 docker compose -f orchestrator.yml up gamutrf sigfinder
+VOL_PREFIX=/tmp FREQ_START=2.3e9 FREQ_END=2.6e9 docker compose -f orchestrator.yml up gamutrf waterfall
 ```
 
-Watch for ```/tmp/fft.png``` to appear, which should contain strong signals similar to this example:
+Browse the waterfall container's webserver port (by default, localhost:9003). It should contain strong signals similar to this example:
 
 ![2.4G example](fft24test.png)
 
