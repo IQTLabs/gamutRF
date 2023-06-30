@@ -82,12 +82,8 @@ class FakeArgs:
         record_bw_msps,
         history,
         recorder,
-        fftgraph,
         scanners,
-        nfftgraph,
         max_recorder_signals,
-        running_fft_secs,
-        nfftplots,
         skip_tune_step_fft,
         buff_path,
     ):
@@ -100,12 +96,8 @@ class FakeArgs:
         self.record_bw_msps = record_bw_msps
         self.history = history
         self.recorder = recorder
-        self.fftgraph = fftgraph
         self.scanners = scanners
-        self.nfftgraph = nfftgraph
         self.max_recorder_signals = max_recorder_signals
-        self.running_fft_secs = running_fft_secs
-        self.nfftplots = nfftplots
         self.skip_tune_step_fft = skip_tune_step_fft
         self.db_rolling_factor = ROLLING_FACTOR
         self.buff_path = buff_path
@@ -146,7 +138,6 @@ class SigFinderTestCase(unittest.TestCase):
             with tempfile.TemporaryDirectory() as tempdir:
                 test_log = os.path.join(str(tempdir), "test.csv")
                 test_fftlog = os.path.join(str(tempdir), "fft.csv")
-                test_fftgraph = os.path.join(str(tempdir), "fft.png")
                 args = FakeArgs(
                     test_log,
                     60,
@@ -157,11 +148,7 @@ class SigFinderTestCase(unittest.TestCase):
                     21,
                     1,
                     "",
-                    test_fftgraph,
                     "127.0.0.1:9999",
-                    10,
-                    1,
-                    1,
                     1,
                     0,
                     str(tempdir),
@@ -208,13 +195,12 @@ class SigFinderTestCase(unittest.TestCase):
                 )
                 process_thread.start()
                 for i in range(10):
-                    if os.path.exists(test_fftlog) and os.path.exists(test_fftgraph):
+                    if os.path.exists(test_fftlog):
                         break
                     time.sleep(1)
                 zmqr.stop()
                 process_thread.join()
                 self.assertTrue(os.path.exists(test_fftlog))
-                self.assertTrue(os.path.exists(test_fftgraph))
 
     def test_fft_proxy(self):
         args = FakeArgs(
@@ -227,11 +213,7 @@ class SigFinderTestCase(unittest.TestCase):
             21,
             1,
             "",
-            "",
             "127.0.0.1:9999",
-            10,
-            1,
-            1,
             1,
             0,
             "",
