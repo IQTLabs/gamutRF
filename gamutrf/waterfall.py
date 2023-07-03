@@ -743,9 +743,11 @@ def waterfall(
                 fig.canvas.restore_region(background)
 
                 top_n_bins = freq_bins[
-                    np.argsort(np.nanvar(state.db_data - np.nanmin(state.db_data, axis=0), axis=0))[
-                        ::-1
-                    ][:top_n]
+                    np.argsort(
+                        np.nanvar(
+                            state.db_data - np.nanmin(state.db_data, axis=0), axis=0
+                        )
+                    )[::-1][:top_n]
                 ]
 
                 for i, ln in enumerate(top_n_lns):
@@ -792,7 +794,9 @@ def waterfall(
                             max_freq,
                             int((max_freq - min_freq) / (config.freq_resolution) + 1),
                         ),
-                        np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
+                        np.linspace(
+                            state.db_min, state.db_max, config.psd_db_resolution
+                        ),
                     )
 
                     psd_x_edges = XX[0]
@@ -803,10 +807,13 @@ def waterfall(
                     )
 
                     # db_norm = db_data
-                    db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
+                    db_norm = (state.db_data - state.db_min) / (
+                        state.db_max - state.db_min
+                    )
                     if config.plot_snr:
                         db_norm = (
-                            (state.db_data - np.nanmin(state.db_data, axis=0)) - config.snr_min
+                            (state.db_data - np.nanmin(state.db_data, axis=0))
+                            - config.snr_min
                         ) / (config.snr_max - config.snr_min)
 
                     # ax_psd.clear()
