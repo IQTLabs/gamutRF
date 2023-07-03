@@ -396,6 +396,7 @@ def reset_fig(
         sm,
         mesh,
         background,
+        top_n_lns,
     )
 
 
@@ -607,7 +608,6 @@ def waterfall(
     counter = 0
     y_ticks = []
     y_labels = []
-    top_n_lns = []
     last_save_time = None
     scan_config_history = {}
     scan_times = []
@@ -683,6 +683,7 @@ def waterfall(
             sm,
             mesh,
             background,
+            top_n_lns,
         ) = reset_fig(
             config,
             state,
