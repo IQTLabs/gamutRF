@@ -394,9 +394,13 @@ def init_fig(
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
     minor_tick_separator = AutoMinorLocator()
-    n_ticks = min(((config.max_freq / config.scale - config.min_freq / config.scale) / 100) * 5, 20)
+    n_ticks = min(
+        ((config.max_freq / config.scale - config.min_freq / config.scale) / 100) * 5,
+        20,
+    )
     major_tick_separator = config.base * round(
-        ((config.max_freq / config.scale - config.min_freq / config.scale) / n_ticks) / config.base
+        ((config.max_freq / config.scale - config.min_freq / config.scale) / n_ticks)
+        / config.base
     )
 
     plt.rcParams["savefig.facecolor"] = "#2A3459"
@@ -412,7 +416,9 @@ def init_fig(
 
     X, Y = np.meshgrid(
         np.linspace(
-            config.min_freq, config.max_freq, int((config.max_freq - config.min_freq) / config.freq_resolution + 1)
+            config.min_freq,
+            config.max_freq,
+            int((config.max_freq - config.min_freq) / config.freq_resolution + 1),
         ),
         np.linspace(1, config.waterfall_height, config.waterfall_height),
     )
@@ -539,7 +545,9 @@ def draw_peaks(
 
 
 class WaterfallConfig:
-    def __init__(self, engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq):
+    def __init__(
+        self, engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq
+    ):
         self.engine = engine
         self.plot_snr = plot_snr
         self.savefig_path = savefig_path
@@ -554,7 +562,6 @@ class WaterfallConfig:
         self.base = 20
         self.min_freq = min_freq / self.scale
         self.max_freq = max_freq / self.scale
-
 
 
 class WaterfallState:
@@ -587,7 +594,9 @@ def waterfall(
     rotate_secs,
     zmqr,
 ):
-    config = WaterfallConfig(engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq)
+    config = WaterfallConfig(
+        engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq
+    )
     state = WaterfallState()
 
     draw_rate = 1
@@ -685,7 +694,8 @@ def waterfall(
 
             for scan_configs, scan_df in results:
                 scan_df = scan_df[
-                    (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
+                    (scan_df.freq >= config.min_freq)
+                    & (scan_df.freq <= config.max_freq)
                 ]
                 if scan_df.empty:
                     logging.info(
@@ -775,7 +785,11 @@ def waterfall(
                         np.linspace(
                             config.min_freq,
                             config.max_freq,
-                            int((config.max_freq - config.min_freq) / (config.freq_resolution) + 1),
+                            int(
+                                (config.max_freq - config.min_freq)
+                                / (config.freq_resolution)
+                                + 1
+                            ),
                         ),
                         np.linspace(
                             state.db_min, state.db_max, config.psd_db_resolution
