@@ -74,8 +74,6 @@ def save_detections(
     state,
     save_path,
     scan_time,
-    min_freq,
-    max_freq,
     scan_configs,
     peaks,
     properties,
@@ -106,8 +104,8 @@ def save_detections(
             json.dump(
                 {
                     "timestamp": scan_time,
-                    "min_freq": min_freq,
-                    "max_freq": max_freq,
+                    "min_freq": config.min_freq,
+                    "max_freq": config.max_freq,
                     "scan_configs": scan_configs,
                 },
                 f,
@@ -146,14 +144,13 @@ def save_waterfall(
     state,
     save_path,
     save_time,
-    last_save_time,
     scan_time,
 ):
     now = datetime.datetime.now()
-    if last_save_time is None:
-        last_save_time = now
+    if state.last_save_time is None:
+        state.last_save_time = now
 
-    if now - last_save_time > datetime.timedelta(minutes=save_time):
+    if now - state.last_save_time > datetime.timedelta(minutes=save_time):
         waterfall_save_dir = Path(save_path, "waterfall")
         if not os.path.exists(waterfall_save_dir):
             os.makedirs(waterfall_save_dir)
@@ -173,10 +170,8 @@ def save_waterfall(
         with open(config_save_path, "w", encoding="utf8") as f:
             json.dump(save_scan_configs, f, indent=4)
 
-        last_save_time = now
+        state.last_save_time = now
         logging.info(f"Saving {waterfall_save_path}")
-
-    return last_save_time
 
 
 def argument_parser():
@@ -237,8 +232,6 @@ def reset_fig(
     config,
     state,
     fig,
-    min_freq,
-    max_freq,
     cmap,
     minor_tick_separator,
     major_tick_separator,
@@ -260,9 +253,9 @@ def reset_fig(
     # PSD
     XX, YY = np.meshgrid(
         np.linspace(
-            min_freq,
-            max_freq,
-            int((max_freq - min_freq) / (config.freq_resolution) + 1),
+            config.min_freq,
+            config.max_freq,
+            int((config.max_freq - config.min_freq) / (config.freq_resolution) + 1),
         ),
         np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
     )
@@ -396,16 +389,14 @@ def reset_fig(
 def init_fig(
     config,
     state,
-    min_freq,
-    max_freq,
 ):
     matplotlib.use(config.engine)
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
     minor_tick_separator = AutoMinorLocator()
-    n_ticks = min(((max_freq / config.scale - min_freq / config.scale) / 100) * 5, 20)
+    n_ticks = min(((config.max_freq / config.scale - config.min_freq / config.scale) / 100) * 5, 20)
     major_tick_separator = config.base * round(
-        ((max_freq / config.scale - min_freq / config.scale) / n_ticks) / config.base
+        ((config.max_freq / config.scale - config.min_freq / config.scale) / n_ticks) / config.base
     )
 
     plt.rcParams["savefig.facecolor"] = "#2A3459"
@@ -421,7 +412,7 @@ def init_fig(
 
     X, Y = np.meshgrid(
         np.linspace(
-            min_freq, max_freq, int((max_freq - min_freq) / config.freq_resolution + 1)
+            config.min_freq, config.max_freq, int((config.max_freq - config.min_freq) / config.freq_resolution + 1)
         ),
         np.linspace(1, config.waterfall_height, config.waterfall_height),
     )
@@ -451,8 +442,6 @@ def draw_peaks(
     peak_finder,
     save_path,
     scan_time,
-    min_freq,
-    max_freq,
     scan_configs,
     psd_x_edges,
     peak_lns,
@@ -467,8 +456,6 @@ def draw_peaks(
             state,
             save_path,
             scan_time,
-            min_freq,
-            max_freq,
             scan_configs,
             peaks,
             properties,
@@ -552,7 +539,7 @@ def draw_peaks(
 
 
 class WaterfallConfig:
-    def __init__(self, engine, plot_snr, savefig_path, sampling_rate, fft_len):
+    def __init__(self, engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq):
         self.engine = engine
         self.plot_snr = plot_snr
         self.savefig_path = savefig_path
@@ -565,6 +552,9 @@ class WaterfallConfig:
         self.psd_db_resolution = 90
         self.y_label_skip = 3
         self.base = 20
+        self.min_freq = min_freq / self.scale
+        self.max_freq = max_freq / self.scale
+
 
 
 class WaterfallState:
@@ -578,6 +568,8 @@ class WaterfallState:
         self.y_ticks = []
         self.y_labels = []
         self.previous_scan_config = None
+        self.last_save_time = None
+        self.counter = 0
 
 
 def waterfall(
@@ -595,18 +587,11 @@ def waterfall(
     rotate_secs,
     zmqr,
 ):
-    config = WaterfallConfig(engine, plot_snr, savefig_path, sampling_rate, fft_len)
+    config = WaterfallConfig(engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq)
     state = WaterfallState()
 
     draw_rate = 1
-
-    counter = 0
-    last_save_time = None
     save_path = base_save_path
-
-    # SCALING
-    min_freq /= config.scale
-    max_freq /= config.scale
 
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
@@ -631,7 +616,7 @@ def waterfall(
         major_tick_separator,
         cmap,
         cmap_psd,
-    ) = init_fig(config, state, min_freq, max_freq)
+    ) = init_fig(config, state)
 
     global need_reset_fig
     need_reset_fig = True
@@ -673,8 +658,6 @@ def waterfall(
             config,
             state,
             fig,
-            min_freq,
-            max_freq,
             cmap,
             minor_tick_separator,
             major_tick_separator,
@@ -702,16 +685,16 @@ def waterfall(
 
             for scan_configs, scan_df in results:
                 scan_df = scan_df[
-                    (scan_df.freq >= min_freq) & (scan_df.freq <= max_freq)
+                    (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
                 ]
                 if scan_df.empty:
                     logging.info(
-                        f"Scan is outside specified frequency range ({min_freq} to {max_freq})."
+                        f"Scan is outside specified frequency range ({config.min_freq} to {config.max_freq})."
                     )
                     continue
 
                 idx = (
-                    round((scan_df.freq - min_freq) / config.freq_resolution)
+                    round((scan_df.freq - config.min_freq) / config.freq_resolution)
                     .values.flatten()
                     .astype(int)
                 )
@@ -764,7 +747,7 @@ def waterfall(
                         # assert len(scan_config_history) <= waterfall_height
                 row_time = datetime.datetime.fromtimestamp(scan_time)
 
-                if counter % config.y_label_skip == 0:
+                if state.counter % config.y_label_skip == 0:
                     state.y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
                 else:
                     state.y_labels.append("")
@@ -780,9 +763,9 @@ def waterfall(
                 if save_path:
                     state.scan_config_history[scan_time] = scan_configs
 
-                counter += 1
+                state.counter += 1
 
-                if counter % draw_rate == 0:
+                if state.counter % draw_rate == 0:
                     draw_rate = 1
 
                     state.db_min = np.nanmin(state.db_data)
@@ -790,9 +773,9 @@ def waterfall(
 
                     XX, YY = np.meshgrid(
                         np.linspace(
-                            min_freq,
-                            max_freq,
-                            int((max_freq - min_freq) / (config.freq_resolution) + 1),
+                            config.min_freq,
+                            config.max_freq,
+                            int((config.max_freq - config.min_freq) / (config.freq_resolution) + 1),
                         ),
                         np.linspace(
                             state.db_min, state.db_max, config.psd_db_resolution
@@ -834,8 +817,6 @@ def waterfall(
                             peak_finder,
                             save_path,
                             scan_time,
-                            min_freq,
-                            max_freq,
                             scan_configs,
                             psd_x_edges,
                             peak_lns,
@@ -880,12 +861,11 @@ def waterfall(
                     logging.info(f"Plotting {row_time}")
 
                     if save_path:
-                        last_save_time = save_waterfall(
+                        save_waterfall(
                             config,
                             state,
                             save_path,
                             save_time,
-                            last_save_time,
                             scan_time,
                         )
 
