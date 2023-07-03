@@ -77,7 +77,6 @@ def save_detections(
     min_freq,
     max_freq,
     scan_configs,
-    previous_scan_config,
     peaks,
     properties,
     psd_x_edges,
@@ -101,8 +100,8 @@ def save_detections(
     if not os.path.exists(detection_save_dir):
         os.makedirs(detection_save_dir)
 
-    if previous_scan_config is None or previous_scan_config != scan_configs:
-        previous_scan_config = scan_configs
+    if state.previous_scan_config is None or state.previous_scan_config != scan_configs:
+        state.previous_scan_config = scan_configs
         with open(detection_config_save_path, "w", encoding="utf8") as f:
             json.dump(
                 {
@@ -140,7 +139,6 @@ def save_detections(
                     detection_type,  # type
                 ]
             )
-    return previous_scan_config
 
 
 def save_waterfall(
@@ -150,8 +148,6 @@ def save_waterfall(
     save_time,
     last_save_time,
     scan_time,
-    scan_times,
-    scan_config_history,
 ):
     now = datetime.datetime.now()
     if last_save_time is None:
@@ -168,10 +164,10 @@ def save_waterfall(
         safe_savefig(waterfall_save_path)
 
         save_scan_configs = {
-            "start_scan_timestamp": scan_times[0],
-            "start_scan_config": scan_config_history[scan_times[0]],
-            "end_scan_timestamp": scan_times[-1],
-            "end_scan_config": scan_config_history[scan_times[-1]],
+            "start_scan_timestamp": state.scan_times[0],
+            "start_scan_config": state.scan_config_history[state.scan_times[0]],
+            "end_scan_timestamp": state.scan_times[-1],
+            "end_scan_config": state.scan_config_history[state.scan_times[-1]],
         }
         config_save_path = str(Path(waterfall_save_dir, f"config_{scan_time}.json"))
         with open(config_save_path, "w", encoding="utf8") as f:
@@ -243,14 +239,11 @@ def reset_fig(
     fig,
     min_freq,
     max_freq,
-    freq_resolution,
     cmap,
-    psd_db_resolution,
     minor_tick_separator,
     major_tick_separator,
     top_n,
     freq_data,
-    db_data,
     X,
     Y,
 ):
@@ -269,9 +262,9 @@ def reset_fig(
         np.linspace(
             min_freq,
             max_freq,
-            int((max_freq - min_freq) / (freq_resolution) + 1),
+            int((max_freq - min_freq) / (config.freq_resolution) + 1),
         ),
-        np.linspace(state.db_min, state.db_max, psd_db_resolution),
+        np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
     )
     psd_x_edges = XX[0]
     psd_y_edges = YY[:, 0]
@@ -330,7 +323,7 @@ def reset_fig(
     ax_psd.set_ylabel("dB")
 
     # SPECTROGRAM
-    mesh = ax.pcolormesh(X, Y, db_data, shading="nearest")
+    mesh = ax.pcolormesh(X, Y, state.db_data, shading="nearest")
     top_n_lns = []
     for _ in range(top_n):
         (ln,) = ax.plot(
@@ -403,19 +396,16 @@ def reset_fig(
 def init_fig(
     config,
     state,
-    base,
-    scale,
     min_freq,
     max_freq,
-    freq_resolution,
 ):
     matplotlib.use(config.engine)
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
     minor_tick_separator = AutoMinorLocator()
-    n_ticks = min(((max_freq / scale - min_freq / scale) / 100) * 5, 20)
-    major_tick_separator = base * round(
-        ((max_freq / scale - min_freq / scale) / n_ticks) / base
+    n_ticks = min(((max_freq / config.scale - min_freq / config.scale) / 100) * 5, 20)
+    major_tick_separator = config.base * round(
+        ((max_freq / config.scale - min_freq / config.scale) / n_ticks) / config.base
     )
 
     plt.rcParams["savefig.facecolor"] = "#2A3459"
@@ -431,14 +421,14 @@ def init_fig(
 
     X, Y = np.meshgrid(
         np.linspace(
-            min_freq, max_freq, int((max_freq - min_freq) / freq_resolution + 1)
+            min_freq, max_freq, int((max_freq - min_freq) / config.freq_resolution + 1)
         ),
         np.linspace(1, config.waterfall_height, config.waterfall_height),
     )
 
     freq_bins = X[0]
-    db_data = np.empty(X.shape)
-    db_data.fill(np.nan)
+    state.db_data = np.empty(X.shape)
+    state.db_data.fill(np.nan)
     freq_data = np.empty(X.shape)
     freq_data.fill(np.nan)
 
@@ -447,7 +437,6 @@ def init_fig(
         X,
         Y,
         freq_bins,
-        db_data,
         freq_data,
         minor_tick_separator,
         major_tick_separator,
@@ -460,7 +449,6 @@ def draw_peaks(
     config,
     state,
     peak_finder,
-    db_data,
     save_path,
     scan_time,
     min_freq,
@@ -469,14 +457,12 @@ def draw_peaks(
     psd_x_edges,
     peak_lns,
     ax_psd,
-    detection_text,
-    previous_scan_config,
 ):
-    peaks, properties = peak_finder.find_peaks(db_data[-1])
+    peaks, properties = peak_finder.find_peaks(state.db_data[-1])
     peaks, properties = filter_peaks(peaks, properties)
 
     if save_path:
-        previous_scan_config = save_detections(
+        save_detections(
             config,
             state,
             save_path,
@@ -484,7 +470,6 @@ def draw_peaks(
             min_freq,
             max_freq,
             scan_configs,
-            previous_scan_config,
             peaks,
             properties,
             psd_x_edges,
@@ -498,16 +483,16 @@ def draw_peaks(
         if isinstance(child, LineCollection):
             child.remove()
 
-    for i in range(len(detection_text) - 1, -1, -1):
-        detection_text[i].set_visible(False)
-        detection_text.pop(i)
+    for i in range(len(state.detection_text) - 1, -1, -1):
+        state.detection_text[i].set_visible(False)
+        state.detection_text.pop(i)
 
     if len(peaks) > 0:
         # if False:
         vl_center = ax_psd.vlines(
             x=psd_x_edges[peaks],
-            ymin=db_data[-1][peaks] - properties["prominences"],
-            ymax=db_data[-1][peaks],
+            ymin=state.db_data[-1][peaks] - properties["prominences"],
+            ymax=state.db_data[-1][peaks],
             color="white",
         )
         ax_psd.draw_artist(vl_center)
@@ -519,14 +504,14 @@ def draw_peaks(
                 )
             ),
             ymin=state.db_min,
-            ymax=np.tile(db_data[-1][peaks], 2),
+            ymax=np.tile(state.db_data[-1][peaks], 2),
             color="white",
         )
         ax_psd.draw_artist(vl_edges)
         for l_ips, r_ips, p in zip(
             psd_x_edges[properties["left_ips"].astype(int)],
             psd_x_edges[properties["right_ips"].astype(int)],
-            db_data[-1][peaks],
+            state.db_data[-1][peaks],
         ):
             shaded = ax_psd.fill_between([l_ips, r_ips], state.db_min, p, alpha=0.7)
             ax_psd.draw_artist(shaded)
@@ -562,13 +547,12 @@ def draw_peaks(
                     rotation=40,
                 ),
             ):
-                detection_text.append(txt)
+                state.detection_text.append(txt)
                 ax_psd.draw_artist(txt)
-    return previous_scan_config
 
 
 class WaterfallConfig:
-    def __init__(self, engine, plot_snr, savefig_path):
+    def __init__(self, engine, plot_snr, savefig_path, sampling_rate, fft_len):
         self.engine = engine
         self.plot_snr = plot_snr
         self.savefig_path = savefig_path
@@ -576,12 +560,24 @@ class WaterfallConfig:
         self.snr_max = 50
         self.waterfall_height = 100  # number of waterfall rows
         self.marker_distance = 0.1
+        self.scale = 1e6
+        self.freq_resolution = sampling_rate / fft_len / self.scale
+        self.psd_db_resolution = 90
+        self.y_label_skip = 3
+        self.base = 20
 
 
 class WaterfallState:
     def __init__(self):
         self.db_min = -220
         self.db_max = -150
+        self.db_data = None
+        self.detection_text = []
+        self.scan_times = []
+        self.scan_config_history = {}
+        self.y_ticks = []
+        self.y_labels = []
+        self.previous_scan_config = None
 
 
 def waterfall(
@@ -599,32 +595,18 @@ def waterfall(
     rotate_secs,
     zmqr,
 ):
-    config = WaterfallConfig(engine, plot_snr, savefig_path)
+    config = WaterfallConfig(engine, plot_snr, savefig_path, sampling_rate, fft_len)
     state = WaterfallState()
 
-    # OTHER PARAMETERS
-    scale = 1e6
-
-    freq_resolution = sampling_rate / fft_len
     draw_rate = 1
-    y_label_skip = 3
-    psd_db_resolution = 90
-    base = 20
 
     counter = 0
-    y_ticks = []
-    y_labels = []
     last_save_time = None
-    scan_config_history = {}
-    scan_times = []
-    detection_text = []
-    previous_scan_config = None
     save_path = base_save_path
 
     # SCALING
-    min_freq /= scale
-    max_freq /= scale
-    freq_resolution /= scale
+    min_freq /= config.scale
+    max_freq /= config.scale
 
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
@@ -644,13 +626,12 @@ def waterfall(
         X,
         Y,
         freq_bins,
-        db_data,
         freq_data,
         minor_tick_separator,
         major_tick_separator,
         cmap,
         cmap_psd,
-    ) = init_fig(config, state, base, scale, min_freq, max_freq, freq_resolution)
+    ) = init_fig(config, state, min_freq, max_freq)
 
     global need_reset_fig
     need_reset_fig = True
@@ -694,14 +675,11 @@ def waterfall(
             fig,
             min_freq,
             max_freq,
-            freq_resolution,
             cmap,
-            psd_db_resolution,
             minor_tick_separator,
             major_tick_separator,
             top_n,
             freq_data,
-            db_data,
             X,
             Y,
         )
@@ -733,7 +711,7 @@ def waterfall(
                     continue
 
                 idx = (
-                    round((scan_df.freq - min_freq) / freq_resolution)
+                    round((scan_df.freq - min_freq) / config.freq_resolution)
                     .values.flatten()
                     .astype(int)
                 )
@@ -741,19 +719,19 @@ def waterfall(
                 freq_data = np.roll(freq_data, -1, axis=0)
                 freq_data[-1, :] = np.nan
                 freq_data[-1][idx] = (
-                    round(scan_df.freq / freq_resolution).values.flatten()
-                    * freq_resolution
+                    round(scan_df.freq / config.freq_resolution).values.flatten()
+                    * config.freq_resolution
                 )
 
                 db = scan_df.db.values.flatten()
 
-                db_data = np.roll(db_data, -1, axis=0)
-                db_data[-1, :] = np.nan
-                db_data[-1][idx] = db
+                state.db_data = np.roll(state.db_data, -1, axis=0)
+                state.db_data[-1, :] = np.nan
+                state.db_data[-1][idx] = db
 
                 data, _xedge, _yedge = np.histogram2d(
                     freq_data[~np.isnan(freq_data)].flatten(),
-                    db_data[~np.isnan(db_data)].flatten(),
+                    state.db_data[~np.isnan(state.db_data)].flatten(),
                     density=False,
                     bins=[psd_x_edges, psd_y_edges],
                 )
@@ -765,7 +743,7 @@ def waterfall(
                 fig.canvas.restore_region(background)
 
                 top_n_bins = freq_bins[
-                    np.argsort(np.nanvar(db_data - np.nanmin(db_data, axis=0), axis=0))[
+                    np.argsort(np.nanvar(state.db_data - np.nanmin(state.db_data, axis=0), axis=0))[
                         ::-1
                     ][:top_n]
                 ]
@@ -776,45 +754,45 @@ def waterfall(
                 fig.canvas.blit(ax.yaxis.axes.figure.bbox)
 
                 scan_time = scan_df.ts.iloc[-1]
-                scan_times.append(scan_time)
-                if len(scan_times) > config.waterfall_height:
-                    remove_time = scan_times.pop(0)
+                state.scan_times.append(scan_time)
+                if len(state.scan_times) > config.waterfall_height:
+                    remove_time = state.scan_times.pop(0)
                     if save_path:
-                        scan_config_history.pop(remove_time)
+                        state.scan_config_history.pop(remove_time)
                         # assert len(scan_config_history) <= waterfall_height
                 row_time = datetime.datetime.fromtimestamp(scan_time)
 
-                if counter % y_label_skip == 0:
-                    y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
+                if counter % config.y_label_skip == 0:
+                    state.y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
                 else:
-                    y_labels.append("")
-                y_ticks.append(config.waterfall_height)
-                for j in range(len(y_ticks) - 2, -1, -1):
-                    y_ticks[j] -= 1
-                    if y_ticks[j] < 1:
-                        y_ticks.pop(j)
-                        y_labels.pop(j)
+                    state.y_labels.append("")
+                state.y_ticks.append(config.waterfall_height)
+                for j in range(len(state.y_ticks) - 2, -1, -1):
+                    state.y_ticks[j] -= 1
+                    if state.y_ticks[j] < 1:
+                        state.y_ticks.pop(j)
+                        state.y_labels.pop(j)
 
-                ax.set_yticks(y_ticks, labels=y_labels)
+                ax.set_yticks(state.y_ticks, labels=state.y_labels)
 
                 if save_path:
-                    scan_config_history[scan_time] = scan_configs
+                    state.scan_config_history[scan_time] = scan_configs
 
                 counter += 1
 
                 if counter % draw_rate == 0:
                     draw_rate = 1
 
-                    state.db_min = np.nanmin(db_data)
-                    state.db_max = np.nanmax(db_data)
+                    state.db_min = np.nanmin(state.db_data)
+                    state.db_max = np.nanmax(state.db_data)
 
                     XX, YY = np.meshgrid(
                         np.linspace(
                             min_freq,
                             max_freq,
-                            int((max_freq - min_freq) / (freq_resolution) + 1),
+                            int((max_freq - min_freq) / (config.freq_resolution) + 1),
                         ),
-                        np.linspace(state.db_min, state.db_max, psd_db_resolution),
+                        np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
                     )
 
                     psd_x_edges = XX[0]
@@ -825,29 +803,28 @@ def waterfall(
                     )
 
                     # db_norm = db_data
-                    db_norm = (db_data - state.db_min) / (state.db_max - state.db_min)
+                    db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
                     if config.plot_snr:
                         db_norm = (
-                            (db_data - np.nanmin(db_data, axis=0)) - config.snr_min
+                            (state.db_data - np.nanmin(state.db_data, axis=0)) - config.snr_min
                         ) / (config.snr_max - config.snr_min)
 
                     # ax_psd.clear()
 
                     ax_psd.set_ylim(state.db_min, state.db_max)
                     mesh_psd.set_array(cmap_psd(data.T))
-                    current_psd_ln.set_ydata(db_data[-1])
+                    current_psd_ln.set_ydata(state.db_data[-1])
 
-                    min_psd_ln.set_ydata(np.nanmin(db_data, axis=0))
-                    max_psd_ln.set_ydata(np.nanmax(db_data, axis=0))
-                    mean_psd_ln.set_ydata(np.nanmean(db_data, axis=0))
+                    min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
+                    max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
+                    mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
                     ax_psd.draw_artist(mesh_psd)
 
                     if peak_finder:
-                        previous_scan_config = draw_peaks(
+                        draw_peaks(
                             config,
                             state,
                             peak_finder,
-                            db_data,
                             save_path,
                             scan_time,
                             min_freq,
@@ -856,8 +833,6 @@ def waterfall(
                             psd_x_edges,
                             peak_lns,
                             ax_psd,
-                            detection_text,
-                            previous_scan_config,
                         )
 
                     for ln in (
@@ -905,8 +880,6 @@ def waterfall(
                             save_time,
                             last_save_time,
                             scan_time,
-                            scan_times,
-                            scan_config_history,
                         )
 
     zmqr.stop()
