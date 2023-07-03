@@ -401,7 +401,13 @@ def reset_fig(
 
 
 def init_fig(
-    config, state, base, scale, min_freq, max_freq, freq_resolution,
+    config,
+    state,
+    base,
+    scale,
+    min_freq,
+    max_freq,
+    freq_resolution,
 ):
     matplotlib.use(config.engine)
     cmap = plt.get_cmap("viridis")
@@ -644,9 +650,7 @@ def waterfall(
         major_tick_separator,
         cmap,
         cmap_psd,
-    ) = init_fig(
-        config, state, base, scale, min_freq, max_freq, freq_resolution 
-    )
+    ) = init_fig(config, state, base, scale, min_freq, max_freq, freq_resolution)
 
     global need_reset_fig
     need_reset_fig = True
@@ -823,9 +827,9 @@ def waterfall(
                     # db_norm = db_data
                     db_norm = (db_data - state.db_min) / (state.db_max - state.db_min)
                     if config.plot_snr:
-                        db_norm = ((db_data - np.nanmin(db_data, axis=0)) - config.snr_min) / (
-                            config.snr_max - config.snr_min
-                        )
+                        db_norm = (
+                            (db_data - np.nanmin(db_data, axis=0)) - config.snr_min
+                        ) / (config.snr_max - config.snr_min)
 
                     # ax_psd.clear()
 
