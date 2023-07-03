@@ -42,8 +42,10 @@ def draw_waterfall(mesh, ax, data, cmap):
     ax.draw_artist(mesh)
 
 
-def draw_title(ax, title, title_text):
-    title_text["Time"] = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+def draw_title(ax, title):
+    title_text = {
+        "Time": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+    }
     title.set_text(str(title_text))
     ax.draw_artist(title)
 
@@ -532,28 +534,28 @@ def draw_peaks(
             psd_x_edges[properties["right_ips"].astype(int)],
             peaks,
         ):
-            txt = ax_psd.text(
-                l_ips + ((r_ips - l_ips) / 2),
-                (0.15 * (db_max - db_min)) + db_min,
-                f"f={l_ips + ((r_ips - l_ips)/2):.0f}MHz",
-                size=10,
-                ha="center",
-                color="white",
-                rotation=40,
-            )
-            detection_text.append(txt)
-            ax_psd.draw_artist(txt)
-            txt = ax_psd.text(
-                l_ips + ((r_ips - l_ips) / 2),
-                (0.05 * (db_max - db_min)) + db_min,
-                f"BW={r_ips - l_ips:.0f}MHz",
-                size=10,
-                ha="center",
-                color="white",
-                rotation=40,
-            )
-            detection_text.append(txt)
-            ax_psd.draw_artist(txt)
+            for txt in (
+                ax_psd.text(
+                    l_ips + ((r_ips - l_ips) / 2),
+                    (0.15 * (db_max - db_min)) + db_min,
+                    f"f={l_ips + ((r_ips - l_ips)/2):.0f}MHz",
+                    size=10,
+                    ha="center",
+                    color="white",
+                    rotation=40,
+                ),
+                ax_psd.text(
+                    l_ips + ((r_ips - l_ips) / 2),
+                    (0.05 * (db_max - db_min)) + db_min,
+                    f"BW={r_ips - l_ips:.0f}MHz",
+                    size=10,
+                    ha="center",
+                    color="white",
+                    rotation=40,
+                ),
+            ):
+                detection_text.append(txt)
+                ax_psd.draw_artist(txt)
     return previous_scan_config
 
 
@@ -597,8 +599,6 @@ def waterfall(
     previous_scan_config = None
     save_path = base_save_path
     marker_distance = 0.1  # len(freq_bins)/100
-
-    title_text = {}
 
     # SCALING
     min_freq /= scale
@@ -845,14 +845,17 @@ def waterfall(
                             previous_scan_config,
                         )
 
-                    ax_psd.draw_artist(peak_lns)
-                    ax_psd.draw_artist(min_psd_ln)
-                    ax_psd.draw_artist(max_psd_ln)
-                    ax_psd.draw_artist(mean_psd_ln)
-                    ax_psd.draw_artist(current_psd_ln)
+                    for ln in (
+                        peak_lns,
+                        min_psd_ln,
+                        max_psd_ln,
+                        mean_psd_ln,
+                        current_psd_ln,
+                    ):
+                        ax_psd.draw_artist(ln)
 
                     draw_waterfall(mesh, ax, db_norm, cmap)
-                    draw_title(ax_psd, psd_title, title_text)
+                    draw_title(ax_psd, psd_title)
 
                     sm.set_clim(vmin=db_min, vmax=db_max)
                     cbar.update_normal(sm)
@@ -865,11 +868,14 @@ def waterfall(
                         ax.draw_artist(ln)
 
                     ax.draw_artist(ax.yaxis)
-                    fig.canvas.blit(ax_psd.bbox)
-                    fig.canvas.blit(ax.yaxis.axes.figure.bbox)
-                    fig.canvas.blit(ax.bbox)
-                    fig.canvas.blit(cbar_ax.bbox)
-                    fig.canvas.blit(fig.bbox)
+                    for bmap in (
+                        ax_psd.bbox,
+                        ax.yaxis.axes.figure.bbox,
+                        ax.bbox,
+                        cbar_ax.bbox,
+                        fig.bbox,
+                    ):
+                        fig.canvas.blit(bmap)
                     fig.canvas.flush_events()
                     if savefig_path:
                         safe_savefig(savefig_path)
