@@ -70,6 +70,8 @@ def filter_peaks(peaks, properties):
 
 
 def save_detections(
+    config,
+    state,
     save_path,
     scan_time,
     min_freq,
@@ -142,6 +144,8 @@ def save_detections(
 
 
 def save_waterfall(
+    config,
+    state,
     save_path,
     save_time,
     last_save_time,
@@ -234,21 +238,16 @@ def argument_parser():
 
 
 def reset_fig(
-    savefig_path,
+    config,
+    state,
     fig,
     min_freq,
     max_freq,
     freq_resolution,
     cmap,
-    db_min,
-    db_max,
     psd_db_resolution,
-    snr_min,
-    snr_max,
-    plot_snr,
     minor_tick_separator,
     major_tick_separator,
-    marker_distance,
     top_n,
     freq_data,
     db_data,
@@ -272,7 +271,7 @@ def reset_fig(
             max_freq,
             int((max_freq - min_freq) / (freq_resolution) + 1),
         ),
-        np.linspace(db_min, db_max, psd_db_resolution),
+        np.linspace(state.db_min, state.db_max, psd_db_resolution),
     )
     psd_x_edges = XX[0]
     psd_y_edges = YY[:, 0]
@@ -280,7 +279,7 @@ def reset_fig(
     _mesh_psd = ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
     (peak_lns,) = ax_psd.plot(
         X[0],
-        db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(freq_data.shape[1]),
         color="white",
         marker="^",
         markersize=12,
@@ -289,42 +288,42 @@ def reset_fig(
     )
     (max_psd_ln,) = ax_psd.plot(
         X[0],
-        db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(freq_data.shape[1]),
         color="red",
         marker=",",
         linestyle=":",
-        markevery=marker_distance,
+        markevery=config.marker_distance,
         label="max",
     )
     (min_psd_ln,) = ax_psd.plot(
         X[0],
-        db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(freq_data.shape[1]),
         color="pink",
         marker=",",
         linestyle=":",
-        markevery=marker_distance,
+        markevery=config.marker_distance,
         label="min",
     )
     (mean_psd_ln,) = ax_psd.plot(
         X[0],
-        db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(freq_data.shape[1]),
         color="cyan",
         marker="^",
         markersize=8,
         fillstyle="none",
         linestyle=":",
-        markevery=marker_distance,
+        markevery=config.marker_distance,
         label="mean",
     )
     (current_psd_ln,) = ax_psd.plot(
         X[0],
-        db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(freq_data.shape[1]),
         color="red",
         marker="o",
         markersize=8,
         fillstyle="none",
         linestyle=":",
-        markevery=marker_distance,
+        markevery=config.marker_distance,
         label="current",
     )
     ax_psd.legend(loc="center left", bbox_to_anchor=(1, 0.5))
@@ -348,10 +347,10 @@ def reset_fig(
 
     # COLORBAR
     sm = plt.cm.ScalarMappable(cmap=cmap)
-    sm.set_clim(vmin=db_min, vmax=db_max)
+    sm.set_clim(vmin=state.db_min, vmax=state.db_max)
 
-    if plot_snr:
-        sm.set_clim(vmin=snr_min, vmax=snr_max)
+    if config.plot_snr:
+        sm.set_clim(vmin=config.snr_min, vmax=config.snr_max)
     cbar_ax = fig.add_axes([0.92, 0.10, 0.03, 0.5])
     cbar = fig.colorbar(sm, cax=cbar_ax)
     cbar.set_label("dB", rotation=0)
@@ -376,8 +375,8 @@ def reset_fig(
 
     ax.draw_artist(mesh)
     fig.canvas.blit(ax.bbox)
-    if savefig_path:
-        safe_savefig(savefig_path)
+    if config.savefig_path:
+        safe_savefig(config.savefig_path)
 
     for ln in top_n_lns:
         ln.set_alpha(0.75)
@@ -397,13 +396,20 @@ def reset_fig(
         sm,
         mesh,
         background,
+        top_n_lns,
     )
 
 
 def init_fig(
-    engine, base, scale, min_freq, max_freq, freq_resolution, waterfall_height
+    config,
+    state,
+    base,
+    scale,
+    min_freq,
+    max_freq,
+    freq_resolution,
 ):
-    matplotlib.use(engine)
+    matplotlib.use(config.engine)
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
     minor_tick_separator = AutoMinorLocator()
@@ -427,7 +433,7 @@ def init_fig(
         np.linspace(
             min_freq, max_freq, int((max_freq - min_freq) / freq_resolution + 1)
         ),
-        np.linspace(1, waterfall_height, waterfall_height),
+        np.linspace(1, config.waterfall_height, config.waterfall_height),
     )
 
     freq_bins = X[0]
@@ -451,6 +457,8 @@ def init_fig(
 
 
 def draw_peaks(
+    config,
+    state,
     peak_finder,
     db_data,
     save_path,
@@ -462,8 +470,6 @@ def draw_peaks(
     peak_lns,
     ax_psd,
     detection_text,
-    db_min,
-    db_max,
     previous_scan_config,
 ):
     peaks, properties = peak_finder.find_peaks(db_data[-1])
@@ -471,6 +477,8 @@ def draw_peaks(
 
     if save_path:
         previous_scan_config = save_detections(
+            config,
+            state,
             save_path,
             scan_time,
             min_freq,
@@ -510,7 +518,7 @@ def draw_peaks(
                     psd_x_edges[properties["right_ips"].astype(int)],
                 )
             ),
-            ymin=db_min,
+            ymin=state.db_min,
             ymax=np.tile(db_data[-1][peaks], 2),
             color="white",
         )
@@ -520,7 +528,7 @@ def draw_peaks(
             psd_x_edges[properties["right_ips"].astype(int)],
             db_data[-1][peaks],
         ):
-            shaded = ax_psd.fill_between([l_ips, r_ips], db_min, p, alpha=0.7)
+            shaded = ax_psd.fill_between([l_ips, r_ips], state.db_min, p, alpha=0.7)
             ax_psd.draw_artist(shaded)
         hl = ax_psd.hlines(
             y=properties["width_heights"],
@@ -537,7 +545,7 @@ def draw_peaks(
             for txt in (
                 ax_psd.text(
                     l_ips + ((r_ips - l_ips) / 2),
-                    (0.15 * (db_max - db_min)) + db_min,
+                    (0.15 * (state.db_max - state.db_min)) + state.db_min,
                     f"f={l_ips + ((r_ips - l_ips)/2):.0f}MHz",
                     size=10,
                     ha="center",
@@ -546,7 +554,7 @@ def draw_peaks(
                 ),
                 ax_psd.text(
                     l_ips + ((r_ips - l_ips) / 2),
-                    (0.05 * (db_max - db_min)) + db_min,
+                    (0.05 * (state.db_max - state.db_min)) + state.db_min,
                     f"BW={r_ips - l_ips:.0f}MHz",
                     size=10,
                     ha="center",
@@ -557,6 +565,23 @@ def draw_peaks(
                 detection_text.append(txt)
                 ax_psd.draw_artist(txt)
     return previous_scan_config
+
+
+class WaterfallConfig:
+    def __init__(self, engine, plot_snr, savefig_path):
+        self.engine = engine
+        self.plot_snr = plot_snr
+        self.savefig_path = savefig_path
+        self.snr_min = 0
+        self.snr_max = 50
+        self.waterfall_height = 100  # number of waterfall rows
+        self.marker_distance = 0.1
+
+
+class WaterfallState:
+    def __init__(self):
+        self.db_min = -220
+        self.db_max = -150
 
 
 def waterfall(
@@ -574,12 +599,10 @@ def waterfall(
     rotate_secs,
     zmqr,
 ):
+    config = WaterfallConfig(engine, plot_snr, savefig_path)
+    state = WaterfallState()
+
     # OTHER PARAMETERS
-    db_min = -220
-    db_max = -150
-    snr_min = 0
-    snr_max = 50
-    waterfall_height = 100  # number of waterfall rows
     scale = 1e6
 
     freq_resolution = sampling_rate / fft_len
@@ -591,14 +614,12 @@ def waterfall(
     counter = 0
     y_ticks = []
     y_labels = []
-    top_n_lns = []
     last_save_time = None
     scan_config_history = {}
     scan_times = []
     detection_text = []
     previous_scan_config = None
     save_path = base_save_path
-    marker_distance = 0.1  # len(freq_bins)/100
 
     # SCALING
     min_freq /= scale
@@ -629,9 +650,7 @@ def waterfall(
         major_tick_separator,
         cmap,
         cmap_psd,
-    ) = init_fig(
-        engine, base, scale, min_freq, max_freq, freq_resolution, waterfall_height
-    )
+    ) = init_fig(config, state, base, scale, min_freq, max_freq, freq_resolution)
 
     global need_reset_fig
     need_reset_fig = True
@@ -668,22 +687,18 @@ def waterfall(
             sm,
             mesh,
             background,
+            top_n_lns,
         ) = reset_fig(
-            savefig_path,
+            config,
+            state,
             fig,
             min_freq,
             max_freq,
             freq_resolution,
             cmap,
-            db_min,
-            db_max,
             psd_db_resolution,
-            snr_min,
-            snr_max,
-            plot_snr,
             minor_tick_separator,
             major_tick_separator,
-            marker_distance,
             top_n,
             freq_data,
             db_data,
@@ -762,7 +777,7 @@ def waterfall(
 
                 scan_time = scan_df.ts.iloc[-1]
                 scan_times.append(scan_time)
-                if len(scan_times) > waterfall_height:
+                if len(scan_times) > config.waterfall_height:
                     remove_time = scan_times.pop(0)
                     if save_path:
                         scan_config_history.pop(remove_time)
@@ -773,7 +788,7 @@ def waterfall(
                     y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
                 else:
                     y_labels.append("")
-                y_ticks.append(waterfall_height)
+                y_ticks.append(config.waterfall_height)
                 for j in range(len(y_ticks) - 2, -1, -1):
                     y_ticks[j] -= 1
                     if y_ticks[j] < 1:
@@ -790,8 +805,8 @@ def waterfall(
                 if counter % draw_rate == 0:
                     draw_rate = 1
 
-                    db_min = np.nanmin(db_data)
-                    db_max = np.nanmax(db_data)
+                    state.db_min = np.nanmin(db_data)
+                    state.db_max = np.nanmax(db_data)
 
                     XX, YY = np.meshgrid(
                         np.linspace(
@@ -799,7 +814,7 @@ def waterfall(
                             max_freq,
                             int((max_freq - min_freq) / (freq_resolution) + 1),
                         ),
-                        np.linspace(db_min, db_max, psd_db_resolution),
+                        np.linspace(state.db_min, state.db_max, psd_db_resolution),
                     )
 
                     psd_x_edges = XX[0]
@@ -810,15 +825,15 @@ def waterfall(
                     )
 
                     # db_norm = db_data
-                    db_norm = (db_data - db_min) / (db_max - db_min)
-                    if plot_snr:
-                        db_norm = ((db_data - np.nanmin(db_data, axis=0)) - snr_min) / (
-                            snr_max - snr_min
-                        )
+                    db_norm = (db_data - state.db_min) / (state.db_max - state.db_min)
+                    if config.plot_snr:
+                        db_norm = (
+                            (db_data - np.nanmin(db_data, axis=0)) - config.snr_min
+                        ) / (config.snr_max - config.snr_min)
 
                     # ax_psd.clear()
 
-                    ax_psd.set_ylim(db_min, db_max)
+                    ax_psd.set_ylim(state.db_min, state.db_max)
                     mesh_psd.set_array(cmap_psd(data.T))
                     current_psd_ln.set_ydata(db_data[-1])
 
@@ -829,6 +844,8 @@ def waterfall(
 
                     if peak_finder:
                         previous_scan_config = draw_peaks(
+                            config,
+                            state,
                             peak_finder,
                             db_data,
                             save_path,
@@ -840,8 +857,6 @@ def waterfall(
                             peak_lns,
                             ax_psd,
                             detection_text,
-                            db_min,
-                            db_max,
                             previous_scan_config,
                         )
 
@@ -857,7 +872,7 @@ def waterfall(
                     draw_waterfall(mesh, ax, db_norm, cmap)
                     draw_title(ax_psd, psd_title)
 
-                    sm.set_clim(vmin=db_min, vmax=db_max)
+                    sm.set_clim(vmin=state.db_min, vmax=state.db_max)
                     cbar.update_normal(sm)
                     # cbar.draw_all()
                     cbar_ax.draw_artist(cbar_ax.yaxis)
@@ -877,13 +892,15 @@ def waterfall(
                     ):
                         fig.canvas.blit(bmap)
                     fig.canvas.flush_events()
-                    if savefig_path:
-                        safe_savefig(savefig_path)
+                    if config.savefig_path:
+                        safe_savefig(config.savefig_path)
 
                     logging.info(f"Plotting {row_time}")
 
                     if save_path:
                         last_save_time = save_waterfall(
+                            config,
+                            state,
                             save_path,
                             save_time,
                             last_save_time,
