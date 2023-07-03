@@ -448,6 +448,115 @@ def init_fig(
     )
 
 
+def draw_peaks(
+    peak_finder,
+    db_data,
+    save_path,
+    scan_time,
+    min_freq,
+    max_freq,
+    scan_configs,
+    psd_x_edges,
+    peak_lns,
+    ax_psd,
+    detection_text,
+    db_min,
+    db_max,
+    previous_scan_config,
+):
+    peaks, properties = peak_finder.find_peaks(db_data[-1])
+    peaks, properties = filter_peaks(peaks, properties)
+
+    if save_path:
+        previous_scan_config = save_detections(
+            save_path,
+            scan_time,
+            min_freq,
+            max_freq,
+            scan_configs,
+            previous_scan_config,
+            peaks,
+            properties,
+            psd_x_edges,
+            peak_finder.name,
+        )
+
+    peak_lns.set_xdata(psd_x_edges[peaks])
+    peak_lns.set_ydata(properties["width_heights"])
+
+    for child in ax_psd.get_children():
+        if isinstance(child, LineCollection):
+            child.remove()
+
+    for i in range(len(detection_text) - 1, -1, -1):
+        detection_text[i].set_visible(False)
+        detection_text.pop(i)
+
+    if len(peaks) > 0:
+        # if False:
+        vl_center = ax_psd.vlines(
+            x=psd_x_edges[peaks],
+            ymin=db_data[-1][peaks] - properties["prominences"],
+            ymax=db_data[-1][peaks],
+            color="white",
+        )
+        ax_psd.draw_artist(vl_center)
+        vl_edges = ax_psd.vlines(
+            x=np.concatenate(
+                (
+                    psd_x_edges[properties["left_ips"].astype(int)],
+                    psd_x_edges[properties["right_ips"].astype(int)],
+                )
+            ),
+            ymin=db_min,
+            ymax=np.tile(db_data[-1][peaks], 2),
+            color="white",
+        )
+        ax_psd.draw_artist(vl_edges)
+        for l_ips, r_ips, p in zip(
+            psd_x_edges[properties["left_ips"].astype(int)],
+            psd_x_edges[properties["right_ips"].astype(int)],
+            db_data[-1][peaks],
+        ):
+            shaded = ax_psd.fill_between([l_ips, r_ips], db_min, p, alpha=0.7)
+            ax_psd.draw_artist(shaded)
+        hl = ax_psd.hlines(
+            y=properties["width_heights"],
+            xmin=psd_x_edges[properties["left_ips"].astype(int)],
+            xmax=psd_x_edges[properties["right_ips"].astype(int)],
+            color="white",
+        )
+        ax_psd.draw_artist(hl)
+        for l_ips, r_ips, p in zip(
+            psd_x_edges[properties["left_ips"].astype(int)],
+            psd_x_edges[properties["right_ips"].astype(int)],
+            peaks,
+        ):
+            txt = ax_psd.text(
+                l_ips + ((r_ips - l_ips) / 2),
+                (0.15 * (db_max - db_min)) + db_min,
+                f"f={l_ips + ((r_ips - l_ips)/2):.0f}MHz",
+                size=10,
+                ha="center",
+                color="white",
+                rotation=40,
+            )
+            detection_text.append(txt)
+            ax_psd.draw_artist(txt)
+            txt = ax_psd.text(
+                l_ips + ((r_ips - l_ips) / 2),
+                (0.05 * (db_max - db_min)) + db_min,
+                f"BW={r_ips - l_ips:.0f}MHz",
+                size=10,
+                ha="center",
+                color="white",
+                rotation=40,
+            )
+            detection_text.append(txt)
+            ax_psd.draw_artist(txt)
+    return previous_scan_config
+
+
 def waterfall(
     min_freq,
     max_freq,
@@ -719,100 +828,22 @@ def waterfall(
                     ax_psd.draw_artist(mesh_psd)
 
                     if peak_finder:
-                        peaks, properties = peak_finder.find_peaks(db_data[-1])
-                        peaks, properties = filter_peaks(peaks, properties)
-
-                        if save_path:
-                            previous_scan_config = save_detections(
-                                save_path,
-                                scan_time,
-                                min_freq,
-                                max_freq,
-                                scan_configs,
-                                previous_scan_config,
-                                peaks,
-                                properties,
-                                psd_x_edges,
-                                peak_finder.name,
-                            )
-
-                        peak_lns.set_xdata(psd_x_edges[peaks])
-                        peak_lns.set_ydata(properties["width_heights"])
-
-                        for child in ax_psd.get_children():
-                            if isinstance(child, LineCollection):
-                                child.remove()
-
-                        for i in range(len(detection_text) - 1, -1, -1):
-                            detection_text[i].set_visible(False)
-                            detection_text.pop(i)
-
-                        if len(peaks) > 0:
-                            # if False:
-                            vl_center = ax_psd.vlines(
-                                x=psd_x_edges[peaks],
-                                ymin=db_data[-1][peaks] - properties["prominences"],
-                                ymax=db_data[-1][peaks],
-                                color="white",
-                            )
-                            ax_psd.draw_artist(vl_center)
-                            vl_edges = ax_psd.vlines(
-                                x=np.concatenate(
-                                    (
-                                        psd_x_edges[properties["left_ips"].astype(int)],
-                                        psd_x_edges[
-                                            properties["right_ips"].astype(int)
-                                        ],
-                                    )
-                                ),
-                                ymin=db_min,
-                                ymax=np.tile(db_data[-1][peaks], 2),
-                                color="white",
-                            )
-                            ax_psd.draw_artist(vl_edges)
-                            for l_ips, r_ips, p in zip(
-                                psd_x_edges[properties["left_ips"].astype(int)],
-                                psd_x_edges[properties["right_ips"].astype(int)],
-                                db_data[-1][peaks],
-                            ):
-                                shaded = ax_psd.fill_between(
-                                    [l_ips, r_ips], db_min, p, alpha=0.7
-                                )
-                                ax_psd.draw_artist(shaded)
-                            hl = ax_psd.hlines(
-                                y=properties["width_heights"],
-                                xmin=psd_x_edges[properties["left_ips"].astype(int)],
-                                xmax=psd_x_edges[properties["right_ips"].astype(int)],
-                                color="white",
-                            )
-                            ax_psd.draw_artist(hl)
-                            for l_ips, r_ips, p in zip(
-                                psd_x_edges[properties["left_ips"].astype(int)],
-                                psd_x_edges[properties["right_ips"].astype(int)],
-                                peaks,
-                            ):
-                                txt = ax_psd.text(
-                                    l_ips + ((r_ips - l_ips) / 2),
-                                    (0.15 * (db_max - db_min)) + db_min,
-                                    f"f={l_ips + ((r_ips - l_ips)/2):.0f}MHz",
-                                    size=10,
-                                    ha="center",
-                                    color="white",
-                                    rotation=40,
-                                )
-                                detection_text.append(txt)
-                                ax_psd.draw_artist(txt)
-                                txt = ax_psd.text(
-                                    l_ips + ((r_ips - l_ips) / 2),
-                                    (0.05 * (db_max - db_min)) + db_min,
-                                    f"BW={r_ips - l_ips:.0f}MHz",
-                                    size=10,
-                                    ha="center",
-                                    color="white",
-                                    rotation=40,
-                                )
-                                detection_text.append(txt)
-                                ax_psd.draw_artist(txt)
+                        previous_scan_config = draw_peaks(
+                            peak_finder,
+                            db_data,
+                            save_path,
+                            scan_time,
+                            min_freq,
+                            max_freq,
+                            scan_configs,
+                            psd_x_edges,
+                            peak_lns,
+                            ax_psd,
+                            detection_text,
+                            db_min,
+                            db_max,
+                            previous_scan_config,
+                        )
 
                     ax_psd.draw_artist(peak_lns)
                     ax_psd.draw_artist(min_psd_ln)
