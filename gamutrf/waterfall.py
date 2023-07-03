@@ -70,6 +70,8 @@ def filter_peaks(peaks, properties):
 
 
 def save_detections(
+    config,
+    state,
     save_path,
     scan_time,
     min_freq,
@@ -142,6 +144,8 @@ def save_detections(
 
 
 def save_waterfall(
+    config,
+    state,
     save_path,
     save_time,
     last_save_time,
@@ -234,6 +238,8 @@ def argument_parser():
 
 
 def reset_fig(
+    config,
+    state,
     savefig_path,
     fig,
     min_freq,
@@ -243,12 +249,8 @@ def reset_fig(
     db_min,
     db_max,
     psd_db_resolution,
-    snr_min,
-    snr_max,
-    plot_snr,
     minor_tick_separator,
     major_tick_separator,
-    marker_distance,
     top_n,
     freq_data,
     db_data,
@@ -293,7 +295,7 @@ def reset_fig(
         color="red",
         marker=",",
         linestyle=":",
-        markevery=marker_distance,
+        markevery=config.marker_distance,
         label="max",
     )
     (min_psd_ln,) = ax_psd.plot(
@@ -302,7 +304,7 @@ def reset_fig(
         color="pink",
         marker=",",
         linestyle=":",
-        markevery=marker_distance,
+        markevery=config.marker_distance,
         label="min",
     )
     (mean_psd_ln,) = ax_psd.plot(
@@ -313,7 +315,7 @@ def reset_fig(
         markersize=8,
         fillstyle="none",
         linestyle=":",
-        markevery=marker_distance,
+        markevery=config.marker_distance,
         label="mean",
     )
     (current_psd_ln,) = ax_psd.plot(
@@ -324,7 +326,7 @@ def reset_fig(
         markersize=8,
         fillstyle="none",
         linestyle=":",
-        markevery=marker_distance,
+        markevery=config.marker_distance,
         label="current",
     )
     ax_psd.legend(loc="center left", bbox_to_anchor=(1, 0.5))
@@ -350,8 +352,8 @@ def reset_fig(
     sm = plt.cm.ScalarMappable(cmap=cmap)
     sm.set_clim(vmin=db_min, vmax=db_max)
 
-    if plot_snr:
-        sm.set_clim(vmin=snr_min, vmax=snr_max)
+    if config.plot_snr:
+        sm.set_clim(vmin=config.snr_min, vmax=config.snr_max)
     cbar_ax = fig.add_axes([0.92, 0.10, 0.03, 0.5])
     cbar = fig.colorbar(sm, cax=cbar_ax)
     cbar.set_label("dB", rotation=0)
@@ -401,9 +403,9 @@ def reset_fig(
 
 
 def init_fig(
-    engine, base, scale, min_freq, max_freq, freq_resolution, waterfall_height
+    config, state, base, scale, min_freq, max_freq, freq_resolution,
 ):
-    matplotlib.use(engine)
+    matplotlib.use(config.engine)
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
     minor_tick_separator = AutoMinorLocator()
@@ -427,7 +429,7 @@ def init_fig(
         np.linspace(
             min_freq, max_freq, int((max_freq - min_freq) / freq_resolution + 1)
         ),
-        np.linspace(1, waterfall_height, waterfall_height),
+        np.linspace(1, config.waterfall_height, config.waterfall_height),
     )
 
     freq_bins = X[0]
@@ -451,6 +453,8 @@ def init_fig(
 
 
 def draw_peaks(
+    config,
+    state,
     peak_finder,
     db_data,
     save_path,
@@ -471,6 +475,8 @@ def draw_peaks(
 
     if save_path:
         previous_scan_config = save_detections(
+            config,
+            state,
             save_path,
             scan_time,
             min_freq,
@@ -559,6 +565,20 @@ def draw_peaks(
     return previous_scan_config
 
 
+class WaterfallConfig:
+    def __init__(self, engine, plot_snr):
+        self.engine = engine
+        self.plot_snr = plot_snr
+        self.snr_min = 0
+        self.snr_max = 50
+        self.waterfall_height = 100  # number of waterfall rows
+        self.marker_distance = 0.1
+
+
+class WaterfallState:
+    pass
+
+
 def waterfall(
     min_freq,
     max_freq,
@@ -574,12 +594,12 @@ def waterfall(
     rotate_secs,
     zmqr,
 ):
+    config = WaterfallConfig(engine, plot_snr)
+    state = WaterfallState()
+
     # OTHER PARAMETERS
     db_min = -220
     db_max = -150
-    snr_min = 0
-    snr_max = 50
-    waterfall_height = 100  # number of waterfall rows
     scale = 1e6
 
     freq_resolution = sampling_rate / fft_len
@@ -598,7 +618,6 @@ def waterfall(
     detection_text = []
     previous_scan_config = None
     save_path = base_save_path
-    marker_distance = 0.1  # len(freq_bins)/100
 
     # SCALING
     min_freq /= scale
@@ -630,7 +649,7 @@ def waterfall(
         cmap,
         cmap_psd,
     ) = init_fig(
-        engine, base, scale, min_freq, max_freq, freq_resolution, waterfall_height
+        config, state, base, scale, min_freq, max_freq, freq_resolution 
     )
 
     global need_reset_fig
@@ -669,6 +688,8 @@ def waterfall(
             mesh,
             background,
         ) = reset_fig(
+            config,
+            state,
             savefig_path,
             fig,
             min_freq,
@@ -678,12 +699,8 @@ def waterfall(
             db_min,
             db_max,
             psd_db_resolution,
-            snr_min,
-            snr_max,
-            plot_snr,
             minor_tick_separator,
             major_tick_separator,
-            marker_distance,
             top_n,
             freq_data,
             db_data,
@@ -762,7 +779,7 @@ def waterfall(
 
                 scan_time = scan_df.ts.iloc[-1]
                 scan_times.append(scan_time)
-                if len(scan_times) > waterfall_height:
+                if len(scan_times) > config.waterfall_height:
                     remove_time = scan_times.pop(0)
                     if save_path:
                         scan_config_history.pop(remove_time)
@@ -773,7 +790,7 @@ def waterfall(
                     y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
                 else:
                     y_labels.append("")
-                y_ticks.append(waterfall_height)
+                y_ticks.append(config.waterfall_height)
                 for j in range(len(y_ticks) - 2, -1, -1):
                     y_ticks[j] -= 1
                     if y_ticks[j] < 1:
@@ -811,9 +828,9 @@ def waterfall(
 
                     # db_norm = db_data
                     db_norm = (db_data - db_min) / (db_max - db_min)
-                    if plot_snr:
-                        db_norm = ((db_data - np.nanmin(db_data, axis=0)) - snr_min) / (
-                            snr_max - snr_min
+                    if config.plot_snr:
+                        db_norm = ((db_data - np.nanmin(db_data, axis=0)) - config.snr_min) / (
+                            config.snr_max - config.snr_min
                         )
 
                     # ax_psd.clear()
@@ -829,6 +846,8 @@ def waterfall(
 
                     if peak_finder:
                         previous_scan_config = draw_peaks(
+                            config,
+                            state,
                             peak_finder,
                             db_data,
                             save_path,
@@ -884,6 +903,8 @@ def waterfall(
 
                     if save_path:
                         last_save_time = save_waterfall(
+                            config,
+                            state,
                             save_path,
                             save_time,
                             last_save_time,
