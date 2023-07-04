@@ -238,7 +238,7 @@ def reset_fig(
     plt.subplots_adjust(hspace=0.15)
     ax_psd = state.fig.add_subplot(3, 1, 1)
     ax = state.fig.add_subplot(3, 1, (2, 3))
-    psd_title = ax_psd.text(
+    state.psd_title = ax_psd.text(
         0.5, 1.05, "", transform=ax_psd.transAxes, va="center", ha="center"
     )
 
@@ -324,13 +324,13 @@ def reset_fig(
     ax.set_ylabel("Time")
 
     # COLORBAR
-    sm = plt.cm.ScalarMappable(cmap=state.cmap)
-    sm.set_clim(vmin=state.db_min, vmax=state.db_max)
+    state.sm = plt.cm.ScalarMappable(cmap=state.cmap)
+    state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
 
     if config.plot_snr:
-        sm.set_clim(vmin=config.snr_min, vmax=config.snr_max)
-    cbar_ax = state.fig.add_axes([0.92, 0.10, 0.03, 0.5])
-    cbar = state.fig.colorbar(sm, cax=cbar_ax)
+        state.sm.set_clim(vmin=config.snr_min, vmax=config.snr_max)
+    state.cbar_ax = state.fig.add_axes([0.92, 0.10, 0.03, 0.5])
+    cbar = state.fig.colorbar(state.sm, cax=state.cbar_ax)
     cbar.set_label("dB", rotation=0)
 
     # SPECTROGRAM TITLE
@@ -344,7 +344,7 @@ def reset_fig(
     ax_psd.xaxis.set_minor_locator(state.minor_tick_separator)
 
     ax_psd.yaxis.set_animated(True)
-    cbar_ax.yaxis.set_animated(True)
+    state.cbar_ax.yaxis.set_animated(True)
     ax.yaxis.set_animated(True)
     plt.show(block=False)
     plt.pause(0.1)
@@ -366,12 +366,9 @@ def reset_fig(
         mean_psd_ln,
         max_psd_ln,
         peak_lns,
-        psd_title,
         psd_x_edges,
         psd_y_edges,
         cbar,
-        cbar_ax,
-        sm,
     )
 
 
@@ -575,6 +572,8 @@ class WaterfallState:
         self.top_n_lns = None
         self.background = None
         self.mesh = None
+        self.psd_title = None
+        self.cbar_ax = None
 
 
 def waterfall(
@@ -609,15 +608,12 @@ def waterfall(
 
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
-    cbar_ax: matplotlib.axes.Axes
     cbar: matplotlib.colorbar.Colorbar
-    sm: matplotlib.cm.ScalarMappable
     peak_lns: matplotlib.lines.Line2D
     current_psd_ln: matplotlib.lines.Line2D
     mean_psd_ln: matplotlib.lines.Line2D
     min_psd_ln: matplotlib.lines.Line2D
     max_psd_ln: matplotlib.lines.Line2D
-    psd_title: matplotlib.text.Text
 
     init_fig(config, state)
 
@@ -648,12 +644,9 @@ def waterfall(
             mean_psd_ln,
             max_psd_ln,
             peak_lns,
-            psd_title,
             psd_x_edges,
             psd_y_edges,
             cbar,
-            cbar_ax,
-            sm,
         ) = reset_fig(
             config,
             state,
@@ -830,13 +823,13 @@ def waterfall(
                         ax_psd.draw_artist(ln)
 
                     draw_waterfall(state.mesh, ax, db_norm, state.cmap)
-                    draw_title(ax_psd, psd_title)
+                    draw_title(ax_psd, state.psd_title)
 
-                    sm.set_clim(vmin=state.db_min, vmax=state.db_max)
-                    cbar.update_normal(sm)
+                    state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
+                    cbar.update_normal(state.sm)
                     # cbar.draw_all()
-                    cbar_ax.draw_artist(cbar_ax.yaxis)
-                    state.fig.canvas.blit(cbar_ax.yaxis.axes.figure.bbox)
+                    state.cbar_ax.draw_artist(state.cbar_ax.yaxis)
+                    state.fig.canvas.blit(state.cbar_ax.yaxis.axes.figure.bbox)
                     ax_psd.draw_artist(ax_psd.yaxis)
                     state.fig.canvas.blit(ax_psd.yaxis.axes.figure.bbox)
                     for ln in state.top_n_lns:
@@ -847,7 +840,7 @@ def waterfall(
                         ax_psd.bbox,
                         ax.yaxis.axes.figure.bbox,
                         ax.bbox,
-                        cbar_ax.bbox,
+                        state.cbar_ax.bbox,
                         state.fig.bbox,
                     ):
                         state.fig.canvas.blit(bmap)
