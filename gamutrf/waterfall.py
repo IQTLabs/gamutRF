@@ -235,10 +235,10 @@ def reset_fig(
     state.fig.clf()
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.15)
-    ax_psd = state.fig.add_subplot(3, 1, 1)
+    state.ax_psd = state.fig.add_subplot(3, 1, 1)
     ax = state.fig.add_subplot(3, 1, (2, 3))
-    state.psd_title = ax_psd.text(
-        0.5, 1.05, "", transform=ax_psd.transAxes, va="center", ha="center"
+    state.psd_title = state.ax_psd.text(
+        0.5, 1.05, "", transform=state.ax_psd.transAxes, va="center", ha="center"
     )
 
     # PSD
@@ -253,8 +253,8 @@ def reset_fig(
     state.psd_x_edges = XX[0]
     state.psd_y_edges = YY[:, 0]
 
-    _mesh_psd = ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
-    (state.peak_lns,) = ax_psd.plot(
+    _mesh_psd = state.ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
+    (state.peak_lns,) = state.ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="white",
@@ -263,7 +263,7 @@ def reset_fig(
         linestyle="none",
         fillstyle="full",
     )
-    (state.max_psd_ln,) = ax_psd.plot(
+    (state.max_psd_ln,) = state.ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="red",
@@ -272,7 +272,7 @@ def reset_fig(
         markevery=config.marker_distance,
         label="max",
     )
-    (state.min_psd_ln,) = ax_psd.plot(
+    (state.min_psd_ln,) = state.ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="pink",
@@ -281,7 +281,7 @@ def reset_fig(
         markevery=config.marker_distance,
         label="min",
     )
-    (state.mean_psd_ln,) = ax_psd.plot(
+    (state.mean_psd_ln,) = state.ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="cyan",
@@ -292,7 +292,7 @@ def reset_fig(
         markevery=config.marker_distance,
         label="mean",
     )
-    (state.current_psd_ln,) = ax_psd.plot(
+    (state.current_psd_ln,) = state.ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="red",
@@ -303,8 +303,8 @@ def reset_fig(
         markevery=config.marker_distance,
         label="current",
     )
-    ax_psd.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-    ax_psd.set_ylabel("dB")
+    state.ax_psd.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    state.ax_psd.set_ylabel("dB")
 
     # SPECTROGRAM
     state.mesh = ax.pcolormesh(state.X, state.Y, state.db_data, shading="nearest")
@@ -338,11 +338,11 @@ def reset_fig(
     ax.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
     ax.xaxis.set_major_formatter("{x:.0f}")
     ax.xaxis.set_minor_locator(state.minor_tick_separator)
-    ax_psd.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
-    ax_psd.xaxis.set_major_formatter("{x:.0f}")
-    ax_psd.xaxis.set_minor_locator(state.minor_tick_separator)
+    state.ax_psd.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
+    state.ax_psd.xaxis.set_major_formatter("{x:.0f}")
+    state.ax_psd.xaxis.set_minor_locator(state.minor_tick_separator)
 
-    ax_psd.yaxis.set_animated(True)
+    state.ax_psd.yaxis.set_animated(True)
     state.cbar_ax.yaxis.set_animated(True)
     ax.yaxis.set_animated(True)
     plt.show(block=False)
@@ -359,7 +359,6 @@ def reset_fig(
         ln.set_alpha(0.75)
     return (
         ax,
-        ax_psd,
     )
 
 
@@ -414,7 +413,6 @@ def draw_peaks(
     save_path,
     scan_time,
     scan_configs,
-    ax_psd,
 ):
     peaks, properties = peak_finder.find_peaks(state.db_data[-1])
     peaks, properties = filter_peaks(peaks, properties)
@@ -434,7 +432,7 @@ def draw_peaks(
     state.peak_lns.set_xdata(state.psd_x_edges[peaks])
     state.peak_lns.set_ydata(properties["width_heights"])
 
-    for child in ax_psd.get_children():
+    for child in state.ax_psd.get_children():
         if isinstance(child, LineCollection):
             child.remove()
 
@@ -444,14 +442,14 @@ def draw_peaks(
 
     if len(peaks) > 0:
         # if False:
-        vl_center = ax_psd.vlines(
+        vl_center = state.ax_psd.vlines(
             x=state.psd_x_edges[peaks],
             ymin=state.db_data[-1][peaks] - properties["prominences"],
             ymax=state.db_data[-1][peaks],
             color="white",
         )
-        ax_psd.draw_artist(vl_center)
-        vl_edges = ax_psd.vlines(
+        state.ax_psd.draw_artist(vl_center)
+        vl_edges = state.ax_psd.vlines(
             x=np.concatenate(
                 (
                     state.psd_x_edges[properties["left_ips"].astype(int)],
@@ -462,28 +460,28 @@ def draw_peaks(
             ymax=np.tile(state.db_data[-1][peaks], 2),
             color="white",
         )
-        ax_psd.draw_artist(vl_edges)
+        state.ax_psd.draw_artist(vl_edges)
         for l_ips, r_ips, p in zip(
             state.psd_x_edges[properties["left_ips"].astype(int)],
             state.psd_x_edges[properties["right_ips"].astype(int)],
             state.db_data[-1][peaks],
         ):
-            shaded = ax_psd.fill_between([l_ips, r_ips], state.db_min, p, alpha=0.7)
-            ax_psd.draw_artist(shaded)
-        hl = ax_psd.hlines(
+            shaded = state.ax_psd.fill_between([l_ips, r_ips], state.db_min, p, alpha=0.7)
+            state.ax_psd.draw_artist(shaded)
+        hl = state.ax_psd.hlines(
             y=properties["width_heights"],
             xmin=state.psd_x_edges[properties["left_ips"].astype(int)],
             xmax=state.psd_x_edges[properties["right_ips"].astype(int)],
             color="white",
         )
-        ax_psd.draw_artist(hl)
+        state.ax_psd.draw_artist(hl)
         for l_ips, r_ips, p in zip(
             state.psd_x_edges[properties["left_ips"].astype(int)],
             state.psd_x_edges[properties["right_ips"].astype(int)],
             peaks,
         ):
             for txt in (
-                ax_psd.text(
+                state.ax_psd.text(
                     l_ips + ((r_ips - l_ips) / 2),
                     (0.15 * (state.db_max - state.db_min)) + state.db_min,
                     f"f={l_ips + ((r_ips - l_ips)/2):.0f}MHz",
@@ -492,7 +490,7 @@ def draw_peaks(
                     color="white",
                     rotation=40,
                 ),
-                ax_psd.text(
+                state.ax_psd.text(
                     l_ips + ((r_ips - l_ips) / 2),
                     (0.05 * (state.db_max - state.db_min)) + state.db_min,
                     f"BW={r_ips - l_ips:.0f}MHz",
@@ -503,7 +501,7 @@ def draw_peaks(
                 ),
             ):
                 state.detection_text.append(txt)
-                ax_psd.draw_artist(txt)
+                state.ax_psd.draw_artist(txt)
 
 
 class WaterfallConfig:
@@ -569,6 +567,7 @@ class WaterfallState:
         self.max_psd_ln = None
         self.mean_psd_ln = None
         self.current_psd_ln = None
+        self.ax_psd = None
 
 
 def waterfall(
@@ -601,7 +600,6 @@ def waterfall(
     draw_rate = 1
     save_path = base_save_path
 
-    ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
 
     init_fig(config, state)
@@ -627,7 +625,6 @@ def waterfall(
     while zmqr.healthy() and running:
         (
             ax,
-            ax_psd,
         ) = reset_fig(
             config,
             state,
@@ -756,7 +753,7 @@ def waterfall(
                     state.psd_x_edges = XX[0]
                     state.psd_y_edges = YY[:, 0]
 
-                    mesh_psd = ax_psd.pcolormesh(
+                    mesh_psd = state.ax_psd.pcolormesh(
                         XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
                     )
 
@@ -772,14 +769,14 @@ def waterfall(
 
                     # ax_psd.clear()
 
-                    ax_psd.set_ylim(state.db_min, state.db_max)
+                    state.ax_psd.set_ylim(state.db_min, state.db_max)
                     mesh_psd.set_array(state.cmap_psd(data.T))
                     state.current_psd_ln.set_ydata(state.db_data[-1])
 
                     state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
                     state.max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
                     state.mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
-                    ax_psd.draw_artist(mesh_psd)
+                    state.ax_psd.draw_artist(mesh_psd)
 
                     if peak_finder:
                         draw_peaks(
@@ -789,7 +786,6 @@ def waterfall(
                             save_path,
                             scan_time,
                             scan_configs,
-                            ax_psd,
                         )
 
                     for ln in (
@@ -799,24 +795,24 @@ def waterfall(
                         state.mean_psd_ln,
                         state.current_psd_ln,
                     ):
-                        ax_psd.draw_artist(ln)
+                        state.ax_psd.draw_artist(ln)
 
                     draw_waterfall(state.mesh, ax, db_norm, state.cmap)
-                    draw_title(ax_psd, state.psd_title)
+                    draw_title(state.ax_psd, state.psd_title)
 
                     state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
                     state.cbar.update_normal(state.sm)
                     # cbar.draw_all()
                     state.cbar_ax.draw_artist(state.cbar_ax.yaxis)
                     state.fig.canvas.blit(state.cbar_ax.yaxis.axes.figure.bbox)
-                    ax_psd.draw_artist(ax_psd.yaxis)
-                    state.fig.canvas.blit(ax_psd.yaxis.axes.figure.bbox)
+                    state.ax_psd.draw_artist(state.ax_psd.yaxis)
+                    state.fig.canvas.blit(state.ax_psd.yaxis.axes.figure.bbox)
                     for ln in state.top_n_lns:
                         ax.draw_artist(ln)
 
                     ax.draw_artist(ax.yaxis)
                     for bmap in (
-                        ax_psd.bbox,
+                        state.ax_psd.bbox,
                         ax.yaxis.axes.figure.bbox,
                         ax.bbox,
                         state.cbar_ax.bbox,
