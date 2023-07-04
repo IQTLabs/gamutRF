@@ -236,7 +236,7 @@ def reset_fig(
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.15)
     state.ax_psd = state.fig.add_subplot(3, 1, 1)
-    ax = state.fig.add_subplot(3, 1, (2, 3))
+    state.ax = state.fig.add_subplot(3, 1, (2, 3))
     state.psd_title = state.ax_psd.text(
         0.5, 1.05, "", transform=state.ax_psd.transAxes, va="center", ha="center"
     )
@@ -307,10 +307,10 @@ def reset_fig(
     state.ax_psd.set_ylabel("dB")
 
     # SPECTROGRAM
-    state.mesh = ax.pcolormesh(state.X, state.Y, state.db_data, shading="nearest")
+    state.mesh = state.ax.pcolormesh(state.X, state.Y, state.db_data, shading="nearest")
     state.top_n_lns = []
     for _ in range(config.top_n):
-        (ln,) = ax.plot(
+        (ln,) = state.ax.plot(
             [state.X[0][0]] * len(state.Y[:, 0]),
             state.Y[:, 0],
             color="brown",
@@ -319,8 +319,8 @@ def reset_fig(
         )
         state.top_n_lns.append(ln)
 
-    ax.set_xlabel("MHz")
-    ax.set_ylabel("Time")
+    state.ax.set_xlabel("MHz")
+    state.ax.set_ylabel("Time")
 
     # COLORBAR
     state.sm = plt.cm.ScalarMappable(cmap=state.cmap)
@@ -333,33 +333,30 @@ def reset_fig(
     state.cbar.set_label("dB", rotation=0)
 
     # SPECTROGRAM TITLE
-    _title = ax.text(0.5, 1.05, "", transform=ax.transAxes, va="center", ha="center")
+    _title = state.ax.text(0.5, 1.05, "", transform=state.ax.transAxes, va="center", ha="center")
 
-    ax.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
-    ax.xaxis.set_major_formatter("{x:.0f}")
-    ax.xaxis.set_minor_locator(state.minor_tick_separator)
+    state.ax.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
+    state.ax.xaxis.set_major_formatter("{x:.0f}")
+    state.ax.xaxis.set_minor_locator(state.minor_tick_separator)
     state.ax_psd.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
     state.ax_psd.xaxis.set_major_formatter("{x:.0f}")
     state.ax_psd.xaxis.set_minor_locator(state.minor_tick_separator)
 
     state.ax_psd.yaxis.set_animated(True)
     state.cbar_ax.yaxis.set_animated(True)
-    ax.yaxis.set_animated(True)
+    state.ax.yaxis.set_animated(True)
     plt.show(block=False)
     plt.pause(0.1)
 
     state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
 
-    ax.draw_artist(state.mesh)
-    state.fig.canvas.blit(ax.bbox)
+    state.ax.draw_artist(state.mesh)
+    state.fig.canvas.blit(state.ax.bbox)
     if config.savefig_path:
         safe_savefig(config.savefig_path)
 
     for ln in state.top_n_lns:
         ln.set_alpha(0.75)
-    return (
-        ax,
-    )
 
 
 def init_fig(
@@ -568,6 +565,7 @@ class WaterfallState:
         self.mean_psd_ln = None
         self.current_psd_ln = None
         self.ax_psd = None
+        self.ax = None
 
 
 def waterfall(
@@ -623,9 +621,7 @@ def waterfall(
     state.fig.canvas.mpl_connect("resize_event", onresize)
 
     while zmqr.healthy() and running:
-        (
-            ax,
-        ) = reset_fig(
+        reset_fig(
             config,
             state,
         )
@@ -700,7 +696,7 @@ def waterfall(
                 for i, ln in enumerate(state.top_n_lns):
                     ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
 
-                state.fig.canvas.blit(ax.yaxis.axes.figure.bbox)
+                state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
 
                 scan_time = scan_df.ts.iloc[-1]
                 state.scan_times.append(scan_time)
@@ -722,7 +718,7 @@ def waterfall(
                         state.y_ticks.pop(j)
                         state.y_labels.pop(j)
 
-                ax.set_yticks(state.y_ticks, labels=state.y_labels)
+                state.ax.set_yticks(state.y_ticks, labels=state.y_labels)
 
                 if save_path:
                     state.scan_config_history[scan_time] = scan_configs
@@ -797,7 +793,7 @@ def waterfall(
                     ):
                         state.ax_psd.draw_artist(ln)
 
-                    draw_waterfall(state.mesh, ax, db_norm, state.cmap)
+                    draw_waterfall(state.mesh, state.ax, db_norm, state.cmap)
                     draw_title(state.ax_psd, state.psd_title)
 
                     state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
@@ -808,13 +804,13 @@ def waterfall(
                     state.ax_psd.draw_artist(state.ax_psd.yaxis)
                     state.fig.canvas.blit(state.ax_psd.yaxis.axes.figure.bbox)
                     for ln in state.top_n_lns:
-                        ax.draw_artist(ln)
+                        state.ax.draw_artist(ln)
 
-                    ax.draw_artist(ax.yaxis)
+                    state.ax.draw_artist(state.ax.yaxis)
                     for bmap in (
                         state.ax_psd.bbox,
-                        ax.yaxis.axes.figure.bbox,
-                        ax.bbox,
+                        state.ax.yaxis.axes.figure.bbox,
+                        state.ax.bbox,
                         state.cbar_ax.bbox,
                         state.fig.bbox,
                     ):
