@@ -254,7 +254,7 @@ def reset_fig(
     state.psd_y_edges = YY[:, 0]
 
     _mesh_psd = ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
-    (peak_lns,) = ax_psd.plot(
+    (state.peak_lns,) = ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="white",
@@ -263,7 +263,7 @@ def reset_fig(
         linestyle="none",
         fillstyle="full",
     )
-    (max_psd_ln,) = ax_psd.plot(
+    (state.max_psd_ln,) = ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="red",
@@ -272,7 +272,7 @@ def reset_fig(
         markevery=config.marker_distance,
         label="max",
     )
-    (min_psd_ln,) = ax_psd.plot(
+    (state.min_psd_ln,) = ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="pink",
@@ -281,7 +281,7 @@ def reset_fig(
         markevery=config.marker_distance,
         label="min",
     )
-    (mean_psd_ln,) = ax_psd.plot(
+    (state.mean_psd_ln,) = ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="cyan",
@@ -292,7 +292,7 @@ def reset_fig(
         markevery=config.marker_distance,
         label="mean",
     )
-    (current_psd_ln,) = ax_psd.plot(
+    (state.current_psd_ln,) = ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="red",
@@ -360,11 +360,6 @@ def reset_fig(
     return (
         ax,
         ax_psd,
-        min_psd_ln,
-        current_psd_ln,
-        mean_psd_ln,
-        max_psd_ln,
-        peak_lns,
     )
 
 
@@ -419,7 +414,6 @@ def draw_peaks(
     save_path,
     scan_time,
     scan_configs,
-    peak_lns,
     ax_psd,
 ):
     peaks, properties = peak_finder.find_peaks(state.db_data[-1])
@@ -437,8 +431,8 @@ def draw_peaks(
             peak_finder.name,
         )
 
-    peak_lns.set_xdata(state.psd_x_edges[peaks])
-    peak_lns.set_ydata(properties["width_heights"])
+    state.peak_lns.set_xdata(state.psd_x_edges[peaks])
+    state.peak_lns.set_ydata(properties["width_heights"])
 
     for child in ax_psd.get_children():
         if isinstance(child, LineCollection):
@@ -571,6 +565,10 @@ class WaterfallState:
         self.cbar = None
         self.psd_x_edges = None
         self.psd_y_edges = None
+        self.min_psd_ln = None
+        self.max_psd_ln = None
+        self.mean_psd_ln = None
+        self.current_psd_ln = None
 
 
 def waterfall(
@@ -605,11 +603,6 @@ def waterfall(
 
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
-    peak_lns: matplotlib.lines.Line2D
-    current_psd_ln: matplotlib.lines.Line2D
-    mean_psd_ln: matplotlib.lines.Line2D
-    min_psd_ln: matplotlib.lines.Line2D
-    max_psd_ln: matplotlib.lines.Line2D
 
     init_fig(config, state)
 
@@ -635,11 +628,6 @@ def waterfall(
         (
             ax,
             ax_psd,
-            min_psd_ln,
-            current_psd_ln,
-            mean_psd_ln,
-            max_psd_ln,
-            peak_lns,
         ) = reset_fig(
             config,
             state,
@@ -786,11 +774,11 @@ def waterfall(
 
                     ax_psd.set_ylim(state.db_min, state.db_max)
                     mesh_psd.set_array(state.cmap_psd(data.T))
-                    current_psd_ln.set_ydata(state.db_data[-1])
+                    state.current_psd_ln.set_ydata(state.db_data[-1])
 
-                    min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
-                    max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
-                    mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
+                    state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
+                    state.max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
+                    state.mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
                     ax_psd.draw_artist(mesh_psd)
 
                     if peak_finder:
@@ -801,16 +789,15 @@ def waterfall(
                             save_path,
                             scan_time,
                             scan_configs,
-                            peak_lns,
                             ax_psd,
                         )
 
                     for ln in (
-                        peak_lns,
-                        min_psd_ln,
-                        max_psd_ln,
-                        mean_psd_ln,
-                        current_psd_ln,
+                        state.peak_lns,
+                        state.min_psd_ln,
+                        state.max_psd_ln,
+                        state.mean_psd_ln,
+                        state.current_psd_ln,
                     ):
                         ax_psd.draw_artist(ln)
 
