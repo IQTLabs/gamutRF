@@ -526,7 +526,15 @@ def draw_peaks(
 
 class WaterfallConfig:
     def __init__(
-        self, engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq, top_n
+        self,
+        engine,
+        plot_snr,
+        savefig_path,
+        sampling_rate,
+        fft_len,
+        min_freq,
+        max_freq,
+        top_n,
     ):
         self.engine = engine
         self.plot_snr = plot_snr
@@ -585,7 +593,14 @@ def waterfall(
     zmqr,
 ):
     config = WaterfallConfig(
-        engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq, top_n
+        engine,
+        plot_snr,
+        savefig_path,
+        sampling_rate,
+        fft_len,
+        min_freq,
+        max_freq,
+        top_n,
     )
     state = WaterfallState()
 
@@ -712,7 +727,7 @@ def waterfall(
                         np.nanvar(
                             state.db_data - np.nanmin(state.db_data, axis=0), axis=0
                         )
-                    )[::-1][:config.top_n]
+                    )[::-1][: config.top_n]
                 ]
 
                 for i, ln in enumerate(top_n_lns):
