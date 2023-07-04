@@ -309,7 +309,7 @@ def reset_fig(
 
     # SPECTROGRAM
     mesh = ax.pcolormesh(state.X, state.Y, state.db_data, shading="nearest")
-    top_n_lns = []
+    state.top_n_lns = []
     for _ in range(config.top_n):
         (ln,) = ax.plot(
             [state.X[0][0]] * len(state.Y[:, 0]),
@@ -318,7 +318,7 @@ def reset_fig(
             linestyle=":",
             alpha=0,
         )
-        top_n_lns.append(ln)
+        state.top_n_lns.append(ln)
 
     ax.set_xlabel("MHz")
     ax.set_ylabel("Time")
@@ -349,14 +349,14 @@ def reset_fig(
     plt.show(block=False)
     plt.pause(0.1)
 
-    background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
+    state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
 
     ax.draw_artist(mesh)
     state.fig.canvas.blit(ax.bbox)
     if config.savefig_path:
         safe_savefig(config.savefig_path)
 
-    for ln in top_n_lns:
+    for ln in state.top_n_lns:
         ln.set_alpha(0.75)
     return (
         ax,
@@ -373,8 +373,6 @@ def reset_fig(
         cbar_ax,
         sm,
         mesh,
-        background,
-        top_n_lns,
     )
 
 
@@ -575,6 +573,8 @@ class WaterfallState:
         self.X = None
         self.Y = None
         self.fig = None
+        self.top_n_lns = None
+        self.background = None
 
 
 def waterfall(
@@ -656,8 +656,6 @@ def waterfall(
             cbar_ax,
             sm,
             mesh,
-            background,
-            top_n_lns,
         ) = reset_fig(
             config,
             state,
@@ -720,7 +718,7 @@ def waterfall(
                 data /= np.max(data)
                 # data /= np.max(data, axis=1)[:,None]
 
-                state.fig.canvas.restore_region(background)
+                state.fig.canvas.restore_region(state.background)
 
                 top_n_bins = state.freq_bins[
                     np.argsort(
@@ -730,7 +728,7 @@ def waterfall(
                     )[::-1][: config.top_n]
                 ]
 
-                for i, ln in enumerate(top_n_lns):
+                for i, ln in enumerate(state.top_n_lns):
                     ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
 
                 state.fig.canvas.blit(ax.yaxis.axes.figure.bbox)
@@ -843,7 +841,7 @@ def waterfall(
                     state.fig.canvas.blit(cbar_ax.yaxis.axes.figure.bbox)
                     ax_psd.draw_artist(ax_psd.yaxis)
                     state.fig.canvas.blit(ax_psd.yaxis.axes.figure.bbox)
-                    for ln in top_n_lns:
+                    for ln in state.top_n_lns:
                         ax.draw_artist(ln)
 
                     ax.draw_artist(ax.yaxis)
