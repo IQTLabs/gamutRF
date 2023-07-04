@@ -330,8 +330,8 @@ def reset_fig(
     if config.plot_snr:
         state.sm.set_clim(vmin=config.snr_min, vmax=config.snr_max)
     state.cbar_ax = state.fig.add_axes([0.92, 0.10, 0.03, 0.5])
-    cbar = state.fig.colorbar(state.sm, cax=state.cbar_ax)
-    cbar.set_label("dB", rotation=0)
+    state.cbar = state.fig.colorbar(state.sm, cax=state.cbar_ax)
+    state.cbar.set_label("dB", rotation=0)
 
     # SPECTROGRAM TITLE
     _title = ax.text(0.5, 1.05, "", transform=ax.transAxes, va="center", ha="center")
@@ -368,7 +368,6 @@ def reset_fig(
         peak_lns,
         psd_x_edges,
         psd_y_edges,
-        cbar,
     )
 
 
@@ -574,6 +573,7 @@ class WaterfallState:
         self.mesh = None
         self.psd_title = None
         self.cbar_ax = None
+        self.cbar = None
 
 
 def waterfall(
@@ -608,7 +608,6 @@ def waterfall(
 
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
-    cbar: matplotlib.colorbar.Colorbar
     peak_lns: matplotlib.lines.Line2D
     current_psd_ln: matplotlib.lines.Line2D
     mean_psd_ln: matplotlib.lines.Line2D
@@ -646,7 +645,6 @@ def waterfall(
             peak_lns,
             psd_x_edges,
             psd_y_edges,
-            cbar,
         ) = reset_fig(
             config,
             state,
@@ -826,7 +824,7 @@ def waterfall(
                     draw_title(ax_psd, state.psd_title)
 
                     state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
-                    cbar.update_normal(state.sm)
+                    state.cbar.update_normal(state.sm)
                     # cbar.draw_all()
                     state.cbar_ax.draw_artist(state.cbar_ax.yaxis)
                     state.fig.canvas.blit(state.cbar_ax.yaxis.axes.figure.bbox)
