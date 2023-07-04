@@ -130,8 +130,12 @@ def save_detections(
             writer.writerow(
                 [
                     scan_time,  # timestamp
-                    state.psd_x_edges[properties["left_ips"][i].astype(int)],  # start_freq
-                    state.psd_x_edges[properties["right_ips"][i].astype(int)],  # end_freq
+                    state.psd_x_edges[
+                        properties["left_ips"][i].astype(int)
+                    ],  # start_freq
+                    state.psd_x_edges[
+                        properties["right_ips"][i].astype(int)
+                    ],  # end_freq
                     properties["peak_heights"][i],  # dB
                     detection_type,  # type
                 ]
@@ -253,7 +257,9 @@ def reset_fig(
     state.psd_x_edges = XX[0]
     state.psd_y_edges = YY[:, 0]
 
-    _mesh_psd = state.ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
+    _mesh_psd = state.ax_psd.pcolormesh(
+        XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
+    )
     (state.peak_lns,) = state.ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
@@ -333,7 +339,9 @@ def reset_fig(
     state.cbar.set_label("dB", rotation=0)
 
     # SPECTROGRAM TITLE
-    _title = state.ax.text(0.5, 1.05, "", transform=state.ax.transAxes, va="center", ha="center")
+    _title = state.ax.text(
+        0.5, 1.05, "", transform=state.ax.transAxes, va="center", ha="center"
+    )
 
     state.ax.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
     state.ax.xaxis.set_major_formatter("{x:.0f}")
@@ -463,7 +471,9 @@ def draw_peaks(
             state.psd_x_edges[properties["right_ips"].astype(int)],
             state.db_data[-1][peaks],
         ):
-            shaded = state.ax_psd.fill_between([l_ips, r_ips], state.db_min, p, alpha=0.7)
+            shaded = state.ax_psd.fill_between(
+                [l_ips, r_ips], state.db_min, p, alpha=0.7
+            )
             state.ax_psd.draw_artist(shaded)
         hl = state.ax_psd.hlines(
             y=properties["width_heights"],
