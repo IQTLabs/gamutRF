@@ -72,14 +72,13 @@ def filter_peaks(peaks, properties):
 def save_detections(
     config,
     state,
-    save_path,
     scan_time,
     scan_configs,
     peaks,
     properties,
     detection_type,
 ):
-    detection_save_dir = Path(save_path, "detections")
+    detection_save_dir = Path(state.save_path, "detections")
 
     detection_config_save_path = str(
         Path(
@@ -145,7 +144,6 @@ def save_detections(
 def save_waterfall(
     config,
     state,
-    save_path,
     save_time,
     scan_time,
 ):
@@ -154,7 +152,7 @@ def save_waterfall(
         state.last_save_time = now
 
     if now - state.last_save_time > datetime.timedelta(minutes=save_time):
-        waterfall_save_dir = Path(save_path, "waterfall")
+        waterfall_save_dir = Path(state.save_path, "waterfall")
         if not os.path.exists(waterfall_save_dir):
             os.makedirs(waterfall_save_dir)
 
@@ -415,18 +413,16 @@ def draw_peaks(
     config,
     state,
     peak_finder,
-    save_path,
     scan_time,
     scan_configs,
 ):
     peaks, properties = peak_finder.find_peaks(state.db_data[-1])
     peaks, properties = filter_peaks(peaks, properties)
 
-    if save_path:
+    if state.save_path:
         save_detections(
             config,
             state,
-            save_path,
             scan_time,
             scan_configs,
             peaks,
@@ -522,6 +518,7 @@ class WaterfallConfig:
         min_freq,
         max_freq,
         top_n,
+        base_save_path,
     ):
         self.engine = engine
         self.plot_snr = plot_snr
@@ -538,6 +535,8 @@ class WaterfallConfig:
         self.min_freq = min_freq / self.scale
         self.max_freq = max_freq / self.scale
         self.top_n = top_n
+        self.draw_rate = 1 
+        self.base_save_path = base_save_path
 
 
 class WaterfallState:
@@ -576,6 +575,7 @@ class WaterfallState:
         self.current_psd_ln = None
         self.ax_psd = None
         self.ax = None
+        self.save_path = None
 
 
 def waterfall(
@@ -602,14 +602,10 @@ def waterfall(
         min_freq,
         max_freq,
         top_n,
+        base_save_path,
     )
     state = WaterfallState()
-
-    draw_rate = 1
-    save_path = base_save_path
-
-    ax: matplotlib.axes.Axes
-
+    state.save_path = config.base_save_path
     init_fig(config, state)
 
     global need_reset_fig
@@ -645,12 +641,12 @@ def waterfall(
                     break
                 results.append((scan_configs, scan_df))
 
-            if base_save_path and rotate_secs:
-                save_path = os.path.join(
-                    base_save_path, str(int(time.time() / rotate_secs) * rotate_secs)
+            if config.base_save_path and rotate_secs:
+                state.save_path = os.path.join(
+                    config.base_save_path, str(int(time.time() / rotate_secs) * rotate_secs)
                 )
-                if not os.path.exists(save_path):
-                    os.makedirs(save_path)
+                if not os.path.exists(state.save_path):
+                    os.makedirs(state.save_path)
 
             for scan_configs, scan_df in results:
                 scan_df = scan_df[
@@ -712,7 +708,7 @@ def waterfall(
                 state.scan_times.append(scan_time)
                 if len(state.scan_times) > config.waterfall_height:
                     remove_time = state.scan_times.pop(0)
-                    if save_path:
+                    if state.save_path:
                         state.scan_config_history.pop(remove_time)
                         # assert len(scan_config_history) <= waterfall_height
                 row_time = datetime.datetime.fromtimestamp(scan_time)
@@ -730,14 +726,12 @@ def waterfall(
 
                 state.ax.set_yticks(state.y_ticks, labels=state.y_labels)
 
-                if save_path:
+                if state.save_path:
                     state.scan_config_history[scan_time] = scan_configs
 
                 state.counter += 1
 
-                if state.counter % draw_rate == 0:
-                    draw_rate = 1
-
+                if state.counter % config.draw_rate == 0:
                     state.db_min = np.nanmin(state.db_data)
                     state.db_max = np.nanmax(state.db_data)
 
@@ -789,7 +783,6 @@ def waterfall(
                             config,
                             state,
                             peak_finder,
-                            save_path,
                             scan_time,
                             scan_configs,
                         )
@@ -831,11 +824,10 @@ def waterfall(
 
                     logging.info(f"Plotting {row_time}")
 
-                    if save_path:
+                    if state.save_path:
                         save_waterfall(
                             config,
                             state,
-                            save_path,
                             save_time,
                             scan_time,
                         )
