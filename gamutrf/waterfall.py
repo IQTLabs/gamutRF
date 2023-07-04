@@ -77,7 +77,6 @@ def save_detections(
     scan_configs,
     peaks,
     properties,
-    psd_x_edges,
     detection_type,
 ):
     detection_save_dir = Path(save_path, "detections")
@@ -131,8 +130,8 @@ def save_detections(
             writer.writerow(
                 [
                     scan_time,  # timestamp
-                    psd_x_edges[properties["left_ips"][i].astype(int)],  # start_freq
-                    psd_x_edges[properties["right_ips"][i].astype(int)],  # end_freq
+                    state.psd_x_edges[properties["left_ips"][i].astype(int)],  # start_freq
+                    state.psd_x_edges[properties["right_ips"][i].astype(int)],  # end_freq
                     properties["peak_heights"][i],  # dB
                     detection_type,  # type
                 ]
@@ -251,8 +250,8 @@ def reset_fig(
         ),
         np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
     )
-    psd_x_edges = XX[0]
-    psd_y_edges = YY[:, 0]
+    state.psd_x_edges = XX[0]
+    state.psd_y_edges = YY[:, 0]
 
     _mesh_psd = ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
     (peak_lns,) = ax_psd.plot(
@@ -366,8 +365,6 @@ def reset_fig(
         mean_psd_ln,
         max_psd_ln,
         peak_lns,
-        psd_x_edges,
-        psd_y_edges,
     )
 
 
@@ -422,7 +419,6 @@ def draw_peaks(
     save_path,
     scan_time,
     scan_configs,
-    psd_x_edges,
     peak_lns,
     ax_psd,
 ):
@@ -438,11 +434,10 @@ def draw_peaks(
             scan_configs,
             peaks,
             properties,
-            psd_x_edges,
             peak_finder.name,
         )
 
-    peak_lns.set_xdata(psd_x_edges[peaks])
+    peak_lns.set_xdata(state.psd_x_edges[peaks])
     peak_lns.set_ydata(properties["width_heights"])
 
     for child in ax_psd.get_children():
@@ -456,7 +451,7 @@ def draw_peaks(
     if len(peaks) > 0:
         # if False:
         vl_center = ax_psd.vlines(
-            x=psd_x_edges[peaks],
+            x=state.psd_x_edges[peaks],
             ymin=state.db_data[-1][peaks] - properties["prominences"],
             ymax=state.db_data[-1][peaks],
             color="white",
@@ -465,8 +460,8 @@ def draw_peaks(
         vl_edges = ax_psd.vlines(
             x=np.concatenate(
                 (
-                    psd_x_edges[properties["left_ips"].astype(int)],
-                    psd_x_edges[properties["right_ips"].astype(int)],
+                    state.psd_x_edges[properties["left_ips"].astype(int)],
+                    state.psd_x_edges[properties["right_ips"].astype(int)],
                 )
             ),
             ymin=state.db_min,
@@ -475,22 +470,22 @@ def draw_peaks(
         )
         ax_psd.draw_artist(vl_edges)
         for l_ips, r_ips, p in zip(
-            psd_x_edges[properties["left_ips"].astype(int)],
-            psd_x_edges[properties["right_ips"].astype(int)],
+            state.psd_x_edges[properties["left_ips"].astype(int)],
+            state.psd_x_edges[properties["right_ips"].astype(int)],
             state.db_data[-1][peaks],
         ):
             shaded = ax_psd.fill_between([l_ips, r_ips], state.db_min, p, alpha=0.7)
             ax_psd.draw_artist(shaded)
         hl = ax_psd.hlines(
             y=properties["width_heights"],
-            xmin=psd_x_edges[properties["left_ips"].astype(int)],
-            xmax=psd_x_edges[properties["right_ips"].astype(int)],
+            xmin=state.psd_x_edges[properties["left_ips"].astype(int)],
+            xmax=state.psd_x_edges[properties["right_ips"].astype(int)],
             color="white",
         )
         ax_psd.draw_artist(hl)
         for l_ips, r_ips, p in zip(
-            psd_x_edges[properties["left_ips"].astype(int)],
-            psd_x_edges[properties["right_ips"].astype(int)],
+            state.psd_x_edges[properties["left_ips"].astype(int)],
+            state.psd_x_edges[properties["right_ips"].astype(int)],
             peaks,
         ):
             for txt in (
@@ -574,6 +569,8 @@ class WaterfallState:
         self.psd_title = None
         self.cbar_ax = None
         self.cbar = None
+        self.psd_x_edges = None
+        self.psd_y_edges = None
 
 
 def waterfall(
@@ -643,8 +640,6 @@ def waterfall(
             mean_psd_ln,
             max_psd_ln,
             peak_lns,
-            psd_x_edges,
-            psd_y_edges,
         ) = reset_fig(
             config,
             state,
@@ -700,7 +695,7 @@ def waterfall(
                     state.freq_data[~np.isnan(state.freq_data)].flatten(),
                     state.db_data[~np.isnan(state.db_data)].flatten(),
                     density=False,
-                    bins=[psd_x_edges, psd_y_edges],
+                    bins=[state.psd_x_edges, state.psd_y_edges],
                 )
                 heatmap = gaussian_filter(data, sigma=2)
                 data = heatmap
@@ -770,8 +765,8 @@ def waterfall(
                         ),
                     )
 
-                    psd_x_edges = XX[0]
-                    psd_y_edges = YY[:, 0]
+                    state.psd_x_edges = XX[0]
+                    state.psd_y_edges = YY[:, 0]
 
                     mesh_psd = ax_psd.pcolormesh(
                         XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
@@ -806,7 +801,6 @@ def waterfall(
                             save_path,
                             scan_time,
                             scan_configs,
-                            psd_x_edges,
                             peak_lns,
                             ax_psd,
                         )
