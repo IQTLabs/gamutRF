@@ -535,7 +535,7 @@ class WaterfallConfig:
         self.min_freq = min_freq / self.scale
         self.max_freq = max_freq / self.scale
         self.top_n = top_n
-        self.draw_rate = 1 
+        self.draw_rate = 1
         self.base_save_path = base_save_path
 
 
@@ -643,7 +643,8 @@ def waterfall(
 
             if config.base_save_path and rotate_secs:
                 state.save_path = os.path.join(
-                    config.base_save_path, str(int(time.time() / rotate_secs) * rotate_secs)
+                    config.base_save_path,
+                    str(int(time.time() / rotate_secs) * rotate_secs),
                 )
                 if not os.path.exists(state.save_path):
                     os.makedirs(state.save_path)
