@@ -308,7 +308,7 @@ def reset_fig(
     ax_psd.set_ylabel("dB")
 
     # SPECTROGRAM
-    mesh = ax.pcolormesh(state.X, state.Y, state.db_data, shading="nearest")
+    state.mesh = ax.pcolormesh(state.X, state.Y, state.db_data, shading="nearest")
     state.top_n_lns = []
     for _ in range(config.top_n):
         (ln,) = ax.plot(
@@ -351,7 +351,7 @@ def reset_fig(
 
     state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
 
-    ax.draw_artist(mesh)
+    ax.draw_artist(state.mesh)
     state.fig.canvas.blit(ax.bbox)
     if config.savefig_path:
         safe_savefig(config.savefig_path)
@@ -372,7 +372,6 @@ def reset_fig(
         cbar,
         cbar_ax,
         sm,
-        mesh,
     )
 
 
@@ -575,6 +574,7 @@ class WaterfallState:
         self.fig = None
         self.top_n_lns = None
         self.background = None
+        self.mesh = None
 
 
 def waterfall(
@@ -609,7 +609,6 @@ def waterfall(
 
     ax_psd: matplotlib.axes.Axes
     ax: matplotlib.axes.Axes
-    mesh: matplotlib.collections.QuadMesh
     cbar_ax: matplotlib.axes.Axes
     cbar: matplotlib.colorbar.Colorbar
     sm: matplotlib.cm.ScalarMappable
@@ -655,7 +654,6 @@ def waterfall(
             cbar,
             cbar_ax,
             sm,
-            mesh,
         ) = reset_fig(
             config,
             state,
@@ -831,7 +829,7 @@ def waterfall(
                     ):
                         ax_psd.draw_artist(ln)
 
-                    draw_waterfall(mesh, ax, db_norm, state.cmap)
+                    draw_waterfall(state.mesh, ax, db_norm, state.cmap)
                     draw_title(ax_psd, psd_title)
 
                     sm.set_clim(vmin=state.db_min, vmax=state.db_max)
