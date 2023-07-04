@@ -232,7 +232,6 @@ def reset_fig(
     config,
     state,
     fig,
-    cmap,
     top_n,
     X,
     Y,
@@ -329,7 +328,7 @@ def reset_fig(
     ax.set_ylabel("Time")
 
     # COLORBAR
-    sm = plt.cm.ScalarMappable(cmap=cmap)
+    sm = plt.cm.ScalarMappable(cmap=state.cmap)
     sm.set_clim(vmin=state.db_min, vmax=state.db_max)
 
     if config.plot_snr:
@@ -388,8 +387,8 @@ def init_fig(
     state,
 ):
     matplotlib.use(config.engine)
-    cmap = plt.get_cmap("viridis")
-    cmap_psd = plt.get_cmap("turbo")
+    state.cmap = plt.get_cmap("viridis")
+    state.cmap_psd = plt.get_cmap("turbo")
     state.minor_tick_separator = AutoMinorLocator()
     n_ticks = min(
         ((config.max_freq / config.scale - config.min_freq / config.scale) / 100) * 5,
@@ -430,8 +429,6 @@ def init_fig(
         fig,
         X,
         Y,
-        cmap,
-        cmap_psd,
     )
 
 
@@ -574,6 +571,8 @@ class WaterfallState:
         self.counter = 0
         self.minor_tick_separator = None
         self.major_tick_separator = None
+        self.cmap_psd = None
+        self.cmap = None
 
 
 def waterfall(
@@ -616,8 +615,6 @@ def waterfall(
         fig,
         X,
         Y,
-        cmap,
-        cmap_psd,
     ) = init_fig(config, state)
 
     global need_reset_fig
@@ -660,7 +657,6 @@ def waterfall(
             config,
             state,
             fig,
-            cmap,
             top_n,
             X,
             Y,
@@ -806,7 +802,7 @@ def waterfall(
                     # ax_psd.clear()
 
                     ax_psd.set_ylim(state.db_min, state.db_max)
-                    mesh_psd.set_array(cmap_psd(data.T))
+                    mesh_psd.set_array(state.cmap_psd(data.T))
                     current_psd_ln.set_ydata(state.db_data[-1])
 
                     min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
@@ -836,7 +832,7 @@ def waterfall(
                     ):
                         ax_psd.draw_artist(ln)
 
-                    draw_waterfall(mesh, ax, db_norm, cmap)
+                    draw_waterfall(mesh, ax, db_norm, state.cmap)
                     draw_title(ax_psd, psd_title)
 
                     sm.set_clim(vmin=state.db_min, vmax=state.db_max)
