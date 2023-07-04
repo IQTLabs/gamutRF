@@ -233,10 +233,7 @@ def reset_fig(
     state,
     fig,
     cmap,
-    minor_tick_separator,
-    major_tick_separator,
     top_n,
-    freq_data,
     X,
     Y,
 ):
@@ -265,7 +262,7 @@ def reset_fig(
     _mesh_psd = ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
     (peak_lns,) = ax_psd.plot(
         X[0],
-        state.db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(state.freq_data.shape[1]),
         color="white",
         marker="^",
         markersize=12,
@@ -274,7 +271,7 @@ def reset_fig(
     )
     (max_psd_ln,) = ax_psd.plot(
         X[0],
-        state.db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(state.freq_data.shape[1]),
         color="red",
         marker=",",
         linestyle=":",
@@ -283,7 +280,7 @@ def reset_fig(
     )
     (min_psd_ln,) = ax_psd.plot(
         X[0],
-        state.db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(state.freq_data.shape[1]),
         color="pink",
         marker=",",
         linestyle=":",
@@ -292,7 +289,7 @@ def reset_fig(
     )
     (mean_psd_ln,) = ax_psd.plot(
         X[0],
-        state.db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(state.freq_data.shape[1]),
         color="cyan",
         marker="^",
         markersize=8,
@@ -303,7 +300,7 @@ def reset_fig(
     )
     (current_psd_ln,) = ax_psd.plot(
         X[0],
-        state.db_min * np.ones(freq_data.shape[1]),
+        state.db_min * np.ones(state.freq_data.shape[1]),
         color="red",
         marker="o",
         markersize=8,
@@ -344,12 +341,12 @@ def reset_fig(
     # SPECTROGRAM TITLE
     _title = ax.text(0.5, 1.05, "", transform=ax.transAxes, va="center", ha="center")
 
-    ax.xaxis.set_major_locator(MultipleLocator(major_tick_separator))
+    ax.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
     ax.xaxis.set_major_formatter("{x:.0f}")
-    ax.xaxis.set_minor_locator(minor_tick_separator)
-    ax_psd.xaxis.set_major_locator(MultipleLocator(major_tick_separator))
+    ax.xaxis.set_minor_locator(state.minor_tick_separator)
+    ax_psd.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
     ax_psd.xaxis.set_major_formatter("{x:.0f}")
-    ax_psd.xaxis.set_minor_locator(minor_tick_separator)
+    ax_psd.xaxis.set_minor_locator(state.minor_tick_separator)
 
     ax_psd.yaxis.set_animated(True)
     cbar_ax.yaxis.set_animated(True)
@@ -393,12 +390,12 @@ def init_fig(
     matplotlib.use(config.engine)
     cmap = plt.get_cmap("viridis")
     cmap_psd = plt.get_cmap("turbo")
-    minor_tick_separator = AutoMinorLocator()
+    state.minor_tick_separator = AutoMinorLocator()
     n_ticks = min(
         ((config.max_freq / config.scale - config.min_freq / config.scale) / 100) * 5,
         20,
     )
-    major_tick_separator = config.base * round(
+    state.major_tick_separator = config.base * round(
         ((config.max_freq / config.scale - config.min_freq / config.scale) / n_ticks)
         / config.base
     )
@@ -423,20 +420,16 @@ def init_fig(
         np.linspace(1, config.waterfall_height, config.waterfall_height),
     )
 
-    freq_bins = X[0]
+    state.freq_bins = X[0]
     state.db_data = np.empty(X.shape)
     state.db_data.fill(np.nan)
-    freq_data = np.empty(X.shape)
-    freq_data.fill(np.nan)
+    state.freq_data = np.empty(X.shape)
+    state.freq_data.fill(np.nan)
 
     return (
         fig,
         X,
         Y,
-        freq_bins,
-        freq_data,
-        minor_tick_separator,
-        major_tick_separator,
         cmap,
         cmap_psd,
     )
@@ -569,6 +562,8 @@ class WaterfallState:
         self.db_min = -220
         self.db_max = -150
         self.db_data = None
+        self.freq_data = None
+        self.freq_bins = None
         self.detection_text = []
         self.scan_times = []
         self.scan_config_history = {}
@@ -577,6 +572,8 @@ class WaterfallState:
         self.previous_scan_config = None
         self.last_save_time = None
         self.counter = 0
+        self.minor_tick_separator = None
+        self.major_tick_separator = None
 
 
 def waterfall(
@@ -619,10 +616,6 @@ def waterfall(
         fig,
         X,
         Y,
-        freq_bins,
-        freq_data,
-        minor_tick_separator,
-        major_tick_separator,
         cmap,
         cmap_psd,
     ) = init_fig(config, state)
@@ -668,10 +661,7 @@ def waterfall(
             state,
             fig,
             cmap,
-            minor_tick_separator,
-            major_tick_separator,
             top_n,
-            freq_data,
             X,
             Y,
         )
@@ -709,9 +699,9 @@ def waterfall(
                     .astype(int)
                 )
 
-                freq_data = np.roll(freq_data, -1, axis=0)
-                freq_data[-1, :] = np.nan
-                freq_data[-1][idx] = (
+                state.freq_data = np.roll(state.freq_data, -1, axis=0)
+                state.freq_data[-1, :] = np.nan
+                state.freq_data[-1][idx] = (
                     round(scan_df.freq / config.freq_resolution).values.flatten()
                     * config.freq_resolution
                 )
@@ -723,7 +713,7 @@ def waterfall(
                 state.db_data[-1][idx] = db
 
                 data, _xedge, _yedge = np.histogram2d(
-                    freq_data[~np.isnan(freq_data)].flatten(),
+                    state.freq_data[~np.isnan(state.freq_data)].flatten(),
                     state.db_data[~np.isnan(state.db_data)].flatten(),
                     density=False,
                     bins=[psd_x_edges, psd_y_edges],
@@ -735,7 +725,7 @@ def waterfall(
 
                 fig.canvas.restore_region(background)
 
-                top_n_bins = freq_bins[
+                top_n_bins = state.freq_bins[
                     np.argsort(
                         np.nanvar(
                             state.db_data - np.nanmin(state.db_data, axis=0), axis=0
