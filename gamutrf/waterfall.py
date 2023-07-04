@@ -231,17 +231,13 @@ def argument_parser():
 def reset_fig(
     config,
     state,
-    fig,
-    top_n,
-    X,
-    Y,
 ):
     # RESET FIGURE
-    fig.clf()
+    state.fig.clf()
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.15)
-    ax_psd = fig.add_subplot(3, 1, 1)
-    ax = fig.add_subplot(3, 1, (2, 3))
+    ax_psd = state.fig.add_subplot(3, 1, 1)
+    ax = state.fig.add_subplot(3, 1, (2, 3))
     psd_title = ax_psd.text(
         0.5, 1.05, "", transform=ax_psd.transAxes, va="center", ha="center"
     )
@@ -260,7 +256,7 @@ def reset_fig(
 
     _mesh_psd = ax_psd.pcolormesh(XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat")
     (peak_lns,) = ax_psd.plot(
-        X[0],
+        state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="white",
         marker="^",
@@ -269,7 +265,7 @@ def reset_fig(
         fillstyle="full",
     )
     (max_psd_ln,) = ax_psd.plot(
-        X[0],
+        state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="red",
         marker=",",
@@ -278,7 +274,7 @@ def reset_fig(
         label="max",
     )
     (min_psd_ln,) = ax_psd.plot(
-        X[0],
+        state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="pink",
         marker=",",
@@ -287,7 +283,7 @@ def reset_fig(
         label="min",
     )
     (mean_psd_ln,) = ax_psd.plot(
-        X[0],
+        state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="cyan",
         marker="^",
@@ -298,7 +294,7 @@ def reset_fig(
         label="mean",
     )
     (current_psd_ln,) = ax_psd.plot(
-        X[0],
+        state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
         color="red",
         marker="o",
@@ -312,12 +308,12 @@ def reset_fig(
     ax_psd.set_ylabel("dB")
 
     # SPECTROGRAM
-    mesh = ax.pcolormesh(X, Y, state.db_data, shading="nearest")
+    mesh = ax.pcolormesh(state.X, state.Y, state.db_data, shading="nearest")
     top_n_lns = []
-    for _ in range(top_n):
+    for _ in range(config.top_n):
         (ln,) = ax.plot(
-            [X[0][0]] * len(Y[:, 0]),
-            Y[:, 0],
+            [state.X[0][0]] * len(state.Y[:, 0]),
+            state.Y[:, 0],
             color="brown",
             linestyle=":",
             alpha=0,
@@ -333,8 +329,8 @@ def reset_fig(
 
     if config.plot_snr:
         sm.set_clim(vmin=config.snr_min, vmax=config.snr_max)
-    cbar_ax = fig.add_axes([0.92, 0.10, 0.03, 0.5])
-    cbar = fig.colorbar(sm, cax=cbar_ax)
+    cbar_ax = state.fig.add_axes([0.92, 0.10, 0.03, 0.5])
+    cbar = state.fig.colorbar(sm, cax=cbar_ax)
     cbar.set_label("dB", rotation=0)
 
     # SPECTROGRAM TITLE
@@ -353,10 +349,10 @@ def reset_fig(
     plt.show(block=False)
     plt.pause(0.1)
 
-    background = fig.canvas.copy_from_bbox(fig.bbox)
+    background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
 
     ax.draw_artist(mesh)
-    fig.canvas.blit(ax.bbox)
+    state.fig.canvas.blit(ax.bbox)
     if config.savefig_path:
         safe_savefig(config.savefig_path)
 
@@ -408,9 +404,9 @@ def init_fig(
     plt.rcParams["ytick.color"] = text_color
     plt.rcParams["axes.facecolor"] = text_color
 
-    fig = plt.figure(figsize=(28, 10), dpi=100)
+    state.fig = plt.figure(figsize=(28, 10), dpi=100)
 
-    X, Y = np.meshgrid(
+    state.X, state.Y = np.meshgrid(
         np.linspace(
             config.min_freq,
             config.max_freq,
@@ -419,17 +415,11 @@ def init_fig(
         np.linspace(1, config.waterfall_height, config.waterfall_height),
     )
 
-    state.freq_bins = X[0]
-    state.db_data = np.empty(X.shape)
+    state.freq_bins = state.X[0]
+    state.db_data = np.empty(state.X.shape)
     state.db_data.fill(np.nan)
-    state.freq_data = np.empty(X.shape)
+    state.freq_data = np.empty(state.X.shape)
     state.freq_data.fill(np.nan)
-
-    return (
-        fig,
-        X,
-        Y,
-    )
 
 
 def draw_peaks(
@@ -536,7 +526,7 @@ def draw_peaks(
 
 class WaterfallConfig:
     def __init__(
-        self, engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq
+        self, engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq, top_n
     ):
         self.engine = engine
         self.plot_snr = plot_snr
@@ -552,6 +542,7 @@ class WaterfallConfig:
         self.base = 20
         self.min_freq = min_freq / self.scale
         self.max_freq = max_freq / self.scale
+        self.top_n = top_n
 
 
 class WaterfallState:
@@ -573,6 +564,9 @@ class WaterfallState:
         self.major_tick_separator = None
         self.cmap_psd = None
         self.cmap = None
+        self.X = None
+        self.Y = None
+        self.fig = None
 
 
 def waterfall(
@@ -591,7 +585,7 @@ def waterfall(
     zmqr,
 ):
     config = WaterfallConfig(
-        engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq
+        engine, plot_snr, savefig_path, sampling_rate, fft_len, min_freq, max_freq, top_n
     )
     state = WaterfallState()
 
@@ -611,11 +605,7 @@ def waterfall(
     max_psd_ln: matplotlib.lines.Line2D
     psd_title: matplotlib.text.Text
 
-    (
-        fig,
-        X,
-        Y,
-    ) = init_fig(config, state)
+    init_fig(config, state)
 
     global need_reset_fig
     need_reset_fig = True
@@ -633,7 +623,7 @@ def waterfall(
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    fig.canvas.mpl_connect("resize_event", onresize)
+    state.fig.canvas.mpl_connect("resize_event", onresize)
 
     while zmqr.healthy() and running:
         (
@@ -656,10 +646,6 @@ def waterfall(
         ) = reset_fig(
             config,
             state,
-            fig,
-            top_n,
-            X,
-            Y,
         )
         need_reset_fig = False
         while zmqr.healthy() and running and not need_reset_fig:
@@ -719,20 +705,20 @@ def waterfall(
                 data /= np.max(data)
                 # data /= np.max(data, axis=1)[:,None]
 
-                fig.canvas.restore_region(background)
+                state.fig.canvas.restore_region(background)
 
                 top_n_bins = state.freq_bins[
                     np.argsort(
                         np.nanvar(
                             state.db_data - np.nanmin(state.db_data, axis=0), axis=0
                         )
-                    )[::-1][:top_n]
+                    )[::-1][:config.top_n]
                 ]
 
                 for i, ln in enumerate(top_n_lns):
-                    ln.set_xdata([top_n_bins[i]] * len(Y[:, 0]))
+                    ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
 
-                fig.canvas.blit(ax.yaxis.axes.figure.bbox)
+                state.fig.canvas.blit(ax.yaxis.axes.figure.bbox)
 
                 scan_time = scan_df.ts.iloc[-1]
                 state.scan_times.append(scan_time)
@@ -839,9 +825,9 @@ def waterfall(
                     cbar.update_normal(sm)
                     # cbar.draw_all()
                     cbar_ax.draw_artist(cbar_ax.yaxis)
-                    fig.canvas.blit(cbar_ax.yaxis.axes.figure.bbox)
+                    state.fig.canvas.blit(cbar_ax.yaxis.axes.figure.bbox)
                     ax_psd.draw_artist(ax_psd.yaxis)
-                    fig.canvas.blit(ax_psd.yaxis.axes.figure.bbox)
+                    state.fig.canvas.blit(ax_psd.yaxis.axes.figure.bbox)
                     for ln in top_n_lns:
                         ax.draw_artist(ln)
 
@@ -851,10 +837,10 @@ def waterfall(
                         ax.yaxis.axes.figure.bbox,
                         ax.bbox,
                         cbar_ax.bbox,
-                        fig.bbox,
+                        state.fig.bbox,
                     ):
-                        fig.canvas.blit(bmap)
-                    fig.canvas.flush_events()
+                        state.fig.canvas.blit(bmap)
+                    state.fig.canvas.flush_events()
                     if config.savefig_path:
                         safe_savefig(config.savefig_path)
 
