@@ -66,6 +66,9 @@ class UtilsTestCase(unittest.TestCase):
                 "agg",  # engine,
                 savefig,  # savefig_path,
                 60,  # args.rotate_secs,
+                10,  # args.width,
+                5,  # args.height,
+                True,  # args.batch
                 zmqr,
             )
             self.assertTrue(os.path.exists(savefig))
