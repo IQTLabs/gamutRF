@@ -255,7 +255,7 @@ def reset_fig(
     state.psd_x_edges = XX[0]
     state.psd_y_edges = YY[:, 0]
 
-    _mesh_psd = state.ax_psd.pcolormesh(
+    state.mesh_psd = state.ax_psd.pcolormesh(
         XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
     )
     (state.peak_lns,) = state.ax_psd.plot(
@@ -576,6 +576,8 @@ class WaterfallState:
         self.ax_psd = None
         self.ax = None
         self.save_path = None
+        self.mesg_psd = None
+        self.data = None
 
 
 def waterfall(
@@ -678,16 +680,18 @@ def waterfall(
                 state.db_data = np.roll(state.db_data, -1, axis=0)
                 state.db_data[-1, :] = np.nan
                 state.db_data[-1][idx] = db
+                state.db_min = np.nanmin(state.db_data)
+                state.db_max = np.nanmax(state.db_data)
 
-                data, _xedge, _yedge = np.histogram2d(
+                state.data, _xedge, _yedge = np.histogram2d(
                     state.freq_data[~np.isnan(state.freq_data)].flatten(),
                     state.db_data[~np.isnan(state.db_data)].flatten(),
                     density=False,
                     bins=[state.psd_x_edges, state.psd_y_edges],
                 )
-                heatmap = gaussian_filter(data, sigma=2)
-                data = heatmap
-                data /= np.max(data)
+                heatmap = gaussian_filter(state.data, sigma=2)
+                state.data = heatmap
+                state.data /= np.max(state.data)
                 # data /= np.max(data, axis=1)[:,None]
 
                 state.fig.canvas.restore_region(state.background)
@@ -733,9 +737,6 @@ def waterfall(
                 state.counter += 1
 
                 if state.counter % config.draw_rate == 0:
-                    state.db_min = np.nanmin(state.db_data)
-                    state.db_max = np.nanmax(state.db_data)
-
                     XX, YY = np.meshgrid(
                         np.linspace(
                             config.min_freq,
@@ -754,7 +755,7 @@ def waterfall(
                     state.psd_x_edges = XX[0]
                     state.psd_y_edges = YY[:, 0]
 
-                    mesh_psd = state.ax_psd.pcolormesh(
+                    state.mesh_psd = state.ax_psd.pcolormesh(
                         XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
                     )
 
@@ -771,13 +772,13 @@ def waterfall(
                     # ax_psd.clear()
 
                     state.ax_psd.set_ylim(state.db_min, state.db_max)
-                    mesh_psd.set_array(state.cmap_psd(data.T))
+                    state.mesh_psd.set_array(state.cmap_psd(state.data.T))
                     state.current_psd_ln.set_ydata(state.db_data[-1])
 
                     state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
                     state.max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
                     state.mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
-                    state.ax_psd.draw_artist(mesh_psd)
+                    state.ax_psd.draw_artist(state.mesh_psd)
 
                     if peak_finder:
                         draw_peaks(
