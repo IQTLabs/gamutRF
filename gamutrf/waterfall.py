@@ -859,14 +859,11 @@ def waterfall(
     init_fig(config, state, onresize)
 
     while zmqr.healthy() and running:
-        reset_fig(
-            config,
-            state,
-        )
+        reset_fig(config, state)
         need_reset_fig = False
         while zmqr.healthy() and running and not need_reset_fig:
-            time.sleep(0.1)
-            update_fig(config, state, zmqr)
+            if not update_fig(config, state, zmqr):
+                time.sleep(0.1)
 
     zmqr.stop()
 
