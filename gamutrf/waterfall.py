@@ -606,19 +606,6 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
             remove_time = state.scan_times.pop(0)
             state.scan_config_history.pop(remove_time)
 
-        state.fig.canvas.restore_region(state.background)
-
-        top_n_bins = state.freq_bins[
-            np.argsort(
-                np.nanvar(state.db_data - np.nanmin(state.db_data, axis=0), axis=0)
-            )[::-1][: config.top_n]
-        ]
-
-        for i, ln in enumerate(state.top_n_lns):
-            ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
-
-        state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
-
         if state.counter % config.y_label_skip == 0:
             state.y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
         else:
@@ -635,6 +622,19 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
         state.counter += 1
 
         if state.counter % config.draw_rate == 0:
+            state.fig.canvas.restore_region(state.background)
+ 
+            top_n_bins = state.freq_bins[
+                np.argsort(
+                    np.nanvar(state.db_data - np.nanmin(state.db_data, axis=0), axis=0)
+                )[::-1][: config.top_n]
+            ]
+ 
+            for i, ln in enumerate(state.top_n_lns):
+                ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
+
+            state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
+
             # db_norm = db_data
             db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
             if config.plot_snr:
