@@ -226,6 +226,18 @@ def argument_parser():
         type=int,
         help="If > 0, rotate save directories every N seconds",
     )
+    parser.add_argument(
+        "--width",
+        default=28,
+        type=float,
+        help="Waterfall width",
+    )
+    parser.add_argument(
+        "--height",
+        default=10,
+        type=float,
+        help="Waterfall height",
+    )
     return parser
 
 
@@ -351,8 +363,9 @@ def reset_fig(
     state.ax_psd.yaxis.set_animated(True)
     state.cbar_ax.yaxis.set_animated(True)
     state.ax.yaxis.set_animated(True)
-    plt.show(block=False)
-    plt.pause(0.1)
+    if not config.batch:
+        plt.show(block=False)
+        plt.pause(0.1)
 
     state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
 
@@ -365,9 +378,30 @@ def reset_fig(
         ln.set_alpha(0.75)
 
 
+def init_state(
+    config,
+    state,
+):
+    state.X, state.Y = np.meshgrid(
+        np.linspace(
+            config.min_freq,
+            config.max_freq,
+            int((config.max_freq - config.min_freq) / config.freq_resolution + 1),
+        ),
+        np.linspace(1, config.waterfall_height, config.waterfall_height),
+    )
+
+    state.freq_bins = state.X[0]
+    state.db_data = np.empty(state.X.shape)
+    state.db_data.fill(np.nan)
+    state.freq_data = np.empty(state.X.shape)
+    state.freq_data.fill(np.nan)
+
+
 def init_fig(
     config,
     state,
+    onresize,
 ):
     matplotlib.use(config.engine)
     state.cmap = plt.get_cmap("viridis")
@@ -391,22 +425,9 @@ def init_fig(
     plt.rcParams["ytick.color"] = text_color
     plt.rcParams["axes.facecolor"] = text_color
 
-    state.fig = plt.figure(figsize=(28, 10), dpi=100)
-
-    state.X, state.Y = np.meshgrid(
-        np.linspace(
-            config.min_freq,
-            config.max_freq,
-            int((config.max_freq - config.min_freq) / config.freq_resolution + 1),
-        ),
-        np.linspace(1, config.waterfall_height, config.waterfall_height),
-    )
-
-    state.freq_bins = state.X[0]
-    state.db_data = np.empty(state.X.shape)
-    state.db_data.fill(np.nan)
-    state.freq_data = np.empty(state.X.shape)
-    state.freq_data.fill(np.nan)
+    state.fig = plt.figure(figsize=(config.width, config.height), dpi=100)
+    if not config.batch:
+        state.fig.canvas.mpl_connect("resize_event", onresize)
 
 
 def draw_peaks(
@@ -519,6 +540,9 @@ class WaterfallConfig:
         max_freq,
         top_n,
         base_save_path,
+        width,
+        height,
+        batch,
     ):
         self.engine = engine
         self.plot_snr = plot_snr
@@ -537,6 +561,9 @@ class WaterfallConfig:
         self.top_n = top_n
         self.draw_rate = 1
         self.base_save_path = base_save_path
+        self.width = width
+        self.height = height
+        self.batch = batch
 
 
 class WaterfallState:
@@ -593,6 +620,9 @@ def waterfall(
     engine,
     savefig_path,
     rotate_secs,
+    width,
+    height,
+    batch,
     zmqr,
 ):
     config = WaterfallConfig(
@@ -605,10 +635,13 @@ def waterfall(
         max_freq,
         top_n,
         base_save_path,
+        width,
+        height,
+        batch,
     )
     state = WaterfallState()
     state.save_path = config.base_save_path
-    init_fig(config, state)
+    init_state(config, state)
 
     global need_reset_fig
     need_reset_fig = True
@@ -626,7 +659,7 @@ def waterfall(
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    state.fig.canvas.mpl_connect("resize_event", onresize)
+    init_fig(config, state, onresize)
 
     while zmqr.healthy() and running:
         reset_fig(
@@ -886,9 +919,11 @@ def main():
         flask = None
         savefig_path = None
         engine = "GTK3Agg"
+        batch = False
 
         if args.port:
             engine = "agg"
+            batch = True,
             savefig_path = os.path.join(tempdir, "waterfall.png")
             flask = FlaskHandler(savefig_path, args.port)
             flask.start()
@@ -911,6 +946,9 @@ def main():
             engine,
             savefig_path,
             args.rotate_secs,
+            args.width,
+            args.height,
+            batch,
             zmqr,
         )
 
