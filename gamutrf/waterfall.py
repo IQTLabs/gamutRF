@@ -226,6 +226,18 @@ def argument_parser():
         type=int,
         help="If > 0, rotate save directories every N seconds",
     )
+    parser.add_argument(
+        "--width",
+        default=28,
+        type=float,
+        help="Waterfall width.",
+    )
+    parser.add_argument(
+        "--height",
+        default=10,
+        type=float,
+        help="Waterfall height.",
+    )
     return parser
 
 
@@ -365,11 +377,31 @@ def reset_fig(
         ln.set_alpha(0.75)
 
 
-def init_fig(
+def init_state(
     config,
     state,
 ):
-    matplotlib.use(config.engine)
+    state.X, state.Y = np.meshgrid(
+        np.linspace(
+            config.min_freq,
+            config.max_freq,
+            int((config.max_freq - config.min_freq) / config.freq_resolution + 1),
+        ),
+        np.linspace(1, config.waterfall_height, config.waterfall_height),
+    )
+
+    state.freq_bins = state.X[0]
+    state.db_data = np.empty(state.X.shape)
+    state.db_data.fill(np.nan)
+    state.freq_data = np.empty(state.X.shape)
+    state.freq_data.fill(np.nan)
+
+
+def init_fig(
+    config,
+    state,
+    onresize,
+):
     state.cmap = plt.get_cmap("viridis")
     state.cmap_psd = plt.get_cmap("turbo")
     state.minor_tick_separator = AutoMinorLocator()
@@ -391,22 +423,8 @@ def init_fig(
     plt.rcParams["ytick.color"] = text_color
     plt.rcParams["axes.facecolor"] = text_color
 
-    state.fig = plt.figure(figsize=(28, 10), dpi=100)
-
-    state.X, state.Y = np.meshgrid(
-        np.linspace(
-            config.min_freq,
-            config.max_freq,
-            int((config.max_freq - config.min_freq) / config.freq_resolution + 1),
-        ),
-        np.linspace(1, config.waterfall_height, config.waterfall_height),
-    )
-
-    state.freq_bins = state.X[0]
-    state.db_data = np.empty(state.X.shape)
-    state.db_data.fill(np.nan)
-    state.freq_data = np.empty(state.X.shape)
-    state.freq_data.fill(np.nan)
+    state.fig = plt.figure(figsize=(config.width, config.height), dpi=100)
+    state.fig.canvas.mpl_connect("resize_event", onresize)
 
 
 def draw_peaks(
@@ -515,6 +533,8 @@ class WaterfallConfig:
         savefig_path,
         sampling_rate,
         fft_len,
+        width,
+        height,
         min_freq,
         max_freq,
         top_n,
@@ -537,6 +557,8 @@ class WaterfallConfig:
         self.top_n = top_n
         self.draw_rate = 1
         self.base_save_path = base_save_path
+        self.width = width
+        self.height = height
 
 
 class WaterfallState:
@@ -581,6 +603,8 @@ class WaterfallState:
 
 
 def waterfall(
+    width,
+    height,
     min_freq,
     max_freq,
     plot_snr,
@@ -601,6 +625,8 @@ def waterfall(
         savefig_path,
         sampling_rate,
         fft_len,
+        width,
+        height,
         min_freq,
         max_freq,
         top_n,
@@ -608,7 +634,7 @@ def waterfall(
     )
     state = WaterfallState()
     state.save_path = config.base_save_path
-    init_fig(config, state)
+    init_state(config, state)
 
     global need_reset_fig
     need_reset_fig = True
@@ -626,7 +652,8 @@ def waterfall(
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    state.fig.canvas.mpl_connect("resize_event", onresize)
+    matplotlib.use(config.engine)
+    init_fig(config, state, onresize)
 
     while zmqr.healthy() and running:
         reset_fig(
@@ -899,6 +926,8 @@ def main():
         )
 
         waterfall(
+            args.width,
+            args.height,
             args.min_freq,
             args.max_freq,
             args.plot_snr,
