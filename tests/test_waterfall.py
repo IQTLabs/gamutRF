@@ -54,6 +54,8 @@ class UtilsTestCase(unittest.TestCase):
             zmqr = FakeZmqReceiver(90, peak_min, peak_max, peak_val)
             peak_finder = get_peak_finder("narrowband")
             waterfall(
+                10,   # args.width,
+                5,    # args.height,
                 1e6,  # args.min_freq,
                 2e6,  # args.max_freq,
                 True,  # args.plot_snr,
@@ -67,6 +69,7 @@ class UtilsTestCase(unittest.TestCase):
                 savefig,  # savefig_path,
                 60,  # args.rotate_secs,
                 zmqr,
+                True, # batch
             )
             self.assertTrue(os.path.exists(savefig))
             for dump_match in ("*json", "*csv", "waterfall*png"):
