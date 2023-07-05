@@ -528,6 +528,201 @@ def draw_peaks(
                 state.ax_psd.draw_artist(txt)
 
 
+def update_fig(config, state, zmqr):
+    results = []
+    while True:
+        scan_configs, scan_df = zmqr.read_buff()
+        if scan_df is None:
+            break
+        results.append((scan_configs, scan_df))
+
+    if not results:
+        return False
+
+    if config.base_save_path and rotate_secs:
+        state.save_path = os.path.join(
+            config.base_save_path,
+            str(int(time.time() / rotate_secs) * rotate_secs),
+        )
+        if not os.path.exists(state.save_path):
+            os.makedirs(state.save_path)
+
+    for scan_configs, scan_df in results:
+        scan_df = scan_df[
+            (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
+        ]
+        if scan_df.empty:
+            logging.info(
+                f"Scan is outside specified frequency range ({config.min_freq} to {config.max_freq})."
+            )
+            continue
+
+        idx = (
+            round((scan_df.freq - config.min_freq) / config.freq_resolution)
+            .values.flatten()
+            .astype(int)
+        )
+
+        state.freq_data = np.roll(state.freq_data, -1, axis=0)
+        state.freq_data[-1, :] = np.nan
+        state.freq_data[-1][idx] = (
+            round(scan_df.freq / config.freq_resolution).values.flatten()
+            * config.freq_resolution
+        )
+
+        db = scan_df.db.values.flatten()
+
+        state.db_data = np.roll(state.db_data, -1, axis=0)
+        state.db_data[-1, :] = np.nan
+        state.db_data[-1][idx] = db
+        state.db_min = np.nanmin(state.db_data)
+        state.db_max = np.nanmax(state.db_data)
+
+        state.data, _xedge, _yedge = np.histogram2d(
+            state.freq_data[~np.isnan(state.freq_data)].flatten(),
+            state.db_data[~np.isnan(state.db_data)].flatten(),
+            density=False,
+            bins=[state.psd_x_edges, state.psd_y_edges],
+        )
+        heatmap = gaussian_filter(state.data, sigma=2)
+        state.data = heatmap
+        state.data /= np.max(state.data)
+        # data /= np.max(data, axis=1)[:,None]
+
+        state.fig.canvas.restore_region(state.background)
+
+        top_n_bins = state.freq_bins[
+            np.argsort(
+                np.nanvar(state.db_data - np.nanmin(state.db_data, axis=0), axis=0)
+            )[::-1][: config.top_n]
+        ]
+
+        for i, ln in enumerate(state.top_n_lns):
+            ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
+
+        state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
+
+        scan_time = scan_df.ts.iloc[-1]
+        state.scan_times.append(scan_time)
+        if len(state.scan_times) > config.waterfall_height:
+            remove_time = state.scan_times.pop(0)
+            if state.save_path:
+                state.scan_config_history.pop(remove_time)
+                # assert len(scan_config_history) <= waterfall_height
+        row_time = datetime.datetime.fromtimestamp(scan_time)
+
+        if state.counter % config.y_label_skip == 0:
+            state.y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
+        else:
+            state.y_labels.append("")
+        state.y_ticks.append(config.waterfall_height)
+        for j in range(len(state.y_ticks) - 2, -1, -1):
+            state.y_ticks[j] -= 1
+            if state.y_ticks[j] < 1:
+                state.y_ticks.pop(j)
+                state.y_labels.pop(j)
+
+        state.ax.set_yticks(state.y_ticks, labels=state.y_labels)
+
+        if state.save_path:
+            state.scan_config_history[scan_time] = scan_configs
+
+        state.counter += 1
+
+        if state.counter % config.draw_rate == 0:
+            XX, YY = np.meshgrid(
+                np.linspace(
+                    config.min_freq,
+                    config.max_freq,
+                    int(
+                        (config.max_freq - config.min_freq) / (config.freq_resolution)
+                        + 1
+                    ),
+                ),
+                np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
+            )
+
+            state.psd_x_edges = XX[0]
+            state.psd_y_edges = YY[:, 0]
+
+            state.mesh_psd = state.ax_psd.pcolormesh(
+                XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
+            )
+
+            # db_norm = db_data
+            db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
+            if config.plot_snr:
+                db_norm = (
+                    (state.db_data - np.nanmin(state.db_data, axis=0)) - config.snr_min
+                ) / (config.snr_max - config.snr_min)
+
+            # ax_psd.clear()
+
+            state.ax_psd.set_ylim(state.db_min, state.db_max)
+            state.mesh_psd.set_array(state.cmap_psd(state.data.T))
+            state.current_psd_ln.set_ydata(state.db_data[-1])
+
+            state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
+            state.max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
+            state.mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
+            state.ax_psd.draw_artist(state.mesh_psd)
+
+            if state.peak_finder:
+                draw_peaks(
+                    config,
+                    state,
+                    scan_time,
+                    scan_configs,
+                )
+
+            for ln in (
+                state.peak_lns,
+                state.min_psd_ln,
+                state.max_psd_ln,
+                state.mean_psd_ln,
+                state.current_psd_ln,
+            ):
+                state.ax_psd.draw_artist(ln)
+
+            draw_waterfall(state.mesh, state.ax, db_norm, state.cmap)
+            draw_title(state.ax_psd, state.psd_title)
+
+            state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
+            state.cbar.update_normal(state.sm)
+            # cbar.draw_all()
+            state.cbar_ax.draw_artist(state.cbar_ax.yaxis)
+            state.fig.canvas.blit(state.cbar_ax.yaxis.axes.figure.bbox)
+            state.ax_psd.draw_artist(state.ax_psd.yaxis)
+            state.fig.canvas.blit(state.ax_psd.yaxis.axes.figure.bbox)
+            for ln in state.top_n_lns:
+                state.ax.draw_artist(ln)
+
+            state.ax.draw_artist(state.ax.yaxis)
+            for bmap in (
+                state.ax_psd.bbox,
+                state.ax.yaxis.axes.figure.bbox,
+                state.ax.bbox,
+                state.cbar_ax.bbox,
+                state.fig.bbox,
+            ):
+                state.fig.canvas.blit(bmap)
+            state.fig.canvas.flush_events()
+            if config.savefig_path:
+                safe_savefig(config.savefig_path)
+
+            logging.info(f"Plotting {row_time}")
+
+            if state.save_path:
+                save_waterfall(
+                    config,
+                    state,
+                    save_time,
+                    scan_time,
+                )
+
+    return True
+
+
 class WaterfallConfig:
     def __init__(
         self,
@@ -605,6 +800,7 @@ class WaterfallState:
         self.save_path = None
         self.mesg_psd = None
         self.data = None
+        self.peak_finder = None
 
 
 def waterfall(
@@ -642,6 +838,7 @@ def waterfall(
     state = WaterfallState()
     state.save_path = config.base_save_path
     init_state(config, state)
+    state.peak_finder = peak_finder
 
     global need_reset_fig
     need_reset_fig = True
@@ -669,203 +866,7 @@ def waterfall(
         need_reset_fig = False
         while zmqr.healthy() and running and not need_reset_fig:
             time.sleep(0.1)
-            results = []
-            while True:
-                scan_configs, scan_df = zmqr.read_buff()
-                if scan_df is None:
-                    break
-                results.append((scan_configs, scan_df))
-
-            if config.base_save_path and rotate_secs:
-                state.save_path = os.path.join(
-                    config.base_save_path,
-                    str(int(time.time() / rotate_secs) * rotate_secs),
-                )
-                if not os.path.exists(state.save_path):
-                    os.makedirs(state.save_path)
-
-            for scan_configs, scan_df in results:
-                scan_df = scan_df[
-                    (scan_df.freq >= config.min_freq)
-                    & (scan_df.freq <= config.max_freq)
-                ]
-                if scan_df.empty:
-                    logging.info(
-                        f"Scan is outside specified frequency range ({config.min_freq} to {config.max_freq})."
-                    )
-                    continue
-
-                idx = (
-                    round((scan_df.freq - config.min_freq) / config.freq_resolution)
-                    .values.flatten()
-                    .astype(int)
-                )
-
-                state.freq_data = np.roll(state.freq_data, -1, axis=0)
-                state.freq_data[-1, :] = np.nan
-                state.freq_data[-1][idx] = (
-                    round(scan_df.freq / config.freq_resolution).values.flatten()
-                    * config.freq_resolution
-                )
-
-                db = scan_df.db.values.flatten()
-
-                state.db_data = np.roll(state.db_data, -1, axis=0)
-                state.db_data[-1, :] = np.nan
-                state.db_data[-1][idx] = db
-                state.db_min = np.nanmin(state.db_data)
-                state.db_max = np.nanmax(state.db_data)
-
-                state.data, _xedge, _yedge = np.histogram2d(
-                    state.freq_data[~np.isnan(state.freq_data)].flatten(),
-                    state.db_data[~np.isnan(state.db_data)].flatten(),
-                    density=False,
-                    bins=[state.psd_x_edges, state.psd_y_edges],
-                )
-                heatmap = gaussian_filter(state.data, sigma=2)
-                state.data = heatmap
-                state.data /= np.max(state.data)
-                # data /= np.max(data, axis=1)[:,None]
-
-                state.fig.canvas.restore_region(state.background)
-
-                top_n_bins = state.freq_bins[
-                    np.argsort(
-                        np.nanvar(
-                            state.db_data - np.nanmin(state.db_data, axis=0), axis=0
-                        )
-                    )[::-1][: config.top_n]
-                ]
-
-                for i, ln in enumerate(state.top_n_lns):
-                    ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
-
-                state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
-
-                scan_time = scan_df.ts.iloc[-1]
-                state.scan_times.append(scan_time)
-                if len(state.scan_times) > config.waterfall_height:
-                    remove_time = state.scan_times.pop(0)
-                    if state.save_path:
-                        state.scan_config_history.pop(remove_time)
-                        # assert len(scan_config_history) <= waterfall_height
-                row_time = datetime.datetime.fromtimestamp(scan_time)
-
-                if state.counter % config.y_label_skip == 0:
-                    state.y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
-                else:
-                    state.y_labels.append("")
-                state.y_ticks.append(config.waterfall_height)
-                for j in range(len(state.y_ticks) - 2, -1, -1):
-                    state.y_ticks[j] -= 1
-                    if state.y_ticks[j] < 1:
-                        state.y_ticks.pop(j)
-                        state.y_labels.pop(j)
-
-                state.ax.set_yticks(state.y_ticks, labels=state.y_labels)
-
-                if state.save_path:
-                    state.scan_config_history[scan_time] = scan_configs
-
-                state.counter += 1
-
-                if state.counter % config.draw_rate == 0:
-                    XX, YY = np.meshgrid(
-                        np.linspace(
-                            config.min_freq,
-                            config.max_freq,
-                            int(
-                                (config.max_freq - config.min_freq)
-                                / (config.freq_resolution)
-                                + 1
-                            ),
-                        ),
-                        np.linspace(
-                            state.db_min, state.db_max, config.psd_db_resolution
-                        ),
-                    )
-
-                    state.psd_x_edges = XX[0]
-                    state.psd_y_edges = YY[:, 0]
-
-                    state.mesh_psd = state.ax_psd.pcolormesh(
-                        XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
-                    )
-
-                    # db_norm = db_data
-                    db_norm = (state.db_data - state.db_min) / (
-                        state.db_max - state.db_min
-                    )
-                    if config.plot_snr:
-                        db_norm = (
-                            (state.db_data - np.nanmin(state.db_data, axis=0))
-                            - config.snr_min
-                        ) / (config.snr_max - config.snr_min)
-
-                    # ax_psd.clear()
-
-                    state.ax_psd.set_ylim(state.db_min, state.db_max)
-                    state.mesh_psd.set_array(state.cmap_psd(state.data.T))
-                    state.current_psd_ln.set_ydata(state.db_data[-1])
-
-                    state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
-                    state.max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
-                    state.mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
-                    state.ax_psd.draw_artist(state.mesh_psd)
-
-                    if peak_finder:
-                        draw_peaks(
-                            config,
-                            state,
-                            peak_finder,
-                            scan_time,
-                            scan_configs,
-                        )
-
-                    for ln in (
-                        state.peak_lns,
-                        state.min_psd_ln,
-                        state.max_psd_ln,
-                        state.mean_psd_ln,
-                        state.current_psd_ln,
-                    ):
-                        state.ax_psd.draw_artist(ln)
-
-                    draw_waterfall(state.mesh, state.ax, db_norm, state.cmap)
-                    draw_title(state.ax_psd, state.psd_title)
-
-                    state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
-                    state.cbar.update_normal(state.sm)
-                    # cbar.draw_all()
-                    state.cbar_ax.draw_artist(state.cbar_ax.yaxis)
-                    state.fig.canvas.blit(state.cbar_ax.yaxis.axes.figure.bbox)
-                    state.ax_psd.draw_artist(state.ax_psd.yaxis)
-                    state.fig.canvas.blit(state.ax_psd.yaxis.axes.figure.bbox)
-                    for ln in state.top_n_lns:
-                        state.ax.draw_artist(ln)
-
-                    state.ax.draw_artist(state.ax.yaxis)
-                    for bmap in (
-                        state.ax_psd.bbox,
-                        state.ax.yaxis.axes.figure.bbox,
-                        state.ax.bbox,
-                        state.cbar_ax.bbox,
-                        state.fig.bbox,
-                    ):
-                        state.fig.canvas.blit(bmap)
-                    state.fig.canvas.flush_events()
-                    if config.savefig_path:
-                        safe_savefig(config.savefig_path)
-
-                    logging.info(f"Plotting {row_time}")
-
-                    if state.save_path:
-                        save_waterfall(
-                            config,
-                            state,
-                            save_time,
-                            scan_time,
-                        )
+            update_fig(config, state, zmqr)
 
     zmqr.stop()
 
@@ -923,7 +924,7 @@ def main():
 
         if args.port:
             engine = "agg"
-            batch = True,
+            batch = True
             savefig_path = os.path.join(tempdir, "waterfall.png")
             flask = FlaskHandler(savefig_path, args.port)
             flask.start()

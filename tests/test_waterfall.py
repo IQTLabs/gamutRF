@@ -67,7 +67,7 @@ class UtilsTestCase(unittest.TestCase):
                 savefig,  # savefig_path,
                 60,  # args.rotate_secs,
                 10,  # args.width,
-                5,   # args.height,
+                5,  # args.height,
                 True,  # args.batch
                 zmqr,
             )
