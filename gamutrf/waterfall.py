@@ -772,7 +772,7 @@ def waterfall(
                     # ax_psd.clear()
 
                     state.ax_psd.set_ylim(state.db_min, state.db_max)
-                    state.mesh_psd.set_array(state.cmap_psd(data.T))
+                    state.mesh_psd.set_array(state.cmap_psd(state.data.T))
                     state.current_psd_ln.set_ydata(state.db_data[-1])
 
                     state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
