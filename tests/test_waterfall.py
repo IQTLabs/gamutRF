@@ -16,25 +16,33 @@ class FakeZmqReceiver:
     def __init__(self, run_secs, peak_min, peak_max, peak_val):
         self.start_time = time.time()
         self.run_secs = run_secs
-        df = pd.DataFrame(
-            [
-                {"ts": 1.0, "freq": 1 + (i * 0.001), "db": peak_val / 2}
-                for i in range(1000)
-            ]
-        )
-        df.loc[(df.freq >= peak_min) & (df.freq <= peak_max), "db"] = peak_val
-        self.fake_results = [
-            ({}, df),
-            (None, None),
-        ]
         self.serve_results = None
+        self.peak_min = peak_min
+        self.peak_max = peak_max
+        self.peak_val = peak_val
 
     def healthy(self):
         return time.time() - self.start_time < self.run_secs
 
     def read_buff(self):
         if not self.serve_results:
-            self.serve_results = copy.deepcopy(self.fake_results)
+            df = pd.DataFrame(
+                [
+                    {
+                        "ts": time.time(),
+                        "freq": 1 + (i * 0.001),
+                        "db": self.peak_val / 2,
+                    }
+                    for i in range(1000)
+                ]
+            )
+            df.loc[
+                (df.freq >= self.peak_min) & (df.freq <= self.peak_max), "db"
+            ] = self.peak_val
+            self.serve_results = [
+                ({}, df),
+                (None, None),
+            ]
         return self.serve_results.pop()
 
     def stop(self):
