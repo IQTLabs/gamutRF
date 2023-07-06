@@ -1,10 +1,12 @@
 import argparse
-import concurrent.futures
+import logging
 import os
+import sys
 import time
 import tarfile
 import gzip
 import subprocess
+import sysrsync
 
 def check_tld(top_dir, args):
 
@@ -89,17 +91,26 @@ def argument_parser():
     parser.add_argument(
         "dir", default="", type=str, help="Top level directory containing recordings"
     )
-    parser.add_argument("--compress", dest="compress", action="store_true", help="compress (gzip) directories")
-    parser.add_argument("--delete", dest="delete", action="store_true", help="delete after compressing")
-    parser.add_argument("--threshold_seconds", dest="threshold_seconds", type=int, help="delete after compressing")
-    parser.add_argument("--export", dest="export_path", type=str, help="internal or external path to export to after processing")
-    parser.set_defaults(dir="", dont_compress=False, delete=False, threshold_seconds=300, export_path="")
+    parser.add_argument("--compress", dest="compress", action="store_true", default=False help="compress (gzip) directories")
+    parser.add_argument("--delete", dest="delete", action="store_true", default=False help="delete after compressing")
+    parser.add_argument("--threshold_seconds", dest="threshold_seconds", type=int, default=300 help="delete after compressing")
+    parser.add_argument("--export_path", dest="export_path", type=str, default=None, help="path to export to after processing")
+    parser.add_argument("--export_ssh_host", dest="export_ssh_host", type=str, default=None, help="host for external export using ssh")
+    parser.add_argument("--export_ssh_key", dest="export_ssh_key", type=str, default=None, help="if using external_ssh_host a ssh key can be specified")
 
     return parser
 
+def check_args(args):
+    if args.export_ssh_host and not args.export_ssh_key:
+        return "If using export_ssh_key please include export_ssh_host"
+    return ""
 
 def main():
     args = argument_parser().parse_args()
+    results = check_args(args)
+    if results:
+        print(results)
+        sys.exit(1)
 
     # Check for valid subdirs
     valid_folders = check_tld(args.dir, args)
@@ -111,7 +122,7 @@ def main():
         for filename in tarred_filenames:
             print(filename)
         print('...finished processing files')
-        if args.export_path != "":
+        if args.export_path != "" or args.export_path != None:
             print(f'Exporting tar files to {args.export_path}')
             exported_filepath = export_to_path(args.dir, args.export_path, args)
             print(f'...done exporting to {args.export_path}')
