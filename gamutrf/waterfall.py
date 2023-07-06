@@ -623,13 +623,13 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
 
         if state.counter % config.draw_rate == 0:
             state.fig.canvas.restore_region(state.background)
- 
+
             top_n_bins = state.freq_bins[
                 np.argsort(
                     np.nanvar(state.db_data - np.nanmin(state.db_data, axis=0), axis=0)
                 )[::-1][: config.top_n]
             ]
- 
+
             for i, ln in enumerate(state.top_n_lns):
                 ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
 
