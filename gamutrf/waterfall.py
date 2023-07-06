@@ -229,15 +229,42 @@ def argument_parser():
         "--width",
         default=28,
         type=float,
-        help="Waterfall width",
+        help="Waterfall image width",
     )
     parser.add_argument(
         "--height",
         default=10,
         type=float,
+        help="Waterfall image height",
+    )
+    parser.add_argument(
+        "--waterfall_height",
+        default=100,
+        type=int,
         help="Waterfall height",
     )
     return parser
+
+
+def reset_mesh_psd(config, state):
+    if state.mesh_psd:
+        state.mesh_psd.remove()
+
+    XX, YY = np.meshgrid(
+        np.linspace(
+            config.min_freq,
+            config.max_freq,
+            int((config.max_freq - config.min_freq) / (config.freq_resolution) + 1),
+        ),
+        np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
+    )
+
+    state.psd_x_edges = XX[0]
+    state.psd_y_edges = YY[:, 0]
+
+    state.mesh_psd = state.ax_psd.pcolormesh(
+        XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
+    )
 
 
 def reset_fig(
@@ -254,21 +281,7 @@ def reset_fig(
         0.5, 1.05, "", transform=state.ax_psd.transAxes, va="center", ha="center"
     )
 
-    # PSD
-    XX, YY = np.meshgrid(
-        np.linspace(
-            config.min_freq,
-            config.max_freq,
-            int((config.max_freq - config.min_freq) / (config.freq_resolution) + 1),
-        ),
-        np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
-    )
-    state.psd_x_edges = XX[0]
-    state.psd_y_edges = YY[:, 0]
-
-    state.mesh_psd = state.ax_psd.pcolormesh(
-        XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
-    )
+    reset_mesh_psd(config, state)
     (state.peak_lns,) = state.ax_psd.plot(
         state.X[0],
         state.db_min * np.ones(state.freq_data.shape[1]),
@@ -352,29 +365,26 @@ def reset_fig(
         0.5, 1.05, "", transform=state.ax.transAxes, va="center", ha="center"
     )
 
-    state.ax.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
-    state.ax.xaxis.set_major_formatter("{x:.0f}")
-    state.ax.xaxis.set_minor_locator(state.minor_tick_separator)
-    state.ax_psd.xaxis.set_major_locator(MultipleLocator(state.major_tick_separator))
-    state.ax_psd.xaxis.set_major_formatter("{x:.0f}")
-    state.ax_psd.xaxis.set_minor_locator(state.minor_tick_separator)
+    for ax in (state.ax.xaxis, state.ax_psd.xaxis):
+        ax.set_major_locator(MultipleLocator(state.major_tick_separator))
+        ax.set_major_formatter("{x:.0f}")
+        ax.set_minor_locator(state.minor_tick_separator)
 
-    state.ax_psd.yaxis.set_animated(True)
-    state.cbar_ax.yaxis.set_animated(True)
-    state.ax.yaxis.set_animated(True)
+    for ax in (state.ax_psd.yaxis, state.cbar_ax.yaxis, state.ax.yaxis):
+        ax.set_animated(True)
+
     if not config.batch:
         plt.show(block=False)
-        plt.pause(0.1)
 
     state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
 
     state.ax.draw_artist(state.mesh)
     state.fig.canvas.blit(state.ax.bbox)
-    if config.savefig_path:
-        safe_savefig(config.savefig_path)
-
     for ln in state.top_n_lns:
         ln.set_alpha(0.75)
+
+    if config.savefig_path:
+        safe_savefig(config.savefig_path)
 
 
 def init_state(
@@ -417,12 +427,14 @@ def init_fig(
 
     plt.rcParams["savefig.facecolor"] = "#2A3459"
     plt.rcParams["figure.facecolor"] = "#2A3459"
-    text_color = "#d2d5dd"
-    plt.rcParams["text.color"] = text_color
-    plt.rcParams["axes.labelcolor"] = text_color
-    plt.rcParams["xtick.color"] = text_color
-    plt.rcParams["ytick.color"] = text_color
-    plt.rcParams["axes.facecolor"] = text_color
+    for param in (
+        "text.color",
+        "axes.labelcolor",
+        "xtick.color",
+        "ytick.color",
+        "axes.facecolor",
+    ):
+        plt.rcParams[param] = "#d2d5dd"
 
     state.fig = plt.figure(figsize=(config.width, config.height), dpi=100)
     if not config.batch:
@@ -586,27 +598,13 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
         state.data /= np.max(state.data)
         # data /= np.max(data, axis=1)[:,None]
 
-        state.fig.canvas.restore_region(state.background)
-
-        top_n_bins = state.freq_bins[
-            np.argsort(
-                np.nanvar(state.db_data - np.nanmin(state.db_data, axis=0), axis=0)
-            )[::-1][: config.top_n]
-        ]
-
-        for i, ln in enumerate(state.top_n_lns):
-            ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
-
-        state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
-
         scan_time = scan_df.ts.iloc[-1]
+        row_time = datetime.datetime.fromtimestamp(scan_time)
         state.scan_times.append(scan_time)
+        state.scan_config_history[scan_time] = scan_configs
         if len(state.scan_times) > config.waterfall_height:
             remove_time = state.scan_times.pop(0)
-            if state.save_path:
-                state.scan_config_history.pop(remove_time)
-                # assert len(scan_config_history) <= waterfall_height
-        row_time = datetime.datetime.fromtimestamp(scan_time)
+            state.scan_config_history.pop(remove_time)
 
         if state.counter % config.y_label_skip == 0:
             state.y_labels.append(row_time.strftime("%Y-%m-%d %H:%M:%S"))
@@ -621,30 +619,21 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
 
         state.ax.set_yticks(state.y_ticks, labels=state.y_labels)
 
-        if state.save_path:
-            state.scan_config_history[scan_time] = scan_configs
-
         state.counter += 1
 
         if state.counter % config.draw_rate == 0:
-            XX, YY = np.meshgrid(
-                np.linspace(
-                    config.min_freq,
-                    config.max_freq,
-                    int(
-                        (config.max_freq - config.min_freq) / (config.freq_resolution)
-                        + 1
-                    ),
-                ),
-                np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
-            )
+            state.fig.canvas.restore_region(state.background)
 
-            state.psd_x_edges = XX[0]
-            state.psd_y_edges = YY[:, 0]
+            top_n_bins = state.freq_bins[
+                np.argsort(
+                    np.nanvar(state.db_data - np.nanmin(state.db_data, axis=0), axis=0)
+                )[::-1][: config.top_n]
+            ]
 
-            state.mesh_psd = state.ax_psd.pcolormesh(
-                XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
-            )
+            for i, ln in enumerate(state.top_n_lns):
+                ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
+
+            state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
 
             # db_norm = db_data
             db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
@@ -653,7 +642,7 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
                     (state.db_data - np.nanmin(state.db_data, axis=0)) - config.snr_min
                 ) / (config.snr_max - config.snr_min)
 
-            # ax_psd.clear()
+            reset_mesh_psd(config, state)
 
             state.ax_psd.set_ylim(state.db_min, state.db_max)
             state.mesh_psd.set_array(state.cmap_psd(state.data.T))
@@ -686,11 +675,9 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
 
             state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
             state.cbar.update_normal(state.sm)
-            # cbar.draw_all()
-            state.cbar_ax.draw_artist(state.cbar_ax.yaxis)
-            state.fig.canvas.blit(state.cbar_ax.yaxis.axes.figure.bbox)
-            state.ax_psd.draw_artist(state.ax_psd.yaxis)
-            state.fig.canvas.blit(state.ax_psd.yaxis.axes.figure.bbox)
+            for ax in (state.cbar_ax.yaxis, state.ax_psd.yaxis):
+                state.cbar_ax.draw_artist(ax)
+                state.fig.canvas.blit(ax.axes.figure.bbox)
             for ln in state.top_n_lns:
                 state.ax.draw_artist(ln)
 
@@ -734,6 +721,7 @@ class WaterfallConfig:
         base_save_path,
         width,
         height,
+        waterfall_height,
         batch,
     ):
         self.engine = engine
@@ -741,7 +729,7 @@ class WaterfallConfig:
         self.savefig_path = savefig_path
         self.snr_min = 0
         self.snr_max = 50
-        self.waterfall_height = 100  # number of waterfall rows
+        self.waterfall_height = waterfall_height  # number of waterfall rows
         self.marker_distance = 0.1
         self.scale = 1e6
         self.freq_resolution = sampling_rate / fft_len / self.scale
@@ -795,7 +783,7 @@ class WaterfallState:
         self.ax_psd = None
         self.ax = None
         self.save_path = None
-        self.mesg_psd = None
+        self.mesh_psd = None
         self.data = None
         self.peak_finder = None
 
@@ -815,6 +803,7 @@ def waterfall(
     rotate_secs,
     width,
     height,
+    waterfall_height,
     batch,
     zmqr,
 ):
@@ -830,6 +819,7 @@ def waterfall(
         base_save_path,
         width,
         height,
+        waterfall_height,
         batch,
     )
     state = WaterfallState()
@@ -943,6 +933,7 @@ def main():
             args.rotate_secs,
             args.width,
             args.height,
+            args.waterfall_height,
             batch,
             zmqr,
         )
