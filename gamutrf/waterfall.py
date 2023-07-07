@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import os
+import shutil
 import signal
 import tempfile
 import threading
@@ -35,11 +36,7 @@ def safe_savefig(path):
     plt.savefig(tmp_path)
     os.rename(tmp_path, path)
     logging.info("wrote %s", path)
-
-
-def draw_waterfall(mesh, ax, data, cmap):
-    mesh.set_array(cmap(data))
-    ax.draw_artist(mesh)
+    return path
 
 
 def draw_title(ax, title):
@@ -145,6 +142,7 @@ def save_waterfall(
     state,
     save_time,
     scan_time,
+    fig_path=None,
 ):
     now = datetime.datetime.now()
     if state.last_save_time is None:
@@ -158,7 +156,10 @@ def save_waterfall(
         waterfall_save_path = str(
             Path(waterfall_save_dir, f"waterfall_{scan_time}.png")
         )
-        safe_savefig(waterfall_save_path)
+        if fig_path:
+            shutil.copyfile(fig_path, waterfall_save_path)
+        else:
+            safe_savefig(waterfall_save_path)
 
         save_scan_configs = {
             "start_scan_timestamp": state.scan_times[0],
@@ -246,7 +247,7 @@ def argument_parser():
     return parser
 
 
-def reset_mesh_psd(config, state):
+def reset_mesh_psd(config, state, data=None):
     if state.mesh_psd:
         state.mesh_psd.remove()
 
@@ -262,9 +263,16 @@ def reset_mesh_psd(config, state):
     state.psd_x_edges = XX[0]
     state.psd_y_edges = YY[:, 0]
 
-    state.mesh_psd = state.ax_psd.pcolormesh(
-        XX, YY, np.zeros(XX[:-1, :-1].shape), shading="flat"
-    )
+    if data is None:
+        data = np.zeros(XX[:-1, :-1].shape)
+
+    state.mesh_psd = state.ax_psd.pcolormesh(XX, YY, data, shading="flat")
+
+
+def reset_mesh(state, data):
+    if state.mesh:
+        state.mesh.remove()
+    state.mesh = state.ax.pcolormesh(state.X, state.Y, data, shading="nearest")
 
 
 def reset_fig(
@@ -335,7 +343,7 @@ def reset_fig(
     state.ax_psd.set_ylabel("dB")
 
     # SPECTROGRAM
-    state.mesh = state.ax.pcolormesh(state.X, state.Y, state.db_data, shading="nearest")
+    reset_mesh(state, state.db_data)
     state.top_n_lns = []
     for _ in range(config.top_n):
         (ln,) = state.ax.plot(
@@ -417,12 +425,11 @@ def init_fig(
     state.cmap_psd = plt.get_cmap("turbo")
     state.minor_tick_separator = AutoMinorLocator()
     n_ticks = min(
-        ((config.max_freq / config.scale - config.min_freq / config.scale) / 100) * 5,
+        ((config.max_freq - config.min_freq) / 100) * 5,
         20,
     )
     state.major_tick_separator = config.base * round(
-        ((config.max_freq / config.scale - config.min_freq / config.scale) / n_ticks)
-        / config.base
+        ((config.max_freq - config.min_freq) / n_ticks) / config.base
     )
 
     plt.rcParams["savefig.facecolor"] = "#2A3459"
@@ -630,22 +637,14 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
                 )[::-1][: config.top_n]
             ]
 
-            for i, ln in enumerate(state.top_n_lns):
-                ln.set_xdata([top_n_bins[i]] * len(state.Y[:, 0]))
+            for top_n_bin, ln in zip(top_n_bins, state.top_n_lns):
+                ln.set_xdata([top_n_bin] * len(state.Y[:, 0]))
 
             state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
 
-            # db_norm = db_data
-            db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
-            if config.plot_snr:
-                db_norm = (
-                    (state.db_data - np.nanmin(state.db_data, axis=0)) - config.snr_min
-                ) / (config.snr_max - config.snr_min)
-
-            reset_mesh_psd(config, state)
+            reset_mesh_psd(config, state, data=state.cmap_psd(state.data.T))
 
             state.ax_psd.set_ylim(state.db_min, state.db_max)
-            state.mesh_psd.set_array(state.cmap_psd(state.data.T))
             state.current_psd_ln.set_ydata(state.db_data[-1])
 
             state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
@@ -670,7 +669,16 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
             ):
                 state.ax_psd.draw_artist(ln)
 
-            draw_waterfall(state.mesh, state.ax, db_norm, state.cmap)
+            # db_norm = db_data
+            db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
+            if config.plot_snr:
+                db_norm = (
+                    (state.db_data - np.nanmin(state.db_data, axis=0)) - config.snr_min
+                ) / (config.snr_max - config.snr_min)
+
+            reset_mesh(state, state.cmap(db_norm))
+            state.ax.draw_artist(state.mesh)
+
             draw_title(state.ax_psd, state.psd_title)
 
             state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
@@ -691,8 +699,9 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
             ):
                 state.fig.canvas.blit(bmap)
             state.fig.canvas.flush_events()
+            fig_path = None
             if config.savefig_path:
-                safe_savefig(config.savefig_path)
+                fig_path = safe_savefig(config.savefig_path)
 
             logging.info(f"Plotting {row_time}")
 
@@ -702,6 +711,7 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
                     state,
                     save_time,
                     scan_time,
+                    fig_path=fig_path,
                 )
 
     return True
