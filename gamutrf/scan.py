@@ -22,6 +22,7 @@ from prometheus_client import start_http_server
 
 from gamutrf.grscan import grscan
 from gamutrf.flask_handler import FlaskHandler
+from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ
 
 running = True
 
@@ -45,14 +46,14 @@ def argument_parser():
         "--freq-end",
         dest="freq_end",
         type=eng_float,
-        default=eng_notation.num_to_str(float(1e9)),
+        default=eng_notation.num_to_str(MAX_FREQ),
         help="Set freq_end [default=%(default)r]",
     )
     parser.add_argument(
         "--freq-start",
         dest="freq_start",
         type=eng_float,
-        default=eng_notation.num_to_str(float(100e6)),
+        default=eng_notation.num_to_str(MIN_FREQ),
         help="Set freq_start [default=%(default)r]",
     )
     parser.add_argument(
@@ -66,7 +67,7 @@ def argument_parser():
         "--samp-rate",
         dest="samp_rate",
         type=eng_float,
-        default=eng_notation.num_to_str(float(4.096e6)),
+        default=eng_notation.num_to_str(SAMP_RATE),
         help="Set samp_rate [default=%(default)r]",
     )
     parser.add_argument(
@@ -223,13 +224,6 @@ def argument_parser():
         help="directory for inference output",
     )
     parser.add_argument(
-        "--inference_input_len",
-        dest="inference_input_len",
-        type=int,
-        default=2048,
-        help="vector length for wavelearner",
-    )
-    parser.add_argument(
         "--tuning_ranges",
         dest="tuning_ranges",
         type=str,
@@ -327,7 +321,6 @@ def run_loop(options, prom_vars, wavelearner):
             dc_block_long=handler.options.dc_block_long,
             inference_plan_file=handler.options.inference_plan_file,
             inference_output_dir=handler.options.inference_output_dir,
-            inference_input_len=handler.options.inference_input_len,
             scaling=handler.options.scaling,
             rotate_secs=handler.options.rotate_secs,
             description=handler.options.description,
