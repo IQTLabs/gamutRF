@@ -78,8 +78,26 @@ def export_to_path(filename, export_path, args):
     base_filename=os.path.basename(filename)
     exported_filepath=os.path.join(export_path, base_filename)
 
-    rsync_cmd=f'rsync -rqhPu {filename} {export_path}'
-    p=subprocess.Popen(rsync_cmd.split())
+    if args.export_ssh_host and args.export_ssh_key:
+        sysrsync.run(source=filename, 
+                    destination=export_path, 
+                    destination_ssh=args.export_ssh_host,
+                    private_key=args.export_ssh_key,
+                    options=['-r','-P','-u'],
+                    sync_source_contents=False)
+    elif args.export_ssh_host and not args.export_ssh_key:
+        sysrsync.run(source=filename, 
+                    destination=export_path, 
+                    destination_ssh=args.export_ssh_host,
+                    options=['-r','-P','-u'],
+                    sync_source_contents=False)
+    else:
+        print(sysrsync.get_rsync_command(source=filename, 
+                    destination=export_path))
+        sysrsync.run(source=filename, 
+                    destination=export_path,
+                    options=['-r','-P','-u'],
+                    sync_source_contents=False)
 
     print(f'Exported {filename} to {exported_filepath}')
 
@@ -91,9 +109,9 @@ def argument_parser():
     parser.add_argument(
         "dir", default="", type=str, help="Top level directory containing recordings"
     )
-    parser.add_argument("--compress", dest="compress", action="store_true", default=False help="compress (gzip) directories")
-    parser.add_argument("--delete", dest="delete", action="store_true", default=False help="delete after compressing")
-    parser.add_argument("--threshold_seconds", dest="threshold_seconds", type=int, default=300 help="delete after compressing")
+    parser.add_argument("--compress", dest="compress", action="store_true", default=False, help="compress (gzip) directories")
+    parser.add_argument("--delete", dest="delete", action="store_true", default=False, help="delete after compressing")
+    parser.add_argument("--threshold_seconds", dest="threshold_seconds", type=int, default=300, help="delete after compressing")
     parser.add_argument("--export_path", dest="export_path", type=str, default=None, help="path to export to after processing")
     parser.add_argument("--export_ssh_host", dest="export_ssh_host", type=str, default=None, help="host for external export using ssh")
     parser.add_argument("--export_ssh_key", dest="export_ssh_key", type=str, default=None, help="if using external_ssh_host a ssh key can be specified")
@@ -122,7 +140,7 @@ def main():
         for filename in tarred_filenames:
             print(filename)
         print('...finished processing files')
-        if args.export_path != "" or args.export_path != None:
+        if args.export_path != None:
             print(f'Exporting tar files to {args.export_path}')
             exported_filepath = export_to_path(args.dir, args.export_path, args)
             print(f'...done exporting to {args.export_path}')
