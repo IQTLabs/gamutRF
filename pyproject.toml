@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gamutrf"
-version = "0.5.25"
+version = "0.5.26"
 description = "An orchestrated SDR scanner"
 authors = ["cglewis <clewis@iqt.org>"]
 license = "Apache-2.0"
@@ -19,7 +19,7 @@ gpsd-py3 = "0.3.0"
 httpx = "0.24.1"
 Jinja2 = "3.1.2"
 matplotlib = "3.7.2"
-numpy = "1.25.0"
+numpy = "1.25.1"
 paho-mqtt = "1.6.1"
 pandas = "2.0.3"
 prometheus_client = "0.17.0"
