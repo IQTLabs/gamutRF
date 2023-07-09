@@ -384,14 +384,15 @@ def reset_fig(
     if not config.batch:
         plt.show(block=False)
 
-    state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
+    if not config.batch:
+        state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
 
     state.ax.draw_artist(state.mesh)
     state.fig.canvas.blit(state.ax.bbox)
     for ln in state.top_n_lns:
         ln.set_alpha(0.75)
 
-    if config.savefig_path:
+    if not config.batch and config.savefig_path:
         safe_savefig(config.savefig_path)
 
 
@@ -420,7 +421,6 @@ def init_fig(
     state,
     onresize,
 ):
-    matplotlib.use(config.engine)
     state.cmap = plt.get_cmap("viridis")
     state.cmap_psd = plt.get_cmap("turbo")
     state.minor_tick_separator = AutoMinorLocator()
@@ -629,7 +629,8 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
         state.counter += 1
 
         if state.counter % config.draw_rate == 0:
-            state.fig.canvas.restore_region(state.background)
+            if state.background:
+                state.fig.canvas.restore_region(state.background)
 
             top_n_bins = state.freq_bins[
                 np.argsort(
@@ -853,14 +854,26 @@ def waterfall(
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    init_fig(config, state, onresize)
+    matplotlib.use(config.engine)
 
-    while zmqr.healthy() and running:
-        reset_fig(config, state)
-        need_reset_fig = False
-        while zmqr.healthy() and running and not need_reset_fig:
-            if not update_fig(config, state, zmqr, rotate_secs, save_time):
+    if batch:
+        while zmqr.healthy() and running:
+            init_fig(config, state, onresize)
+            reset_fig(config, state)
+            while zmqr.healthy() and running:
+                if update_fig(config, state, zmqr, rotate_secs, save_time):
+                    plt.close("all")
+                    break
                 time.sleep(0.1)
+    else:
+        init_fig(config, state, onresize)
+
+        while zmqr.healthy() and running:
+            reset_fig(config, state)
+            need_reset_fig = False
+            while zmqr.healthy() and running and not need_reset_fig:
+                if not update_fig(config, state, zmqr, rotate_secs, save_time):
+                    time.sleep(0.1)
 
     zmqr.stop()
 
