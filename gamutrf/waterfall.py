@@ -421,6 +421,8 @@ def init_fig(
     state,
     onresize,
 ):
+    plt.close("all")
+
     state.cmap = plt.get_cmap("viridis")
     state.cmap_psd = plt.get_cmap("turbo")
     state.minor_tick_separator = AutoMinorLocator()
@@ -545,6 +547,9 @@ def draw_peaks(
 
 
 def update_fig(config, state, zmqr, rotate_secs, save_time):
+    if not state.fig or not state.ax:
+        raise NotImplementedError
+
     results = []
     while True:
         scan_configs, scan_df = zmqr.read_buff()
@@ -855,25 +860,18 @@ def waterfall(
     signal.signal(signal.SIGTERM, sig_handler)
 
     matplotlib.use(config.engine)
+    init_fig(config, state, onresize)
 
-    if batch:
-        while zmqr.healthy() and running:
-            init_fig(config, state, onresize)
-            reset_fig(config, state)
-            while zmqr.healthy() and running:
-                if update_fig(config, state, zmqr, rotate_secs, save_time):
-                    plt.close("all")
-                    break
-                time.sleep(0.1)
-    else:
-        init_fig(config, state, onresize)
-
-        while zmqr.healthy() and running:
+    while zmqr.healthy() and running:
+        if need_reset_fig:
             reset_fig(config, state)
             need_reset_fig = False
-            while zmqr.healthy() and running and not need_reset_fig:
-                if not update_fig(config, state, zmqr, rotate_secs, save_time):
-                    time.sleep(0.1)
+        if not update_fig(config, state, zmqr, rotate_secs, save_time):
+            time.sleep(0.1)
+            continue
+        if config.batch:
+            init_fig(config, state, onresize)
+            need_reset_fig = True
 
     zmqr.stop()
 
