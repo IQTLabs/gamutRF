@@ -3,11 +3,11 @@ import csv
 import datetime
 import json
 import logging
+import multiprocessing
 import os
 import shutil
 import signal
 import tempfile
-import threading
 import time
 import warnings
 from pathlib import Path
@@ -886,14 +886,13 @@ class FlaskHandler:
         self.app.add_url_rule(
             "/" + self.savefig_file, self.savefig_file, self.serve_waterfall
         )
-        self.thread = threading.Thread(
+        self.process = multiprocessing.Process(
             target=self.app.run,
             kwargs={"host": "0.0.0.0", "port": port},  # nosec
-            daemon=True,
         )
 
     def start(self):
-        self.thread.start()
+        self.process.start()
 
     def serve(self):
         return (
