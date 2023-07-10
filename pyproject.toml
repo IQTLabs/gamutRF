@@ -22,7 +22,7 @@ matplotlib = "3.7.2"
 numpy = "1.25.1"
 paho-mqtt = "1.6.1"
 pandas = "2.0.3"
-prometheus_client = "0.17.0"
+prometheus_client = "0.17.1"
 requests = "2.31.0"
 "RPi.GPIO" = {version = "0.7.1", markers = "platform_machine != 'aarch64'"}
 schedule = "1.2.0"
