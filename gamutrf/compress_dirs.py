@@ -46,17 +46,17 @@ def tar_directories(dir_paths, args):
         # Create a tar file object
         if args.compress:
             tar_filename = f"{dir_path}.tar.gz"
-            tar_file = tarfile.open(tar_filename, "w:gz")
+            file_mode = "w:gz"
         else:
             tar_filename = f"{dir_path}.tar"
-            tar_file = tarfile.open(tar_filename, "w")
+            file_mode = "w"
             
-        
-        # Add all files in the directory to the tar file
-        for root, dirs, files in os.walk(dir_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                tar_file.add(file_path)
+        with tarfile.open(tar_filename, file_mode) as tar_file:
+            # Add all files in the directory to the tar file
+            for root, dirs, files in os.walk(dir_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    tar_file.add(file_path)
         
         # Close the tar file
         tar_file.close()

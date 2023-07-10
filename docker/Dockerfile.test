@@ -1,0 +1,13 @@
+FROM iqtlabs/gamutrf:latest
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV PATH="${PATH}:/root/.local/bin"
+WORKDIR /gamutrf
+COPY tests tests/
+RUN apt update && \
+    apt install -y python3-dev libhdf5-dev \
+    libcairo2-dev pkg-config gcc-aarch64-linux-gnu libev-dev && \
+    poetry install --with dev
+ENV PYTHONPATH=/usr/local/lib/python3.10/dist-packages/:/usr/local/lib/python3.10/site-packages/:$PYTHONPATH
+# CMD ["poetry", "run", "pytest", "."]
+CMD ["tail", "-f", "/dev/null"]

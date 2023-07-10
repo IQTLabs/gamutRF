@@ -6,6 +6,9 @@
 Dockerfile
 .env
 
+__pycache__
+.semgrepignore
+
 # Documentation, etc.
 LICENSE
 renovate.json

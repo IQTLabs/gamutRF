@@ -1,6 +1,8 @@
 import time
 import os
 import pytest
+import random
+import string
 import unittest
 
 from gamutrf.compress_dirs import check_tld
@@ -25,12 +27,53 @@ class FakeArgs:
         self.threshold_seconds=threshold_seconds
         self.threshold_path=threshold_seconds
 
+@pytest.fixture
+def ensure_testdir():
+    test_dir = TESTDIR
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    yield test_dir
+
+    if os.path.exists(test_dir):
+        os.rmdir(test_dir)
+
+@pytest.fixture
+def create_dirs(ensure_testdir):
+    dirs=list()
+    for i in range(1,4):
+        d=os.path.join(ensure_testdir, f'{i:04}')
+        os.mkdir(d)
+        dirs.append(d)
+
+    yield dirs
+
+    for d in dirs:
+        os.rmdir(d)
+
+@pytest.fixture
+def populate_dirs(create_dirs):
+    files=list()
+    letters = string.ascii_lowercase
+    for d in create_dirs:
+        fname = ''.join(random.choice(letters) for i in range(10))
+        fpath = os.path.join(d,f'{fname}.txt')
+        with open(fpath, 'w') as f:
+            f.write(''.join(random.choice(letters) for i in range(50)))
+        files.append(fpath)
+
+    threshold_ms=3000
+    time.sleep(threshold_ms)
+    yield files
+
+    for f in files:
+        os.remove(f)
 
 def test_argument_parser():
     argument_parser()
 
-def test_check_valid_tld():
-    args=FakeArgs(TESTDIR, False, True, 300, "")
+def test_check_valid_tld(populate_dirs):
+    args=FakeArgs(TESTDIR, False, True, 3, "")
     folders=check_tld(TESTDIR, args)
     assert("00001" in folders)
     assert("00002" in folders)
@@ -39,13 +82,13 @@ def test_check_valid_tld():
 
 def test_check_invalid_tld():
     INVALID_TESTDIR=TESTDIR+"_invalid"
-    args=FakeArgs(INVALID_TESTDIR, False, True, 300, "")
+    args=FakeArgs(INVALID_TESTDIR, False, True, 3, "")
     folders=check_tld(TESTDIR, args)
     assert(folders.__sizeof__ == 0)
 
-def test_tar_directories():
+def test_tar_directories(populate_dirs):
     #Test without compression
-    args=FakeArgs(TESTDIR, False, False, 300, "")
+    args=FakeArgs(TESTDIR, False, False, 3, "")
     folders=check_tld(TESTDIR, args)
     tarred_files = tar_directories(folders,args)
     assert("00001.tar" in tarred_files)
@@ -54,12 +97,9 @@ def test_tar_directories():
     assert(os.path.exists(os.join(TESTDIR, "00001.tar")))
     assert(os.path.exists(os.join(TESTDIR, "00002.tar")))
     assert(os.path.exists(os.join(TESTDIR, "00003.tar")))
-    os.remove(os.path.join(TESTDIR, "00001.tar"))
-    os.remove(os.path.join(TESTDIR, "00002.tar"))
-    os.remove(os.path.join(TESTDIR, "00003.tar"))
 
     #Test with compression
-    args=FakeArgs(TESTDIR, False, True, 300, "")
+    args=FakeArgs(TESTDIR, False, True, 3, "")
     folders=check_tld(TESTDIR, args)
     tarred_files = tar_directories(folders,args)
     assert("00001.tar.gz" in tarred_files)
@@ -68,12 +108,10 @@ def test_tar_directories():
     assert(os.path.exists(os.join(TESTDIR, "00001.tar.gz")))
     assert(os.path.exists(os.join(TESTDIR, "00002.tar.gz")))
     assert(os.path.exists(os.join(TESTDIR, "00003.tar.gz")))
-    os.remove(os.path.join(TESTDIR, "00001.tar.gz"))
-    os.remove(os.path.join(TESTDIR, "00002.tar.gz"))
-    os.remove(os.path.join(TESTDIR, "00003.tar.gz"))
+
 
 def test_threshold_seconds():
-    args=FakeArgs(TESTDIR, False, True, 300, "")
+    args=FakeArgs(TESTDIR, False, True, 3, "")
     os.mkdir(os.path.join(TESTDIR,"new_folder"))
     folders=check_tld(TESTDIR, args)
     assert("new_folder" not in folders)
