@@ -9,5 +9,5 @@ RUN apt update && \
     libcairo2-dev pkg-config gcc-aarch64-linux-gnu libev-dev && \
     poetry install --with dev
 ENV PYTHONPATH=/usr/local/lib/python3.10/dist-packages/:/usr/local/lib/python3.10/site-packages/:$PYTHONPATH
-# CMD ["poetry", "run", "pytest", "."]
-CMD ["tail", "-f", "/dev/null"]
+CMD ["poetry", "run", "pytest", "tests/test_compress_dirs.py"]
+#CMD ["tail", "-f", "/dev/null"]
