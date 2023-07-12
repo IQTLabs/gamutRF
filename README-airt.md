@@ -83,21 +83,21 @@ $ mkdir -p flatbuffers/build
 $ cd flatbuffers/build
 $ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV ..
 $ make -j $(nproc)
-$ sudo make install
+$ make install
 $ cd ../..
 $ mkdir -p json/build
 $ cd json/build
 $ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV ..
 $ make -j $(nproc)
-$ sudo make install
+$ make install
 $ cd ../..
 $ mkdir -p libsigmf/build
 $ cd libsigmf/build
 $ cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV -DCMAKE_CXX_FLAGS="-I $HOME/.conda/envs/$CONDA_DEFAULT_ENV/include" ..
 $ make -j $(nproc)
-$ sudo make install
+$ make install
 $ cd ../..
-$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.25
+$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.28
 $ cd gr-iqtlabs
 $ mkdir build
 $ cd build
