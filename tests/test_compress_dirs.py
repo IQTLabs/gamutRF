@@ -92,30 +92,30 @@ def test_check_invalid_tld():
     INVALID_TESTDIR=TESTDIR+"_invalid"
     args=FakeArgs(INVALID_TESTDIR, False, True, 3, "")
     folders=check_tld(TESTDIR, args)
-    assert(folders.__sizeof__ == 0)
+    assert(len(folders) == 0)
 
 def test_tar_directories(populate_dirs):
     #Test without compression
     args=FakeArgs(populate_dirs.dir, False, False, 3, "")
     folders=check_tld(populate_dirs.dir, args)
     tarred_files = tar_directories(folders,args)
-    assert("00001.tar" in tarred_files)
-    assert("00002.tar" in tarred_files)
-    assert("00003.tar" in tarred_files)
-    assert(os.path.exists(os.join(populate_dirs.dir, "00001.tar")))
-    assert(os.path.exists(os.join(populate_dirs.dir, "00002.tar")))
-    assert(os.path.exists(os.join(populate_dirs.dir, "00003.tar")))
+    assert(os.path.join(populate_dirs.dir,"00001.tar") in tarred_files)
+    assert(os.path.join(populate_dirs.dir,"00002.tar") in tarred_files)
+    assert(os.path.join(populate_dirs.dir,"00003.tar") in tarred_files)
+    assert(os.path.exists(os.path.join(populate_dirs.dir, "00001.tar")))
+    assert(os.path.exists(os.path.join(populate_dirs.dir, "00002.tar")))
+    assert(os.path.exists(os.path.join(populate_dirs.dir, "00003.tar")))
 
     #Test with compression
     args=FakeArgs(populate_dirs.dir, False, True, 3, "")
     folders=check_tld(populate_dirs.dir, args)
     tarred_files = tar_directories(folders,args)
-    assert("00001.tar.gz" in tarred_files)
-    assert("00002.tar.gz" in tarred_files)
-    assert("00003.tar.gz" in tarred_files)
-    assert(os.path.exists(os.join(populate_dirs.dir, "00001.tar.gz")))
-    assert(os.path.exists(os.join(populate_dirs.dir, "00002.tar.gz")))
-    assert(os.path.exists(os.join(populate_dirs.dir, "00003.tar.gz")))
+    assert(os.path.join(populate_dirs.dir,"00001.tar.gz") in tarred_files)
+    assert(os.path.join(populate_dirs.dir,"00002.tar.gz") in tarred_files)
+    assert(os.path.join(populate_dirs.dir,"00003.tar.gz") in tarred_files)
+    assert(os.path.exists(os.path.join(populate_dirs.dir, "00001.tar.gz")))
+    assert(os.path.exists(os.path.join(populate_dirs.dir, "00002.tar.gz")))
+    assert(os.path.exists(os.path.join(populate_dirs.dir, "00003.tar.gz")))
 
 
 def test_threshold_seconds():
