@@ -77,7 +77,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                     "gamutrf-api",
                     "--rssi_threshold=-100",
                     "--rssi",
-                    "--sdr=file:/data/test.raw",
+                    f"--sdr=file:{testraw}",
                 ],
                 ports={"8000/tcp": 8000},
                 volumes={tempdir: {"bind": "/data", "mode": "rw"}},
