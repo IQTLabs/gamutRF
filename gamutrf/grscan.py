@@ -97,6 +97,7 @@ class grscan(gr.top_block):
                     iqtlabs.write_freq_samples(
                         "rx_freq",
                         gr.sizeof_gr_complex,
+                        "cf32",
                         fft_size,
                         sample_dir,
                         "samples",
