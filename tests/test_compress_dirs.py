@@ -13,11 +13,11 @@ TESTDIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/gamutr
 class FakeArgs:
     def __init__(
         self,
-        dir,
-        delete,
-        compress,
-        threshold_seconds
-        export_path
+        dir=None,
+        delete=False,
+        compress=False,
+        threshold_seconds=300,
+        export_path=None
     ):
         self.dir=dir
         self.delete=delete

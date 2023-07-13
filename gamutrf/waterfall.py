@@ -3,11 +3,11 @@ import csv
 import datetime
 import json
 import logging
+import multiprocessing
 import os
 import shutil
 import signal
 import tempfile
-import threading
 import time
 import warnings
 from pathlib import Path
@@ -384,14 +384,15 @@ def reset_fig(
     if not config.batch:
         plt.show(block=False)
 
-    state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
+    if not config.batch:
+        state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
 
     state.ax.draw_artist(state.mesh)
     state.fig.canvas.blit(state.ax.bbox)
     for ln in state.top_n_lns:
         ln.set_alpha(0.75)
 
-    if config.savefig_path:
+    if not config.batch and config.savefig_path:
         safe_savefig(config.savefig_path)
 
 
@@ -420,7 +421,8 @@ def init_fig(
     state,
     onresize,
 ):
-    matplotlib.use(config.engine)
+    plt.close("all")
+
     state.cmap = plt.get_cmap("viridis")
     state.cmap_psd = plt.get_cmap("turbo")
     state.minor_tick_separator = AutoMinorLocator()
@@ -545,6 +547,9 @@ def draw_peaks(
 
 
 def update_fig(config, state, zmqr, rotate_secs, save_time):
+    if not state.fig or not state.ax:
+        raise NotImplementedError
+
     results = []
     while True:
         scan_configs, scan_df = zmqr.read_buff()
@@ -629,7 +634,8 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
         state.counter += 1
 
         if state.counter % config.draw_rate == 0:
-            state.fig.canvas.restore_region(state.background)
+            if state.background:
+                state.fig.canvas.restore_region(state.background)
 
             top_n_bins = state.freq_bins[
                 np.argsort(
@@ -853,14 +859,19 @@ def waterfall(
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
+    matplotlib.use(config.engine)
     init_fig(config, state, onresize)
 
     while zmqr.healthy() and running:
-        reset_fig(config, state)
-        need_reset_fig = False
-        while zmqr.healthy() and running and not need_reset_fig:
-            if not update_fig(config, state, zmqr, rotate_secs, save_time):
-                time.sleep(0.1)
+        if need_reset_fig:
+            reset_fig(config, state)
+            need_reset_fig = False
+        if not update_fig(config, state, zmqr, rotate_secs, save_time):
+            time.sleep(0.1)
+            continue
+        if config.batch:
+            init_fig(config, state, onresize)
+            need_reset_fig = True
 
     zmqr.stop()
 
@@ -875,14 +886,13 @@ class FlaskHandler:
         self.app.add_url_rule(
             "/" + self.savefig_file, self.savefig_file, self.serve_waterfall
         )
-        self.thread = threading.Thread(
+        self.process = multiprocessing.Process(
             target=self.app.run,
             kwargs={"host": "0.0.0.0", "port": port},  # nosec
-            daemon=True,
         )
 
     def start(self):
-        self.thread.start()
+        self.process.start()
 
     def serve(self):
         return (
