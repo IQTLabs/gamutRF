@@ -249,6 +249,13 @@ def argument_parser():
         is measured in V and `fs` is measured in Hz. Defaults to
         'spectrum'.""",
     )
+    sigmf_parser.add_argument(
+        "--sigmf",
+        dest="sigmf",
+        default=True,
+        action=argparse.BooleanOptionalAction,
+        help="add sigmf meta file",
+    )
     return parser
 
 
@@ -324,6 +331,7 @@ def run_loop(options, prom_vars, wavelearner):
             scaling=handler.options.scaling,
             rotate_secs=handler.options.rotate_secs,
             description=handler.options.description,
+            sigmf=handler.options.sigmf,
             iqtlabs=iqtlabs,
             wavelearner=wavelearner,
         )
