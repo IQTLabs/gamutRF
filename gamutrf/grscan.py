@@ -52,7 +52,7 @@ class grscan(gr.top_block):
         db_clamp_floor=-200,
         db_clamp_ceil=50,
         rotate_secs=0,
-        sigmf=False,
+        sigmf=True,
         iqtlabs=None,
         wavelearner=None,
     ):
