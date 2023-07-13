@@ -637,14 +637,14 @@ falcon = "*"
 
 [[package]]
 name = "findpeaks"
-version = "2.4.7"
+version = "2.5.0"
 description = "findpeaks is for the detection of peaks and valleys in a 1D vector and 2D array (image)."
 category = "main"
 optional = false
 python-versions = ">=3"
 files = [
-    {file = "findpeaks-2.4.7-py3-none-any.whl", hash = "sha256:591f626edf89fd15f03cdb09685e674bd7dec882d1a876974f9a0dec7826f68b"},
-    {file = "findpeaks-2.4.7.tar.gz", hash = "sha256:3101618fc43f9919ed385ee58b5c6bb0c0d954a8d9c95ca0baf82bdffd2f32df"},
+    {file = "findpeaks-2.5.0-py3-none-any.whl", hash = "sha256:69a21a85630bcee9ca869273b0ac6a3dcc29b0534781f76ea6b89e3a3a386eae"},
+    {file = "findpeaks-2.5.0.tar.gz", hash = "sha256:7442ef4d6db3445b69cc18da2129012768f0507a7999d59e994bd75d2fe57dd6"},
 ]
 
 [package.dependencies]
@@ -656,6 +656,7 @@ peakdetect = "1.1"
 requests = "*"
 scipy = "*"
 tqdm = "*"
+xarray = "*"
 
 [[package]]
 name = "flask"
@@ -2325,6 +2326,31 @@ files = [
 ]
 
 [[package]]
+name = "xarray"
+version = "2023.6.0"
+description = "N-D labeled arrays and datasets in Python"
+category = "main"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "xarray-2023.6.0-py3-none-any.whl", hash = "sha256:bdd4c45511ab4e84f4249ea1030336db59b750968f25369d8e132d6d7ead7cc9"},
+    {file = "xarray-2023.6.0.tar.gz", hash = "sha256:267a231ee4efc0341ebbffc6d4ec60e4a66e4849c16e0305c03fcefeca77698c"},
+]
+
+[package.dependencies]
+numpy = ">=1.21"
+packaging = ">=21.3"
+pandas = ">=1.4"
+
+[package.extras]
+accel = ["bottleneck", "flox", "numbagg", "scipy"]
+complete = ["bottleneck", "cftime", "dask[complete]", "flox", "fsspec", "h5netcdf", "matplotlib", "nc-time-axis", "netCDF4", "numbagg", "pooch", "pydap", "scipy", "seaborn", "zarr"]
+docs = ["bottleneck", "cftime", "dask[complete]", "flox", "fsspec", "h5netcdf", "ipykernel", "ipython", "jupyter-client", "matplotlib", "nbsphinx", "nc-time-axis", "netCDF4", "numbagg", "pooch", "pydap", "scanpydoc", "scipy", "seaborn", "sphinx-autosummary-accessors", "sphinx-rtd-theme", "zarr"]
+io = ["cftime", "fsspec", "h5netcdf", "netCDF4", "pooch", "pydap", "scipy", "zarr"]
+parallel = ["dask[complete]"]
+viz = ["matplotlib", "nc-time-axis", "seaborn"]
+
+[[package]]
 name = "zipp"
 version = "3.15.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
@@ -2402,4 +2428,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9 <3.11"
-content-hash = "cb0e0ed74d825857f9064570613a3d1422d9c30f7e5ee4c54bbd79d849e8ef69"
+content-hash = "df1721a7be83edaf7d22cda7e55b1e877c2caa22b3605c3ea8db4b09369feb76"
