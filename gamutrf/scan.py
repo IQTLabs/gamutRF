@@ -2,7 +2,7 @@ import logging
 import signal
 import time
 import sys
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
 
 try:
     from gnuradio import iqtlabs  # pytype: disable=import-error
@@ -249,11 +249,11 @@ def argument_parser():
         is measured in V and `fs` is measured in Hz. Defaults to
         'spectrum'.""",
     )
-    sigmf_parser.add_argument(
+    parser.add_argument(
         "--sigmf",
         dest="sigmf",
         default=True,
-        action=argparse.BooleanOptionalAction,
+        action=BooleanOptionalAction,
         help="add sigmf meta file",
     )
     return parser
