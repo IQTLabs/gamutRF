@@ -6,7 +6,8 @@ import unittest
 
 from gamutrf.mqtt_reporter import MQTTReporter
 
-MQTT_PORT=1883
+MQTT_PORT = 1883
+
 
 class FakeBroker:
     def __init__(self, port):
@@ -23,7 +24,7 @@ class FakeBroker:
 
     def start(self):
         if self._sock is None:
-            raise ValueError('Socket is not open')
+            raise ValueError("Socket is not open")
 
         (conn, address) = self._sock.accept()
         conn.settimeout(10)
@@ -40,14 +41,14 @@ class FakeBroker:
 
     def receive_packet(self, num_bytes):
         if self._conn is None:
-            raise ValueError('Connection is not open')
+            raise ValueError("Connection is not open")
 
         packet_in = self._conn.recv(num_bytes)
         return packet_in
 
     def send_packet(self, packet_out):
         if self._conn is None:
-            raise ValueError('Connection is not open')
+            raise ValueError("Connection is not open")
 
         count = self._conn.send(packet_out)
         return count
