@@ -52,6 +52,7 @@ class grscan(gr.top_block):
         db_clamp_floor=-200,
         db_clamp_ceil=50,
         rotate_secs=0,
+        sigmf=True,
         iqtlabs=None,
         wavelearner=None,
     ):
@@ -96,6 +97,7 @@ class grscan(gr.top_block):
                     iqtlabs.write_freq_samples(
                         "rx_freq",
                         gr.sizeof_gr_complex,
+                        "cf32",
                         fft_size,
                         sample_dir,
                         "samples",
@@ -103,6 +105,8 @@ class grscan(gr.top_block):
                         skip_tune_step,
                         int(samp_rate),
                         rotate_secs,
+                        igain,
+                        sigmf,
                     ),
                 ]
             )
