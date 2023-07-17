@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import glob
 import tempfile
 import time
 import unittest
@@ -94,35 +95,35 @@ class GrscanTestCase(unittest.TestCase):
         for sdr in ("ettus", "bladerf"):
             self.assertRaises(RuntimeError, get_source, sdr, 1e3, 10)
 
-    def test_grscan_smoke(self):
+    def run_grscan_smoke(self, wavelearner, write_samples):
         with tempfile.TemporaryDirectory() as tempdir:
             tb = grscan(
                 sdr="tuneable_test_source",
                 samp_rate=int(1.024e6),
-                write_samples=1,
+                write_samples=write_samples,
                 sample_dir=tempdir,
                 iqtlabs=iqtlabs,
-                wavelearner=None,
+                wavelearner=wavelearner,
+                rotate_secs=900,
             )
             tb.start()
-            time.sleep(15)
+            time.sleep(10)
             tb.stop()
             tb.wait()
+            del tb
+            if not write_samples:
+                return
+            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*zst")] )
+            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*sigmf-meta")] )
 
-    def test_grscan_wavelearner_smoke(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            tb = grscan(
-                sdr="tuneable_test_source",
-                samp_rate=int(1.024e6),
-                write_samples=1,
-                sample_dir=tempdir,
-                iqtlabs=iqtlabs,
-                wavelearner=FakeWaveLearner(),
-            )
-            tb.start()
-            time.sleep(15)
-            tb.stop()
-            tb.wait()
+    def test_grscan_smoke(self):
+        for wavelearner, write_samples in (
+            (None, 0),
+            (None, 1),
+            (FakeWaveLearner(), 0),
+            (FakeWaveLearner(), 1),
+        ):
+            self.run_grscan_smoke(wavelearner, write_samples)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -136,7 +136,7 @@ def argument_parser():
         dest="threshold_seconds",
         type=int,
         default=300,
-        help="delete after compressing",
+        help="modtime threshold for folders to be considered, must be older than threshold_seconds",
     )
     parser.add_argument(
         "--export_path",

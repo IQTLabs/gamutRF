@@ -131,25 +131,19 @@ def argument_parser():
     agc_parser.add_argument(
         "--no-agc", dest="agc", action="store_false", help="do not use AGC"
     )
-    sigmf_parser = parser.add_mutually_exclusive_group(required=False)
-    sigmf_parser.add_argument(
-        "--sigmf", dest="sigmf", action="store_true", help="add sigmf meta file"
-    )
-    sigmf_parser.add_argument(
-        "--no-sigmf",
+    parser.add_argument(
+        "--sigmf",
         dest="sigmf",
-        action="store_false",
-        help="do not add sigmf meta file",
+        default=True,
+        action=argparse.BooleanOptionalAction,
+        help="add sigmf meta file",
     )
-    rssi_parser = parser.add_mutually_exclusive_group(required=False)
-    rssi_parser.add_argument(
-        "--rssi", dest="enable_rssi", action="store_true", help="get RSSI values"
-    )
-    rssi_parser.add_argument(
-        "--no-rssi",
+    parser.add_argument(
+        "--rssi",
         dest="enable_rssi",
-        action="store_false",
-        help="do not get RSSI values",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="get RSSI values",
     )
     return parser
 
