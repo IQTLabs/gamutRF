@@ -113,8 +113,8 @@ class GrscanTestCase(unittest.TestCase):
             del tb
             if not write_samples:
                 return
-            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*zst")] )
-            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*sigmf-meta")] )
+            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*zst")])
+            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*sigmf-meta")])
 
     def test_grscan_smoke(self):
         for wavelearner, write_samples in (
