@@ -188,13 +188,15 @@ class SDRRecorder:
 
             if sigmf_:
                 meta = sigmf.SigMFFile(
+                    skip_checksum=True,  # expensive for large files
                     data_file=sample_file,
                     global_info={
-                        sigmf.SigMFFile.DATATYPE_KEY: SAMPLE_TYPE,
+                        sigmf.SigMFFile.DATATYPE_KEY: "c" + SAMPLE_TYPE,
                         sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
                         sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
                     },
                 )
+                # TODO: add capture_details, source_file and gain when supported.
                 meta.add_capture(
                     0,
                     metadata={
