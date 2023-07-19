@@ -93,12 +93,13 @@ class grscan(gr.top_block):
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
             self.samples_blocks.extend(
                 [
-                    blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
+                    blocks.complex_to_interleaved_short(False, 32767),
+                    blocks.stream_to_vector(gr.sizeof_short, fft_size * 2),
                     iqtlabs.write_freq_samples(
                         "rx_freq",
-                        gr.sizeof_gr_complex,
-                        "cf32",  # TODO: write as int16.
-                        fft_size,
+                        gr.sizeof_short,
+                        "cs16",
+                        fft_size * 2,
                         sample_dir,
                         "samples",
                         write_samples,

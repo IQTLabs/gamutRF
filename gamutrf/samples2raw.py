@@ -27,6 +27,7 @@ def make_procs_args(sample_filename, outfmt):
     procs_args.append(
         [
             "sox",
+            "-D",  # disable dithering.
             "-t",
             "raw",
             "-r",
