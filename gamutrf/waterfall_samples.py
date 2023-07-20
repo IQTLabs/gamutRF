@@ -2,27 +2,16 @@ import argparse
 import datetime
 import os
 import re
-import time
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 from gamutrf.utils import is_fft
 from gamutrf.sample_reader import get_reader
+from gamutrf.utils import SAMPLE_DTYPES, SAMPLE_FILENAME_RE
 
-
-SAMPLE_FILENAME_RE = re.compile(r"^.+_([0-9]+)_([0-9]+)Hz_([0-9]+)sps\.(s\d+|raw).*$")
 FFT_FILENAME_RE = re.compile(
     r"^.+_([0-9]+)_([0-9]+)points_([0-9]+)Hz_([0-9]+)sps\.(s\d+|raw).*$"
 )
-SAMPLE_DTYPES = {
-    "s8": ("<i1", "signed-integer"),
-    "s16": ("<i2", "signed-integer"),
-    "s32": ("<i4", "signed-integer"),
-    "u8": ("<u1", "unsigned-integer"),
-    "u16": ("<u2", "unsigned-integer"),
-    "u32": ("<u4", "unsigned-integer"),
-    "raw": ("<f4", "float"),
-}
 
 
 def parse_filename(filename):

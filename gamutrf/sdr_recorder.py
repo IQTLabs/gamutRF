@@ -22,12 +22,13 @@ from gamutrf.utils import (
     HEIGHT,
     DPI,
     DS_PIXELS,
+    endianstr,
 )
 
 IMSHOW_INTERPOLATION = os.getenv("IMSHOW_INTERPOLATION", "bilinear")
 NFFT = int(os.getenv("NFFT", "0"))
 NFFT_OVERLAP = 512
-SAMPLE_TYPE = "s16"
+SAMPLE_TYPE = "i16"
 MIN_SAMPLE_RATE = int(1e6)
 MAX_SAMPLE_RATE = int(30 * 1e6)
 FFT_FILE = "/dev/shm/fft.dat"  # nosec
@@ -191,7 +192,9 @@ class SDRRecorder:
                     skip_checksum=True,  # expensive for large files
                     data_file=sample_file,
                     global_info={
-                        sigmf.SigMFFile.DATATYPE_KEY: "c" + SAMPLE_TYPE,
+                        sigmf.SigMFFile.DATATYPE_KEY: "_".join(
+                            ("c" + SAMPLE_TYPE, endianstr())
+                        ),
                         sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
                         sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
                     },

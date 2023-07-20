@@ -16,7 +16,7 @@ def make_procs_args(sample_filename, outfmt):
         procs_args.append(["zstdcat", sample_filename])
         out_filename = replace_ext(out_filename, "")
 
-    _, sample_rate, _sample_dtype, _sample_len, in_format, in_bits = parse_filename(
+    _, _, sample_rate, _sample_dtype, _sample_len, in_format, in_bits = parse_filename(
         out_filename
     )
     print(_, sample_rate, _sample_dtype, _sample_len, in_format, in_bits)

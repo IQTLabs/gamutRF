@@ -21,6 +21,7 @@ except ModuleNotFoundError as err:  # pragma: no cover
 
 from gamutrf.grsource import get_source
 from gamutrf.gryolo import yolo_bbox
+from gamutrf.utils import endianstr
 
 
 class grscan(gr.top_block):
@@ -98,7 +99,7 @@ class grscan(gr.top_block):
                     iqtlabs.write_freq_samples(
                         "rx_freq",
                         gr.sizeof_short,
-                        "cs16",
+                        "_".join(("ci16", endianstr())),
                         fft_size * 2,
                         sample_dir,
                         "samples",

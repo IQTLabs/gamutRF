@@ -238,6 +238,7 @@ def plot_spectrogram(
 
 def process_recording(args, recording):
     (
+        _epoch_time,
         freq_center,
         sample_rate,
         sample_dtype,
