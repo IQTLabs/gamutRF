@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     libev-dev \
     python3 \
     python3-dev \
+    python3-pyqt5 \
+    python3-pyqt5.sip \
     python3-pip && \
     curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2 && \
     poetry config virtualenvs.create false && \
@@ -59,6 +61,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     libzmq5 \
     mesa-vulkan-drivers \
     python3 \
+    python3-pyqt5 \
+    python3-pyqt5.sip \
     python3-zmq \
     sox \
     sudo \
