@@ -3,16 +3,17 @@ import unittest
 
 import numpy as np
 
-from gamutrf.utils import parse_filename
+from gamutrf.utils import parse_filename, endianstr
 
 
 class UtilsTestCase(unittest.TestCase):
     def test_parse_filename(self):
         self.assertEqual(
-            (None, None, None, None, None, None), parse_filename("test.raw")
+            (None, None, None, None, None, None, None), parse_filename("test.raw")
         )
         self.assertEqual(
             (
+                1645570069,
                 760000000,
                 20000000,
                 np.dtype([("i", "<f4"), ("q", "<f4")]),
@@ -24,6 +25,7 @@ class UtilsTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
+                1645540092,
                 140000000,
                 20000000,
                 np.dtype([("i", "<i2"), ("q", "<i2")]),
@@ -32,11 +34,29 @@ class UtilsTestCase(unittest.TestCase):
                 16,
             ),
             parse_filename(
-                "gamutrf_recording1645540092_140000000Hz_20000000sps.s16.gz"
+                "gamutrf_recording1645540092_140000000Hz_20000000sps.ci16_%s.gz"
+                % endianstr()
             ),
         )
         self.assertEqual(
             (
+                1645540092,
+                140000000,
+                20000000,
+                np.dtype([("i", "<f4"), ("q", "<f4")]),
+                8,
+                "float",
+                32,
+            ),
+            parse_filename(
+                "fft_gamutrf_recording1645540092_140000000Hz_20000000sps.ci16_%s.gz"
+                % endianstr()
+            ),
+        )
+
+        self.assertEqual(
+            (
+                1645540092,
                 140000000,
                 20000000,
                 np.dtype([("i", "<f4"), ("q", "<f4")]),

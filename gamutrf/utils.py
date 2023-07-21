@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import os
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -17,14 +18,19 @@ SCAN_FROLL = 1e6
 # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=960,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
 ETTUS_ARGS = "num_recv_frames=960,recv_frame_size=16360,type=b200"
 ETTUS_ANT = "TX/RX"
-SAMPLE_FILENAME_RE = re.compile(r"^.+_([0-9]+)Hz_([0-9]+)sps\.(s\d+|raw).*$")
+SAMPLE_FILENAME_RE = re.compile(r"^.+\D(\d+)_(\d+)Hz_(\d+)sps\.c*([fisu]\d+|raw).*$")
+
 SAMPLE_DTYPES = {
+    "i8": ("<i1", "signed-integer"),
+    "i16": ("<i2", "signed-integer"),
+    "i32": ("<i4", "signed-integer"),
     "s8": ("<i1", "signed-integer"),
     "s16": ("<i2", "signed-integer"),
     "s32": ("<i4", "signed-integer"),
     "u8": ("<u1", "unsigned-integer"),
     "u16": ("<u2", "unsigned-integer"),
     "u32": ("<u4", "unsigned-integer"),
+    "f32": ("<u4", "unsigned-integer"),
     "raw": ("<f4", "float"),
 }
 WIDTH = 11
@@ -35,6 +41,12 @@ DS_PIXELS = 256
 SAMP_RATE = 8.192e6
 MIN_FREQ = 2.3e9
 MAX_FREQ = 2.6e9
+
+
+def endianstr():
+    if sys.byteorder == "little":
+        return "le"
+    return "be"
 
 
 def rotate_file_n(initial_name, n, require_initial=True):
@@ -73,10 +85,12 @@ def parse_filename(filename):
     # TODO: parse from sigmf.
     match = SAMPLE_FILENAME_RE.match(filename)
     try:
-        freq_center = int(match.group(1))
-        sample_rate = int(match.group(2))
-        sample_type = match.group(3)
+        epoch_time = int(match.group(1))
+        freq_center = int(match.group(2))
+        sample_rate = int(match.group(3))
+        sample_type = match.group(4)
     except AttributeError:
+        epoch_time = None
         freq_center = None
         sample_rate = None
         sample_type = None
@@ -91,6 +105,7 @@ def parse_filename(filename):
         sample_bits = sample_dtype[0].itemsize * 8
         sample_len = sample_dtype[0].itemsize * 2
     return (
+        epoch_time,
         freq_center,
         sample_rate,
         sample_dtype,
