@@ -760,7 +760,7 @@ class WaterfallConfig:
         self.reclose_interval = 25
         self.min_freq = min_freq / self.scale
         self.max_freq = max_freq / self.scale
-        self.freq_resolution = self.sampling_rate / self.fft_len / self.scale
+        self.freq_resolution = self.sampling_rate / (self.fft_len / 2) / self.scale
 
 
 class WaterfallState:
