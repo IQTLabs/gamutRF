@@ -29,9 +29,6 @@ services:
   gamutrf:
     restart: always
     image: iqtlabs/gamutrf:latest
-    depends_on:
-      sigfinder:
-        condition: service_started
     networks:
       - gamutrf
     ports:
