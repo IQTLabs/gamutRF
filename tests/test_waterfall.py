@@ -40,7 +40,7 @@ class FakeZmqReceiver:
                 (df.freq >= self.peak_min) & (df.freq <= self.peak_max), "db"
             ] = self.peak_val
             self.serve_results = [
-                ({}, df),
+                ([{"sample_rate": 1e6, "nfft": 256}], df),
                 (None, None),
             ]
         return self.serve_results.pop()
@@ -66,8 +66,6 @@ class UtilsTestCase(unittest.TestCase):
                 2e6,  # args.max_freq,
                 True,  # args.plot_snr,
                 1,  # args.n_detect,
-                256,  # args.nfft,
-                1e6,  # args.sampling_rate,
                 tempdir,  # args.save_path,
                 1,  # args.save_time,
                 peak_finder,

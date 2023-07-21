@@ -184,10 +184,6 @@ def argument_parser():
         "--max_freq", default=MAX_FREQ, type=float, help="Maximum frequency for plot."
     )
     parser.add_argument(
-        "--sampling_rate", default=SAMP_RATE, type=float, help="Sampling rate."
-    )
-    parser.add_argument("--nfft", default=256, type=int, help="FFT length.")
-    parser.add_argument(
         "--n_detect", default=0, type=int, help="Number of detected signals to plot."
     )
     parser.add_argument(
@@ -279,7 +275,8 @@ def reset_fig(
     config,
     state,
 ):
-    # RESET FIGURE
+    logging.info("resetting figure")
+
     state.fig.clf()
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.15)
@@ -421,6 +418,7 @@ def init_fig(
     state,
     onresize,
 ):
+    logging.info("initializing figure")
     plt.close("all")
 
     state.cmap = plt.get_cmap("viridis")
@@ -748,18 +746,21 @@ class WaterfallConfig:
         self.waterfall_height = waterfall_height  # number of waterfall rows
         self.marker_distance = 0.1
         self.scale = 1e6
-        self.freq_resolution = sampling_rate / fft_len / self.scale
+        self.fft_len = fft_len
+        self.sampling_rate = sampling_rate
         self.psd_db_resolution = 90
         self.y_label_skip = 3
         self.base = 20
-        self.min_freq = min_freq / self.scale
-        self.max_freq = max_freq / self.scale
         self.top_n = top_n
         self.draw_rate = 1
         self.base_save_path = base_save_path
         self.width = width
         self.height = height
         self.batch = batch
+        self.reclose_interval = 25
+        self.min_freq = min_freq / self.scale
+        self.max_freq = max_freq / self.scale
+        self.freq_resolution = self.sampling_rate / (self.fft_len / 2) / self.scale
 
 
 class WaterfallState:
@@ -809,8 +810,6 @@ def waterfall(
     max_freq,
     plot_snr,
     top_n,
-    fft_len,
-    sampling_rate,
     base_save_path,
     save_time,
     peak_finder,
@@ -823,26 +822,6 @@ def waterfall(
     batch,
     zmqr,
 ):
-    config = WaterfallConfig(
-        engine,
-        plot_snr,
-        savefig_path,
-        sampling_rate,
-        fft_len,
-        min_freq,
-        max_freq,
-        top_n,
-        base_save_path,
-        width,
-        height,
-        waterfall_height,
-        batch,
-    )
-    state = WaterfallState()
-    state.save_path = config.base_save_path
-    init_state(config, state)
-    state.peak_finder = peak_finder
-
     global need_reset_fig
     need_reset_fig = True
     global running
@@ -859,6 +838,42 @@ def waterfall(
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
+    logging.info("awaiting config from scanner")
+    scan_configs = None
+    scan_df = None
+    while zmqr.healthy() and running:
+        scan_configs, scan_df = zmqr.read_buff()
+        if scan_df is not None:
+            break
+        time.sleep(0.1)
+
+    if not scan_configs:
+        return
+
+    sampling_rate = max([scan_config["sample_rate"] for scan_config in scan_configs])
+    fft_len = max([scan_config["nfft"] for scan_config in scan_configs])
+
+    config = WaterfallConfig(
+        engine,
+        plot_snr,
+        savefig_path,
+        sampling_rate,
+        fft_len,
+        min_freq,
+        max_freq,
+        top_n,
+        base_save_path,
+        width,
+        height,
+        waterfall_height,
+        batch,
+    )
+
+    state = WaterfallState()
+    state.save_path = config.base_save_path
+    init_state(config, state)
+    state.peak_finder = peak_finder
+
     matplotlib.use(config.engine)
     init_fig(config, state, onresize)
 
@@ -869,7 +884,8 @@ def waterfall(
         if not update_fig(config, state, zmqr, rotate_secs, save_time):
             time.sleep(0.1)
             continue
-        if config.batch:
+        # TODO: workaround memory leak in savefig with periodic reinitialiation
+        if config.batch and state.counter % config.reclose_interval == 0:
             init_fig(config, state, onresize)
             need_reset_fig = True
 
@@ -943,8 +959,6 @@ def main():
             args.max_freq,
             args.plot_snr,
             args.n_detect,
-            args.nfft,
-            args.sampling_rate,
             args.save_path,
             args.save_time,
             peak_finder,
