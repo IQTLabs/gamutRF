@@ -22,7 +22,7 @@ from prometheus_client import start_http_server
 
 from gamutrf.grscan import grscan
 from gamutrf.flask_handler import FlaskHandler
-from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ
+from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ, NFFT
 
 running = True
 
@@ -109,7 +109,7 @@ def argument_parser():
         "--nfft",
         dest="nfft",
         type=int,
-        default=2048,
+        default=NFFT,
         help="FFTI size [default=%(default)r]",
     )
     parser.add_argument(

@@ -21,7 +21,7 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
 
 from gamutrf.peak_finder import get_peak_finder
-from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ, SCAN_FRES
+from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ, SCAN_FRES, NFFT
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
@@ -183,10 +183,6 @@ def argument_parser():
     parser.add_argument(
         "--max_freq", default=MAX_FREQ, type=float, help="Maximum frequency for plot."
     )
-    parser.add_argument(
-        "--sampling_rate", default=SAMP_RATE, type=float, help="Sampling rate."
-    )
-    parser.add_argument("--nfft", default=256, type=int, help="FFT length.")
     parser.add_argument(
         "--n_detect", default=0, type=int, help="Number of detected signals to plot."
     )
@@ -558,7 +554,7 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
         results.append((scan_configs, scan_df))
 
     if not results:
-        return False
+        return (False, False)
 
     if config.base_save_path and rotate_secs:
         state.save_path = os.path.join(
@@ -569,6 +565,18 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
             os.makedirs(state.save_path)
 
     for scan_configs, scan_df in results:
+        max_sampling_rate = max(
+            [scan_config["sample_rate"] for scan_config in scan_configs]
+        )
+        max_fft_len = max([scan_config["nfft"] for scan_config in scan_configs])
+        if max_sampling_rate != config.sampling_rate or max_fft_len != config.fft_len:
+            logging.info(
+                f"config change from scanner (sampling rate {max_sampling_rate}, NFFT {max_fft_len})"
+            )
+            config.set_fft_len(max_fft_len)
+            config.set_sampling_rate(max_sampling_rate)
+            return (True, False)
+
         scan_df = scan_df[
             (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
         ]
@@ -720,7 +728,7 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
                     fig_path=fig_path,
                 )
 
-    return True
+    return (False, True)
 
 
 class WaterfallConfig:
@@ -748,7 +756,6 @@ class WaterfallConfig:
         self.waterfall_height = waterfall_height  # number of waterfall rows
         self.marker_distance = 0.1
         self.scale = 1e6
-        self.freq_resolution = sampling_rate / fft_len / self.scale
         self.psd_db_resolution = 90
         self.y_label_skip = 3
         self.base = 20
@@ -760,6 +767,15 @@ class WaterfallConfig:
         self.width = width
         self.height = height
         self.batch = batch
+        self.set_fft_len(fft_len)
+        self.set_sampling_rate(sampling_rate)
+
+    def set_fft_len(self, fft_len):
+        self.fft_len = fft_len
+
+    def set_sampling_rate(self, sampling_rate):
+        self.sampling_rate = sampling_rate
+        self.freq_resolution = self.sampling_rate / self.fft_len / self.scale
 
 
 class WaterfallState:
@@ -866,7 +882,13 @@ def waterfall(
         if need_reset_fig:
             reset_fig(config, state)
             need_reset_fig = False
-        if not update_fig(config, state, zmqr, rotate_secs, save_time):
+        config_change, fig_updated = update_fig(
+            config, state, zmqr, rotate_secs, save_time
+        )
+        if config_change:
+            need_reset_fig = True
+            continue
+        if not fig_updated:
             time.sleep(0.1)
             continue
         if config.batch:
@@ -943,8 +965,8 @@ def main():
             args.max_freq,
             args.plot_snr,
             args.n_detect,
-            args.nfft,
-            args.sampling_rate,
+            NFFT,
+            SAMP_RATE,
             args.save_path,
             args.save_time,
             peak_finder,

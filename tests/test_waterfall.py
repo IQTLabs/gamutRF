@@ -40,7 +40,7 @@ class FakeZmqReceiver:
                 (df.freq >= self.peak_min) & (df.freq <= self.peak_max), "db"
             ] = self.peak_val
             self.serve_results = [
-                ({}, df),
+                ([{"sample_rate": 1e6, "nfft": 256}], df),
                 (None, None),
             ]
         return self.serve_results.pop()

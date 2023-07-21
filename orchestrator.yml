@@ -96,7 +96,6 @@ services:
       - --save_path=/logs
       - --port=9003
       - --detection_type=narrowband
-      - --sampling_rate=8.192e6
       - --width=12
       - --height=6
       - '--min_freq=${FREQ_START}'

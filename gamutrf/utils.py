@@ -41,6 +41,7 @@ DS_PIXELS = 256
 SAMP_RATE = 8.192e6
 MIN_FREQ = 2.3e9
 MAX_FREQ = 2.6e9
+NFFT = 256
 
 
 def endianstr():
