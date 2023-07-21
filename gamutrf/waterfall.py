@@ -184,10 +184,6 @@ def argument_parser():
         "--max_freq", default=MAX_FREQ, type=float, help="Maximum frequency for plot."
     )
     parser.add_argument(
-        "--sampling_rate", default=SAMP_RATE, type=float, help="Sampling rate."
-    )
-    parser.add_argument("--nfft", default=256, type=int, help="FFT length.")
-    parser.add_argument(
         "--n_detect", default=0, type=int, help="Number of detected signals to plot."
     )
     parser.add_argument(
@@ -750,12 +746,11 @@ class WaterfallConfig:
         self.waterfall_height = waterfall_height  # number of waterfall rows
         self.marker_distance = 0.1
         self.scale = 1e6
-        self.freq_resolution = sampling_rate / fft_len / self.scale
+        self.fft_len = fft_len
+        self.sampling_rate = sampling_rate
         self.psd_db_resolution = 90
         self.y_label_skip = 3
         self.base = 20
-        self.min_freq = min_freq / self.scale
-        self.max_freq = max_freq / self.scale
         self.top_n = top_n
         self.draw_rate = 1
         self.base_save_path = base_save_path
@@ -763,6 +758,9 @@ class WaterfallConfig:
         self.height = height
         self.batch = batch
         self.reclose_interval = 25
+        self.min_freq = min_freq / self.scale
+        self.max_freq = max_freq / self.scale
+        self.freq_resolution = self.sampling_rate / self.fft_len / self.scale
 
 
 class WaterfallState:
@@ -812,8 +810,6 @@ def waterfall(
     max_freq,
     plot_snr,
     top_n,
-    fft_len,
-    sampling_rate,
     base_save_path,
     save_time,
     peak_finder,
@@ -826,26 +822,6 @@ def waterfall(
     batch,
     zmqr,
 ):
-    config = WaterfallConfig(
-        engine,
-        plot_snr,
-        savefig_path,
-        sampling_rate,
-        fft_len,
-        min_freq,
-        max_freq,
-        top_n,
-        base_save_path,
-        width,
-        height,
-        waterfall_height,
-        batch,
-    )
-    state = WaterfallState()
-    state.save_path = config.base_save_path
-    init_state(config, state)
-    state.peak_finder = peak_finder
-
     global need_reset_fig
     need_reset_fig = True
     global running
@@ -861,6 +837,42 @@ def waterfall(
 
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
+
+    logging.info("awaiting config from scanner")
+    scan_configs = None
+    scan_df = None
+    while zmqr.healthy() and running:
+        scan_configs, scan_df = zmqr.read_buff()
+        if scan_df is not None:
+            break
+        time.sleep(0.1)
+
+    if not scan_configs:
+        return
+
+    sampling_rate = max([scan_config["sample_rate"] for scan_config in scan_configs])
+    fft_len = max([scan_config["nfft"] for scan_config in scan_configs])
+
+    config = WaterfallConfig(
+        engine,
+        plot_snr,
+        savefig_path,
+        sampling_rate,
+        fft_len,
+        min_freq,
+        max_freq,
+        top_n,
+        base_save_path,
+        width,
+        height,
+        waterfall_height,
+        batch,
+    )
+
+    state = WaterfallState()
+    state.save_path = config.base_save_path
+    init_state(config, state)
+    state.peak_finder = peak_finder
 
     matplotlib.use(config.engine)
     init_fig(config, state, onresize)
@@ -947,8 +959,6 @@ def main():
             args.max_freq,
             args.plot_snr,
             args.n_detect,
-            args.nfft,
-            args.sampling_rate,
             args.save_path,
             args.save_time,
             peak_finder,

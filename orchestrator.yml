@@ -47,9 +47,9 @@ services:
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
       - --samp-rate=8.192e6
-      - --nfft=2048
-      - --sweep-sec=10
-      - --skip-tune-step=1024
+      - --nfft=256
+      - --sweep-sec=8
+      - --skip-tune-step=4096
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
@@ -93,7 +93,6 @@ services:
       - --save_path=/logs
       - --port=9003
       - --detection_type=narrowband
-      - --sampling_rate=8.192e6
       - --width=12
       - --height=6
       - '--min_freq=${FREQ_START}'
