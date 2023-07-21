@@ -279,7 +279,8 @@ def reset_fig(
     config,
     state,
 ):
-    # RESET FIGURE
+    logging.info("resetting figure")
+
     state.fig.clf()
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.15)
@@ -421,6 +422,7 @@ def init_fig(
     state,
     onresize,
 ):
+    logging.info("initializing figure")
     plt.close("all")
 
     state.cmap = plt.get_cmap("viridis")
@@ -760,6 +762,7 @@ class WaterfallConfig:
         self.width = width
         self.height = height
         self.batch = batch
+        self.reclose_interval = 25
 
 
 class WaterfallState:
@@ -869,7 +872,8 @@ def waterfall(
         if not update_fig(config, state, zmqr, rotate_secs, save_time):
             time.sleep(0.1)
             continue
-        if config.batch:
+        # TODO: workaround memory leak in savefig with periodic reinitialiation
+        if config.batch and state.counter % config.reclose_interval == 0:
             init_fig(config, state, onresize)
             need_reset_fig = True
 
