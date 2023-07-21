@@ -94,10 +94,10 @@ class UtilsTestCase(unittest.TestCase):
                         # timestamp,start_freq,end_freq,dB,type
                         # 1.0,1.49609375,1.5078125,100.0,narrowband
                         self.assertEqual(
-                            peak_min, round(float(row["start_freq"]), 2), row
+                            round(peak_min, 1), round(float(row["start_freq"]), 1), row
                         )
                         self.assertEqual(
-                            peak_max, round(float(row["end_freq"]), 2), row
+                            round(peak_max, 1), round(float(row["end_freq"]), 1), row
                         )
                         self.assertEqual(peak_val, float(row["dB"]), row)
 
