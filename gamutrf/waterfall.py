@@ -90,7 +90,7 @@ def save_detections(
     )
 
     if not os.path.exists(detection_save_dir):
-        os.makedirs(detection_save_dir)
+        Path(detection_save_dir).mkdir(parents=True, exist_ok=True)
 
     if state.previous_scan_config is None or state.previous_scan_config != scan_configs:
         state.previous_scan_config = scan_configs
@@ -150,7 +150,7 @@ def save_waterfall(
     if now - state.last_save_time > datetime.timedelta(minutes=save_time):
         waterfall_save_dir = Path(state.save_path, "waterfall")
         if not os.path.exists(waterfall_save_dir):
-            os.makedirs(waterfall_save_dir)
+            Path(waterfall_save_dir).mkdir(parents=True, exist_ok=True)
 
         waterfall_save_path = str(
             Path(waterfall_save_dir, f"waterfall_{scan_time}.png")
@@ -569,7 +569,7 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
             str(int(time.time() / rotate_secs) * rotate_secs),
         )
         if not os.path.exists(state.save_path):
-            os.makedirs(state.save_path)
+            Path(state.save_path).mkdir(parents=True, exist_ok=True)
 
     for scan_configs, scan_df in results:
         scan_df = scan_df[
@@ -937,12 +937,8 @@ def main():
     detection_type = args.detection_type.lower()
     peak_finder = None
 
-    if args.save_path:
-        Path(args.save_path, "waterfall").mkdir(parents=True, exist_ok=True)
-
-        if detection_type:
-            Path(args.save_path, "detections").mkdir(parents=True, exist_ok=True)
-            peak_finder = get_peak_finder(detection_type)
+    if args.save_path and detection_type:
+        peak_finder = get_peak_finder(detection_type)
 
     with tempfile.TemporaryDirectory() as tempdir:
         flask = None
