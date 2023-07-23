@@ -18,6 +18,7 @@ import numpy as np
 from flask import Flask, current_app
 from matplotlib.collections import LineCollection
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
+from matplotlib import style
 from scipy.ndimage import gaussian_filter
 
 from gamutrf.peak_finder import get_peak_finder
@@ -549,19 +550,22 @@ def draw_peaks(
                 state.ax_psd.draw_artist(txt)
 
 
-def update_fig(config, state, zmqr, rotate_secs, save_time):
+def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_df):
     if not state.fig or not state.ax:
         raise NotImplementedError
 
-    results = []
-    while True:
-        scan_configs, scan_df = zmqr.read_buff()
-        if scan_df is None:
-            break
-        results.append((scan_configs, scan_df))
+    if scan_df is not None:
+        results = [(scan_configs, scan_df)]
+    else:
+        results = []
+        while True:
+            scan_configs, scan_df = zmqr.read_buff()
+            if scan_df is None:
+                break
+            results.append((scan_configs, scan_df))
 
-    if not results:
-        return False
+        if not results:
+            return False
 
     if config.base_save_path and rotate_secs:
         state.save_path = os.path.join(
@@ -883,19 +887,23 @@ def waterfall(
     state.peak_finder = peak_finder
 
     matplotlib.use(config.engine)
+    style.use("fast")
     init_fig(config, state, onresize)
 
     while zmqr.healthy() and running:
         if need_reset_fig:
             reset_fig(config, state)
             need_reset_fig = False
-        if not update_fig(config, state, zmqr, rotate_secs, save_time):
+        if not update_fig(
+            config, state, zmqr, rotate_secs, save_time, scan_configs, scan_df
+        ):
             time.sleep(0.1)
-            continue
         # TODO: workaround memory leak in savefig with periodic reinitialiation
-        if config.batch and state.counter % config.reclose_interval == 0:
+        elif config.batch and state.counter % config.reclose_interval == 0:
             init_fig(config, state, onresize)
             need_reset_fig = True
+        scan_configs = None
+        scan_df = None
 
     zmqr.stop()
 
