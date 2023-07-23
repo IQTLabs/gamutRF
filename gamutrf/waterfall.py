@@ -930,7 +930,7 @@ class FlaskHandler:
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
     parser = argument_parser()
     args = parser.parse_args()
