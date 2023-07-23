@@ -21,7 +21,7 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
 
 from gamutrf.peak_finder import get_peak_finder
-from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ, SCAN_FRES
+from gamutrf.utils import SCAN_FRES
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
@@ -138,7 +138,6 @@ def save_detections(
 
 
 def save_waterfall(
-    config,
     state,
     save_time,
     scan_time,
@@ -717,7 +716,6 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
 
             if state.save_path:
                 save_waterfall(
-                    config,
                     state,
                     save_time,
                     scan_time,
