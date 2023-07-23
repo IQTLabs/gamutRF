@@ -21,7 +21,7 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
 
 from gamutrf.peak_finder import get_peak_finder
-from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ, SCAN_FRES
+from gamutrf.utils import SCAN_FRES
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
@@ -90,7 +90,7 @@ def save_detections(
     )
 
     if not os.path.exists(detection_save_dir):
-        os.makedirs(detection_save_dir)
+        Path(detection_save_dir).mkdir(parents=True, exist_ok=True)
 
     if state.previous_scan_config is None or state.previous_scan_config != scan_configs:
         state.previous_scan_config = scan_configs
@@ -138,7 +138,6 @@ def save_detections(
 
 
 def save_waterfall(
-    config,
     state,
     save_time,
     scan_time,
@@ -151,7 +150,7 @@ def save_waterfall(
     if now - state.last_save_time > datetime.timedelta(minutes=save_time):
         waterfall_save_dir = Path(state.save_path, "waterfall")
         if not os.path.exists(waterfall_save_dir):
-            os.makedirs(waterfall_save_dir)
+            Path(waterfall_save_dir).mkdir(parents=True, exist_ok=True)
 
         waterfall_save_path = str(
             Path(waterfall_save_dir, f"waterfall_{scan_time}.png")
@@ -178,10 +177,16 @@ def save_waterfall(
 def argument_parser():
     parser = argparse.ArgumentParser(description="waterfall plotter from scan data")
     parser.add_argument(
-        "--min_freq", default=MIN_FREQ, type=float, help="Minimum frequency for plot."
+        "--min_freq",
+        default=0,
+        type=float,
+        help="Minimum frequency for plot (or 0 for automatic).",
     )
     parser.add_argument(
-        "--max_freq", default=MAX_FREQ, type=float, help="Maximum frequency for plot."
+        "--max_freq",
+        default=0,
+        type=float,
+        help="Maximum frequency for plot (or 0 for automatic).",
     )
     parser.add_argument(
         "--n_detect", default=0, type=int, help="Number of detected signals to plot."
@@ -564,7 +569,7 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
             str(int(time.time() / rotate_secs) * rotate_secs),
         )
         if not os.path.exists(state.save_path):
-            os.makedirs(state.save_path)
+            Path(state.save_path).mkdir(parents=True, exist_ok=True)
 
     for scan_configs, scan_df in results:
         scan_df = scan_df[
@@ -711,7 +716,6 @@ def update_fig(config, state, zmqr, rotate_secs, save_time):
 
             if state.save_path:
                 save_waterfall(
-                    config,
                     state,
                     save_time,
                     scan_time,
@@ -852,6 +856,10 @@ def waterfall(
 
     sampling_rate = max([scan_config["sample_rate"] for scan_config in scan_configs])
     fft_len = max([scan_config["nfft"] for scan_config in scan_configs])
+    if min_freq == 0:
+        min_freq = min([scan_config["freq_start"] for scan_config in scan_configs])
+    if max_freq == 0:
+        max_freq = min([scan_config["freq_end"] for scan_config in scan_configs])
 
     config = WaterfallConfig(
         engine,
@@ -929,12 +937,8 @@ def main():
     detection_type = args.detection_type.lower()
     peak_finder = None
 
-    if args.save_path:
-        Path(args.save_path, "waterfall").mkdir(parents=True, exist_ok=True)
-
-        if detection_type:
-            Path(args.save_path, "detections").mkdir(parents=True, exist_ok=True)
-            peak_finder = get_peak_finder(detection_type)
+    if args.save_path and detection_type:
+        peak_finder = get_peak_finder(detection_type)
 
     with tempfile.TemporaryDirectory() as tempdir:
         flask = None

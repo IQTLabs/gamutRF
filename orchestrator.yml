@@ -95,8 +95,8 @@ services:
       - --detection_type=narrowband
       - --width=12
       - --height=6
-      - '--min_freq=${FREQ_START}'
-      - '--max_freq=${FREQ_END}'
+      - --min_freq=0
+      - --max_freq=0
   watchtower:
     image: containrrr/watchtower:latest
     restart: always
