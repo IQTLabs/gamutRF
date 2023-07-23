@@ -178,10 +178,16 @@ def save_waterfall(
 def argument_parser():
     parser = argparse.ArgumentParser(description="waterfall plotter from scan data")
     parser.add_argument(
-        "--min_freq", default=MIN_FREQ, type=float, help="Minimum frequency for plot."
+        "--min_freq",
+        default=0,
+        type=float,
+        help="Minimum frequency for plot (or 0 for automatic).",
     )
     parser.add_argument(
-        "--max_freq", default=MAX_FREQ, type=float, help="Maximum frequency for plot."
+        "--max_freq",
+        default=0,
+        type=float,
+        help="Maximum frequency for plot (or 0 for automatic).",
     )
     parser.add_argument(
         "--n_detect", default=0, type=int, help="Number of detected signals to plot."
@@ -852,6 +858,10 @@ def waterfall(
 
     sampling_rate = max([scan_config["sample_rate"] for scan_config in scan_configs])
     fft_len = max([scan_config["nfft"] for scan_config in scan_configs])
+    if min_freq == 0:
+        min_freq = min([scan_config["freq_start"] for scan_config in scan_configs])
+    if max_freq == 0:
+        max_freq = min([scan_config["freq_end"] for scan_config in scan_configs])
 
     config = WaterfallConfig(
         engine,
