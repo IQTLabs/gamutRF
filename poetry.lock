@@ -161,14 +161,14 @@ wget = "*"
 
 [[package]]
 name = "cairocffi"
-version = "1.6.0"
+version = "1.6.1"
 description = "cffi-based cairo bindings for Python"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "cairocffi-1.6.0-py3-none-any.whl", hash = "sha256:fec979f3e904c1a38350b06dcc91d3c15f9a4954e618a068761622e3a0d5058c"},
-    {file = "cairocffi-1.6.0.tar.gz", hash = "sha256:e7f21ea1546a5d490ceba77b6216c1393d7e0a7856e292864a88a7506092bf4d"},
+    {file = "cairocffi-1.6.1-py3-none-any.whl", hash = "sha256:aa78ee52b9069d7475eeac457389b6275aa92111895d78fbaa2202a52dac112e"},
+    {file = "cairocffi-1.6.1.tar.gz", hash = "sha256:78e6bbe47357640c453d0be929fa49cd05cce2e1286f3d2a1ca9cbda7efdb8b7"},
 ]
 
 [package.dependencies]
