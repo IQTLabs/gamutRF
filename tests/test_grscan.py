@@ -105,6 +105,7 @@ class GrscanTestCase(unittest.TestCase):
                 iqtlabs=iqtlabs,
                 wavelearner=wavelearner,
                 rotate_secs=900,
+                db_clamp_min=-1e6,
             )
             tb.start()
             time.sleep(10)
