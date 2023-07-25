@@ -97,7 +97,7 @@ $ cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON -DCMAKE_INSTALL_PREFIX=
 $ make -j $(nproc)
 $ make install
 $ cd ../..
-$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.28
+$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.30
 $ cd gr-iqtlabs
 $ mkdir build
 $ cd build
