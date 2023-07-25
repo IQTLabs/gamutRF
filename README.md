@@ -167,7 +167,7 @@ UHD driver arguments ```num_recv_frames``` or ```recv_frame_size``` may be too h
 
 #### Scanner with Ettus SDR shows implausible low power at approx 100MHz intervals
 
-Ettus radios may need extra time to produce good data when being retuned rapidly by the scanner. Try adding ```--skip-tune-step=1024``` to the scanner command line and increase the value until the power dips disappear. This parameter will slow down the scan speed.
+Ettus radios periodically need extra time to produce good data when being retuned rapidly by the scanner. Increasing the value of ```--db_clamp_floor``` will cause the scanner to discard windows after retuning (effectively waiting for the retune command to be executed and produce good data before proceeding).
 
 #### "O"s or warnings about overflows in SDR containers
 
