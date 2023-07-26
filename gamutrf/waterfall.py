@@ -356,6 +356,7 @@ def reset_fig(
             linestyle=":",
             alpha=0,
         )
+        ln.set_alpha(0.75)
         state.top_n_lns.append(ln)
 
     state.ax.set_xlabel("MHz")
@@ -384,19 +385,15 @@ def reset_fig(
     for ax in (state.ax_psd.yaxis, state.cbar_ax.yaxis, state.ax.yaxis):
         ax.set_animated(True)
 
-    if not config.batch:
-        plt.show(block=False)
-
-    if not config.batch:
-        state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
-
     state.ax.draw_artist(state.mesh)
     state.fig.canvas.blit(state.ax.bbox)
-    for ln in state.top_n_lns:
-        ln.set_alpha(0.75)
 
-    if not config.batch and config.savefig_path:
-        safe_savefig(config.savefig_path)
+    if not config.batch:
+        plt.show(block=False)
+        state.fig.canvas.flush_events()
+        state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
+        if config.savefig_path:
+            safe_savefig(config.savefig_path)
 
 
 def init_state(
