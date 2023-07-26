@@ -49,7 +49,7 @@ services:
       - --samp-rate=8.192e6
       - --nfft=256
       - --sweep-sec=8
-      - --skip-tune-step=4096
+      - --db_clamp_floor=-150
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
