@@ -389,8 +389,8 @@ def reset_fig(
     state.fig.canvas.blit(state.ax.bbox)
 
     if not config.batch:
-        state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
         plt.show(block=False)
+        state.background = state.fig.canvas.copy_from_bbox(state.fig.bbox)
         if config.savefig_path:
             safe_savefig(config.savefig_path)
 
