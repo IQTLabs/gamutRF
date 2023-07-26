@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GamutRF Console</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='console_style.css') }}">
+</head>
+<body>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+    <nav class="navbar navbar-light bg-light">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="d-inline-block align-top logo" alt="">
+            GamutRF Console
+        </a>
+        <div class="nav nav-tabs" id="nav-tab" role="tablist">
+            <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-home" role="tab" aria-controls="nav-home" aria-selected="true">Tab 1</a>
+            <a class="nav-item nav-link" id="nav-birdseye-tab" data-toggle="tab" href="#nav-birdseye" role="tab" aria-controls="nav-birdseye" aria-selected="false">Tab 2</a>
+        </div>
+    </nav>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="tab-content" id="nav-tabContent">
+                <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">
+                    <div class="col-12 p-5 d-flex justify-content-center align-items-center" style="height: 50vh; background-color: #f8f9fa;">
+                        <img src="{{ waterfall_location }}" alt="Waterfall Viewport" style="max-height: 100%; max-width: 100%;">
+                    </div>
+                    <div class="col-12" style="height: 50vh;">
+                        <div class="row h-100">
+                            <form class="col-12" action="/reconf" method="get">
+                                <div class="row h-100">
+                                    <div class="col-6 d-flex flex-column justify-content-around">
+                                        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapse-basic" aria-expanded="false" aria-controls="collapseOne">
+                                            Basic Controls
+                                        </button>
+                                        <div class="collapse" id="collapse-basic">
+                                            <div class="card card-body">
+                                                {% for key, value in basic_data %}
+                                                <div class="input-group mb-3">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">{{ key }}</span>
+                                                    </div>
+                                                    <input type="text" class="form-control" name="{{ key }}" value="{{ value }}">
+                                                </div>
+                                                {% endfor %}        
+                                            </div>
+                                        </div>                
+                                        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapse-advanced" aria-expanded="false" aria-controls="collapseOne">
+                                            Advanced Controls
+                                        </button>
+                                        <div class="collapse" id="collapse-advanced ">
+                                            <div class="card card-body">
+                                                {% for key, value in advanced_data %}
+                                                <div class="input-group mb-3">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">{{ key }}</span>
+                                                    </div>
+                                                    <input type="text" class="form-control" name="{{ key }}" value="{{ value }}">
+                                                </div>
+                                                {% endfor %}        
+                                            </div>
+                                        </div>                
+                                    </div>
+                                    <div class="col-6 d-flex align-items-center justify-content-center">
+                                        <button type="submit" class="btn btn-primary">Update and Reset</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>        
+                </div>
+                <div class="tab-pane fade" id="nav-birdseye" role="tabpanel" aria-labelledby="nav-birdseye-tab">
+                    <div class="col-12 p-5 d-flex justify-content-center align-items-center" style="height: 50vh; background-color: #f8f9fa;">
+                        <img src="{{ birdseye_data }}" alt="Birdseye Viewport" style="max-height: 100%; max-width: 100%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
