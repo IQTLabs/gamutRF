@@ -145,6 +145,11 @@ def argument_parser():
         action=argparse.BooleanOptionalAction,
         help="get RSSI values",
     )
+
+    parser.add_argument(
+        "--use_mavlink_gps", help="Use external Pixhawk/MAVLINK GPS", default=False, type=bool
+    )
+    
     return parser
 
 
