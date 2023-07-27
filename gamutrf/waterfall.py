@@ -257,7 +257,7 @@ def reset_mesh_psd(config, state, data=None):
         np.linspace(
             config.min_freq,
             config.max_freq,
-            int((config.max_freq - config.min_freq) / (config.freq_resolution) + 1),
+            int((config.max_freq - config.min_freq) / config.freq_resolution + 1),
         ),
         np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
     )
@@ -842,6 +842,11 @@ def waterfall(
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
+    logging.info("awaiting scanner startup")
+
+    while not zmqr.healthy():
+        time.sleep(0.1)
+
     logging.info("awaiting config from scanner")
     scan_configs = None
     scan_df = None
@@ -859,7 +864,7 @@ def waterfall(
     if min_freq == 0:
         min_freq = min([scan_config["freq_start"] for scan_config in scan_configs])
     if max_freq == 0:
-        max_freq = min([scan_config["freq_end"] for scan_config in scan_configs])
+        max_freq = max([scan_config["freq_end"] for scan_config in scan_configs])
 
     config = WaterfallConfig(
         engine,
@@ -875,6 +880,15 @@ def waterfall(
         height,
         waterfall_height,
         batch,
+    )
+
+    logging.info(
+        "scanning %fMHz to %fMHz at %fMsps with %u FFT points at %fMHz resolution",
+        config.min_freq,
+        config.max_freq,
+        config.sampling_rate / 1e6,
+        config.fft_len,
+        config.freq_resolution,
     )
 
     state = WaterfallState()
