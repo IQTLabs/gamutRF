@@ -27,9 +27,10 @@ jobs:
           grep -h 'git clone' docker/*|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
       - name: Install dependencies
         run: |
-          mkdir -p gr-iqtlabs/build && cd gr-iqtlabs/build && \
-          cmake .. && sudo make install && \
-          cd ../../ && sudo rm -rf gr-iqtlabs && \
+          for repodir in flatbuffers json libsigmf gr-iqtlabs ; do \
+              mkdir -p ${repodir}/build && cd ${repodir}/build && \
+              cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON .. && make -j "$(nproc)" && sudo make install && cd ../.. ; \
+          done && \
           sudo ldconfig -v && \
           poetry config virtualenvs.create false && \
           poetry install --no-interaction
@@ -62,5 +63,8 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          verbose: false # optional (default = false)
           fail_ci_if_error: false
         if: github.repository == 'iqtlabs/gamutrf'

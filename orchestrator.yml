@@ -29,9 +29,6 @@ services:
   gamutrf:
     restart: always
     image: iqtlabs/gamutrf:latest
-    depends_on:
-      sigfinder:
-        condition: service_started
     networks:
       - gamutrf
     ports:
@@ -50,8 +47,9 @@ services:
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
       - --samp-rate=8.192e6
-      - --nfft=2048
-      - --sweep-sec=30
+      - --nfft=256
+      - --sweep-sec=8
+      - --db_clamp_floor=-150
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
@@ -72,17 +70,33 @@ services:
     command:
       - gamutrf-sigfinder
       - --scanners=gamutrf:10000
-      - --log=/logs/scan.csv
-      - --fftlog=/logs/fft.csv
-      - --fftgraph=/logs/fft.png
-      - --width=10
-      - --prominence=2
-      - --threshold=-25
+      - --log=/logs/scan.log
+      - --detection_type=narrowband
       - --record_secs=1
       - --max_recorder_signals=5
+      - --db_rolling_factor=0
     environment:
       - "PEAK_TRIGGER=0"
       - "PIN_TRIGGER=17"
+  waterfall:
+    restart: always
+    image: iqtlabs/gamutrf:latest
+    networks:
+      - gamutrf
+    ports:
+      - '9003:9003'
+    volumes:
+      - '${VOL_PREFIX}:/logs'
+    command:
+      - gamutrf-waterfall
+      - --scanners=gamutrf:10000
+      - --save_path=/logs
+      - --port=9003
+      - --detection_type=narrowband
+      - --width=12
+      - --height=6
+      - --min_freq=0
+      - --max_freq=0
   watchtower:
     image: containrrr/watchtower:latest
     restart: always

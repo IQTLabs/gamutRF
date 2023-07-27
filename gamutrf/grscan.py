@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import cv2
 import logging
-import numpy as np
 import sys
 from pathlib import Path
+import numpy as np
 
 try:
+    from gnuradio import filter as grfilter  # pytype: disable=import-error
     from gnuradio import blocks  # pytype: disable=import-error
     from gnuradio import fft  # pytype: disable=import-error
     from gnuradio import gr  # pytype: disable=import-error
@@ -21,6 +21,7 @@ except ModuleNotFoundError as err:  # pragma: no cover
 
 from gamutrf.grsource import get_source
 from gamutrf.gryolo import yolo_bbox
+from gamutrf.utils import endianstr
 
 
 class grscan(gr.top_block):
@@ -43,11 +44,16 @@ class grscan(gr.top_block):
         sample_dir="",
         inference_plan_file="",
         inference_output_dir="",
-        inference_input_len=2048,
         bucket_range=1.0,
         tuning_ranges="",
         scaling="spectrum",
         description="",
+        dc_block_len=0,
+        dc_block_long=False,
+        db_clamp_floor=-200,
+        db_clamp_ceil=50,
+        rotate_secs=0,
+        sigmf=True,
         iqtlabs=None,
         wavelearner=None,
     ):
@@ -77,7 +83,9 @@ class grscan(gr.top_block):
             sdrargs=sdrargs,
         )
 
-        fft_blocks, fft_roll = self.get_fft_blocks(fft_size, sdr)
+        fft_blocks, fft_roll = self.get_fft_blocks(
+            fft_size, dc_block_len, dc_block_long
+        )
         self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate, scaling)
         self.fft_to_inference_block = self.fft_blocks[-1]
 
@@ -86,16 +94,21 @@ class grscan(gr.top_block):
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
             self.samples_blocks.extend(
                 [
-                    blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
+                    blocks.complex_to_interleaved_short(False, 32767),
+                    blocks.stream_to_vector(gr.sizeof_short, fft_size * 2),
                     iqtlabs.write_freq_samples(
                         "rx_freq",
-                        gr.sizeof_gr_complex,
-                        fft_size,
+                        gr.sizeof_short,
+                        "_".join(("ci16", endianstr())),
+                        fft_size * 2,
                         sample_dir,
                         "samples",
                         write_samples,
                         skip_tune_step,
                         int(samp_rate),
+                        rotate_secs,
+                        igain,
+                        sigmf,
                     ),
                 ]
             )
@@ -123,13 +136,14 @@ class grscan(gr.top_block):
             tune_step_fft,
             skip_tune_step,
             fft_roll,
-            -200,
-            50,
+            db_clamp_floor,
+            db_clamp_ceil,
             sample_dir,
             write_samples,
             bucket_range,
             tuning_ranges,
             description,
+            rotate_secs,
         )
         self.fft_blocks.append(retune_fft)
         zmq_addr = f"tcp://{logaddr}:{logport}"
@@ -251,10 +265,15 @@ class grscan(gr.top_block):
     def get_window(self, fft_size):
         return window.hann(fft_size)
 
-    def get_fft_blocks(self, fft_size, sdr):
+    def get_fft_blocks(self, fft_size, dc_block_len, dc_block_long):
+        fft_blocks = []
+        fft_roll = False
+        if dc_block_len:
+            fft_blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
         if self.wavelearner:
             fft_batch_size = 256
-            return (
+            fft_roll = True
+            fft_blocks.extend(
                 [
                     blocks.stream_to_vector(
                         gr.sizeof_gr_complex, fft_batch_size * fft_size
@@ -269,16 +288,16 @@ class grscan(gr.top_block):
                     blocks.vector_to_stream(
                         gr.sizeof_gr_complex * fft_size, fft_batch_size
                     ),
-                ],
-                True,
+                ]
             )
-        return (
-            [
-                blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
-                fft.fft_vcc(fft_size, True, self.get_window(fft_size), True, 1),
-            ],
-            False,
-        )
+        else:
+            fft_blocks.extend(
+                [
+                    blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
+                    fft.fft_vcc(fft_size, True, self.get_window(fft_size), True, 1),
+                ]
+            )
+        return (fft_blocks, fft_roll)
 
     def start(self):
         super().start()

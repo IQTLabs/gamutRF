@@ -46,8 +46,11 @@ class FakeArgs:
 class SpecgramTestCase(unittest.TestCase):
     def test_process_recordings(self):
         with tempfile.TemporaryDirectory() as tempdir:
-            recording = os.path.join(str(tempdir), "testrecording_100Hz_1000sps.raw")
+            recording = os.path.join(
+                str(tempdir), "testrecording_123_100Hz_1000sps.raw"
+            )
             (
+                _epoch_time,
                 _freq_center,
                 sample_rate,
                 _sample_dtype,

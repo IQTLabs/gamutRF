@@ -2,7 +2,7 @@ import logging
 import signal
 import time
 import sys
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
 
 try:
     from gnuradio import iqtlabs  # pytype: disable=import-error
@@ -22,6 +22,7 @@ from prometheus_client import start_http_server
 
 from gamutrf.grscan import grscan
 from gamutrf.flask_handler import FlaskHandler
+from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ
 
 running = True
 
@@ -34,6 +35,7 @@ def init_prom_vars():
         "tune_overlap": Gauge("tune_overlap", "multiple of samp_rate when retuning"),
         "tune_step_fft": Gauge("tune_step_fft", "tune FFT step (0 is use sweep_sec)"),
         "sweep_sec": Gauge("sweep_sec", "scan sweep rate in seconds"),
+        "run_timestamp": Gauge("run_timestamp", "updated when flowgraph is running"),
     }
     return prom_vars
 
@@ -44,14 +46,14 @@ def argument_parser():
         "--freq-end",
         dest="freq_end",
         type=eng_float,
-        default=eng_notation.num_to_str(float(1e9)),
+        default=eng_notation.num_to_str(MAX_FREQ),
         help="Set freq_end [default=%(default)r]",
     )
     parser.add_argument(
         "--freq-start",
         dest="freq_start",
         type=eng_float,
-        default=eng_notation.num_to_str(float(100e6)),
+        default=eng_notation.num_to_str(MIN_FREQ),
         help="Set freq_start [default=%(default)r]",
     )
     parser.add_argument(
@@ -65,7 +67,7 @@ def argument_parser():
         "--samp-rate",
         dest="samp_rate",
         type=eng_float,
-        default=eng_notation.num_to_str(float(4.096e6)),
+        default=eng_notation.num_to_str(SAMP_RATE),
         help="Set samp_rate [default=%(default)r]",
     )
     parser.add_argument(
@@ -139,6 +141,13 @@ def argument_parser():
         help="API server port",
     )
     parser.add_argument(
+        "--rotate_secs",
+        dest="rotate_secs",
+        type=int,
+        default=900,
+        help="rotate storage directories every N seconds",
+    )
+    parser.add_argument(
         "--sdr",
         dest="sdr",
         type=str,
@@ -163,15 +172,42 @@ def argument_parser():
         "--tuneoverlap",
         dest="tuneoverlap",
         type=float,
-        default=0.5,
+        default=0.85,
         help="multiple of samp_rate when retuning",
     )
     parser.add_argument(
         "--bucket_range",
         dest="bucket_range",
         type=float,
-        default=1.0,
+        default=0.85,
         help="what proportion of FFT buckets to use",
+    )
+    parser.add_argument(
+        "--db_clamp_floor",
+        dest="db_clamp_floor",
+        type=float,
+        default=-200,
+        help="clamp dB output floor",
+    )
+    parser.add_argument(
+        "--db_clamp_ceil",
+        dest="db_clamp_ceil",
+        type=float,
+        default=50,
+        help="clamp dB output ceil",
+    )
+    parser.add_argument(
+        "--dc_block_len",
+        dest="dc_block_len",
+        type=int,
+        default=0,
+        help="if > 0, use dc_block_cc filter with length",
+    )
+    parser.add_argument(
+        "--dc_block_long",
+        dest="dc_block_long",
+        action="store_true",
+        help="Use dc_block_cc long form",
     )
     parser.add_argument(
         "--inference_plan_file",
@@ -186,13 +222,6 @@ def argument_parser():
         type=str,
         default="",
         help="directory for inference output",
-    )
-    parser.add_argument(
-        "--inference_input_len",
-        dest="inference_input_len",
-        type=int,
-        default=2048,
-        help="vector length for wavelearner",
     )
     parser.add_argument(
         "--tuning_ranges",
@@ -219,6 +248,13 @@ def argument_parser():
         spectrum ('spectrum') where `Sxx` has units of V**2, if `x`
         is measured in V and `fs` is measured in Hz. Defaults to
         'spectrum'.""",
+    )
+    parser.add_argument(
+        "--sigmf",
+        dest="sigmf",
+        default=True,
+        action=BooleanOptionalAction,
+        help="add sigmf meta file",
     )
     return parser
 
@@ -286,17 +322,23 @@ def run_loop(options, prom_vars, wavelearner):
             sample_dir=handler.options.sample_dir,
             write_samples=handler.options.write_samples,
             bucket_range=handler.options.bucket_range,
+            db_clamp_floor=handler.options.db_clamp_floor,
+            db_clamp_ceil=handler.options.db_clamp_ceil,
+            dc_block_len=handler.options.dc_block_len,
+            dc_block_long=handler.options.dc_block_long,
             inference_plan_file=handler.options.inference_plan_file,
             inference_output_dir=handler.options.inference_output_dir,
-            inference_input_len=handler.options.inference_input_len,
             scaling=handler.options.scaling,
+            rotate_secs=handler.options.rotate_secs,
             description=handler.options.description,
+            sigmf=handler.options.sigmf,
             iqtlabs=iqtlabs,
             wavelearner=wavelearner,
         )
         tb.start()
         while running and reconfigures == handler.reconfigures:
             idle_time = 1
+            prom_vars["run_timestamp"].set(time.time()),
             time.sleep(idle_time)
 
         while reconfigures != handler.reconfigures:

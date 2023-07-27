@@ -76,41 +76,28 @@ class FakeArgs:
         log,
         rotatesecs,
         window,
-        threshold,
         fftlog,
-        width,
-        prominence,
+        detection_type,
         bin_mhz,
         record_bw_msps,
         history,
         recorder,
-        fftgraph,
         scanners,
-        nfftgraph,
         max_recorder_signals,
-        running_fft_secs,
-        nfftplots,
         skip_tune_step_fft,
         buff_path,
     ):
         self.log = log
         self.rotatesecs = rotatesecs
         self.window = window
-        self.threshold = threshold
         self.fftlog = fftlog
-        self.width = width
-        self.threshold = threshold
-        self.prominence = prominence
+        self.detection_type = detection_type
         self.bin_mhz = bin_mhz
         self.record_bw_msps = record_bw_msps
         self.history = history
         self.recorder = recorder
-        self.fftgraph = fftgraph
         self.scanners = scanners
-        self.nfftgraph = nfftgraph
         self.max_recorder_signals = max_recorder_signals
-        self.running_fft_secs = running_fft_secs
-        self.nfftplots = nfftplots
         self.skip_tune_step_fft = skip_tune_step_fft
         self.db_rolling_factor = ROLLING_FACTOR
         self.buff_path = buff_path
@@ -151,24 +138,17 @@ class SigFinderTestCase(unittest.TestCase):
             with tempfile.TemporaryDirectory() as tempdir:
                 test_log = os.path.join(str(tempdir), "test.csv")
                 test_fftlog = os.path.join(str(tempdir), "fft.csv")
-                test_fftgraph = os.path.join(str(tempdir), "fft.png")
                 args = FakeArgs(
                     test_log,
                     60,
                     4,
-                    -40,
                     test_fftlog,
-                    1,
-                    5,
+                    "narrowband",
                     20,
                     21,
                     1,
                     "",
-                    test_fftgraph,
                     "127.0.0.1:9999",
-                    10,
-                    1,
-                    1,
                     1,
                     0,
                     str(tempdir),
@@ -183,6 +163,7 @@ class SigFinderTestCase(unittest.TestCase):
                 scan_config = {
                     "freq_start": freq_start,
                     "freq_end": freq_end,
+                    "sample_rate": int(1e6),
                 }
                 with open(zmqr.scanners[0].buff_file, "wb") as zbf:
                     with context.stream_writer(zbf) as bf:
@@ -193,6 +174,7 @@ class SigFinderTestCase(unittest.TestCase):
                                 "config": {
                                     "freq_start": freq_start,
                                     "freq_end": freq_end,
+                                    "sample_rate": int(1e6),
                                 },
                                 "buckets": {},
                             }
@@ -213,32 +195,25 @@ class SigFinderTestCase(unittest.TestCase):
                 )
                 process_thread.start()
                 for i in range(10):
-                    if os.path.exists(test_fftlog) and os.path.exists(test_fftgraph):
+                    if os.path.exists(test_fftlog):
                         break
                     time.sleep(1)
                 zmqr.stop()
                 process_thread.join()
                 self.assertTrue(os.path.exists(test_fftlog))
-                self.assertTrue(os.path.exists(test_fftgraph))
 
     def test_fft_proxy(self):
         args = FakeArgs(
             "",
             60,
             4,
-            -40,
             "",
-            None,
-            5,
+            "narrowband",
             20,
             21,
             1,
             "",
-            "",
             "127.0.0.1:9999",
-            10,
-            1,
-            1,
             1,
             0,
             "",

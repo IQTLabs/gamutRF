@@ -13,7 +13,9 @@ class FlaskHandler:
         self.app.add_url_rule("/reconf", "reconf", self.reconf)
         self.request = request
         self.thread = threading.Thread(
-            target=self.app.run, kwargs={"port": options.apiport}, daemon=True
+            target=self.app.run,
+            kwargs={"host": "0.0.0.0", "port": options.apiport},  # nosec
+            daemon=True,
         )
 
     def start(self):

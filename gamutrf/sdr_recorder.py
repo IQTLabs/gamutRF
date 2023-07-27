@@ -22,22 +22,24 @@ from gamutrf.utils import (
     HEIGHT,
     DPI,
     DS_PIXELS,
+    endianstr,
 )
 
 IMSHOW_INTERPOLATION = os.getenv("IMSHOW_INTERPOLATION", "bilinear")
 NFFT = int(os.getenv("NFFT", "0"))
 NFFT_OVERLAP = 512
-SAMPLE_TYPE = "s16"
+SAMPLE_TYPE = "i16"
 MIN_SAMPLE_RATE = int(1e6)
 MAX_SAMPLE_RATE = int(30 * 1e6)
 FFT_FILE = "/dev/shm/fft.dat"  # nosec
 
 
 class SDRRecorder:
-    def __init__(self, sdrargs):
+    def __init__(self, sdrargs, rotate_secs):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.zst_fifo = os.path.join(self.tmpdir.name, "zstfifo")
         self.sdrargs = sdrargs
+        self.rotate_secs = rotate_secs
         os.mkfifo(self.zst_fifo)
 
     @staticmethod
@@ -165,10 +167,15 @@ class SDRRecorder:
         sdr,
         antenna,
     ):
-        epoch_time = str(int(time.time()))
+        epoch_time = int(time.time())
         meta_time = datetime.datetime.utcnow().isoformat() + "Z"
+        if self.rotate_secs:
+            ts_dir = int(epoch_time / self.rotate_secs) * self.rotate_secs
+            path = os.path.join(path, str(ts_dir))
+            if not os.path.exists(path):
+                os.makedirs(path)
         sample_file = self.get_sample_file(
-            path, epoch_time, center_freq, sample_rate, sdr, antenna, gain
+            path, str(epoch_time), center_freq, sample_rate, sdr, antenna, gain
         )
         record_status = -1
         try:
@@ -182,13 +189,17 @@ class SDRRecorder:
 
             if sigmf_:
                 meta = sigmf.SigMFFile(
+                    skip_checksum=True,  # expensive for large files
                     data_file=sample_file,
                     global_info={
-                        sigmf.SigMFFile.DATATYPE_KEY: SAMPLE_TYPE,
+                        sigmf.SigMFFile.DATATYPE_KEY: "_".join(
+                            ("c" + SAMPLE_TYPE, endianstr())
+                        ),
                         sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
                         sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
                     },
                 )
+                # TODO: add capture_details, source_file and gain when supported.
                 meta.add_capture(
                     0,
                     metadata={
@@ -204,14 +215,33 @@ class SDRRecorder:
 
 
 class EttusRecorder(SDRRecorder):
-    def __init__(self, sdrargs):
-        super().__init__(sdrargs)
+    def __init__(self, sdrargs, rotate_secs):
+        super().__init__(sdrargs, rotate_secs)
         self.worker_subprocess = None
         self.last_worker_line = None
-        # TODO: troubleshoot why this doesn't find an Ettus initially, still.
-        # subprocess.call(['uhd_find_devices'])
         if not self.sdrargs:
             self.sdrargs = ETTUS_ARGS
+        try:
+            subprocess.check_call(
+                [
+                    "/usr/local/bin/uhd_sample_recorder",
+                    "--rate",
+                    str(1e6),
+                    "--args",
+                    self.sdrargs,
+                    "--ant",
+                    ETTUS_ANT,
+                    "--duration",
+                    "1",
+                    "--null",
+                    "--fftnull",
+                    "--novkfft",
+                    "--nfft",
+                    "0",
+                ]
+            )
+        except subprocess.CalledProcessError:
+            raise ValueError
 
     def record_args(
         self, sample_file, sample_rate, sample_count, center_freq, gain, _agc, rxb
@@ -380,8 +410,8 @@ RECORDER_MAP = {
 }
 
 
-def get_recorder(recorder_name, sdrargs=None):
+def get_recorder(recorder_name, sdrargs=None, rotate_secs=0):
     try:
-        return RECORDER_MAP[recorder_name](sdrargs)
+        return RECORDER_MAP[recorder_name](sdrargs, rotate_secs)
     except KeyError:
-        return FileTestRecorder(recorder_name)
+        return FileTestRecorder(recorder_name, rotate_secs)

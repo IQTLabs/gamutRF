@@ -5,6 +5,7 @@ import os
 import queue
 import socket
 import struct
+import sys
 import threading
 import time
 
@@ -51,6 +52,12 @@ def argument_parser():
     )
     parser.add_argument(
         "--port", "-p", help="Port to run the API webserver on", type=int, default=8000
+    )
+    parser.add_argument(
+        "--rotate_secs",
+        help="If > 0, rotate storage directories every N seconds",
+        type=int,
+        default=3600,
     )
     parser.add_argument(
         "--sdr",
@@ -103,35 +110,40 @@ def argument_parser():
     parser.add_argument(
         "--rssi_threshold", help="RSSI reporting threshold", default=-45, type=float
     )
-    parser.add_argument(
-        "--use_mavlink_gps", help="Use external Pixhawk/MAVLINK GPS", default=False, type=bool
+    external_rssi_parser = parser.add_mutually_exclusive_group(required=False)
+    external_rssi_parser.add_argument(
+        "--rssi_external",
+        dest="rssi_external",
+        action="store_true",
+        default=True,
+        help="proxy external RSSI",
     )
-    arg_parser = parser.add_mutually_exclusive_group(required=False)
-    arg_parser.add_argument(
+    external_rssi_parser.add_argument(
+        "--no-rssi_external",
+        dest="rssi_external",
+        action="store_false",
+        help="do not use proxy external RSSI",
+    )
+    agc_parser = parser.add_mutually_exclusive_group(required=False)
+    agc_parser.add_argument(
         "--agc", dest="agc", action="store_true", default=True, help="use AGC"
     )
-    arg_parser.add_argument(
+    agc_parser.add_argument(
         "--no-agc", dest="agc", action="store_false", help="do not use AGC"
     )
-    sigmf_parser = parser.add_mutually_exclusive_group(required=False)
-    sigmf_parser.add_argument(
-        "--sigmf", dest="sigmf", action="store_true", help="add sigmf meta file"
-    )
-    sigmf_parser.add_argument(
-        "--no-sigmf",
+    parser.add_argument(
+        "--sigmf",
         dest="sigmf",
-        action="store_false",
-        help="do not add sigmf meta file",
+        default=True,
+        action=argparse.BooleanOptionalAction,
+        help="add sigmf meta file",
     )
-    rssi_parser = parser.add_mutually_exclusive_group(required=False)
-    rssi_parser.add_argument(
-        "--rssi", dest="enable_rssi", action="store_true", help="get RSSI values"
-    )
-    rssi_parser.add_argument(
-        "--no-rssi",
+    parser.add_argument(
+        "--rssi",
         dest="enable_rssi",
-        action="store_false",
-        help="do not get RSSI values",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="get RSSI values",
     )
     return parser
 
@@ -209,7 +221,9 @@ class API:
             use_mavlink_gps = self.arguments.use_mavlink_gps
         )
         self.q = queue.Queue(self.arguments.qsize)
-        self.sdr_recorder = get_recorder(self.arguments.sdr, self.arguments.sdrargs)
+        self.sdr_recorder = get_recorder(
+            self.arguments.sdr, self.arguments.sdrargs, self.arguments.rotate_secs
+        )
         self.start_time = time.time()
         cors = CORS(allow_all_origins=True)
         self.app = falcon.App(middleware=[cors.middleware])
@@ -278,31 +292,38 @@ class API:
             self.report_rssi(record_args, rssi, now)
             last_rssi_time = now
 
+    def proxy_rssi(self, rssi_addr, record_args):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.bind((rssi_addr, RSSI_UDP_PORT))  # nosec
+            self.process_rssi(record_args, sock)
+
     def serve_rssi(self):
         record_args = self.q.get()
         logging.info(f"got request {record_args}")
-        center_freq = int(record_args["center_freq"])
-        try:
-            rssi_server = BirdsEyeRSSI(
-                self.arguments,
-                record_args["sample_rate"],
-                center_freq,
-                agc=self.arguments.agc,
-                rssi_throttle=self.arguments.rssi_throttle,
+        if self.arguments.rssi_external:
+            logging.info("proxying external RSSI")
+            self.proxy_rssi("0.0.0.0", record_args)  # nosec
+        else:
+            center_freq = int(record_args["center_freq"])
+            try:
+                rssi_server = BirdsEyeRSSI(
+                    self.arguments,
+                    record_args["sample_rate"],
+                    center_freq,
+                    agc=self.arguments.agc,
+                    rssi_throttle=self.arguments.rssi_throttle,
+                )
+            except RuntimeError as err:
+                logging.error("could not initialize RSSI server: %s", err)
+                return
+            rssi_server.start()
+            logging.info(
+                f"serving RSSI for {center_freq}Hz over threshold {self.arguments.rssi_threshold} with AGC {self.arguments.agc}"
             )
-        except RuntimeError as err:
-            logging.error("could not initialize RSSI server: %s", err)
-            return
-        rssi_server.start()
-        logging.info(
-            f"serving RSSI for {center_freq}Hz over threshold {self.arguments.rssi_threshold} with AGC {self.arguments.agc}"
-        )
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.bind((RSSI_UDP_ADDR, RSSI_UDP_PORT))
-            self.process_rssi(record_args, sock)
-        logging.info("RSSI stream stopped")
-        rssi_server.stop()
-        rssi_server.wait()
+            self.proxy_rssi(RSSI_UDP_ADDR, record_args)
+            logging.info("RSSI stream stopped")
+            rssi_server.stop()
+            rssi_server.wait()
 
     @staticmethod
     def paths():
@@ -337,5 +358,8 @@ def main():
     level_int = {"CRITICAL": 50, "ERROR": 40, "WARNING": 30, "INFO": 20, "DEBUG": 10}
     level = level_int.get(arguments.loglevel.upper(), 0)
     logging.basicConfig(level=level, format="%(asctime)s %(message)s")
-    app = API(arguments)
+    try:
+        app = API(arguments)
+    except ValueError:
+        sys.exit(1)
     app.run()

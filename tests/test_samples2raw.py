@@ -16,7 +16,7 @@ class Samples2RawTestCase(unittest.TestCase):
     def test_s2r(self):
         with tempfile.TemporaryDirectory() as tempdir:
             base_test_name = "gamutrf_recording1_1Hz_100sps"
-            test_file_name = os.path.join(tempdir, ".".join((base_test_name, "s16")))
+            test_file_name = os.path.join(tempdir, ".".join((base_test_name, "i16")))
             out_file_name = os.path.join(tempdir, ".".join((base_test_name, "raw")))
             test_data = np.int16([-(2**15)] * int(1e2 * 2))
             test_float_data = np.float32([-1] * int(1e2 * 2))

@@ -11,9 +11,12 @@ from gamutrf.utils import parse_filename
 class ReadRecordingTestCase(unittest.TestCase):
     def test_read_recording(self):
         with tempfile.TemporaryDirectory() as tempdir:
-            recording = os.path.join(str(tempdir), "testrecording_100Hz_1000sps.s16")
+            recording = os.path.join(
+                str(tempdir), "testrecording_123_100Hz_1000sps.ci16"
+            )
             # parse filename determines sample dtype, et al from filename
             (
+                _epoch_time,
                 freq_center,
                 sample_rate,
                 sample_dtype,
@@ -42,9 +45,12 @@ class ReadRecordingTestCase(unittest.TestCase):
 
     def test_sjip_read_recording(self):
         with tempfile.TemporaryDirectory() as tempdir:
-            recording = os.path.join(str(tempdir), "testrecording_100Hz_1000sps.s16")
+            recording = os.path.join(
+                str(tempdir), "testrecording_123_100Hz_1000sps.ci16"
+            )
             # parse filename determines sample dtype, et al from filename
             (
+                _epoch_time,
                 freq_center,
                 sample_rate,
                 sample_dtype,
