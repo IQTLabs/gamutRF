@@ -10,6 +10,7 @@ import unittest
 import pandas as pd
 from gamutrf.waterfall import argument_parser, waterfall
 from gamutrf.peak_finder import get_peak_finder
+from gamutrf.zmqreceiver import frame_resample
 
 
 class FakeZmqReceiver:
@@ -24,21 +25,25 @@ class FakeZmqReceiver:
     def healthy(self):
         return time.time() - self.start_time < self.run_secs
 
-    def read_buff(self):
+    def read_buff(self, scan_fres):
         if not self.serve_results:
+            freq_min = 1e6
+            freq_max = 10e6
+            rows = int((freq_max - freq_min) / scan_fres)
             df = pd.DataFrame(
                 [
                     {
                         "ts": time.time(),
-                        "freq": 1 + (i * 0.001),
+                        "freq": freq_min + (i * scan_fres),
                         "db": self.peak_val / 2,
                     }
-                    for i in range(1000)
+                    for i in range(rows)
                 ]
             )
             df.loc[
                 (df.freq >= self.peak_min) & (df.freq <= self.peak_max), "db"
             ] = self.peak_val
+            df = frame_resample(df, scan_fres)
             self.serve_results = [
                 (
                     [
@@ -85,6 +90,7 @@ class UtilsTestCase(unittest.TestCase):
                 10,  # args.width,
                 5,  # args.height,
                 10,  # args.waterfall_height,
+                100,  # args.waterfall_width,
                 True,  # args.batch
                 zmqr,
             )
