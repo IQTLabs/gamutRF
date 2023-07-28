@@ -40,6 +40,18 @@ FFT_BUFFER_TIME = 1
 BUFF_FILE = "scanfftbuffer.txt.zst"  # nosec
 
 
+def frame_resample(df, scan_fres):
+    if df is not None:
+        # ...first frequency
+        df["freq"] = (df["freq"] / scan_fres).round() * scan_fres / 1e6
+        df = df.set_index("freq")
+        # ...then power
+        df["db"] = df.groupby(["freq"])["db"].mean()
+        df = df.reset_index().drop_duplicates(subset=["freq"])
+        return df.sort_values("freq")
+    return df
+
+
 def parse_scanners(args_scanners):
     scanner_re = re.compile(r"^(.+):(\d+)$")
     scanners = []
@@ -116,6 +128,9 @@ class ZmqScanner:
             proxy, addr, port, self.buff_file, live_file=live_file
         )
 
+    def info(self, infostr):
+        logging.info("%s:%u %s", self.addr, self.port, infostr)
+
     def healthy(self):
         return self.proxy_result.running()
 
@@ -124,7 +139,7 @@ class ZmqScanner:
 
     def read_buff_file(self):
         if os.path.exists(self.buff_file):
-            logging.info("read %u bytes of FFT data", os.stat(self.buff_file).st_size)
+            self.info("read %u bytes of FFT data" % os.stat(self.buff_file).st_size)
             with self.context.stream_reader(open(self.buff_file, "rb")) as bf:
                 self.txt_buf += bf.read().decode("utf8")
             os.remove(self.buff_file)
@@ -154,7 +169,7 @@ class ZmqScanner:
             df = df[(time.time() - df.ts).abs() < discard_time]
         if df.size:
             lastfreq = df["freq"].iat[-1]
-            logging.info("last frequency read %f MHz", lastfreq / 1e6)
+            self.info("last frequency read %f MHz" % (lastfreq / 1e6))
             if self.fftbuffer is None:
                 self.fftbuffer = df
             else:
@@ -215,14 +230,12 @@ class ZmqReceiver:
         scanners=[("127.0.0.1", 8001)],
         buff_path=None,
         proxy=fft_proxy,
-        scan_fres=0,
     ):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.live_file = pathlib.Path(os.path.join(self.tmpdir.name, "live_file"))
         self.live_file.touch()
         if buff_path is None:
             buff_path = self.tmpdir.name
-        self.scan_fres = scan_fres
         self.executor = concurrent.futures.ProcessPoolExecutor(len(scanners))
         self.scanners = []
         self.last_results = []
@@ -244,19 +257,7 @@ class ZmqReceiver:
             return True
         return False
 
-    def frame_resample(self, df):
-        if df is not None:
-            # resample to SCAN_FRES
-            # ...first frequency
-            df["freq"] = (df["freq"] / self.scan_fres).round() * self.scan_fres / 1e6
-            df = df.set_index("freq")
-            # ...then power
-            df["db"] = df.groupby(["freq"])["db"].mean()
-            df = df.reset_index().drop_duplicates(subset=["freq"])
-            return df.sort_values("freq")
-        return df
-
-    def read_buff(self, log=None, discard_time=0):
+    def read_buff(self, log=None, discard_time=0, scan_fres=0):
         results = [scanner.read_buff(log, discard_time) for scanner in self.scanners]
         if self.last_results:
             for i, result in enumerate(results):
@@ -279,8 +280,8 @@ class ZmqReceiver:
         if len(dfs) == len(self.scanners):
             logging.info("all scanners got result")
             df = pd.concat(dfs)
-            if self.scan_fres:
-                df = self.frame_resample(df)
+            if scan_fres:
+                df = frame_resample(df, scan_fres)
             self.last_results = []
 
         return (scan_configs, df)
