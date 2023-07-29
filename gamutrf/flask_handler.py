@@ -34,12 +34,12 @@ class FlaskHandler:
         ]
 
         # TODO: Make these locations and ports configurable
-        waterfall_location = "http://localhost:9003/waterfall.png"  # nosec
-        birdseye_location = "http://localhost:4999"  # nosec
+        waterfall_location = "http://localhost:9003/waterfall.png"  # nosemgrep
+        birdseye_location = "http://localhost:4999"  # nosemgrep
 
-        birdseye_data = None  # nosec
+        birdseye_data = None  # nosemgrep
 
-        birdseye_req = requests.get(birdseye_location)  # nosec
+        birdseye_req = requests.get(birdseye_location)  # nosemgrep
 
         if birdseye_req.status_code != 200:
             birdseye_data = "No data available"
