@@ -45,7 +45,7 @@ class FlaskHandler:
             birdseye_data = "No data available"
         else:
             birdseye_data = birdseye_req.content
-            match = re.search('src="(.*?)"', birdseye_data)
+            match = re.search(r'src="(.*?)"', birdseye_data.decode("utf8"))
             birdseye_data = match.group(1)
 
         return render_template(
