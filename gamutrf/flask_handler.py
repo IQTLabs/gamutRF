@@ -46,7 +46,8 @@ class FlaskHandler:
         else:
             birdseye_data = birdseye_req.content
             match = re.search(r'src="(.*?)"', birdseye_data.decode("utf8"))
-            birdseye_data = match.group(1)
+            if match is not None:
+                birdseye_data = match.group(1)
 
         return render_template(
             "index.html",
