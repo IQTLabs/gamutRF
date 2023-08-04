@@ -588,6 +588,7 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
         idx = (
             ((scan_df.freq - config.min_freq) / config.freq_resolution)
             .round()
+            .clip(lower=0, upper=(scan_df.shape[0] - 1))
             .values.flatten()
             .astype(int)
         )
@@ -946,9 +947,15 @@ class FlaskHandler:
         self.process.start()
 
     def serve(self):
+        if os.path.exists(self.savefig_path):
+            return (
+                '<html><head><meta http-equiv="refresh" content="%u"></head><body><img src="%s"></img></body></html>'
+                % (self.refresh, self.savefig_file),
+                200,
+            )
         return (
-            '<html><head><meta http-equiv="refresh" content="%u"></head><body><img src="%s"></img></body></html>'
-            % (self.refresh, self.savefig_file),
+            '<html><head><meta http-equiv="refresh" content="%u"></head><body>waterfall initializing, please wait or reload...</body></html>'
+            % self.refresh,
             200,
         )
 

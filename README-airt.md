@@ -20,7 +20,7 @@ choose option 6 (```linux_aarch64_numpy1.20python3.9.____cpython```).
 tar up ```build_artifacts``` and copy into $HOME on AIRT, as ```anarkiwi-airt-gnuradio```.
 *NOTE:* ensure you do not have $DISPLAY set during the build to avoid a hang.
 
-Ensure you have airstack 0.5.5rc2 or later .deb installed (need tuning fixes).
+Ensure you have airstack 0.5.5 .deb installed (includes tuning speed fixes - neither earlier nor later versions work).
 
 Configure xdma (otherwise tuning will be very slow).
 
@@ -49,7 +49,7 @@ dependencies:
   - pybind11
   - python=3.9
   - scipy
-  - soapysdr-module-airt=0.5.5rc2
+  - soapysdr-module-airt=0.5.5
   - gnuradio=3.9.8
 
   - pip:
@@ -79,43 +79,18 @@ install gr-iqtlabs
 $ git clone https://github.com/google/flatbuffers -b v23.5.26
 $ git clone https://github.com/nlohmann/json -b v3.11.2
 $ git clone https://github.com/deepsig/libsigmf -b v1.0.2
-$ mkdir -p flatbuffers/build
-$ cd flatbuffers/build
-$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV ..
-$ make -j $(nproc)
-$ make install
-$ cd ../..
-$ mkdir -p json/build
-$ cd json/build
-$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV ..
-$ make -j $(nproc)
-$ make install
-$ cd ../..
-$ mkdir -p libsigmf/build
-$ cd libsigmf/build
-$ cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV -DCMAKE_CXX_FLAGS="-I $HOME/.conda/envs/$CONDA_DEFAULT_ENV/include" ..
-$ make -j $(nproc)
-$ make install
-$ cd ../..
 $ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.30
-$ cd gr-iqtlabs
-$ mkdir build
-$ cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV ..
-$ make
-$ make install
+$ mkdir -p flatbuffers/build && cd flatbuffers/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
+$ mkdir -p json/build && cd json/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
+$ mkdir -p libsigmf/build && cd libsigmf/build && cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV -DCMAKE_CXX_FLAGS="-I $HOME/.conda/envs/$CONDA_DEFAULT_ENV/include" .. && make -j $(nproc) && make install && cd ../..
+$ mkdir -p gr-iqtlabs/build && cd gr-iqtlabs/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make && make install && cd ../..
 ```
 
 install gr-wavelearner
 
 ```
 $ git clone https://github.com/deepwavedigital/gr-wavelearner
-$ cd gr-wavelearner
-$ mkdir build
-$ cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV ..
-$ make
-$ make install
+$ mkdir -p gr-wavelearner/build && cd gr-wavelearner/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make && make install
 ```
 
 install gamutrf
