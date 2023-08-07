@@ -293,53 +293,45 @@ def reset_fig(
     default_data = state.db_min * np.ones(state.freq_data.shape[1])
 
     reset_mesh_psd(config, state)
-    (state.peak_lns,) = state.ax_psd.plot(
-        state.X[0],
-        default_data,
+
+    def ax_psd_plot(linestyle=":", **kwargs):
+        return state.ax_psd.plot(
+            state.X[0],
+            default_data,
+            markevery=config.marker_distance,
+            linestyle=linestyle,
+            **kwargs,
+        )
+
+    (state.peak_lns,) = ax_psd_plot(
         color="white",
         marker="^",
         markersize=12,
         linestyle="none",
         fillstyle="full",
     )
-    (state.max_psd_ln,) = state.ax_psd.plot(
-        state.X[0],
-        default_data,
+    (state.max_psd_ln,) = ax_psd_plot(
         color="red",
         marker=",",
-        linestyle=":",
-        markevery=config.marker_distance,
         label="max",
     )
-    (state.min_psd_ln,) = state.ax_psd.plot(
-        state.X[0],
-        default_data,
+    (state.min_psd_ln,) = ax_psd_plot(
         color="pink",
         marker=",",
-        linestyle=":",
-        markevery=config.marker_distance,
         label="min",
     )
-    (state.mean_psd_ln,) = state.ax_psd.plot(
-        state.X[0],
-        default_data,
+    (state.mean_psd_ln,) = ax_psd_plot(
         color="cyan",
         marker="^",
         markersize=8,
         fillstyle="none",
-        linestyle=":",
-        markevery=config.marker_distance,
         label="mean",
     )
-    (state.current_psd_ln,) = state.ax_psd.plot(
-        state.X[0],
-        default_data,
+    (state.current_psd_ln,) = ax_psd_plot(
         color="red",
         marker="o",
         markersize=8,
         fillstyle="none",
-        linestyle=":",
-        markevery=config.marker_distance,
         label="current",
     )
     state.ax_psd.legend(loc="center left", bbox_to_anchor=(1, 0.5))
@@ -584,6 +576,9 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
         if not os.path.exists(state.save_path):
             Path(state.save_path).mkdir(parents=True, exist_ok=True)
 
+    if len(results) > 1:
+        logging.info("processing backlog of %u results", len(results))
+
     for scan_configs, scan_df in results:
         idx = (
             ((scan_df.freq - config.min_freq) / config.freq_resolution)
@@ -666,10 +661,12 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
 
         state.ax_psd.set_ylim(state.db_min, state.db_max)
         state.current_psd_ln.set_ydata(state.db_data[-1])
-
-        state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
-        state.max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
-        state.mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
+        for ln, ln_func in (
+            (state.min_psd_ln, np.nanmin),
+            (state.max_psd_ln, np.nanmax),
+            (state.mean_psd_ln, np.nanmean),
+        ):
+            ln.set_ydata(ln_func(state.db_data, axis=0))
         state.ax_psd.draw_artist(state.mesh_psd)
 
         if state.peak_finder:
