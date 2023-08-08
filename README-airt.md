@@ -83,14 +83,14 @@ $ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.30
 $ mkdir -p flatbuffers/build && cd flatbuffers/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
 $ mkdir -p json/build && cd json/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
 $ mkdir -p libsigmf/build && cd libsigmf/build && cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV -DCMAKE_CXX_FLAGS="-I $HOME/.conda/envs/$CONDA_DEFAULT_ENV/include" .. && make -j $(nproc) && make install && cd ../..
-$ mkdir -p gr-iqtlabs/build && cd gr-iqtlabs/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make && make install && cd ../..
+$ mkdir -p gr-iqtlabs/build && cd gr-iqtlabs/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
 ```
 
 install gr-wavelearner
 
 ```
 $ git clone https://github.com/deepwavedigital/gr-wavelearner
-$ mkdir -p gr-wavelearner/build && cd gr-wavelearner/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make && make install
+$ mkdir -p gr-wavelearner/build && cd gr-wavelearner/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install
 ```
 
 install gamutrf
