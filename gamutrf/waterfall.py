@@ -280,6 +280,9 @@ def reset_fig(
     config,
     state,
 ):
+    if not state.fig or not state.ax:
+        raise NotImplementedError
+
     logging.info("resetting figure")
 
     state.fig.clf()
@@ -397,20 +400,6 @@ def meshgrid(config, start, stop, num):
         ),
         np.linspace(start, stop, num),
     )
-
-
-def init_state(
-    config,
-    state,
-):
-    state.X, state.Y = meshgrid(
-        config, 1, config.waterfall_height, config.waterfall_height
-    )
-    state.freq_bins = state.X[0]
-    state.db_data = np.empty(state.X.shape)
-    state.db_data.fill(np.nan)
-    state.freq_data = np.empty(state.X.shape)
-    state.freq_data.fill(np.nan)
 
 
 def init_fig(
@@ -539,39 +528,24 @@ def draw_peaks(
                 state.ax_psd.draw_artist(txt)
 
 
-def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_df):
+def poll_zmq(zmqr, config):
+    results = []
+    while True:
+        scan_configs, scan_df = zmqr.read_buff(scan_fres=config.freq_resolution * 1e6)
+        if scan_df is None:
+            break
+        results.append((scan_configs, scan_df))
+    return results
+
+
+def update_fig(config, state, results):
     if not state.fig or not state.ax:
         raise NotImplementedError
 
-    if scan_df is not None:
-        results = [
-            (scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))
-        ]
-    else:
-        results = []
-        while True:
-            scan_configs, scan_df = zmqr.read_buff(
-                scan_fres=config.freq_resolution * 1e6
-            )
-            if scan_df is None:
-                break
-            scan_df = scan_df[
-                (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
-            ][: config.waterfall_width]
-            if scan_df.empty:
-                logging.info(
-                    f"Scan is outside specified frequency range ({config.min_freq} to {config.max_freq})."
-                )
-                continue
-            results.append((scan_configs, scan_df))
-
-    if not results:
-        return False
-
-    if config.base_save_path and rotate_secs:
+    if config.base_save_path and config.rotate_secs:
         state.save_path = os.path.join(
             config.base_save_path,
-            str(int(time.time() / rotate_secs) * rotate_secs),
+            str(int(time.time() / config.rotate_secs) * config.rotate_secs),
         )
         if not os.path.exists(state.save_path):
             Path(state.save_path).mkdir(parents=True, exist_ok=True)
@@ -580,6 +554,14 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
         logging.info("processing backlog of %u results", len(results))
 
     for scan_configs, scan_df in results:
+        scan_df = scan_df[
+            (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
+        ]
+        if scan_df.empty:
+            logging.info(
+                f"Scan is outside specified frequency range ({config.min_freq} to {config.max_freq})."
+            )
+            continue
         idx = (
             ((scan_df.freq - config.min_freq) / config.freq_resolution)
             .round()
@@ -716,12 +698,10 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
         if state.save_path:
             save_waterfall(
                 state,
-                save_time,
+                config.save_time,
                 scan_time,
                 fig_path=fig_path,
             )
-
-    return True
 
 
 class WaterfallConfig:
@@ -741,6 +721,8 @@ class WaterfallConfig:
         waterfall_height,
         waterfall_width,
         batch,
+        rotate_secs,
+        save_time,
     ):
         self.engine = engine
         self.plot_snr = plot_snr
@@ -770,14 +752,22 @@ class WaterfallConfig:
         )
         self.freq_resolution = self.freq_range / self.waterfall_width
         self.n_ticks = 20
+        self.rotate_secs = rotate_secs
+        self.save_time = save_time
+
+    def __eq__(self, other):
+        for attr in ("min_freq", "max_freq", "sampling_rate", "fft_len"):
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        return True
 
 
 class WaterfallState:
-    def __init__(self):
+    def __init__(self, config, peak_finder):
+        self.save_path = config.base_save_path
+        self.peak_finder = peak_finder
         self.db_min = -220
         self.db_max = -150
-        self.db_data = None
-        self.freq_data = None
         self.freq_bins = None
         self.detection_text = []
         self.scan_times = []
@@ -791,8 +781,6 @@ class WaterfallState:
         self.major_tick_separator = None
         self.cmap_psd = None
         self.cmap = None
-        self.X = None
-        self.Y = None
         self.fig = None
         self.top_n_lns = None
         self.background = None
@@ -808,15 +796,75 @@ class WaterfallState:
         self.current_psd_ln = None
         self.ax_psd = None
         self.ax = None
-        self.save_path = None
         self.mesh_psd = None
-        self.peak_finder = None
         self.last_plot = 0
+        self.X, self.Y = meshgrid(
+            config, 1, config.waterfall_height, config.waterfall_height
+        )
+        self.freq_bins = self.X[0]
+        self.db_data = np.empty(self.X.shape)
+        self.db_data.fill(np.nan)
+        self.freq_data = np.empty(self.X.shape)
+        self.freq_data.fill(np.nan)
+
+
+def make_config(
+    scan_configs,
+    engine,
+    plot_snr,
+    savefig_path,
+    min_freq,
+    max_freq,
+    top_n,
+    base_save_path,
+    width,
+    height,
+    waterfall_height,
+    waterfall_width,
+    batch,
+    rotate_secs,
+    save_time,
+):
+    sampling_rate = max([scan_config["sample_rate"] for scan_config in scan_configs])
+    fft_len = max([scan_config["nfft"] for scan_config in scan_configs])
+    if min_freq == 0:
+        min_freq = min([scan_config["freq_start"] for scan_config in scan_configs])
+    if max_freq == 0:
+        max_freq = max([scan_config["freq_end"] for scan_config in scan_configs])
+
+    config = WaterfallConfig(
+        engine,
+        plot_snr,
+        savefig_path,
+        sampling_rate,
+        fft_len,
+        min_freq,
+        max_freq,
+        top_n,
+        base_save_path,
+        width,
+        height,
+        waterfall_height,
+        waterfall_width,
+        batch,
+        rotate_secs,
+        save_time,
+    )
+
+    logging.info(
+        "scanning %fMHz to %fMHz at %fMsps with %u FFT points at %fMHz resolution",
+        config.min_freq,
+        config.max_freq,
+        config.sampling_rate / 1e6,
+        config.fft_len,
+        config.freq_resolution,
+    )
+    return config
 
 
 def waterfall(
-    min_freq,
-    max_freq,
+    arg_min_freq,
+    arg_max_freq,
     plot_snr,
     top_n,
     base_save_path,
@@ -832,12 +880,13 @@ def waterfall(
     batch,
     zmqr,
 ):
+    need_init = True
     global need_reset_fig
     need_reset_fig = True
     global running
     running = True
 
-    def onresize(_event):
+    def onresize(_event):  # nosemgrep
         global need_reset_fig
         need_reset_fig = True
 
@@ -865,21 +914,13 @@ def waterfall(
     if not scan_configs:
         return
 
-    sampling_rate = max([scan_config["sample_rate"] for scan_config in scan_configs])
-    fft_len = max([scan_config["nfft"] for scan_config in scan_configs])
-    if min_freq == 0:
-        min_freq = min([scan_config["freq_start"] for scan_config in scan_configs])
-    if max_freq == 0:
-        max_freq = max([scan_config["freq_end"] for scan_config in scan_configs])
-
-    config = WaterfallConfig(
+    config = make_config(
+        scan_configs,
         engine,
         plot_snr,
         savefig_path,
-        sampling_rate,
-        fft_len,
-        min_freq,
-        max_freq,
+        arg_min_freq,
+        arg_max_freq,
         top_n,
         base_save_path,
         width,
@@ -887,40 +928,57 @@ def waterfall(
         waterfall_height,
         waterfall_width,
         batch,
+        rotate_secs,
+        save_time,
     )
-
-    logging.info(
-        "scanning %fMHz to %fMHz at %fMsps with %u FFT points at %fMHz resolution",
-        config.min_freq,
-        config.max_freq,
-        config.sampling_rate / 1e6,
-        config.fft_len,
-        config.freq_resolution,
-    )
-
-    state = WaterfallState()
-    state.save_path = config.base_save_path
-    init_state(config, state)
-    state.peak_finder = peak_finder
-
     matplotlib.use(config.engine)
     style.use("fast")
-    init_fig(config, state, onresize)
+    state = WaterfallState(config, peak_finder)
+    results = [(scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))]
 
     while zmqr.healthy() and running:
+        results.extend(poll_zmq(zmqr, config))
+        if results:
+            last_results = results[-1:]
+            last_scan_configs = last_results[0][0]
+            last_config = make_config(
+                last_scan_configs,
+                engine,
+                plot_snr,
+                savefig_path,
+                arg_min_freq,
+                arg_max_freq,
+                top_n,
+                base_save_path,
+                width,
+                height,
+                waterfall_height,
+                waterfall_width,
+                batch,
+                rotate_secs,
+                save_time,
+            )
+            if config != last_config:
+                logging.info("detected scanner config change")
+                config = last_config
+                state = WaterfallState(config, peak_finder)
+                results = last_results
+                need_init = True
+        if need_init:
+            init_fig(config, state, onresize)
+            need_init = False
+            need_reset_fig = True
         if need_reset_fig:
             reset_fig(config, state)
             need_reset_fig = False
-        if not update_fig(
-            config, state, zmqr, rotate_secs, save_time, scan_configs, scan_df
-        ):
+        if results:
+            update_fig(config, state, results)
+            # TODO: workaround memory leak in savefig with periodic reinitialization
+            if config.batch and state.counter % config.reclose_interval == 0:
+                need_init = True
+        else:
             time.sleep(0.1)
-        # TODO: workaround memory leak in savefig with periodic reinitialiation
-        elif config.batch and state.counter % config.reclose_interval == 0:
-            init_fig(config, state, onresize)
-            need_reset_fig = True
-        scan_configs = None
-        scan_df = None
+        results = []
 
     zmqr.stop()
 
