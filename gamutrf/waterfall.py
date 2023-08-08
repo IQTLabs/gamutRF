@@ -966,10 +966,10 @@ def main():
     parser = argument_parser()
     args = parser.parse_args()
     detection_type = args.detection_type.lower()
-    peak_finder = None
+    peak_finder = get_peak_finder(detection_type)
 
-    if args.save_path and detection_type:
-        peak_finder = get_peak_finder(detection_type)
+    if (detection_type and not args.n_detect) or (not detection_type and args.n_detect):
+        raise ValueError("--detection_type and --n_detect must be set together")
 
     with tempfile.TemporaryDirectory() as tempdir:
         flask = None
