@@ -10,7 +10,6 @@ import unittest
 import pandas as pd
 from gamutrf.waterfall import argument_parser, waterfall
 from gamutrf.peak_finder import get_peak_finder
-from gamutrf.zmqreceiver import frame_resample
 
 
 class FakeZmqReceiver:
@@ -43,7 +42,7 @@ class FakeZmqReceiver:
             df.loc[
                 (df.freq >= self.peak_min) & (df.freq <= self.peak_max), "db"
             ] = self.peak_val
-            df = frame_resample(df, scan_fres)
+            df["freq"] /= 1e6
             self.serve_results = [
                 (
                     [
