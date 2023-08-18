@@ -58,6 +58,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     libspdlog1 \
     libuhd4.1.0 \
     libunwind8 \
+    libvulkan1 \
     libzmq5 \
     mesa-vulkan-drivers \
     python3 \

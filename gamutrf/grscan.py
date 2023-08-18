@@ -53,6 +53,8 @@ class grscan(gr.top_block):
         db_clamp_floor=-200,
         db_clamp_ceil=50,
         rotate_secs=0,
+        fft_batch_size=256,
+        use_vkfft=False,
         sigmf=True,
         iqtlabs=None,
         wavelearner=None,
@@ -67,6 +69,7 @@ class grscan(gr.top_block):
         self.sweep_sec = sweep_sec
         self.fft_size = fft_size
         self.wavelearner = wavelearner
+        self.iqtlabs = iqtlabs
         self.samp_rate = samp_rate
 
         ##################################################
@@ -83,8 +86,8 @@ class grscan(gr.top_block):
             sdrargs=sdrargs,
         )
 
-        fft_blocks, fft_roll = self.get_fft_blocks(
-            fft_size, dc_block_len, dc_block_long
+        fft_blocks = self.get_fft_blocks(
+            use_vkfft, fft_batch_size, fft_size, dc_block_len, dc_block_long
         )
         self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate, scaling)
         self.fft_to_inference_block = self.fft_blocks[-1]
@@ -96,7 +99,7 @@ class grscan(gr.top_block):
                 [
                     blocks.complex_to_interleaved_short(False, 32767),
                     blocks.stream_to_vector(gr.sizeof_short, fft_size * 2),
-                    iqtlabs.write_freq_samples(
+                    self.iqtlabs.write_freq_samples(
                         "rx_freq",
                         gr.sizeof_short,
                         "_".join(("ci16", endianstr())),
@@ -125,7 +128,7 @@ class grscan(gr.top_block):
             logging.info(
                 f"retuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
             )
-        retune_fft = iqtlabs.retune_fft(
+        retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
             fft_size,
             fft_size,
@@ -135,7 +138,6 @@ class grscan(gr.top_block):
             tune_step_hz,
             tune_step_fft,
             skip_tune_step,
-            fft_roll,
             db_clamp_floor,
             db_clamp_ceil,
             sample_dir,
@@ -165,7 +167,7 @@ class grscan(gr.top_block):
             prediction_vlen = np.prod(prediction_shape)
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
             Path(inference_output_dir, "images").mkdir(parents=True, exist_ok=True)
-            self.image_inference_block = iqtlabs.image_inference(
+            self.image_inference_block = self.iqtlabs.image_inference(
                 tag="rx_freq",
                 vlen=fft_size,
                 x=x,
@@ -265,30 +267,34 @@ class grscan(gr.top_block):
     def get_window(self, fft_size):
         return window.hann(fft_size)
 
-    def get_fft_blocks(self, fft_size, dc_block_len, dc_block_long):
+    def get_offload_fft_block(self, fft_batch_size, fft_size, fft_block):
+        return [
+            blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * fft_size),
+            blocks.multiply_const_vff(
+                [val for val in self.get_window(fft_size) for _ in range(2)]
+                * fft_batch_size
+            ),
+            fft_block,
+            blocks.vector_to_stream(gr.sizeof_gr_complex * fft_size, fft_batch_size),
+            self.iqtlabs.vector_roll(fft_size),
+        ]
+
+    def get_fft_blocks(
+        self, use_vkfft, fft_batch_size, fft_size, dc_block_len, dc_block_long
+    ):
         fft_blocks = []
-        fft_roll = False
         if dc_block_len:
             fft_blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
+        fft_block = None
         if self.wavelearner:
-            fft_batch_size = 256
-            fft_roll = True
+            fft_block = self.wavelearner.fft(
+                int(fft_batch_size * fft_size), (fft_size), True
+            )
+        elif use_vkfft:
+            fft_block = self.iqtlabs.vkfft(int(fft_batch_size * fft_size), fft_size)
+        if fft_block:
             fft_blocks.extend(
-                [
-                    blocks.stream_to_vector(
-                        gr.sizeof_gr_complex, fft_batch_size * fft_size
-                    ),
-                    blocks.multiply_const_vff(
-                        [val for val in self.get_window(fft_size) for _ in range(2)]
-                        * fft_batch_size
-                    ),
-                    self.wavelearner.fft(
-                        int(fft_batch_size * fft_size), (fft_size), True
-                    ),
-                    blocks.vector_to_stream(
-                        gr.sizeof_gr_complex * fft_size, fft_batch_size
-                    ),
-                ]
+                self.get_offload_fft_block(fft_batch_size, fft_size, fft_block)
             )
         else:
             fft_blocks.extend(
@@ -297,7 +303,7 @@ class grscan(gr.top_block):
                     fft.fft_vcc(fft_size, True, self.get_window(fft_size), True, 1),
                 ]
             )
-        return (fft_blocks, fft_roll)
+        return fft_blocks
 
     def start(self):
         super().start()
