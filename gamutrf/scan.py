@@ -256,6 +256,20 @@ def argument_parser():
         action=BooleanOptionalAction,
         help="add sigmf meta file",
     )
+    parser.add_argument(
+        "--use_vkfft",
+        dest="use_vkfft",
+        default=True,
+        action=BooleanOptionalAction,
+        help="use VkFFT (ignored if wavelearner available)",
+    )
+    parser.add_argument(
+        "--fft_batch_size",
+        dest="fft_batch_size",
+        type=int,
+        default=256,
+        help="offload FFT batch size",
+    )
     return parser
 
 
@@ -331,6 +345,8 @@ def run_loop(options, prom_vars, wavelearner):
             scaling=handler.options.scaling,
             rotate_secs=handler.options.rotate_secs,
             description=handler.options.description,
+            fft_batch_size=handler.options.fft_batch_size,
+            use_vkfft=handler.options.use_vkfft,
             sigmf=handler.options.sigmf,
             iqtlabs=iqtlabs,
             wavelearner=wavelearner,
