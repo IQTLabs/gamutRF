@@ -3,7 +3,6 @@ name: CI Test
 on: [push, pull_request]
 
 jobs:
-
   ci-test:
     runs-on: ubuntu-22.04
 
@@ -23,8 +22,25 @@ jobs:
           version: 1.4.2
       - name: Get dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ gnuradio-dev libev-dev libboost-all-dev libuhd-dev libunwind-dev make pkg-config software-properties-common sox swig uhd-host wget libopencv-dev
-          grep -h 'git clone' docker/*|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            g++ \
+            gcc \
+            git \
+            gnuradio-dev \
+            libboost-all-dev \
+            libev-dev \
+            libopencv-dev \
+            libuhd-dev \
+            libunwind-dev \
+            make \
+            pkg-config \
+            software-properties-common \
+            sox \
+            uhd-host \
+            wget \
+          && grep -h 'git clone' docker/*|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
       - name: Install dependencies
         run: |
           for repodir in flatbuffers json libsigmf gr-iqtlabs ; do \

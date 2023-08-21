@@ -38,11 +38,12 @@ RUN cmake .. && make -j "$(nproc)"
 FROM iqtlabs/gnuradio:3.10.7 as gr-iqtlabs-builder
 ENV DEBIAN_FRONTEND noninteractive
 WORKDIR /root
-RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.32
+RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.33
+RUN apt-get update && apt-get install -y --no-install-recommends libopencv-dev libvulkan-dev
 WORKDIR /root/gr-iqtlabs/build
 COPY --from=sigmf-builder /usr/local /usr/local
 COPY --from=vkfft-builder /root/VkFFT /root/gr-iqtlabs/VkFFT
-RUN apt-get update && apt-get install -y --no-install-recommends libopencv-dev libvulkan-dev && cmake .. && make -j "$(nproc)" && make install
+RUN cmake .. && make -j "$(nproc)" && make install
 
 FROM iqtlabs/gnuradio:3.10.7 as uhd_sample_recorder-builder
 ENV DEBIAN_FRONTEND noninteractive
@@ -55,15 +56,15 @@ RUN cp uhd_sample_recorder /usr/local/bin
 
 FROM iqtlabs/gnuradio:3.10.7
 ENV DEBIAN_FRONTEND noninteractive
-COPY --from=driver-builder /usr/local /usr/local
-COPY --from=gr-iqtlabs-builder /usr/local /usr/local
-COPY --from=uhd_sample_recorder-builder /usr/local /usr/local
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libopencv-core4.5d \
     libopencv-imgcodecs4.5d \
     libopencv-imgproc4.5d \
     libvulkan1 && \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
+COPY --from=driver-builder /usr/local /usr/local
+COPY --from=gr-iqtlabs-builder /usr/local /usr/local
+COPY --from=uhd_sample_recorder-builder /usr/local /usr/local
 RUN ldconfig -v
 RUN ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
 RUN python3 -c "from gnuradio import soapy, iqtlabs"
