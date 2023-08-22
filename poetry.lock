@@ -653,18 +653,19 @@ pyrepl = ">=0.8.2"
 
 [[package]]
 name = "findpeaks"
-version = "2.5.1"
+version = "2.5.2"
 description = "findpeaks is for the detection of peaks and valleys in a 1D vector and 2D array (image)."
 category = "main"
 optional = false
 python-versions = ">=3"
 files = [
-    {file = "findpeaks-2.5.1-py3-none-any.whl", hash = "sha256:f49cef31a43e050886ebaf693707fc62f8029498519082c8c0d6a61d02c65cc8"},
-    {file = "findpeaks-2.5.1.tar.gz", hash = "sha256:0bbc4c005958d4bbd8ca49ad572e5a0a12311e72e66d5ec3ac313458533e1663"},
+    {file = "findpeaks-2.5.2-py3-none-any.whl", hash = "sha256:60c5a3c5f06b1befd5854b9d8c810dbfcaf091c210e4c01f01fd3231eb5daea2"},
+    {file = "findpeaks-2.5.2.tar.gz", hash = "sha256:2c6a3fdbf872ecaed04c8ce1ef3a0df2f7383d742d92750c31b380a37fe3668d"},
 ]
 
 [package.dependencies]
 caerus = ">=0.1.9"
+joblib = "*"
 matplotlib = "*"
 numpy = "*"
 pandas = "*"
@@ -950,6 +951,18 @@ MarkupSafe = ">=2.0"
 
 [package.extras]
 i18n = ["Babel (>=2.7)"]
+
+[[package]]
+name = "joblib"
+version = "1.3.2"
+description = "Lightweight pipelining with Python functions"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "joblib-1.3.2-py3-none-any.whl", hash = "sha256:ef4331c65f239985f3f2220ecc87db222f08fd22097a3dd5698f693875f8cbb9"},
+    {file = "joblib-1.3.2.tar.gz", hash = "sha256:92f865e621e17784e7955080b6d042489e3b8e294949cc44c6eac304f59772b1"},
+]
 
 [[package]]
 name = "jsonschema"
@@ -2733,4 +2746,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9 <3.11"
-content-hash = "545b1c525d849b5206c33d9f2902b4579016381081a56a8dcf777243cf50798e"
+content-hash = "0d4c992528c2bb2d85b8a30f5c56a2ab49bf602a1fe1467feeb472e5ce364736"
