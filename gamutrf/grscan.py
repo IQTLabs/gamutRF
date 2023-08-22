@@ -260,7 +260,7 @@ class grscan(gr.top_block):
             raise ValueError("scaling must be 'spectrum' or 'density'")
         return [
             blocks.complex_to_mag_squared(fft_size),
-            blocks.multiply_const_vff([scale] * fft_size),
+            blocks.multiply_const_ff(scale, fft_size),
             blocks.nlog10_ff(10, fft_size, 0),
         ]
 
