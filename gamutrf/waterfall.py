@@ -40,9 +40,11 @@ def safe_savefig(path):
     return path
 
 
-def draw_title(ax, title):
+def draw_title(ax, title, scan_duration, sample_rate):
     title_text = {
         "Time": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+        "Scan duration": "%.1fs" % scan_duration,
+        "Sample rate": "%.1fMsps" % sample_rate,
     }
     title.set_text(str(title_text))
     ax.draw_artist(title)
@@ -540,7 +542,10 @@ def update_fig(config, state, results):
     if len(results) > 1:
         logging.info("processing backlog of %u results", len(results))
 
+    scan_duration = 0
+
     for scan_configs, scan_df in results:
+        scan_duration = scan_df.ts.max() - scan_df.ts.min()
         idx = (
             ((scan_df.freq - config.min_freq) / config.freq_resolution)
             .round()
@@ -650,7 +655,7 @@ def update_fig(config, state, results):
         reset_mesh(state, state.cmap(db_norm))
         state.ax.draw_artist(state.mesh)
 
-        draw_title(state.ax_psd, state.psd_title)
+        draw_title(state.ax_psd, state.psd_title, scan_duration, config.sampling_rate)
 
         state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
         state.cbar.update_normal(state.sm)
