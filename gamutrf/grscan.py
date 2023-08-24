@@ -27,37 +27,37 @@ from gamutrf.utils import endianstr
 class grscan(gr.top_block):
     def __init__(
         self,
+        bucket_range=1.0,
+        db_clamp_ceil=50,
+        db_clamp_floor=-200,
+        dc_block_len=0,
+        dc_block_long=False,
+        description="",
+        fft_batch_size=256,
         freq_end=1e9,
         freq_start=100e6,
         igain=0,
-        samp_rate=4.096e6,
-        sweep_sec=30,
+        inference_output_dir="",
+        inference_plan_file="",
+        iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
         logport=8001,
+        nfft=1024,
+        rotate_secs=0,
+        samp_rate=4.096e6,
+        sample_dir="",
+        scaling="spectrum",
         sdr="ettus",
         sdrargs=None,
-        fft_size=1024,
-        tune_overlap=0.5,
-        tune_step_fft=0,
-        skip_tune_step=0,
-        write_samples=0,
-        sample_dir="",
-        inference_plan_file="",
-        inference_output_dir="",
-        bucket_range=1.0,
-        tuning_ranges="",
-        scaling="spectrum",
-        description="",
-        dc_block_len=0,
-        dc_block_long=False,
-        db_clamp_floor=-200,
-        db_clamp_ceil=50,
-        rotate_secs=0,
-        fft_batch_size=256,
-        use_vkfft=False,
         sigmf=True,
-        iqtlabs=None,
+        skip_tune_step=0,
+        sweep_sec=30,
+        tune_step_fft=0,
+        tuneoverlap=0.5,
+        tuning_ranges="",
+        use_vkfft=False,
         wavelearner=None,
+        write_samples=0,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
@@ -67,7 +67,7 @@ class grscan(gr.top_block):
         self.freq_end = freq_end
         self.freq_start = freq_start
         self.sweep_sec = sweep_sec
-        self.fft_size = fft_size
+        self.nfft = nfft
         self.wavelearner = wavelearner
         self.iqtlabs = iqtlabs
         self.samp_rate = samp_rate
@@ -87,9 +87,9 @@ class grscan(gr.top_block):
         )
 
         fft_blocks = self.get_fft_blocks(
-            use_vkfft, fft_batch_size, fft_size, dc_block_len, dc_block_long
+            use_vkfft, fft_batch_size, nfft, dc_block_len, dc_block_long
         )
-        self.fft_blocks = fft_blocks + self.get_db_blocks(fft_size, samp_rate, scaling)
+        self.fft_blocks = fft_blocks + self.get_db_blocks(nfft, samp_rate, scaling)
         self.fft_to_inference_block = self.fft_blocks[-1]
 
         self.samples_blocks = []
@@ -98,12 +98,12 @@ class grscan(gr.top_block):
             self.samples_blocks.extend(
                 [
                     blocks.complex_to_interleaved_short(False, 32767),
-                    blocks.stream_to_vector(gr.sizeof_short, fft_size * 2),
+                    blocks.stream_to_vector(gr.sizeof_short, nfft * 2),
                     self.iqtlabs.write_freq_samples(
                         "rx_freq",
                         gr.sizeof_short,
                         "_".join(("ci16", endianstr())),
-                        fft_size * 2,
+                        nfft * 2,
                         sample_dir,
                         "samples",
                         write_samples,
@@ -116,22 +116,22 @@ class grscan(gr.top_block):
                 ]
             )
         freq_range = freq_end - freq_start
-        tune_step_hz = int(samp_rate * tune_overlap)
+        tune_step_hz = int(samp_rate * tuneoverlap)
         if tune_step_fft:
             logging.info(
                 f"retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs"
             )
         else:
             target_retune_hz = freq_range / self.sweep_sec / tune_step_hz
-            fft_rate = int(samp_rate / fft_size)
+            fft_rate = int(samp_rate / nfft)
             tune_step_fft = int(fft_rate / target_retune_hz)
             logging.info(
                 f"retuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
             )
         retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
-            fft_size,
-            fft_size,
+            nfft,
+            nfft,
             int(samp_rate),
             int(freq_start),
             int(freq_end),
@@ -169,7 +169,7 @@ class grscan(gr.top_block):
             Path(inference_output_dir, "images").mkdir(parents=True, exist_ok=True)
             self.image_inference_block = self.iqtlabs.image_inference(
                 tag="rx_freq",
-                vlen=fft_size,
+                vlen=nfft,
                 x=x,
                 y=y,
                 image_dir=str(Path(inference_output_dir, "images")),
@@ -195,7 +195,7 @@ class grscan(gr.top_block):
                 blocks.stream_to_vector(gr.sizeof_float, image_vlen),
             ]
             self.inference_blocks = [
-                blocks.stream_to_vector(gr.sizeof_float * fft_size, 1),
+                blocks.stream_to_vector(gr.sizeof_float * nfft, 1),
                 self.image_inference_block,
                 *self.image_to_inference_blocks,
                 # FOR DEBUG
@@ -251,38 +251,38 @@ class grscan(gr.top_block):
             self.connect((last_block, 0), (block, 0))
             last_block = block
 
-    def get_db_blocks(self, fft_size, samp_rate, scaling):
+    def get_db_blocks(self, nfft, samp_rate, scaling):
         if scaling == "density":
-            scale = 1.0 / (samp_rate * sum(self.get_window(fft_size)) ** 2)
+            scale = 1.0 / (samp_rate * sum(self.get_window(nfft)) ** 2)
         elif scaling == "spectrum":
-            scale = 1.0 / (sum(self.get_window(fft_size)) ** 2)
+            scale = 1.0 / (sum(self.get_window(nfft)) ** 2)
         else:
             raise ValueError("scaling must be 'spectrum' or 'density'")
         return [
-            blocks.complex_to_mag_squared(fft_size),
-            blocks.multiply_const_ff(scale, fft_size),
-            blocks.nlog10_ff(10, fft_size, 0),
+            blocks.complex_to_mag_squared(nfft),
+            blocks.multiply_const_ff(scale, nfft),
+            blocks.nlog10_ff(10, nfft, 0),
         ]
 
-    def get_window(self, fft_size):
-        return window.hann(fft_size)
+    def get_window(self, nfft):
+        return window.hann(nfft)
 
-    def get_offload_fft_block(self, fft_batch_size, fft_size, fft_block, fft_roll):
+    def get_offload_fft_block(self, fft_batch_size, nfft, fft_block, fft_roll):
         offload_blocks = [
-            blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * fft_size),
+            blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft),
             blocks.multiply_const_vff(
-                [val for val in self.get_window(fft_size) for _ in range(2)]
+                [val for val in self.get_window(nfft) for _ in range(2)]
                 * fft_batch_size
             ),
             fft_block,
-            blocks.vector_to_stream(gr.sizeof_gr_complex * fft_size, fft_batch_size),
+            blocks.vector_to_stream(gr.sizeof_gr_complex * nfft, fft_batch_size),
         ]
         if fft_roll:
-            offload_blocks.append(self.iqtlabs.vector_roll(fft_size)),
+            offload_blocks.append(self.iqtlabs.vector_roll(nfft)),
         return offload_blocks
 
     def get_fft_blocks(
-        self, use_vkfft, fft_batch_size, fft_size, dc_block_len, dc_block_long
+        self, use_vkfft, fft_batch_size, nfft, dc_block_len, dc_block_long
     ):
         fft_blocks = []
         if dc_block_len:
@@ -290,25 +290,19 @@ class grscan(gr.top_block):
         fft_block = None
         fft_roll = False
         if self.wavelearner:
-            fft_block = self.wavelearner.fft(
-                int(fft_batch_size * fft_size), (fft_size), True
-            )
+            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), (nfft), True)
             fft_roll = True
         elif use_vkfft:
-            fft_block = self.iqtlabs.vkfft(
-                int(fft_batch_size * fft_size), fft_size, True
-            )
+            fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
         if fft_block:
             fft_blocks.extend(
-                self.get_offload_fft_block(
-                    fft_batch_size, fft_size, fft_block, fft_roll
-                )
+                self.get_offload_fft_block(fft_batch_size, nfft, fft_block, fft_roll)
             )
         else:
             fft_blocks.extend(
                 [
-                    blocks.stream_to_vector(gr.sizeof_gr_complex, fft_size),
-                    fft.fft_vcc(fft_size, True, self.get_window(fft_size), True, 1),
+                    blocks.stream_to_vector(gr.sizeof_gr_complex, nfft),
+                    fft.fft_vcc(nfft, True, self.get_window(nfft), True, 1),
                 ]
             )
         return fft_blocks
