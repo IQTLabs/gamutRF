@@ -40,11 +40,12 @@ def safe_savefig(path):
     return path
 
 
-def draw_title(ax, title, scan_duration, sample_rate):
+def draw_title(ax, title, scan_duration, sample_rate, freq_resolution):
     title_text = {
         "Time": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
         "Scan duration": "%.1fs" % scan_duration,
-        "Sample rate": "%.1fMsps" % sample_rate,
+        "Sample rate": "%.1fMsps" % (sample_rate / 1e6),
+        "Resolution": "%.2fMHz" % freq_resolution,
     }
     title.set_text(str(title_text))
     ax.draw_artist(title)
@@ -373,7 +374,10 @@ def reset_fig(
 
     for ax in (state.ax.xaxis, state.ax_psd.xaxis):
         ax.set_major_locator(state.major_tick_separator)
-        ax.set_major_formatter("{x:.0f}")
+        if config.freq_resolution < 0.01:
+            ax.set_major_formatter("{x:.1f}")
+        else:
+            ax.set_major_formatter("{x:.0f}")
         ax.set_minor_locator(state.minor_tick_separator)
 
     for ax in (state.ax_psd.yaxis, state.cbar_ax.yaxis, state.ax.yaxis):
@@ -655,7 +659,13 @@ def update_fig(config, state, results):
         reset_mesh(state, state.cmap(db_norm))
         state.ax.draw_artist(state.mesh)
 
-        draw_title(state.ax_psd, state.psd_title, scan_duration, config.sampling_rate)
+        draw_title(
+            state.ax_psd,
+            state.psd_title,
+            scan_duration,
+            config.sampling_rate,
+            config.freq_resolution,
+        )
 
         state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
         state.cbar.update_normal(state.sm)
