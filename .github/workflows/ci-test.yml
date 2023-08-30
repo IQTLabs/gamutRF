@@ -52,7 +52,7 @@ jobs:
           poetry install --no-interaction
       - name: test gamutrf-samples2raw
         env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
+          PYTHONPATH: /usr/local/lib/python3.10/dist-packages
         run: |
           gamutrf-samples2raw --help && \
           dd if=/dev/zero of=/tmp/gamutrf_recording_ettus__gain40_1_1Hz_1000000sps.s16 bs=4 count=1000000 && \
@@ -67,13 +67,13 @@ jobs:
           poetry run pylint --fail-under=6 gamutrf/
       - name: Code Quality - Pytype
         env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
+          PYTHONPATH: /usr/local/lib/python3.10/dist-packages
         run: |
           sudo pip3 install pytype=="$(grep -E "pytype = " pyproject.toml | grep -Eo "[0-9\.]+")" && \
             pytype -k gamutrf/
       - name: Test with pytest
         env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
+          PYTHONPATH: /usr/local/lib/python3.10/dist-packages
         run: |
           poetry run pytest --cov-report term-missing --cov=. --cov-report=xml tests/
       - name: Upload coverage
