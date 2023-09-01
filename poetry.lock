@@ -2318,13 +2318,13 @@ test = ["asv", "gmpy2", "mpmath", "pooch", "pytest", "pytest-cov", "pytest-timeo
 
 [[package]]
 name = "sigmf"
-version = "1.1.1"
+version = "1.1.2"
 description = "Signal Metadata Format Specification"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "SigMF-1.1.1-py3-none-any.whl", hash = "sha256:c16227cf39be9428c90a30fa9a3689fa5f6f6210201baef218a74b1e9b63e566"},
+    {file = "SigMF-1.1.2-py3-none-any.whl", hash = "sha256:1107b425d07f3c8ea566448ac752c360b8f9e05f672ffd4b9dc69e6e3d6f0b60"},
 ]
 
 [package.dependencies]
@@ -2748,4 +2748,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9 <3.11"
-content-hash = "50b4e548b800ff955be6813de87098d8f5297eaa54242d4e4e309662e77f3804"
+content-hash = "edb07b099d7f5021d37606fd57fc54f4ec6ef7d8f157cc11a6c7d56c357dd257"
