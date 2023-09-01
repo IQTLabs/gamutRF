@@ -23,7 +23,7 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo apt-get update && sudo apt-get install jq && python3 -m pip install semgrep 
+        sudo apt-get update && sudo apt-get install jq && python3 -m pip install semgrep==1.37.0
     - name: scan
       id: d_scan
       run: |
@@ -71,7 +71,7 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo apt-get update && sudo apt-get install jq && python3 -m pip install semgrep
+        sudo apt-get update && sudo apt-get install jq && python3 -m pip install semgrep==1.37.0
     - name: run semgrep
       run: |
         mkdir -p /home/runner/reports/ && \
