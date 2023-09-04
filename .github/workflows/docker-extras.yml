@@ -9,7 +9,7 @@ jobs:
   buildx-mqtt:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Get the version
@@ -43,7 +43,7 @@ jobs:
   buildx-airspyfm:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Get the version
