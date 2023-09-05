@@ -25,6 +25,7 @@ https://github.com/IQTLabs/gr-iqtlabs/blob/main/grc/iqtlabs_retune_fft.block.yml
 """
 
 import concurrent.futures
+import datetime
 import tempfile
 import json
 import logging
@@ -36,7 +37,7 @@ import zmq
 import zstandard
 import pandas as pd
 
-FFT_BUFFER_TIME = 1
+FFT_BUFFER_TIME = 0.1
 BUFF_FILE = "scanfftbuffer.txt.zst"  # nosec
 
 
@@ -66,7 +67,7 @@ def parse_scanners(args_scanners):
 
 
 def fft_proxy(
-    addr, port, buff_file, buffer_time=FFT_BUFFER_TIME, live_file=None, poll_timeout=1
+    addr, port, buff_file, buffer_time=FFT_BUFFER_TIME, live_file=None, poll_timeout=0.1
 ):
     zmq_addr = f"tcp://{addr}:{port}"
     logging.info("connecting to %s", zmq_addr)
@@ -278,8 +279,16 @@ class ZmqReceiver:
 
         df = None
         if len(dfs) == len(self.scanners):
-            logging.info("all scanners got result")
             df = pd.concat(dfs)
+            logging.info(
+                "all scanners got result, %s to %s",
+                datetime.datetime.fromtimestamp(df.ts.min()).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                ),
+                datetime.datetime.fromtimestamp(df.ts.max()).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                ),
+            )
             if scan_fres:
                 df = frame_resample(df, scan_fres)
             self.last_results = []
