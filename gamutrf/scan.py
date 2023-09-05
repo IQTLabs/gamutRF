@@ -78,6 +78,13 @@ def argument_parser():
         help="Set sweep_sec [default=%(default)r]",
     )
     parser.add_argument(
+        "--tune-dwell-ms",
+        dest="tune_dwell_ms",
+        type=float,
+        default=0,
+        help="Set tune dwell time in ms (0 is use sweep_sec) [default=%(default)r]",
+    )
+    parser.add_argument(
         "--tune-step-fft",
         dest="tune_step_fft",
         type=int,

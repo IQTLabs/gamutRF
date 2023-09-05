@@ -53,6 +53,7 @@ class grscan(gr.top_block):
         skip_tune_step=0,
         sweep_sec=30,
         tune_step_fft=0,
+        tune_dwell_ms=0,
         tuneoverlap=0.5,
         tuning_ranges="",
         use_vkfft=False,
@@ -117,17 +118,22 @@ class grscan(gr.top_block):
             )
         freq_range = freq_end - freq_start
         tune_step_hz = int(samp_rate * tuneoverlap)
-        if tune_step_fft:
-            logging.info(
-                f"retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs"
-            )
-        else:
-            target_retune_hz = freq_range / self.sweep_sec / tune_step_hz
-            fft_rate = int(samp_rate / nfft)
-            tune_step_fft = int(fft_rate / target_retune_hz)
-            logging.info(
-                f"retuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
-            )
+        fft_rate = int(samp_rate / nfft)
+
+        if not tune_step_fft:
+            if tune_dwell_ms:
+                tune_step_fft = int(fft_rate * (tune_dwell_ms / 1e3))
+            else:
+                target_retune_hz = freq_range / self.sweep_sec / tune_step_hz
+                tune_step_fft = int(fft_rate / target_retune_hz)
+                logging.info(
+                    f"retuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
+                )
+        tune_dwell_ms = tune_step_fft / fft_rate * 1e3
+        logging.info(
+            f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
+        )
+
         retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
             nfft,
