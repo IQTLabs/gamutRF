@@ -180,6 +180,9 @@ class ZmqScanner:
                 frame_df = self.fftbuffer[
                     self.fftbuffer["sweep_start"] == min_sweep_start
                 ].copy()
+                frame_df["tune_count"] = (
+                    frame_df["tune_count"].max() - frame_df["tune_count"].min()
+                )
                 self.fftbuffer = self.fftbuffer[
                     self.fftbuffer["sweep_start"] != min_sweep_start
                 ]
@@ -195,6 +198,7 @@ class ZmqScanner:
                 json_record = json.loads(line)
                 ts = float(json_record["ts"])
                 sweep_start = float(json_record["sweep_start"])
+                total_tune_count = int(json_record["total_tune_count"])
                 buckets = json_record["buckets"]
                 scan_config = json_record["config"]
                 self.scan_configs[sweep_start] = scan_config
@@ -205,6 +209,7 @@ class ZmqScanner:
                             "freq": float(freq),
                             "db": float(db),
                             "sweep_start": sweep_start,
+                            "tune_count": total_tune_count,
                         }
                         for freq, db in buckets.items()
                     ]

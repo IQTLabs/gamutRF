@@ -40,11 +40,15 @@ def safe_savefig(path):
     return path
 
 
-def draw_title(ax, title, scan_duration, sample_rate, freq_resolution):
+def draw_title(
+    ax, title, scan_duration, tune_rate_hz, tune_dwell_ms, sample_rate, freq_resolution
+):
     title_text = {
         "Time": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-        "Scan duration": "%.1fs" % scan_duration,
-        "Sample rate": "%.1fMsps" % (sample_rate / 1e6),
+        "Scan duration": "%.2fs" % scan_duration,
+        "Retuning rate": "%.2fHz" % tune_rate_hz,
+        "Tuning dwell time": "%.2fms" % tune_dwell_ms,
+        "Sample rate": "%.2fMsps" % (sample_rate / 1e6),
         "Resolution": "%.2fMHz" % freq_resolution,
     }
     title.set_text(str(title_text))
@@ -550,6 +554,9 @@ def update_fig(config, state, results):
 
     for scan_configs, scan_df in results:
         scan_duration = scan_df.ts.max() - scan_df.ts.min()
+        tune_count = scan_df.tune_count.max()
+        tune_rate_hz = tune_count / scan_duration
+        tune_dwell_ms = (scan_duration * 1e3) / tune_count
         idx = (
             ((scan_df.freq - config.min_freq) / config.freq_resolution)
             .round()
@@ -663,6 +670,8 @@ def update_fig(config, state, results):
             state.ax_psd,
             state.psd_title,
             scan_duration,
+            tune_rate_hz,
+            tune_dwell_ms,
             config.sampling_rate,
             config.freq_resolution,
         )
