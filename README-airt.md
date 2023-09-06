@@ -26,7 +26,7 @@ Configure xdma (otherwise tuning will be very slow).
 
 ```
 $ sudo rmmod xdma
-$ sudo modprobe xdma rx_buffer_size_pages=1024
+$ sudo modprobe xdma rx_buffer_size_pages=4096
 ```
 
 Create anarkiwi-airt.yml
