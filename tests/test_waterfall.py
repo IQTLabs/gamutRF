@@ -52,6 +52,8 @@ class FakeZmqReceiver:
                             "nfft": 256,
                             "freq_start": df.freq.min(),
                             "freq_end": df.freq.max(),
+                            "tune_step_hz": scan_fres,
+                            "tune_step_fft": 256,
                         }
                     ],
                     df,

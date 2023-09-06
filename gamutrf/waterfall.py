@@ -41,16 +41,27 @@ def safe_savefig(path):
 
 
 def draw_title(
-    ax, title, scan_duration, tune_rate_hz, tune_dwell_ms, sample_rate, freq_resolution
+    ax,
+    title,
+    scan_duration,
+    tune_step_hz,
+    tune_step_fft,
+    tune_rate_hz,
+    tune_dwell_ms,
+    sample_rate,
+    freq_resolution,
 ):
     title_text = {
         "Time": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-        "Scan duration": "%.2fs" % scan_duration,
-        "Retuning rate": "%.2fHz" % tune_rate_hz,
-        "Tuning dwell time": "%.2fms" % tune_dwell_ms,
+        "Scan time": "%.2fs" % scan_duration,
+        "Step FFTs": "%u" % tune_step_fft,
+        "Step size": "%.2fMHz" % (tune_step_hz / 1e6),
         "Sample rate": "%.2fMsps" % (sample_rate / 1e6),
         "Resolution": "%.2fMHz" % freq_resolution,
+        "Tune rate": "%.2fHz" % tune_rate_hz,
+        "Tune dwell time": "%.2fms" % tune_dwell_ms,
     }
+    title.set_fontsize(8)
     title.set_text(str(title_text))
     ax.draw_artist(title)
 
@@ -295,7 +306,12 @@ def reset_fig(
     state.ax_psd = state.fig.add_subplot(3, 1, 1)
     state.ax = state.fig.add_subplot(3, 1, (2, 3))
     state.psd_title = state.ax_psd.text(
-        0.5, 1.05, "", transform=state.ax_psd.transAxes, va="center", ha="center"
+        0.5,
+        1.05,
+        "",
+        transform=state.ax_psd.transAxes,
+        va="center",
+        ha="center",
     )
     default_data = state.db_min * np.ones(state.freq_data.shape[1])
 
@@ -553,6 +569,10 @@ def update_fig(config, state, results):
     scan_duration = 0
 
     for scan_configs, scan_df in results:
+        tune_step_hz = min(scan_config["tune_step_hz"] for scan_config in scan_configs)
+        tune_step_fft = min(
+            scan_config["tune_step_fft"] for scan_config in scan_configs
+        )
         scan_duration = scan_df.ts.max() - scan_df.ts.min()
         tune_count = scan_df.tune_count.max()
         tune_rate_hz = tune_count / scan_duration
@@ -670,6 +690,8 @@ def update_fig(config, state, results):
             state.ax_psd,
             state.psd_title,
             scan_duration,
+            tune_step_hz,
+            tune_step_fft,
             tune_rate_hz,
             tune_dwell_ms,
             config.sampling_rate,
