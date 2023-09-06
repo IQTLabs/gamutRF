@@ -35,6 +35,7 @@ class FakeZmqReceiver:
                         "ts": time.time(),
                         "freq": freq_min + (i * scan_fres),
                         "db": self.peak_val / 2,
+                        "tune_count": i,
                     }
                     for i in range(rows)
                 ]
