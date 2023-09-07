@@ -31,8 +31,16 @@ jobs:
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
-
-    - name: Build and push platforms
+    - name: Build and push platforms vkfft
+      uses: docker/build-push-action@v4
+      with:
+        context: docker
+        file: docker/Dockerfile.vkfft
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-vkfft:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+    - name: Build and push platforms base
       uses: docker/build-push-action@v4
       with:
         context: docker

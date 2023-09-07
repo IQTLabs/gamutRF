@@ -1,5 +1,52 @@
-FROM iqtlabs/gnuradio:3.10.7 as driver-builder
+FROM ubuntu:22.04 as sigmf-builder
 ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git
+WORKDIR /root
+RUN git clone https://github.com/google/flatbuffers -b v23.5.26
+RUN git clone https://github.com/nlohmann/json -b v3.11.2
+RUN git clone https://github.com/deepsig/libsigmf -b v1.0.2
+WORKDIR /root/flatbuffers/build
+RUN cmake .. && make -j "$(nproc)" && make install
+WORKDIR /root/json/build
+RUN cmake .. && make -j "$(nproc)" && make install
+WORKDIR /root/libsigmf/build
+RUN cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON .. && make -j "$(nproc)" && make install
+
+FROM ubuntu:22.04 as uhd_sample_recorder-builder
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  ca-certificates \
+  cmake \
+  git \
+  libboost-all-dev \
+  libuhd-dev \
+  libvulkan-dev \
+  sudo
+WORKDIR /root
+RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.7
+WORKDIR /root/uhd_sample_recorder
+RUN ./bin/install-deps.sh && rm -rf SPIRV-Tools VkFFT
+COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/uhd_sample_recorder
+WORKDIR /root/uhd_sample_recorder/build
+RUN CMAKE_BUILD_TYPE=Release cmake ../lib && make -j $(nproc) && cp uhd_sample_recorder /usr/local/bin
+
+FROM ubuntu:22.04 as driver-builder
+COPY --from=iqtlabs/gnuradio:3.10.7 /usr/local /usr/local
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  ca-certificates \
+  cmake \
+  git \
+  libbladerf-dev \
+  libboost-all-dev \
+  libfftw3-dev \
+  libgmp-dev \
+  liblimesuite-dev \
+  libuhd-dev \
+  libusb-1.0-0-dev \
+  pkg-config
 WORKDIR /root
 RUN git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
 RUN git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
@@ -14,57 +61,48 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL
 WORKDIR /root/lime-tools/build
 RUN cmake .. && make install
 
-FROM iqtlabs/gnuradio:3.10.7 as sigmf-builder
-ENV DEBIAN_FRONTEND noninteractive
-WORKDIR /root
-RUN git clone https://github.com/google/flatbuffers -b v23.5.26
-RUN git clone https://github.com/nlohmann/json -b v3.11.2
-RUN git clone https://github.com/deepsig/libsigmf -b v1.0.2
-WORKDIR /root/flatbuffers/build
-RUN cmake .. && make -j "$(nproc)" && make install
-WORKDIR /root/json/build
-RUN cmake .. && make -j "$(nproc)" && make install
-WORKDIR /root/libsigmf/build
-RUN cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON .. && make -j "$(nproc)" && make install
-
-FROM iqtlabs/gnuradio:3.10.7 as vkfft-builder
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends libvulkan-dev
-WORKDIR /root
-RUN git clone https://github.com/DTolm/VkFFT -b v1.3.1
-WORKDIR /root/VkFFT/build
-RUN cmake .. && make -j "$(nproc)"
-
-FROM iqtlabs/gnuradio:3.10.7 as gr-iqtlabs-builder
-ENV DEBIAN_FRONTEND noninteractive
-WORKDIR /root
-RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.37
-RUN apt-get update && apt-get install -y --no-install-recommends libopencv-dev libvulkan-dev
-WORKDIR /root/gr-iqtlabs/build
-COPY --from=sigmf-builder /usr/local /usr/local
-COPY --from=vkfft-builder /root/VkFFT /root/gr-iqtlabs/VkFFT
-RUN cmake .. && make -j "$(nproc)" && make install
-
-FROM iqtlabs/gnuradio:3.10.7 as uhd_sample_recorder-builder
-ENV DEBIAN_FRONTEND noninteractive
-WORKDIR /root
-RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.6
-WORKDIR /root/uhd_sample_recorder
-RUN ./bin/install-deps.sh && ./bin/build.sh
-WORKDIR /root/uhd_sample_recorder/build
-RUN cp uhd_sample_recorder /usr/local/bin
-
-FROM iqtlabs/gnuradio:3.10.7
+FROM ubuntu:22.04 as gr-iqtlabs-builder
+COPY --from=iqtlabs/gnuradio:3.10.7 /usr/local /usr/local
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  ca-certificates \
+  cmake \
+  git \
+  libboost-all-dev \
+  libgmp-dev \
+  libopencv-dev \
+  libspdlog-dev \
+  libuhd-dev \
+  libvulkan-dev \
+  python3-numpy
+WORKDIR /root
+RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.38
+COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/gr-iqtlabs
+WORKDIR /root/gr-iqtlabs/build
+COPY --from=sigmf-builder /usr/local /usr/local
+RUN cmake .. && make -j "$(nproc)" && make install
+
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libboost-filesystem1.74.0 \
+    libboost-iostreams1.74.0 \
+    libboost-program-options1.74.0 \
+    libboost-thread1.74.0 \
     libopencv-core4.5d \
     libopencv-imgcodecs4.5d \
     libopencv-imgproc4.5d \
-    libvulkan1 && \
-    apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
+    libspdlog1 \
+    libuhd4.1.0 \
+    libunwind8 \
+    libvulkan1 \
+    python3 \
+    python3-numpy \
+    &&  apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
+COPY --from=iqtlabs/gnuradio:3.10.7 /usr/local /usr/local
 COPY --from=driver-builder /usr/local /usr/local
 COPY --from=gr-iqtlabs-builder /usr/local /usr/local
 COPY --from=uhd_sample_recorder-builder /usr/local /usr/local
 RUN ldconfig -v
-RUN ln -sf /usr/local/lib/python3/dist-packages/* /usr/local/lib/python3.10/dist-packages
-RUN python3 -c "from gnuradio import soapy, iqtlabs"
+RUN python3 -c "from gnuradio import soapy, iqtlabs ; from gnuradio.iqtlabs import vkfft"
