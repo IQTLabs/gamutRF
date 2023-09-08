@@ -1,16 +1,24 @@
 name: docker-test
 on: [push, pull_request]
 jobs:
-  test:
+  test-gamutrf-extra-images:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: docker build
       run: |
         cd docker
-        docker build -f Dockerfile.base . -t iqtlabs/gamutrf-base:latest
         docker build -f Dockerfile.airspyfm . -t iqtlabs/gamutrf-airspyfm:latest
         docker build -f Dockerfile.mqtt . -t iqtlabs/gamutrf-mqtt:latest
+  test-gamutrf-images:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: docker build
+      run: |
+        cd docker
+        docker build -f Dockerfile.vkfft . -t iqtlabs/gamutrf-vkfft:latest
+        docker build -f Dockerfile.base . -t iqtlabs/gamutrf-base:latest
         cd ..
         docker build -f Dockerfile . -t iqtlabs/gamutrf:latest
         docker run -t iqtlabs/gamutrf:latest gamutrf-scan --help
