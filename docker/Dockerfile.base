@@ -44,15 +44,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libfftw3-dev \
   libgmp-dev \
   liblimesuite-dev \
+  librtlsdr-dev \
   libuhd-dev \
   libusb-1.0-0-dev \
   pkg-config
 WORKDIR /root
 RUN git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
+RUN git clone https://github.com/pothosware/SoapyRTLSDR -b soapy-rtl-sdr-0.3.3
 RUN git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
 RUN git clone https://github.com/Nuand/bladeRF.git -b 2023.02
 RUN git clone https://github.com/anarkiwi/lime-tools -b samples
 WORKDIR /root/SoapyBladeRF/build
+RUN cmake .. && make -j "$(nproc)" && make install
+WORKDIR /root/SoapyRTLSDR/build
 RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/SoapyUHD/build
 RUN cmake .. && make -j "$(nproc)" && make install
@@ -93,6 +97,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopencv-core4.5d \
     libopencv-imgcodecs4.5d \
     libopencv-imgproc4.5d \
+    librtlsdr0 \
     libspdlog1 \
     libuhd4.1.0 \
     libunwind8 \

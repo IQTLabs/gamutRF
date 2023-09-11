@@ -62,6 +62,8 @@ While there are other options, these options primarily influence gamutRF's scann
 
 gamutRF supports the use of multiple radios on the same machine, whether for scanning or recording. When using multiple Ettus SDRs, assign a specific radio to a specific container by specifying the ```serial``` UHD driver argument. To list all connected Ettus radios, run ```uhd_find_devices```. Then add the ```--sdrargs``` argument to the specific container. For example, ```--sdrargs num_recv_frames=960,recv_frame_size=16360,type=b200,serial=12345678```.
 
+gamutRF also supports the KrakenSDR (which presents as five librtlsdr radios). You can run a scanner container for each radio, by adding a serial number - for example, ```--sdr=rtlsdr,serial=1000```. Use ```SoapySDRUtil --find``` to check the radios are correctly connected.
+
 ### Manually initiating worker actions
 
 The orchestrator has a web interface on port 80. You can use this to command a worker to start an I/Q sample recording or start a RSSI stream.
@@ -154,6 +156,10 @@ If no or only small peaks appear which are not marked as peaks, increase ```gain
 If no peaks appear still, check antenna cabling, or choose a different scan range where signals are expected in your environment.
 
 ## Troubleshooting
+
+#### SoapySDR errors allocating buffers
+
+Run ```echo 0 > /sys/module/usbcore/parameters/usbfs_memory_mb``` as root before starting the scanner(s).
 
 #### Containers won't start using Ettus SDRs
 
