@@ -55,6 +55,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     libopencv-core4.5d \
     libopencv-imgcodecs4.5d \
     libopencv-imgproc4.5d \
+    librtlsdr0 \
     libspdlog1 \
     libuhd4.1.0 \
     libunwind8 \
