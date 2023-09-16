@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.mlab import detrend
 from matplotlib.mlab import detrend_none
-from matplotlib.mlab import stride_windows
 from matplotlib.mlab import window_hanning
 from scipy.fft import fft  # pylint disable=no-name-in-module
 from scipy.fft import fftfreq  # pylint disable=no-name-in-module
@@ -17,6 +16,43 @@ from gamutrf.utils import is_fft
 from gamutrf.utils import parse_filename
 from gamutrf.utils import replace_ext
 from gamutrf.sample_reader import read_recording
+
+
+def stride_windows(x, n, noverlap=0, axis=0):
+    # np>=1.20 provides sliding_window_view, and we only ever use axis=0.
+    if hasattr(np.lib.stride_tricks, "sliding_window_view") and axis == 0:
+        if noverlap >= n:
+            raise ValueError("noverlap must be less than n")
+        return np.lib.stride_tricks.sliding_window_view(x, n, axis=0)[:: n - noverlap].T
+
+    if noverlap >= n:
+        raise ValueError("noverlap must be less than n")
+    if n < 1:
+        raise ValueError("n cannot be less than 1")
+
+    x = np.asarray(x)
+
+    if n == 1 and noverlap == 0:
+        if axis == 0:
+            return x[np.newaxis]
+        else:
+            return x[np.newaxis].T
+    if n > x.size:
+        raise ValueError("n cannot be greater than the length of x")
+
+    # np.lib.stride_tricks.as_strided easily leads to memory corruption for
+    # non integer shape and strides, i.e. noverlap or n. See #3845.
+    noverlap = int(noverlap)
+    n = int(n)
+
+    step = n - noverlap
+    if axis == 0:
+        shape = (n, (x.shape[-1] - noverlap) // step)
+        strides = (x.strides[0], step * x.strides[0])
+    else:
+        shape = ((x.shape[-1] - noverlap) // step, n)
+        strides = (step * x.strides[0], x.strides[0])
+    return np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
 
 
 def spectral_helper(
