@@ -152,6 +152,7 @@ class grscan(gr.top_block):
             tuning_ranges,
             description,
             rotate_secs,
+            False,
         )
         self.fft_blocks.append(retune_fft)
         zmq_addr = f"tcp://{logaddr}:{logport}"
