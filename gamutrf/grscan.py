@@ -43,6 +43,7 @@ class grscan(gr.top_block):
         logaddr="0.0.0.0",  # nosec
         logport=8001,
         nfft=1024,
+        pretune=False,
         rotate_secs=0,
         samp_rate=4.096e6,
         sample_dir="",
@@ -56,7 +57,7 @@ class grscan(gr.top_block):
         tune_dwell_ms=0,
         tuneoverlap=0.5,
         tuning_ranges="",
-        use_vkfft=False,
+        vkfft=False,
         wavelearner=None,
         write_samples=0,
     ):
@@ -72,6 +73,7 @@ class grscan(gr.top_block):
         self.wavelearner = wavelearner
         self.iqtlabs = iqtlabs
         self.samp_rate = samp_rate
+        self.retune_pre_fft = None
 
         ##################################################
         # Blocks
@@ -86,12 +88,6 @@ class grscan(gr.top_block):
             center_freq=freq_start,
             sdrargs=sdrargs,
         )
-
-        fft_blocks = self.get_fft_blocks(
-            use_vkfft, fft_batch_size, nfft, dc_block_len, dc_block_long
-        )
-        self.fft_blocks = fft_blocks + self.get_db_blocks(nfft, samp_rate, scaling)
-        self.fft_to_inference_block = self.fft_blocks[-1]
 
         self.samples_blocks = []
         if write_samples:
@@ -133,6 +129,23 @@ class grscan(gr.top_block):
         logging.info(
             f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
         )
+
+        fft_blocks = self.get_fft_blocks(
+            vkfft,
+            fft_batch_size,
+            nfft,
+            dc_block_len,
+            dc_block_long,
+            freq_start,
+            freq_end,
+            tune_step_hz,
+            tune_step_fft,
+            skip_tune_step,
+            tuning_ranges,
+            pretune,
+        )
+        self.fft_blocks = fft_blocks + self.get_db_blocks(nfft, samp_rate, scaling)
+        self.fft_to_inference_block = self.fft_blocks[-1]
 
         retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
@@ -243,7 +256,11 @@ class grscan(gr.top_block):
                 (self.wavelearner_inference_block, 0), (self.yolo_bbox_block, 1)
             )
 
-        self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
+        if pretune:
+            self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
+            self.msg_connect((self.retune_pre_fft, "tune"), (retune_fft, "cmd"))
+        else:
+            self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
         self.connect_blocks(self.sources[0], self.sources[1:])
         self.connect_blocks(self.fft_to_inference_block, self.inference_blocks)
         for pipeline_blocks in (
@@ -274,9 +291,40 @@ class grscan(gr.top_block):
     def get_window(self, nfft):
         return window.hann(nfft)
 
-    def get_offload_fft_block(self, fft_batch_size, nfft, fft_block, fft_roll):
+    def get_offload_fft_block(
+        self,
+        fft_batch_size,
+        nfft,
+        fft_block,
+        fft_roll,
+        freq_start,
+        freq_end,
+        tune_step_hz,
+        tune_step_fft,
+        skip_tune_step,
+        tuning_ranges,
+        pretune,
+    ):
+        if pretune:
+            self.retune_pre_fft = self.iqtlabs.retune_pre_fft(
+                nfft,
+                fft_batch_size,
+                "rx_freq",
+                int(freq_start),
+                int(freq_end),
+                tune_step_hz,
+                tune_step_fft,
+                skip_tune_step,
+                tuning_ranges,
+            )
+            stream_to_vector = self.retune_pre_fft
+        else:
+            stream_to_vector = blocks.stream_to_vector(
+                gr.sizeof_gr_complex, fft_batch_size * nfft
+            )
+
         offload_blocks = [
-            blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft),
+            stream_to_vector,
             blocks.multiply_const_vff(
                 [val for val in self.get_window(nfft) for _ in range(2)]
                 * fft_batch_size
@@ -289,7 +337,19 @@ class grscan(gr.top_block):
         return offload_blocks
 
     def get_fft_blocks(
-        self, use_vkfft, fft_batch_size, nfft, dc_block_len, dc_block_long
+        self,
+        vkfft,
+        fft_batch_size,
+        nfft,
+        dc_block_len,
+        dc_block_long,
+        freq_start,
+        freq_end,
+        tune_step_hz,
+        tune_step_fft,
+        skip_tune_step,
+        tuning_ranges,
+        pretune,
     ):
         fft_blocks = []
         if dc_block_len:
@@ -299,11 +359,23 @@ class grscan(gr.top_block):
         if self.wavelearner:
             fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), (nfft), True)
             fft_roll = True
-        elif use_vkfft:
+        elif vkfft:
             fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
         if fft_block:
             fft_blocks.extend(
-                self.get_offload_fft_block(fft_batch_size, nfft, fft_block, fft_roll)
+                self.get_offload_fft_block(
+                    fft_batch_size,
+                    nfft,
+                    fft_block,
+                    fft_roll,
+                    freq_start,
+                    freq_end,
+                    tune_step_hz,
+                    tune_step_fft,
+                    skip_tune_step,
+                    tuning_ranges,
+                    pretune,
+                )
             )
         else:
             fft_blocks.extend(
