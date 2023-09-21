@@ -264,18 +264,25 @@ def argument_parser():
         help="add sigmf meta file",
     )
     parser.add_argument(
-        "--use_vkfft",
-        dest="use_vkfft",
-        default=True,
-        action=BooleanOptionalAction,
-        help="use VkFFT (ignored if wavelearner available)",
-    )
-    parser.add_argument(
         "--fft_batch_size",
         dest="fft_batch_size",
         type=int,
         default=256,
         help="offload FFT batch size",
+    )
+    parser.add_argument(
+        "--vkfft",
+        dest="vkfft",
+        default=True,
+        action=BooleanOptionalAction,
+        help="use VkFFT (ignored if wavelearner available)",
+    )
+    parser.add_argument(
+        "--pretune",
+        dest="pretune",
+        default=False,
+        action=BooleanOptionalAction,
+        help="use pretuning",
     )
     return parser
 

@@ -110,7 +110,7 @@ $ pip3 install .
 run gamutrf (may need to change sample rate depending on SDR - e.g. 125e6 or 100e6).
 
 ```
-$ LD_PRELOAD=$HOME/.conda/envs/$CONDA_DEFAULT_ENV/lib/libgomp.so.1 gamutrf-scan --sdr=SoapyAIRT --freq-start=300e6 --freq-end=6e9 --tune-step-fft 256 --samp-rate=100e6 --nfft 256
+$ LD_PRELOAD=$HOME/.conda/envs/$CONDA_DEFAULT_ENV/lib/libgomp.so.1 gamutrf-scan --sdr=SoapyAIRT --freq-start=300e6 --freq-end=6e9 --tune-step-fft 256 --samp-rate=100e6 --nfft 256 --pretune
 ```
 
 gamutrf-scan will repeatedly print
