@@ -107,7 +107,7 @@ class GrscanTestCase(unittest.TestCase):
                 rotate_secs=900,
                 db_clamp_floor=-1e6,
                 pretune=pretune,
-                fft_batch_size=1,
+                fft_batch_size=256,
             )
             tb.start()
             time.sleep(3)
