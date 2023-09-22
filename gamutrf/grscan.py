@@ -73,7 +73,9 @@ class grscan(gr.top_block):
         self.wavelearner = wavelearner
         self.iqtlabs = iqtlabs
         self.samp_rate = samp_rate
-        self.retune_pre_fft = None
+        self.retune_pre_fft = blocks.stream_to_vector(
+            gr.sizeof_gr_complex, fft_batch_size * nfft
+        )
 
         ##################################################
         # Blocks
@@ -305,26 +307,8 @@ class grscan(gr.top_block):
         tuning_ranges,
         pretune,
     ):
-        if pretune:
-            self.retune_pre_fft = self.iqtlabs.retune_pre_fft(
-                nfft,
-                fft_batch_size,
-                "rx_freq",
-                int(freq_start),
-                int(freq_end),
-                tune_step_hz,
-                tune_step_fft,
-                skip_tune_step,
-                tuning_ranges,
-            )
-            stream_to_vector = self.retune_pre_fft
-        else:
-            stream_to_vector = blocks.stream_to_vector(
-                gr.sizeof_gr_complex, fft_batch_size * nfft
-            )
-
         offload_blocks = [
-            stream_to_vector,
+            self.retune_pre_fft,
             blocks.multiply_const_vff(
                 [val for val in self.get_window(nfft) for _ in range(2)]
                 * fft_batch_size
@@ -351,6 +335,18 @@ class grscan(gr.top_block):
         tuning_ranges,
         pretune,
     ):
+        if pretune:
+            self.retune_pre_fft = self.iqtlabs.retune_pre_fft(
+                nfft,
+                fft_batch_size,
+                "rx_freq",
+                int(freq_start),
+                int(freq_end),
+                tune_step_hz,
+                tune_step_fft,
+                skip_tune_step,
+                tuning_ranges,
+            )
         fft_blocks = []
         if dc_block_len:
             fft_blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
@@ -380,7 +376,7 @@ class grscan(gr.top_block):
         else:
             fft_blocks.extend(
                 [
-                    blocks.stream_to_vector(gr.sizeof_gr_complex, nfft),
+                    self.retune_pre_fft,
                     fft.fft_vcc(nfft, True, self.get_window(nfft), True, 1),
                 ]
             )
