@@ -73,9 +73,7 @@ class grscan(gr.top_block):
         self.wavelearner = wavelearner
         self.iqtlabs = iqtlabs
         self.samp_rate = samp_rate
-        self.retune_pre_fft = blocks.stream_to_vector(
-            gr.sizeof_gr_complex, fft_batch_size * nfft
-        )
+        self.retune_pre_fft = None
 
         ##################################################
         # Blocks
@@ -335,6 +333,20 @@ class grscan(gr.top_block):
         tuning_ranges,
         pretune,
     ):
+        fft_block = None
+        fft_roll = False
+        if self.wavelearner:
+            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), (nfft), True)
+            fft_roll = True
+        elif vkfft:
+            fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
+        else:
+            fft_batch_size = 1
+
+        fft_blocks = []
+        if dc_block_len:
+            fft_blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
+
         if pretune:
             self.retune_pre_fft = self.iqtlabs.retune_pre_fft(
                 nfft,
@@ -347,16 +359,11 @@ class grscan(gr.top_block):
                 skip_tune_step,
                 tuning_ranges,
             )
-        fft_blocks = []
-        if dc_block_len:
-            fft_blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
-        fft_block = None
-        fft_roll = False
-        if self.wavelearner:
-            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), (nfft), True)
-            fft_roll = True
-        elif vkfft:
-            fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
+        else:
+            self.retune_pre_fft = blocks.stream_to_vector(
+                gr.sizeof_gr_complex, fft_batch_size * nfft
+            )
+
         if fft_block:
             fft_blocks.extend(
                 self.get_offload_fft_block(
