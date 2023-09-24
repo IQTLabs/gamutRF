@@ -657,14 +657,14 @@ pyrepl = ">=0.8.2"
 
 [[package]]
 name = "findpeaks"
-version = "2.5.2"
+version = "2.5.3"
 description = "findpeaks is for the detection of peaks and valleys in a 1D vector and 2D array (image)."
 category = "main"
 optional = false
 python-versions = ">=3"
 files = [
-    {file = "findpeaks-2.5.2-py3-none-any.whl", hash = "sha256:60c5a3c5f06b1befd5854b9d8c810dbfcaf091c210e4c01f01fd3231eb5daea2"},
-    {file = "findpeaks-2.5.2.tar.gz", hash = "sha256:2c6a3fdbf872ecaed04c8ce1ef3a0df2f7383d742d92750c31b380a37fe3668d"},
+    {file = "findpeaks-2.5.3-py3-none-any.whl", hash = "sha256:9f646cfec35444504bb6ac690c1e8c1c0d0b5937633ad1120a58b587c84d3c7b"},
+    {file = "findpeaks-2.5.3.tar.gz", hash = "sha256:035027d98e2b17aea9eb9d5cf45dde645a4a04113a561f3b447c83c6ab0acf50"},
 ]
 
 [package.dependencies]
@@ -2816,4 +2816,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9 <3.11"
-content-hash = "37f0e9d369bff11f25f813a16fba2c65844bcf5e8ad5b71f92afbb6f608bd66f"
+content-hash = "41362d54e0774b5aba962cdfabcfa2bbb402ff3cae6fc4f72d1911d0a7f526f2"
