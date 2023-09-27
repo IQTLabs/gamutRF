@@ -59,7 +59,7 @@ RUN git clone https://github.com/Nuand/bladeRF.git -b 2023.02
 RUN git clone https://github.com/anarkiwi/lime-tools -b samples
 RUN wget https://signalhound.com/sigdownloads/SDK/signal_hound_sdk_08_25_23.zip -Osdk.zip && unzip sdk.zip && rm sdk.zip
 WORKDIR /root/soapy-bb60/SoapyBB60C/build
-RUN if [ "$(arch)" = "x86_64" ] ; then cp /root/signal_hound_sdk/device_apis/bb_series/include/* /usr/local/include/ && cp /root/signal_hound_sdk/device_apis/bb_series/lib/linux/Ubuntu*18.04/* /usr/local/lib && ldconfig -v -n /usr/local/lib && ln -sf /usr/local/lib/libbb_api.so.5 /usr/local/lib/libbb_api.so &&  cmake .. && make -j "$(nproc)" && make install ; fi
+RUN if [ "$(arch)" = "x86_64" ] ; then cp /root/signal_hound_sdk/device_apis/bb_series/include/* /usr/local/include/ && cp /root/signal_hound_sdk/device_apis/bb_series/lib/linux/Ubuntu*18.04/* /usr/local/lib && ldconfig -v -n /usr/local/lib && ln -sf /usr/local/lib/libbb_api.so.5 /usr/local/lib/libbb_api.so && cmake .. && make -j "$(nproc)" && make install ; fi
 WORKDIR /root/SoapyBladeRF/build
 RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/SoapyRTLSDR/build
