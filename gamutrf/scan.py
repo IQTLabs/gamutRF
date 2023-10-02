@@ -284,6 +284,13 @@ def argument_parser():
         action=BooleanOptionalAction,
         help="use pretuning",
     )
+    parser.add_argument(
+        "--tag-now",
+        dest="tag_now",
+        default=False,
+        action=BooleanOptionalAction,
+        help="send tag:now command when retuning",
+    )
     return parser
 
 
