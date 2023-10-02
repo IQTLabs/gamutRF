@@ -85,7 +85,7 @@ install gr-iqtlabs
 $ git clone https://github.com/google/flatbuffers -b v23.5.26
 $ git clone https://github.com/nlohmann/json -b v3.11.2
 $ git clone https://github.com/deepsig/libsigmf -b v1.0.2
-$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.40
+$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.42
 $ mkdir -p flatbuffers/build && cd flatbuffers/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
 $ mkdir -p json/build && cd json/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
 $ mkdir -p libsigmf/build && cd libsigmf/build && cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV -DCMAKE_CXX_FLAGS="-I $HOME/.conda/envs/$CONDA_DEFAULT_ENV/include" .. && make -j $(nproc) && make install && cd ../..
@@ -116,7 +116,6 @@ $ LD_PRELOAD=$HOME/.conda/envs/$CONDA_DEFAULT_ENV/lib/libgomp.so.1 gamutrf-scan 
 gamutrf-scan will repeatedly print
 
 ```
-gr::log :ERROR: source0 - soapy: ignoring unknown command key 'tag'
 gr::log :DEBUG: retune_fft0 - rx_freq: {}
 gr::log :DEBUG: retune_fft0 - new rx_freq tag: {}, last {}
 gr::log :DEBUG: retune_fft0 - retuning to {}

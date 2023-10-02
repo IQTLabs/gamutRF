@@ -60,6 +60,7 @@ class grscan(gr.top_block):
         vkfft=False,
         wavelearner=None,
         write_samples=0,
+        tag_now=False,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
@@ -74,6 +75,7 @@ class grscan(gr.top_block):
         self.iqtlabs = iqtlabs
         self.samp_rate = samp_rate
         self.retune_pre_fft = None
+        self.tag_now = tag_now
 
         ##################################################
         # Blocks
@@ -166,6 +168,7 @@ class grscan(gr.top_block):
             description,
             rotate_secs,
             False,
+            self.tag_now,
         )
         self.fft_blocks.append(retune_fft)
         zmq_addr = f"tcp://{logaddr}:{logport}"
@@ -358,6 +361,7 @@ class grscan(gr.top_block):
                 tune_step_fft,
                 skip_tune_step,
                 tuning_ranges,
+                self.tag_now,
             )
         else:
             self.retune_pre_fft = blocks.stream_to_vector(
