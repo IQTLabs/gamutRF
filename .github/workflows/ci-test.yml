@@ -3,12 +3,11 @@ name: CI Test
 on: [push, pull_request]
 
 jobs:
-
   ci-test:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: Set up Python
@@ -23,8 +22,25 @@ jobs:
           version: 1.4.2
       - name: Get dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gcc git g++ gnuradio-dev libev-dev libboost-all-dev libuhd-dev libunwind-dev make pkg-config software-properties-common sox swig uhd-host wget libopencv-dev
-          grep -h 'git clone' docker/*|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            g++ \
+            gcc \
+            git \
+            gnuradio-dev \
+            libboost-all-dev \
+            libev-dev \
+            libopencv-dev \
+            libuhd-dev \
+            libunwind-dev \
+            make \
+            pkg-config \
+            software-properties-common \
+            sox \
+            uhd-host \
+            wget \
+          && grep -h 'git clone' docker/*|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
       - name: Install dependencies
         run: |
           for repodir in flatbuffers json libsigmf gr-iqtlabs ; do \
@@ -33,7 +49,8 @@ jobs:
           done && \
           sudo ldconfig -v && \
           poetry config virtualenvs.create false && \
-          poetry install --no-interaction
+          poetry install --no-interaction && \
+          sudo dpkg -r --force-depends python3-numpy
       - name: test gamutrf-samples2raw
         env:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages

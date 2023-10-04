@@ -331,7 +331,7 @@ def process_scans(args, prom_vars, executor, zmqr):
                     return
                 if now > deadline:
                     break
-                scan_configs, frame_df = zmqr.read_buff(l)
+                scan_configs, frame_df = zmqr.read_buff(l, scan_fres=SCAN_FRES)
                 if frame_df is None:
                     schedule.run_pending()
                     sleep_time = 1
@@ -478,7 +478,6 @@ def main():
         zmqr = ZmqReceiver(
             scanners=scanners,
             buff_path=args.buff_path,
-            scan_fres=SCAN_FRES,
         )
         x = threading.Thread(
             target=process_scans,

@@ -4,7 +4,7 @@ def get_soapy_source(sdr, sdrargs, samp_rate, center_freq, agc, gain, soapy):
     tune_args = [""]
     settings = [""]
     if sdrargs:
-        settings = sdrargs
+        settings = sdrargs.split(",")
     source = soapy.source(dev, "fc32", 1, "", stream_args, tune_args, settings)
     source.set_sample_rate(0, samp_rate)
     source.set_bandwidth(0, samp_rate)

@@ -39,6 +39,7 @@ services:
       - SYS_RAWIO
     devices:
       - /dev/bus/usb:/dev/bus/usb
+      - /dev/dri/renderD128:/dev/dri/renderD128
     command:
       - gamutrf-scan
       - --logaddr=0.0.0.0

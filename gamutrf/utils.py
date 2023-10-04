@@ -16,7 +16,7 @@ SCAN_FROLL = 1e6
 # https://github.com/EttusResearch/uhd/blob/master/host/lib/usrp/b200/b200_impl.hpp
 # Should result in no overflows:
 # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=960,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
-ETTUS_ARGS = "num_recv_frames=960,recv_frame_size=16360,type=b200"
+ETTUS_ARGS = "num_recv_frames=1000,recv_frame_size=16360,type=b200"
 ETTUS_ANT = "TX/RX"
 SAMPLE_FILENAME_RE = re.compile(r"^.+\D(\d+)_(\d+)Hz_(\d+)sps\.c*([fisu]\d+|raw).*$")
 

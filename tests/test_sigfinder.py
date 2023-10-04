@@ -167,10 +167,11 @@ class SigFinderTestCase(unittest.TestCase):
                 }
                 with open(zmqr.scanners[0].buff_file, "wb") as zbf:
                     with context.stream_writer(zbf) as bf:
-                        for _ in range(2):
+                        for i in range(2):
                             output = {
-                                "ts": int(time.time()),
-                                "sweep_start": int(time.time()),
+                                "ts": time.time(),
+                                "sweep_start": time.time(),
+                                "total_tune_count": i,
                                 "config": {
                                     "freq_start": freq_start,
                                     "freq_end": freq_end,

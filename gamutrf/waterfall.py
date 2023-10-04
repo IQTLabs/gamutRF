@@ -23,7 +23,7 @@ from scipy.ndimage import gaussian_filter
 
 from gamutrf.peak_finder import get_peak_finder
 from gamutrf.utils import SCAN_FRES
-from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
+from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners, frame_resample
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
 warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
@@ -40,10 +40,28 @@ def safe_savefig(path):
     return path
 
 
-def draw_title(ax, title):
+def draw_title(
+    ax,
+    title,
+    scan_duration,
+    tune_step_hz,
+    tune_step_fft,
+    tune_rate_hz,
+    tune_dwell_ms,
+    sample_rate,
+    freq_resolution,
+):
     title_text = {
         "Time": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+        "Scan time": "%.2fs" % scan_duration,
+        "Step FFTs": "%u" % tune_step_fft,
+        "Step size": "%.2fMHz" % (tune_step_hz / 1e6),
+        "Sample rate": "%.2fMsps" % (sample_rate / 1e6),
+        "Resolution": "%.2fMHz" % freq_resolution,
+        "Tune rate": "%.2fHz" % tune_rate_hz,
+        "Tune dwell time": "%.2fms" % tune_dwell_ms,
     }
+    title.set_fontsize(8)
     title.set_text(str(title_text))
     ax.draw_artist(title)
 
@@ -246,6 +264,13 @@ def argument_parser():
         type=int,
         help="Waterfall height",
     )
+    parser.add_argument(
+        "--waterfall_width",
+        default=5000,
+        type=int,
+        help="Waterfall width (maximum)",
+    )
+
     return parser
 
 
@@ -253,22 +278,14 @@ def reset_mesh_psd(config, state, data=None):
     if state.mesh_psd:
         state.mesh_psd.remove()
 
-    XX, YY = np.meshgrid(
-        np.linspace(
-            config.min_freq,
-            config.max_freq,
-            int((config.max_freq - config.min_freq) / config.freq_resolution + 1),
-        ),
-        np.linspace(state.db_min, state.db_max, config.psd_db_resolution),
-    )
-
-    state.psd_x_edges = XX[0]
-    state.psd_y_edges = YY[:, 0]
+    X, Y = meshgrid(config, state.db_min, state.db_max, config.psd_db_resolution)
+    state.psd_x_edges = X[0]
+    state.psd_y_edges = Y[:, 0]
 
     if data is None:
-        data = np.zeros(XX[:-1, :-1].shape)
+        data = np.zeros(X[:-1, :-1].shape)
 
-    state.mesh_psd = state.ax_psd.pcolormesh(XX, YY, data, shading="flat")
+    state.mesh_psd = state.ax_psd.pcolormesh(X, Y, data, shading="flat")
 
 
 def reset_mesh(state, data):
@@ -289,57 +306,55 @@ def reset_fig(
     state.ax_psd = state.fig.add_subplot(3, 1, 1)
     state.ax = state.fig.add_subplot(3, 1, (2, 3))
     state.psd_title = state.ax_psd.text(
-        0.5, 1.05, "", transform=state.ax_psd.transAxes, va="center", ha="center"
+        0.5,
+        1.05,
+        "",
+        transform=state.ax_psd.transAxes,
+        va="center",
+        ha="center",
     )
+    default_data = state.db_min * np.ones(state.freq_data.shape[1])
 
     reset_mesh_psd(config, state)
-    (state.peak_lns,) = state.ax_psd.plot(
-        state.X[0],
-        state.db_min * np.ones(state.freq_data.shape[1]),
+
+    def ax_psd_plot(linestyle=":", **kwargs):
+        return state.ax_psd.plot(
+            state.X[0],
+            default_data,
+            markevery=config.marker_distance,
+            linestyle=linestyle,
+            **kwargs,
+        )
+
+    (state.peak_lns,) = ax_psd_plot(
         color="white",
         marker="^",
         markersize=12,
         linestyle="none",
         fillstyle="full",
     )
-    (state.max_psd_ln,) = state.ax_psd.plot(
-        state.X[0],
-        state.db_min * np.ones(state.freq_data.shape[1]),
+    (state.max_psd_ln,) = ax_psd_plot(
         color="red",
         marker=",",
-        linestyle=":",
-        markevery=config.marker_distance,
         label="max",
     )
-    (state.min_psd_ln,) = state.ax_psd.plot(
-        state.X[0],
-        state.db_min * np.ones(state.freq_data.shape[1]),
+    (state.min_psd_ln,) = ax_psd_plot(
         color="pink",
         marker=",",
-        linestyle=":",
-        markevery=config.marker_distance,
         label="min",
     )
-    (state.mean_psd_ln,) = state.ax_psd.plot(
-        state.X[0],
-        state.db_min * np.ones(state.freq_data.shape[1]),
+    (state.mean_psd_ln,) = ax_psd_plot(
         color="cyan",
         marker="^",
         markersize=8,
         fillstyle="none",
-        linestyle=":",
-        markevery=config.marker_distance,
         label="mean",
     )
-    (state.current_psd_ln,) = state.ax_psd.plot(
-        state.X[0],
-        state.db_min * np.ones(state.freq_data.shape[1]),
+    (state.current_psd_ln,) = ax_psd_plot(
         color="red",
         marker="o",
         markersize=8,
         fillstyle="none",
-        linestyle=":",
-        markevery=config.marker_distance,
         label="current",
     )
     state.ax_psd.legend(loc="center left", bbox_to_anchor=(1, 0.5))
@@ -378,8 +393,11 @@ def reset_fig(
     )
 
     for ax in (state.ax.xaxis, state.ax_psd.xaxis):
-        ax.set_major_locator(MultipleLocator(state.major_tick_separator))
-        ax.set_major_formatter("{x:.0f}")
+        ax.set_major_locator(state.major_tick_separator)
+        if config.freq_resolution < 0.01:
+            ax.set_major_formatter("{x:.1f}")
+        else:
+            ax.set_major_formatter("{x:.0f}")
         ax.set_minor_locator(state.minor_tick_separator)
 
     for ax in (state.ax_psd.yaxis, state.cbar_ax.yaxis, state.ax.yaxis):
@@ -396,24 +414,15 @@ def reset_fig(
             safe_savefig(config.savefig_path)
 
 
-def init_state(
-    config,
-    state,
-):
-    state.X, state.Y = np.meshgrid(
+def meshgrid(config, start, stop, num):
+    return np.meshgrid(
         np.linspace(
             config.min_freq,
             config.max_freq,
-            int((config.max_freq - config.min_freq) / config.freq_resolution + 1),
+            config.waterfall_width,
         ),
-        np.linspace(1, config.waterfall_height, config.waterfall_height),
+        np.linspace(start, stop, num),
     )
-
-    state.freq_bins = state.X[0]
-    state.db_data = np.empty(state.X.shape)
-    state.db_data.fill(np.nan)
-    state.freq_data = np.empty(state.X.shape)
-    state.freq_data.fill(np.nan)
 
 
 def init_fig(
@@ -427,13 +436,7 @@ def init_fig(
     state.cmap = plt.get_cmap("viridis")
     state.cmap_psd = plt.get_cmap("turbo")
     state.minor_tick_separator = AutoMinorLocator()
-    n_ticks = min(
-        ((config.max_freq - config.min_freq) / 100) * 5,
-        20,
-    )
-    state.major_tick_separator = config.base * round(
-        ((config.max_freq - config.min_freq) / n_ticks) / config.base
-    )
+    state.major_tick_separator = MultipleLocator(config.freq_range / config.n_ticks)
 
     plt.rcParams["savefig.facecolor"] = "#2A3459"
     plt.rcParams["figure.facecolor"] = "#2A3459"
@@ -459,6 +462,8 @@ def draw_peaks(
 ):
     peaks, properties = state.peak_finder.find_peaks(state.db_data[-1])
     peaks, properties = filter_peaks(peaks, properties)
+    left_ips = properties["left_ips"].astype(int)
+    right_ips = properties["right_ips"].astype(int)
 
     if state.save_path:
         save_detections(
@@ -482,7 +487,6 @@ def draw_peaks(
         state.detection_text.pop(i)
 
     if len(peaks) > 0:
-        # if False:
         vl_center = state.ax_psd.vlines(
             x=state.psd_x_edges[peaks],
             ymin=state.db_data[-1][peaks] - properties["prominences"],
@@ -493,8 +497,8 @@ def draw_peaks(
         vl_edges = state.ax_psd.vlines(
             x=np.concatenate(
                 (
-                    state.psd_x_edges[properties["left_ips"].astype(int)],
-                    state.psd_x_edges[properties["right_ips"].astype(int)],
+                    state.psd_x_edges[left_ips],
+                    state.psd_x_edges[right_ips],
                 )
             ),
             ymin=state.db_min,
@@ -503,8 +507,8 @@ def draw_peaks(
         )
         state.ax_psd.draw_artist(vl_edges)
         for l_ips, r_ips, p in zip(
-            state.psd_x_edges[properties["left_ips"].astype(int)],
-            state.psd_x_edges[properties["right_ips"].astype(int)],
+            state.psd_x_edges[left_ips],
+            state.psd_x_edges[right_ips],
             state.db_data[-1][peaks],
         ):
             shaded = state.ax_psd.fill_between(
@@ -513,14 +517,14 @@ def draw_peaks(
             state.ax_psd.draw_artist(shaded)
         hl = state.ax_psd.hlines(
             y=properties["width_heights"],
-            xmin=state.psd_x_edges[properties["left_ips"].astype(int)],
-            xmax=state.psd_x_edges[properties["right_ips"].astype(int)],
+            xmin=state.psd_x_edges[left_ips],
+            xmax=state.psd_x_edges[right_ips],
             color="white",
         )
         state.ax_psd.draw_artist(hl)
         for l_ips, r_ips, p in zip(
-            state.psd_x_edges[properties["left_ips"].astype(int)],
-            state.psd_x_edges[properties["right_ips"].astype(int)],
+            state.psd_x_edges[left_ips],
+            state.psd_x_edges[right_ips],
             peaks,
         ):
             for txt in (
@@ -547,59 +551,45 @@ def draw_peaks(
                 state.ax_psd.draw_artist(txt)
 
 
-def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_df):
+def update_fig(config, state, results):
     if not state.fig or not state.ax:
         raise NotImplementedError
 
-    if scan_df is not None:
-        results = [(scan_configs, scan_df)]
-    else:
-        results = []
-        while True:
-            scan_configs, scan_df = zmqr.read_buff()
-            if scan_df is None:
-                break
-            results.append((scan_configs, scan_df))
-
-        if not results:
-            return False
-
-    if config.base_save_path and rotate_secs:
+    if config.base_save_path and config.rotate_secs:
         state.save_path = os.path.join(
             config.base_save_path,
-            str(int(time.time() / rotate_secs) * rotate_secs),
+            str(int(time.time() / config.rotate_secs) * config.rotate_secs),
         )
         if not os.path.exists(state.save_path):
             Path(state.save_path).mkdir(parents=True, exist_ok=True)
 
-    for scan_configs, scan_df in results:
-        scan_df = scan_df[
-            (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
-        ]
-        if scan_df.empty:
-            logging.info(
-                f"Scan is outside specified frequency range ({config.min_freq} to {config.max_freq})."
-            )
-            continue
+    if len(results) > 1:
+        logging.info("processing backlog of %u results", len(results))
 
+    scan_duration = 0
+
+    for scan_configs, scan_df in results:
+        tune_step_hz = min(scan_config["tune_step_hz"] for scan_config in scan_configs)
+        tune_step_fft = min(
+            scan_config["tune_step_fft"] for scan_config in scan_configs
+        )
+        scan_duration = scan_df.ts.max() - scan_df.ts.min()
+        tune_count = scan_df.tune_count.max()
+        tune_rate_hz = tune_count / scan_duration
+        tune_dwell_ms = (scan_duration * 1e3) / tune_count
         idx = (
-            round((scan_df.freq - config.min_freq) / config.freq_resolution)
+            ((scan_df.freq - config.min_freq) / config.freq_resolution)
+            .round()
+            .clip(lower=0, upper=(state.db_data.shape[1] - 1))
             .values.flatten()
             .astype(int)
         )
 
         state.freq_data = np.roll(state.freq_data, -1, axis=0)
-        state.freq_data[-1, :] = np.nan
-        state.freq_data[-1][idx] = (
-            round(scan_df.freq / config.freq_resolution).values.flatten()
-            * config.freq_resolution
-        )
-
-        db = scan_df.db.values.flatten()
+        state.freq_data[-1][idx] = scan_df.freq.values.flatten()
 
         state.db_data = np.roll(state.db_data, -1, axis=0)
-        state.db_data[-1, :] = np.nan
-        state.db_data[-1][idx] = db
+        state.db_data[-1][idx] = scan_df.db.values.flatten()
 
         scan_time = scan_df.ts.iloc[-1]
         row_time = datetime.datetime.fromtimestamp(scan_time)
@@ -623,23 +613,30 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
         state.counter += 1
 
     if state.counter % config.draw_rate == 0:
+        now = time.time()
+        since_last_plot = 0
+        if state.last_plot:
+            since_last_plot = now - state.last_plot
+        state.last_plot = now
+        logging.info(f"Plotting {row_time} (seconds since last plot {since_last_plot})")
+
         state.db_min = np.nanmin(state.db_data)
         state.db_max = np.nanmax(state.db_data)
 
-        state.data, _xedge, _yedge = np.histogram2d(
+        data, _xedge, _yedge = np.histogram2d(
             state.freq_data[~np.isnan(state.freq_data)].flatten(),
             state.db_data[~np.isnan(state.db_data)].flatten(),
             density=False,
             bins=[state.psd_x_edges, state.psd_y_edges],
         )
-        heatmap = gaussian_filter(state.data, sigma=2)
-        state.data = heatmap
-        state.data /= np.max(state.data)
+        heatmap = gaussian_filter(data, sigma=2)
+        data = heatmap / np.max(heatmap)
 
-        state.ax.set_yticks(state.y_ticks, labels=state.y_labels)
-
-        if state.background:
-            state.fig.canvas.restore_region(state.background)
+        db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
+        if config.plot_snr:
+            db_norm = (
+                (state.db_data - np.nanmin(state.db_data, axis=0)) - config.snr_min
+            ) / (config.snr_max - config.snr_min)
 
         top_n_bins = state.freq_bins[
             np.argsort(
@@ -647,19 +644,26 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
             )[::-1][: config.top_n]
         ]
 
+        state.ax.set_yticks(state.y_ticks, labels=state.y_labels)
+
+        if state.background:
+            state.fig.canvas.restore_region(state.background)
+
         for top_n_bin, ln in zip(top_n_bins, state.top_n_lns):
             ln.set_xdata([top_n_bin] * len(state.Y[:, 0]))
 
         state.fig.canvas.blit(state.ax.yaxis.axes.figure.bbox)
 
-        reset_mesh_psd(config, state, data=state.cmap_psd(state.data.T))
+        reset_mesh_psd(config, state, data=state.cmap_psd(data.T))
 
         state.ax_psd.set_ylim(state.db_min, state.db_max)
         state.current_psd_ln.set_ydata(state.db_data[-1])
-
-        state.min_psd_ln.set_ydata(np.nanmin(state.db_data, axis=0))
-        state.max_psd_ln.set_ydata(np.nanmax(state.db_data, axis=0))
-        state.mean_psd_ln.set_ydata(np.nanmean(state.db_data, axis=0))
+        for ln, ln_func in (
+            (state.min_psd_ln, np.nanmin),
+            (state.max_psd_ln, np.nanmax),
+            (state.mean_psd_ln, np.nanmean),
+        ):
+            ln.set_ydata(ln_func(state.db_data, axis=0))
         state.ax_psd.draw_artist(state.mesh_psd)
 
         if state.peak_finder:
@@ -679,16 +683,20 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
         ):
             state.ax_psd.draw_artist(ln)
 
-        db_norm = (state.db_data - state.db_min) / (state.db_max - state.db_min)
-        if config.plot_snr:
-            db_norm = (
-                (state.db_data - np.nanmin(state.db_data, axis=0)) - config.snr_min
-            ) / (config.snr_max - config.snr_min)
-
         reset_mesh(state, state.cmap(db_norm))
         state.ax.draw_artist(state.mesh)
 
-        draw_title(state.ax_psd, state.psd_title)
+        draw_title(
+            state.ax_psd,
+            state.psd_title,
+            scan_duration,
+            tune_step_hz,
+            tune_step_fft,
+            tune_rate_hz,
+            tune_dwell_ms,
+            config.sampling_rate,
+            config.freq_resolution,
+        )
 
         state.sm.set_clim(vmin=state.db_min, vmax=state.db_max)
         state.cbar.update_normal(state.sm)
@@ -712,17 +720,13 @@ def update_fig(config, state, zmqr, rotate_secs, save_time, scan_configs, scan_d
         if config.savefig_path:
             fig_path = safe_savefig(config.savefig_path)
 
-        logging.info(f"Plotting {row_time}")
-
         if state.save_path:
             save_waterfall(
                 state,
-                save_time,
+                config.save_time,
                 scan_time,
                 fig_path=fig_path,
             )
-
-    return True
 
 
 class WaterfallConfig:
@@ -740,7 +744,10 @@ class WaterfallConfig:
         width,
         height,
         waterfall_height,
+        waterfall_width,
         batch,
+        rotate_secs,
+        save_time,
     ):
         self.engine = engine
         self.plot_snr = plot_snr
@@ -754,7 +761,6 @@ class WaterfallConfig:
         self.sampling_rate = sampling_rate
         self.psd_db_resolution = 90
         self.y_label_skip = 3
-        self.base = 20
         self.top_n = top_n
         self.draw_rate = 1
         self.base_save_path = base_save_path
@@ -764,16 +770,27 @@ class WaterfallConfig:
         self.reclose_interval = 25
         self.min_freq = min_freq / self.scale
         self.max_freq = max_freq / self.scale
-        self.freq_resolution = self.sampling_rate / (self.fft_len / 2) / self.scale
+        self.freq_range = self.max_freq - self.min_freq
+        self.freq_resolution = self.sampling_rate / self.scale / self.fft_len * 2
+        self.waterfall_width = int(
+            min(self.freq_range / self.freq_resolution, waterfall_width)
+        )
+        self.freq_resolution = self.freq_range / self.waterfall_width
+        self.n_ticks = 20
+        self.rotate_secs = rotate_secs
+        self.save_time = save_time
+
+    def __eq__(self, other):
+        for attr in ("fft_len", "sampling_rate", "min_freq", "max_freq"):
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        return True
 
 
 class WaterfallState:
-    def __init__(self):
+    def __init__(self, config, save_path, peak_finder):
         self.db_min = -220
         self.db_max = -150
-        self.db_data = None
-        self.freq_data = None
-        self.freq_bins = None
         self.detection_text = []
         self.scan_times = []
         self.scan_config_history = {}
@@ -786,8 +803,6 @@ class WaterfallState:
         self.major_tick_separator = None
         self.cmap_psd = None
         self.cmap = None
-        self.X = None
-        self.Y = None
         self.fig = None
         self.top_n_lns = None
         self.background = None
@@ -803,62 +818,37 @@ class WaterfallState:
         self.current_psd_ln = None
         self.ax_psd = None
         self.ax = None
-        self.save_path = None
+        self.save_path = save_path
         self.mesh_psd = None
-        self.data = None
-        self.peak_finder = None
+        self.peak_finder = peak_finder
+        self.last_plot = 0
+        self.X, self.Y = meshgrid(
+            config, 1, config.waterfall_height, config.waterfall_height
+        )
+        self.freq_bins = self.X[0]
+        self.db_data = np.empty(self.X.shape)
+        self.db_data.fill(np.nan)
+        self.freq_data = np.empty(self.X.shape)
+        self.freq_data.fill(np.nan)
 
 
-def waterfall(
+def make_config(
+    scan_configs,
     min_freq,
     max_freq,
+    engine,
     plot_snr,
+    savefig_path,
     top_n,
     base_save_path,
-    save_time,
-    peak_finder,
-    engine,
-    savefig_path,
-    rotate_secs,
     width,
     height,
     waterfall_height,
+    waterfall_width,
     batch,
-    zmqr,
+    rotate_secs,
+    save_time,
 ):
-    global need_reset_fig
-    need_reset_fig = True
-    global running
-    running = True
-
-    def onresize(_event):
-        global need_reset_fig
-        need_reset_fig = True
-
-    def sig_handler(_sig=None, _frame=None):
-        global running
-        running = False
-
-    signal.signal(signal.SIGINT, sig_handler)
-    signal.signal(signal.SIGTERM, sig_handler)
-
-    logging.info("awaiting scanner startup")
-
-    while not zmqr.healthy():
-        time.sleep(0.1)
-
-    logging.info("awaiting config from scanner")
-    scan_configs = None
-    scan_df = None
-    while zmqr.healthy() and running:
-        scan_configs, scan_df = zmqr.read_buff()
-        if scan_df is not None:
-            break
-        time.sleep(0.1)
-
-    if not scan_configs:
-        return
-
     sampling_rate = max([scan_config["sample_rate"] for scan_config in scan_configs])
     fft_len = max([scan_config["nfft"] for scan_config in scan_configs])
     if min_freq == 0:
@@ -879,42 +869,157 @@ def waterfall(
         width,
         height,
         waterfall_height,
+        waterfall_width,
         batch,
+        rotate_secs,
+        save_time,
     )
+    return config
 
-    logging.info(
-        "scanning %fMHz to %fMHz at %fMsps with %u FFT points at %fMHz resolution",
-        config.min_freq,
-        config.max_freq,
-        config.sampling_rate / 1e6,
-        config.fft_len,
-        config.freq_resolution,
-    )
 
-    state = WaterfallState()
-    state.save_path = config.base_save_path
-    init_state(config, state)
-    state.peak_finder = peak_finder
-
-    matplotlib.use(config.engine)
+def waterfall(
+    min_freq,
+    max_freq,
+    plot_snr,
+    top_n,
+    base_save_path,
+    save_time,
+    peak_finder,
+    engine,
+    savefig_path,
+    rotate_secs,
+    width,
+    height,
+    waterfall_height,
+    waterfall_width,
+    batch,
+    zmqr,
+):
     style.use("fast")
-    init_fig(config, state, onresize)
+
+    global need_reset_fig
+    need_reset_fig = True
+    global running
+    running = True
+    need_init = True
+    need_reconfig = True
+
+    def onresize(_event):  # nosemgrep
+        global need_reset_fig
+        need_reset_fig = True
+
+    def sig_handler(_sig=None, _frame=None):
+        global running
+        running = False
+
+    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+
+    logging.info("awaiting scanner startup")
+    while not zmqr.healthy():
+        time.sleep(0.1)
+
+    logging.info("awaiting initial config from scanner(s)")
+    scan_configs = None
+    scan_df = None
+    while zmqr.healthy() and running:
+        scan_configs, scan_df = zmqr.read_buff(scan_fres=SCAN_FRES)
+        if scan_df is not None:
+            break
+        time.sleep(0.1)
+
+    if not scan_configs:
+        return
 
     while zmqr.healthy() and running:
+        if need_reconfig:
+            config = make_config(
+                scan_configs,
+                min_freq,
+                max_freq,
+                engine,
+                plot_snr,
+                savefig_path,
+                top_n,
+                base_save_path,
+                width,
+                height,
+                waterfall_height,
+                waterfall_width,
+                batch,
+                rotate_secs,
+                save_time,
+            )
+            logging.info(
+                "scanning %fMHz to %fMHz at %fMsps with %u FFT points at %fMHz resolution",
+                config.min_freq,
+                config.max_freq,
+                config.sampling_rate / 1e6,
+                config.fft_len,
+                config.freq_resolution,
+            )
+
+            state = WaterfallState(config, base_save_path, peak_finder)
+            matplotlib.use(config.engine)
+            results = [
+                (scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))
+            ]
+
+            need_reconfig = False
+            need_init = True
+        if need_init:
+            init_fig(config, state, onresize)
+            need_init = False
+            need_reset_fig = True
         if need_reset_fig:
             reset_fig(config, state)
             need_reset_fig = False
-        if not update_fig(
-            config, state, zmqr, rotate_secs, save_time, scan_configs, scan_df
-        ):
+        while True:
+            scan_configs, scan_df = zmqr.read_buff(
+                scan_fres=config.freq_resolution * 1e6
+            )
+            if scan_df is None:
+                break
+            last_config = make_config(
+                scan_configs,
+                min_freq,
+                max_freq,
+                engine,
+                plot_snr,
+                savefig_path,
+                top_n,
+                base_save_path,
+                width,
+                height,
+                waterfall_height,
+                waterfall_width,
+                batch,
+                rotate_secs,
+                save_time,
+            )
+            if last_config != config:
+                logging.info("scanner config change detected")
+                results = []
+                need_reconfig = True
+                break
+            scan_df = scan_df[
+                (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
+            ]
+            if scan_df.empty:
+                logging.info(
+                    f"Scan is outside specified frequency range ({config.min_freq} to {config.max_freq})."
+                )
+                continue
+            results.append((scan_configs, scan_df))
+        if need_reconfig:
+            continue
+        if results:
+            update_fig(config, state, results)
+            if config.batch and state.counter % config.reclose_interval == 0:
+                need_init = True
+            results = []
+        else:
             time.sleep(0.1)
-        # TODO: workaround memory leak in savefig with periodic reinitialiation
-        elif config.batch and state.counter % config.reclose_interval == 0:
-            init_fig(config, state, onresize)
-            need_reset_fig = True
-        scan_configs = None
-        scan_df = None
-
     zmqr.stop()
 
 
@@ -937,9 +1042,15 @@ class FlaskHandler:
         self.process.start()
 
     def serve(self):
+        if os.path.exists(self.savefig_path):
+            return (
+                '<html><head><meta http-equiv="refresh" content="%u"></head><body><img src="%s"></img></body></html>'
+                % (self.refresh, self.savefig_file),
+                200,
+            )
         return (
-            '<html><head><meta http-equiv="refresh" content="%u"></head><body><img src="%s"></img></body></html>'
-            % (self.refresh, self.savefig_file),
+            '<html><head><meta http-equiv="refresh" content="%u"></head><body>waterfall initializing, please wait or reload...</body></html>'
+            % self.refresh,
             200,
         )
 
@@ -953,10 +1064,10 @@ def main():
     parser = argument_parser()
     args = parser.parse_args()
     detection_type = args.detection_type.lower()
-    peak_finder = None
+    peak_finder = get_peak_finder(detection_type)
 
-    if args.save_path and detection_type:
-        peak_finder = get_peak_finder(detection_type)
+    if (detection_type and not args.n_detect) or (not detection_type and args.n_detect):
+        raise ValueError("--detection_type and --n_detect must be set together")
 
     with tempfile.TemporaryDirectory() as tempdir:
         flask = None
@@ -973,7 +1084,6 @@ def main():
 
         zmqr = ZmqReceiver(
             scanners=parse_scanners(args.scanners),
-            scan_fres=SCAN_FRES,
         )
 
         waterfall(
@@ -990,6 +1100,7 @@ def main():
             args.width,
             args.height,
             args.waterfall_height,
+            args.waterfall_width,
             batch,
             zmqr,
         )

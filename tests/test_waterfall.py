@@ -24,21 +24,26 @@ class FakeZmqReceiver:
     def healthy(self):
         return time.time() - self.start_time < self.run_secs
 
-    def read_buff(self):
+    def read_buff(self, scan_fres):
         if not self.serve_results:
+            freq_min = 1e6
+            freq_max = 10e6
+            rows = int((freq_max - freq_min) / scan_fres)
             df = pd.DataFrame(
                 [
                     {
                         "ts": time.time(),
-                        "freq": 1 + (i * 0.001),
+                        "freq": freq_min + (i * scan_fres),
                         "db": self.peak_val / 2,
+                        "tune_count": i,
                     }
-                    for i in range(1000)
+                    for i in range(rows)
                 ]
             )
             df.loc[
                 (df.freq >= self.peak_min) & (df.freq <= self.peak_max), "db"
             ] = self.peak_val
+            df["freq"] /= 1e6
             self.serve_results = [
                 (
                     [
@@ -47,6 +52,8 @@ class FakeZmqReceiver:
                             "nfft": 256,
                             "freq_start": df.freq.min(),
                             "freq_end": df.freq.max(),
+                            "tune_step_hz": scan_fres,
+                            "tune_step_fft": 256,
                         }
                     ],
                     df,
@@ -85,6 +92,7 @@ class UtilsTestCase(unittest.TestCase):
                 10,  # args.width,
                 5,  # args.height,
                 10,  # args.waterfall_height,
+                100,  # args.waterfall_width,
                 True,  # args.batch
                 zmqr,
             )
