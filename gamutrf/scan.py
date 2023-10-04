@@ -29,10 +29,10 @@ running = True
 
 def init_prom_vars():
     prom_vars = {
-        "freq_start_hz": Gauge("freq_start_hz", "start of scanning range in Hz"),
-        "freq_end_hz": Gauge("freq_end_hz", "end of scanning range in Hz"),
+        "freq_start": Gauge("freq_start", "start of scanning range in Hz"),
+        "freq_end": Gauge("freq_end", "end of scanning range in Hz"),
         "igain": Gauge("igain", "input gain"),
-        "tune_overlap": Gauge("tune_overlap", "multiple of samp_rate when retuning"),
+        "tuneoverlap": Gauge("tuneoverlap", "multiple of samp_rate when retuning"),
         "tune_step_fft": Gauge("tune_step_fft", "tune FFT step (0 is use sweep_sec)"),
         "sweep_sec": Gauge("sweep_sec", "scan sweep rate in seconds"),
         "run_timestamp": Gauge("run_timestamp", "updated when flowgraph is running"),
@@ -76,6 +76,13 @@ def argument_parser():
         type=float,
         default=30,
         help="Set sweep_sec [default=%(default)r]",
+    )
+    parser.add_argument(
+        "--tune-dwell-ms",
+        dest="tune_dwell_ms",
+        type=float,
+        default=0,
+        help="Set tune dwell time in ms (0 is use sweep_sec) [default=%(default)r]",
     )
     parser.add_argument(
         "--tune-step-fft",
@@ -256,6 +263,34 @@ def argument_parser():
         action=BooleanOptionalAction,
         help="add sigmf meta file",
     )
+    parser.add_argument(
+        "--fft_batch_size",
+        dest="fft_batch_size",
+        type=int,
+        default=256,
+        help="offload FFT batch size",
+    )
+    parser.add_argument(
+        "--vkfft",
+        dest="vkfft",
+        default=True,
+        action=BooleanOptionalAction,
+        help="use VkFFT (ignored if wavelearner available)",
+    )
+    parser.add_argument(
+        "--pretune",
+        dest="pretune",
+        default=False,
+        action=BooleanOptionalAction,
+        help="use pretuning",
+    )
+    parser.add_argument(
+        "--tag-now",
+        dest="tag_now",
+        default=False,
+        action=BooleanOptionalAction,
+        help="send tag:now command when retuning",
+    )
     return parser
 
 
@@ -269,8 +304,8 @@ def check_options(options):
     if options.freq_end > 6e9:
         return "freq_end must be less than 6GHz"
 
-    if options.freq_start < 70e6:
-        return "freq_start must be at least 70MHz"
+    if options.freq_start < 10e6:
+        return "freq_start must be at least 10MHz"
 
     if options.write_samples and not options.sample_dir:
         return "Must provide --sample_dir when writing samples/points"
@@ -294,47 +329,26 @@ def run_loop(options, prom_vars, wavelearner):
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    handler = FlaskHandler(options, check_options, ["promport", "apiport"])
+    dynamic_exclude_options = ["apiport", "promport", "updatetimeout"]
+    handler = FlaskHandler(options, check_options, dynamic_exclude_options)
     handler.start()
 
     while running:
-        prom_vars["freq_start_hz"].set(handler.options.freq_start)
-        prom_vars["freq_end_hz"].set(handler.options.freq_end)
-        prom_vars["igain"].set(handler.options.igain)
-        prom_vars["sweep_sec"].set(handler.options.sweep_sec)
-        prom_vars["tune_overlap"].set(handler.options.tuneoverlap)
-        prom_vars["tune_step_fft"].set(handler.options.tune_step_fft)
-        tb = grscan(
-            freq_end=handler.options.freq_end,
-            freq_start=handler.options.freq_start,
-            tuning_ranges=handler.options.tuning_ranges,
-            igain=handler.options.igain,
-            sweep_sec=handler.options.sweep_sec,
-            tune_overlap=handler.options.tuneoverlap,
-            tune_step_fft=handler.options.tune_step_fft,
-            samp_rate=handler.options.samp_rate,
-            logaddr=handler.options.logaddr,
-            logport=handler.options.logport,
-            sdr=handler.options.sdr,
-            sdrargs=handler.options.sdrargs,
-            fft_size=handler.options.nfft,
-            skip_tune_step=handler.options.skip_tune_step,
-            sample_dir=handler.options.sample_dir,
-            write_samples=handler.options.write_samples,
-            bucket_range=handler.options.bucket_range,
-            db_clamp_floor=handler.options.db_clamp_floor,
-            db_clamp_ceil=handler.options.db_clamp_ceil,
-            dc_block_len=handler.options.dc_block_len,
-            dc_block_long=handler.options.dc_block_long,
-            inference_plan_file=handler.options.inference_plan_file,
-            inference_output_dir=handler.options.inference_output_dir,
-            scaling=handler.options.scaling,
-            rotate_secs=handler.options.rotate_secs,
-            description=handler.options.description,
-            sigmf=handler.options.sigmf,
-            iqtlabs=iqtlabs,
-            wavelearner=wavelearner,
+        for var in prom_vars.keys():
+            if hasattr(handler.options, var):
+                prom_vars[var].set(getattr(handler.options, var))
+        scan_args = {
+            "iqtlabs": iqtlabs,
+            "wavelearner": wavelearner,
+        }
+        scan_args.update(
+            {
+                k: getattr(handler.options, k)
+                for k in dir(handler.options)
+                if not k.startswith("_") and not k in dynamic_exclude_options
+            }
         )
+        tb = grscan(**scan_args)
         tb.start()
         while running and reconfigures == handler.reconfigures:
             idle_time = 1

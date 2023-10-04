@@ -9,7 +9,7 @@ jobs:
   buildx-base:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Get the version
@@ -19,21 +19,29 @@ jobs:
       id: change_version
       run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
     - name: Set up qemu
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
       with:
         platforms: all
     - name: Set up Docker Buildx
       id: buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
     - name: Docker Login
       env:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
-
-    - name: Build and push platforms
-      uses: docker/build-push-action@v4
+    - name: Build and push platforms vkfft
+      uses: docker/build-push-action@v5
+      with:
+        context: docker
+        file: docker/Dockerfile.vkfft
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-vkfft:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+    - name: Build and push platforms base
+      uses: docker/build-push-action@v5
       with:
         context: docker
         file: docker/Dockerfile.base
@@ -45,7 +53,7 @@ jobs:
     needs: [buildx-base]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Get the version
@@ -55,12 +63,12 @@ jobs:
       id: change_version
       run: if [ "${{ steps.get_version.outputs.VERSION }}" == "main" ]; then echo ::set-output name=VERSION::latest; else echo ::set-output name=VERSION::${{ steps.get_version.outputs.VERSION }}; fi
     - name: Set up qemu
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
       with:
         platforms: all
     - name: Set up Docker Buildx
       id: buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
     - name: Docker Login
       env:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
@@ -69,7 +77,7 @@ jobs:
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
 
     - name: Build and push platforms
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         context: .
         platforms: linux/amd64,linux/arm64
