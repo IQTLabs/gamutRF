@@ -1,0 +1,25 @@
+diff --git a/requirements/torch_cu118_linux.txt b/requirements/torch_cu118_linux.txt
+index d34969ef..fe823925 100644
+--- a/requirements/torch_cu118_linux.txt
++++ b/requirements/torch_cu118_linux.txt
+@@ -1,7 +1,7 @@
+ #pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
+ --extra-index-url https://download.pytorch.org/whl/cu118
+ -r torch_common.txt
+-torch==2.0.1+cu118; sys_platform == 'linux'
++# torch==2.0.1+cu118; sys_platform == 'linux'
+ torchvision==0.15.2+cu118; sys_platform == 'linux'
+ torchtext==0.15.2; sys_platform == 'linux'
+ torchaudio==2.0.2+cu118; sys_platform == 'linux'
+diff --git a/ts_scripts/install_dependencies.py b/ts_scripts/install_dependencies.py
+index 6aef56db..0875d4c6 100644
+--- a/ts_scripts/install_dependencies.py
++++ b/ts_scripts/install_dependencies.py
+@@ -23,6 +23,7 @@ class Common:
+         pass
+ 
+     def install_torch_packages(self, cuda_version):
++        return
+         if cuda_version:
+             if platform.system() == "Darwin":
+                 print(
