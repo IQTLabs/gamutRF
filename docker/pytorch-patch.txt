@@ -1,0 +1,25 @@
+diff --git a/aten/src/ATen/native/vulkan/impl/Arithmetic.cpp b/aten/src/ATen/native/vulkan/impl/Arithmetic.cpp
+index ef6b794fbd9..900dd8ddf4c 100644
+--- a/aten/src/ATen/native/vulkan/impl/Arithmetic.cpp
++++ b/aten/src/ATen/native/vulkan/impl/Arithmetic.cpp
+@@ -17,6 +17,7 @@ api::ShaderInfo get_shader(const OpType type) {
+     case OpType::DIV:
+       return VK_KERNEL(div);
+   }
++  return VK_KERNEL(add);
+ }
+ 
+ struct Params final {
+diff --git a/aten/src/ATen/native/vulkan/impl/Registry.cpp b/aten/src/ATen/native/vulkan/impl/Registry.cpp
+index 3cf3148c874..b750914dfeb 100644
+--- a/aten/src/ATen/native/vulkan/impl/Registry.cpp
++++ b/aten/src/ATen/native/vulkan/impl/Registry.cpp
+@@ -33,7 +33,7 @@ const api::ShaderInfo& look_up_shader_info(const std::string& op_name) {
+   const RegistryKeyMap& registry_key_map = registry_iterator->second;
+ 
+   // Look for "override" and "catchall" keys
+-  for (const std::string& key : {"override", "catchall"}) {
++  for (const std::string key : {"override", "catchall"}) {
+     const RegistryKeyMap::const_iterator registry_key_iterator =
+         registry_key_map.find(key);
+     if (registry_key_iterator != registry_key_map.end()) {
