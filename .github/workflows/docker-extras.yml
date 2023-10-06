@@ -36,7 +36,7 @@ jobs:
       with:
         context: docker
         file: docker/Dockerfile.torchserve
-        platforms: linux/amd64
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: iqtlabs/gamutrf-torchserve:${{ steps.change_version.outputs.VERSION }}
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
