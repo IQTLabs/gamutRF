@@ -145,9 +145,17 @@ def argument_parser():
         action=argparse.BooleanOptionalAction,
         help="get RSSI values",
     )
-
     parser.add_argument(
         "--use_mavlink_gps", help="Use external Pixhawk/MAVLINK GPS", default=False, type=bool
+    )
+    parser.add_argument(
+        "--use_mavlink_heading", help="Use external Pixhawk/MAVLINK heading", default=False, type=bool
+    )
+    parser.add_argument(
+        "--mavlink_api_server",
+        help="server to query for mavlink GPS data",
+        default="mavlink-api",
+        type=str,
     )
     
     return parser
@@ -223,7 +231,9 @@ class API:
             mqtt_server = self.arguments.mqtt_server,
             gps_server = ORCHESTRATOR,
             compass = True,
-            use_mavlink_gps = self.arguments.use_mavlink_gps
+            use_mavlink_gps = self.arguments.use_mavlink_gps,
+            use_mavlink_heading = self.arguments.use_mavlink_heading,
+            mavlink_api_server= self.arguments.mavlink_api_server
         )
         self.q = queue.Queue(self.arguments.qsize)
         self.sdr_recorder = get_recorder(
