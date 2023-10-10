@@ -69,10 +69,10 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: docker
-        file: docker/Dockerfile.torchserve
+        file: docker/Dockerfile.cuda-torchserve
         platforms: linux/amd64
         push: true
-        tags: iqtlabs/gamutrf-torchserve:${{ steps.change_version.outputs.VERSION }}
+        tags: iqtlabs/gamutrf-cuda-torchserve:${{ steps.change_version.outputs.VERSION }}
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
   buildx-mqtt:
     runs-on: ubuntu-latest
