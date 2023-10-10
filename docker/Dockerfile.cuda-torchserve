@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /root
 RUN apt-get update && \
@@ -8,7 +8,7 @@ RUN apt-get update && \
 RUN pip config set global.no-cache-dir false && \
   git clone https://github.com/pytorch/serve -b v0.8.2 && \
   cd serve && \
-  python3 ./ts_scripts/install_dependencies.py --environment prod && \
+  python3 ./ts_scripts/install_dependencies.py --cuda cu118 --environment prod && \
   pip3 install . && \
   cd .. && \
   rm -rf serve
