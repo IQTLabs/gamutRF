@@ -13,3 +13,8 @@ RUN pip config set global.no-cache-dir false && \
   cd .. && \
   rm -rf serve
 RUN /usr/local/bin/torchserve --help
+
+# see Dockerfile.torchserve for example, but use
+# docker run --gpus all -ti iqtlabs/gamutrf-cuda-torchserve:latest bash
+# ensure nvidia-container-toolkit is installed (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+# CUDA version on the host must be same or later, than that in this container.
