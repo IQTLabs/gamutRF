@@ -1,73 +1,33 @@
-FROM ubuntu:22.04 as shader-compiler
-
-WORKDIR /root
-RUN apt-get update && \
-    apt-get install -y \
-      build-essential \
-      cmake \
-      git \
-      ninja-build \
-      python3-dev \
-      python3-pip
-RUN git clone https://github.com/google/shaderc -b v2023.6
-WORKDIR /root/shaderc
-RUN ./utils/git-sync-deps
-WORKDIR /root/shaderc/build
-RUN cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DSHADERC_SKIP_TESTS=on .. && ninja && ninja install
-
-FROM ubuntu:22.04 as pytorch-compiler
-# ENV USE_CUDA=1
-ENV USE_VULKAN=1
-ENV USE_VULKAN_SHADERC_RUNTIME=1
-ENV USE_VULKAN_WRAPPER=0
-WORKDIR /root
-RUN apt-get update && \
-    apt-get install -y \
-      build-essential \
-      cmake \
-      git \
-      libvulkan-dev \
-      ninja-build \
-      python3-dev \
-      python3-pip
-COPY --from=shader-compiler /usr/local /usr/local
-RUN git clone https://github.com/pytorch/pytorch -b v2.1.0
-WORKDIR /root/pytorch
-COPY pytorch-patch.txt /root/pytorch
-RUN patch -p1 < pytorch-patch.txt
-RUN pip3 install -U pyyaml
-RUN python3 setup.py install && python3 setup.py develop
-RUN python3 -c "import torch ; assert(torch.is_vulkan_available())"
-
-FROM ubuntu:22.04 as torchserve-builder
-RUN apt-get update && \
-    apt-get install -y \
-      build-essential \
-      cmake \
-      git \
-      libvulkan-dev \
-      ninja-build \
-      openjdk-17-jdk \
-      python3-dev \
-      python3-pip
-WORKDIR /root
-RUN git clone https://github.com/pytorch/serve -b v0.8.2
-WORKDIR /root/serve
-COPY torchserve-patch.txt /root/serve
-RUN patch -p1 < torchserve-patch.txt
-COPY --from=pytorch-compiler /usr/local /usr/local
-RUN python3 -c "import torch ; assert(torch.is_vulkan_available())"
-RUN python3 ./ts_scripts/install_dependencies.py --environment prod
-RUN pip3 install .
-
 FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /root
 RUN apt-get update && \
     apt-get install -y \
-      libvulkan1 \
-      openjdk-17-jre \
-      python3 \
+      git \
       python3-pip
-WORKDIR /root
-COPY --from=torchserve-builder /usr/local /usr/local
-RUN python3 -c "import torch ; assert(torch.is_vulkan_available())"
+RUN pip config set global.no-cache-dir false && \
+  git clone https://github.com/pytorch/serve -b v0.8.2 && \
+  cd serve && \
+  python3 ./ts_scripts/install_dependencies.py --environment prod && \
+  pip3 install . && \
+  cd .. && \
+  rm -rf serve
 RUN /usr/local/bin/torchserve --help
+
+## example usage with YOLOv8 (https://github.com/pytorch/serve/tree/v0.8.2/examples/object_detector/yolo/yolov8):
+
+# docker build -f Dockerfile.torchserve . -ts iqtlabs/gamutrf-torchserve
+# docker run -ti iqtlabs/gamutrf-torchserve bash
+# apt-get update && apt-get install -y curl wget
+# pip3 install torch-model-archiver
+# cd /tmp
+# git clone https://github.com/pytorch/serve -b v0.8.2
+# cd serve/examples/object_detector/yolo/yolov8
+# pip install -r requirements.txt
+# wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
+# torch-model-archiver --model-name yolov8n --version 1.0 --serialized-file yolov8n.pt --handler custom_handler.py
+# mkdir model_store
+# mv yolov8n.mar model_store/.
+# torchserve --start --model-store model_store --ncs
+# curl -X POST "localhost:8081/models?model_name=yolov8n&url=yolov8n.mar&initial_workers=4&batch_size=2"
+# curl http://127.0.0.1:8080/predictions/yolov8n -T persons.jpg  & curl http://127.0.0.1:8080/predictions/yolov8n -T bus.jpg
