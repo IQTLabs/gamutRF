@@ -10,24 +10,7 @@ RUN pip config set global.no-cache-dir false && \
   cd serve && \
   python3 ./ts_scripts/install_dependencies.py --environment prod && \
   pip3 install . && \
+  pip3 install -r examples/object_detector/yolo/yolov8/requirements.txt && \
   cd .. && \
   rm -rf serve
 RUN /usr/local/bin/torchserve --help
-
-## example usage with YOLOv8 (https://github.com/pytorch/serve/tree/v0.8.2/examples/object_detector/yolo/yolov8):
-
-# docker build -f Dockerfile.torchserve . -ts iqtlabs/gamutrf-torchserve
-# docker run -ti iqtlabs/gamutrf-torchserve bash
-# apt-get update && apt-get install -y curl wget
-# pip3 install torch-model-archiver
-# cd /tmp
-# git clone https://github.com/pytorch/serve -b v0.8.2
-# cd serve/examples/object_detector/yolo/yolov8
-# pip install -r requirements.txt
-# wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
-# torch-model-archiver --model-name yolov8n --version 1.0 --serialized-file yolov8n.pt --handler custom_handler.py
-# mkdir model_store
-# mv yolov8n.mar model_store/.
-# torchserve --start --model-store model_store --ncs
-# curl -X POST "localhost:8081/models?model_name=yolov8n&url=yolov8n.mar&initial_workers=4&batch_size=2"
-# curl http://127.0.0.1:8080/predictions/yolov8n -T persons.jpg  & curl http://127.0.0.1:8080/predictions/yolov8n -T bus.jpg
