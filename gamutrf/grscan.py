@@ -20,7 +20,6 @@ except ModuleNotFoundError as err:  # pragma: no cover
     sys.exit(1)
 
 from gamutrf.grsource import get_source
-from gamutrf.gryolo import yolo_bbox
 from gamutrf.utils import endianstr
 
 
@@ -37,8 +36,10 @@ class grscan(gr.top_block):
         freq_end=1e9,
         freq_start=100e6,
         igain=0,
+        inference_min_db=-200,
+        inference_model_server="",
+        inference_model_name="",
         inference_output_dir="",
-        inference_plan_file="",
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
         logport=8001,
@@ -176,26 +177,22 @@ class grscan(gr.top_block):
         self.fft_blocks.append((zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")))
 
         self.inference_blocks = []
-        if inference_plan_file and inference_output_dir:
-            if not self.wavelearner:
-                raise ValueError(
-                    "trying to use inference but wavelearner not available"
-                )
-            inference_batch_size = 1
+        if inference_output_dir:
             x = 640
             y = 640
             image_shape = (x, y, 3)
             image_vlen = np.prod(image_shape)
             prediction_shape = (1, 8, 8400)
             prediction_vlen = np.prod(prediction_shape)
+            image_dir = Path(inference_output_dir, "images")
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
-            Path(inference_output_dir, "images").mkdir(parents=True, exist_ok=True)
+            image_dir.mkdir(parents=True, exist_ok=True)
             self.image_inference_block = self.iqtlabs.image_inference(
                 tag="rx_freq",
                 vlen=nfft,
                 x=x,
                 y=y,
-                image_dir=str(Path(inference_output_dir, "images")),
+                image_dir=str(image_dir),
                 convert_alpha=255,
                 norm_alpha=0,
                 norm_beta=1,
@@ -203,61 +200,19 @@ class grscan(gr.top_block):
                 colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
                 interpolation=1,  # cv::INTER_LINEAR = 1,
                 flip=0,
+                min_peak_points=inference_min_db,
+                model_server=inference_model_server,
+                model_name=inference_model_name,
             )
-            self.wavelearner_inference_block = self.wavelearner.inference(
-                plan_filepath=inference_plan_file,
-                complex_input=False,
-                input_vlen=inference_batch_size * image_vlen,
-                output_vlen=prediction_vlen * inference_batch_size,
-                batch_size=inference_batch_size,
-            )
-            self.image_to_inference_blocks = [
-                blocks.stream_to_vector(gr.sizeof_char * image_vlen, 1),
-                blocks.vector_to_stream(gr.sizeof_char, image_vlen),
-                blocks.uchar_to_float(),
-                blocks.stream_to_vector(gr.sizeof_float, image_vlen),
-            ]
             self.inference_blocks = [
                 blocks.stream_to_vector(gr.sizeof_float * nfft, 1),
                 self.image_inference_block,
-                *self.image_to_inference_blocks,
-                # FOR DEBUG
-                # iqtlabs.write_freq_samples(
-                #     "rx_freq",
-                #     gr.sizeof_char * image_vlen,
-                #     1,
-                #     inference_output_dir,
-                #     "inference",
-                #     image_vlen,
-                #     0,
-                #     int(samp_rate),
-                # ),
-                self.wavelearner_inference_block,
-                # iqtlabs.write_freq_samples(
-                #     "rx_freq",
-                #     gr.sizeof_float * prediction_vlen * inference_batch_size,
-                #     1,
-                #     inference_output_dir,
-                #     "inference_predictions",
-                #     prediction_vlen * inference_batch_size,
-                #     0,
-                #     int(samp_rate),
-                # ),
+                blocks.file_sink(
+                    gr.sizeof_char,
+                    str(Path(inference_output_dir, "predictions.txt")),
+                    False,
+                ),
             ]
-
-            self.yolo_bbox_block = yolo_bbox(
-                image_shape=image_shape,
-                prediction_shape=prediction_shape,
-                batch_size=inference_batch_size,
-                sample_rate=samp_rate,
-                output_dir=inference_output_dir,
-            )
-            self.connect(
-                (self.image_to_inference_blocks[-1], 0), (self.yolo_bbox_block, 0)
-            )
-            self.connect(
-                (self.wavelearner_inference_block, 0), (self.yolo_bbox_block, 1)
-            )
 
         if pretune:
             self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
