@@ -36,6 +36,8 @@ class terminal_sink(gr.sync_block):
         return len(input_items[0])
 
 
+# TODO: refactor to consume predictions feed, and retrieve png file from local disk
+# (provided by image_inference block)
 class yolo_bbox(gr.sync_block):
     def __init__(
         self,

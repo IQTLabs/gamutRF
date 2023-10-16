@@ -217,11 +217,25 @@ def argument_parser():
         help="Use dc_block_cc long form",
     )
     parser.add_argument(
-        "--inference_plan_file",
-        dest="inference_plan_file",
+        "--inference_min_db",
+        dest="inference_min_db",
+        type=float,
+        default=-50,
+        help="run inference over minimum dB power",
+    )
+    parser.add_argument(
+        "--inference_model_server",
+        dest="inference_model_server",
         type=str,
         default="",
-        help="full path to plan file for wavelearner",
+        help="torchserve model server inference API address (e.g. localhost:1234)",
+    )
+    parser.add_argument(
+        "--inference_model_name",
+        dest="inference_model_name",
+        type=str,
+        default="",
+        help="torchserve model name (e.g. yolov8)",
     )
     parser.add_argument(
         "--inference_output_dir",
@@ -287,7 +301,7 @@ def argument_parser():
     parser.add_argument(
         "--tag-now",
         dest="tag_now",
-        default=False,
+        default=True,
         action=BooleanOptionalAction,
         help="send tag:now command when retuning",
     )
