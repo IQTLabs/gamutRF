@@ -217,6 +217,20 @@ def argument_parser():
         help="Use dc_block_cc long form",
     )
     parser.add_argument(
+        "--inference_min_confidence",
+        dest="inference_min_confidence",
+        type=float,
+        default=0.5,
+        help="minimum confidence score to plot",
+    )
+    parser.add_argument(
+        "--inference_nms_confidence",
+        dest="inference_nms_threshold",
+        type=float,
+        default=0.5,
+        help="NMS threshold",
+    )
+    parser.add_argument(
         "--inference_min_db",
         dest="inference_min_db",
         type=float,
