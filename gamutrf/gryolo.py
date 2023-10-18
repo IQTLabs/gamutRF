@@ -56,7 +56,7 @@ class yolo_bbox(gr.sync_block):
         return n
 
     def draw_bounding_box(self, img, name, confidence, x, y, x_plus_w, y_plus_h):
-        label = f"{name}"
+        label = f"{name}: {confidence}"
         color = (255, 255, 255)
         cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
         cv2.putText(
@@ -72,21 +72,25 @@ class yolo_bbox(gr.sync_block):
         scores = []
         detections = []
 
-        for name, prediction_data in predictions.items():
-            for prediction in prediction_data:
-                conf = prediction["conf"]
-                if conf < self.confidence_threshold:
-                    continue
-                xywh = prediction["xywh"]
-                box = [
-                    xywh[0] - (0.5 * xywh[2]),
-                    xywh[1] - (0.5 * xywh[3]),
-                    xywh[2],
-                    xywh[3],
-                ]
-                detections.append({"box": box, "score": conf, "name": name})
-                boxes.append(box)
-                scores.append(conf)
+        try:
+            for name, prediction_data in predictions.items():
+                for prediction in prediction_data:
+                    conf = prediction["conf"]
+                    if conf < self.confidence_threshold:
+                        continue
+                    xywh = prediction["xywh"]
+                    box = [
+                        xywh[0] - (0.5 * xywh[2]),
+                        xywh[1] - (0.5 * xywh[3]),
+                        xywh[2],
+                        xywh[3],
+                    ]
+                    detections.append({"box": box, "score": conf, "name": name})
+                    boxes.append(box)
+                    scores.append(conf)
+        except TypeError as e:
+            print(f"invalid predictions from torchserve: {e}, {predictions}")
+            return
 
         if not detections:
             return
