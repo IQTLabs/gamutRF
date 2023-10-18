@@ -188,28 +188,31 @@ class SDRRecorder:
                 )
 
             if sigmf_:
-                meta = sigmf.SigMFFile(
-                    skip_checksum=True,  # expensive for large files
-                    data_file=sample_file,
-                    global_info={
-                        sigmf.SigMFFile.DATATYPE_KEY: "_".join(
-                            ("c" + SAMPLE_TYPE, endianstr())
-                        ),
-                        sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
-                        sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
-                    },
-                )
-                # TODO: add capture_details, source_file and gain when supported.
-                meta.add_capture(
-                    0,
-                    metadata={
-                        sigmf.SigMFFile.FREQUENCY_KEY: center_freq,
-                        sigmf.SigMFFile.DATETIME_KEY: meta_time,
-                    },
-                )
-                meta.tofile(sample_file + ".sigmf-meta")
+                if os.path.exists(sample_file):
+                    meta = sigmf.SigMFFile(
+                        skip_checksum=True,  # expensive for large files
+                        data_file=sample_file,
+                        global_info={
+                            sigmf.SigMFFile.DATATYPE_KEY: "_".join(
+                                ("c" + SAMPLE_TYPE, endianstr())
+                            ),
+                            sigmf.SigMFFile.SAMPLE_RATE_KEY: sample_rate,
+                            sigmf.SigMFFile.VERSION_KEY: sigmf.__version__,
+                        },
+                    )
+                    # TODO: add capture_details, source_file and gain when supported.
+                    meta.add_capture(
+                        0,
+                        metadata={
+                            sigmf.SigMFFile.FREQUENCY_KEY: center_freq,
+                            sigmf.SigMFFile.DATETIME_KEY: meta_time,
+                        },
+                    )
+                    meta.tofile(sample_file + ".sigmf-meta")
+                else:
+                    logging.error("{sample_file} missing, cannot write sigmf file")
         except subprocess.CalledProcessError as err:
-            logging.debug("record failed: %s", err)
+            logging.error("record failed: %s", err)
         logging.info("record status: %d", record_status)
         return (record_status, sample_file)
 
