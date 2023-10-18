@@ -20,6 +20,7 @@ except ModuleNotFoundError as err:  # pragma: no cover
     sys.exit(1)
 
 from gamutrf.grsource import get_source
+from gamutrf.gryolo import yolo_bbox
 from gamutrf.utils import endianstr
 
 
@@ -36,6 +37,8 @@ class grscan(gr.top_block):
         freq_end=1e9,
         freq_start=100e6,
         igain=0,
+        inference_min_confidence=0.5,
+        inference_nms_threshold=0.5,
         inference_min_db=-200,
         inference_model_server="",
         inference_model_name="",
@@ -207,10 +210,10 @@ class grscan(gr.top_block):
             self.inference_blocks = [
                 blocks.stream_to_vector(gr.sizeof_float * nfft, 1),
                 self.image_inference_block,
-                blocks.file_sink(
-                    gr.sizeof_char,
-                    str(Path(inference_output_dir, "predictions.txt")),
-                    False,
+                yolo_bbox(
+                    str(Path(inference_output_dir, "predictions")),
+                    inference_min_confidence,
+                    inference_nms_threshold,
                 ),
             ]
 
