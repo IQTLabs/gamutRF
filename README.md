@@ -11,7 +11,7 @@ over a network.
 
 gamutRF provides tools to work with I/Q sample recordings, and to also record GPS location/compass metadata for the system itself. gamutRF typically runs on networks of Raspberry Pi4s, but can also run on x86 machines, and is based on gnuradio.
 
-See also [instructions on how to build a gamutRF system](BUILD.md).
+See also [instructions on how to build a gamutRF system](docs/BUILD.md).
 
 ## Scanner theory of operation
 
@@ -25,7 +25,7 @@ As there will almost certainly be more signals than workers available, sigfinder
 
 ## Operating gamutRF
 
-See the [build doc](BUILD.md)
+See the [build doc](docs/BUILD.md)
 
 ### SDR/scanner/sigfinder command line options
 
@@ -149,7 +149,7 @@ VOL_PREFIX=/tmp FREQ_START=2.3e9 FREQ_END=2.6e9 docker compose -f orchestrator.y
 
 Browse the waterfall container's webserver port (by default, localhost:9003). It should contain strong signals similar to this example:
 
-![2.4G example](fft24test.png)
+![2.4G example](docs/fft24test.png)
 
 If no or only small peaks appear which are not marked as peaks, increase ```gain``` (e.g., from 40 to 45) until peaks are detected.
 

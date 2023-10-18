@@ -1,6 +1,16 @@
 name: docker-test
 on: [push, pull_request]
 jobs:
+  test-gamutrf-torchserve-image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: docker build
+      run: |
+        cd docker
+        docker build -f Dockerfile.torchserve . -t iqtlabs/gamutrf-torchserve:latest
+        cd ..
+        ./tests/test_torchserve.sh
   test-gamutrf-extra-images:
     runs-on: ubuntu-latest
     steps:
@@ -29,4 +39,4 @@ jobs:
         docker run -t iqtlabs/gamutrf:latest gamutrf-waterfall --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-compress_dirs --help
         sudo apt-get update && sudo apt-get install -qy python3-pip
-        docker compose -f orchestrator.yml -f worker.yml -f monitoring.yml -f specgram.yml build
+        docker compose -f orchestrator.yml -f worker.yml -f docker/monitoring.yml -f specgram.yml build

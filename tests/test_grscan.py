@@ -108,6 +108,7 @@ class GrscanTestCase(unittest.TestCase):
                 db_clamp_floor=-1e6,
                 pretune=pretune,
                 fft_batch_size=256,
+                inference_output_dir=str(tempdir),
             )
             tb.start()
             time.sleep(3)
