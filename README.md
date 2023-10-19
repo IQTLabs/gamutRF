@@ -68,6 +68,16 @@ gamutRF also supports the KrakenSDR (which presents as five librtlsdr radios). Y
 
 The orchestrator has a web interface on port 80. You can use this to command a worker to start an I/Q sample recording or start a RSSI stream.
 
+You can also call the worker API directly (for example, to use a stand-alone worker to make a recording or stream RSSI).
+
+For example, make a recording with a sample rate of 20.48e6, for 2 seconds (409600000 samples worth), at 100MHz:
+
+```
+$ wget -nv -O- localhost:8000/v1/record/100000000/409600000/20480000
+```
+
+If the worker is started with `--rssi`, that same ```record``` call will cause the worker to publish RSSI values instead of recording (the duration argument must be present, but is not used).
+
 ## Working with worker I/Q recordings
 
 Workers make recordings that are compressed with zstandard, and are typically in complex number, int16 format, and include the center frequency and sample rate that the recording was made with. gamutRF tools can generally work with such files directly, but other tools require the recordings to be converted (see below).
