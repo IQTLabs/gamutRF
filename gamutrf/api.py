@@ -146,16 +146,25 @@ def argument_parser():
         help="get RSSI values",
     )
     parser.add_argument(
-        "--use_mavlink_gps", help="Use external Pixhawk/MAVLINK GPS", default=False, type=bool
+        "--use_mavlink_gps", 
+        dest="use_mavlink_gps",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Use external Pixhawk/MAVLINK GPS",
     )
     parser.add_argument(
-        "--use_mavlink_heading", help="Use external Pixhawk/MAVLINK heading", default=False, type=bool
+        "--use_mavlink_heading", 
+        dest="use_mavlink_heading",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Use external Pixhawk/MAVLINK heading",
     )
     parser.add_argument(
         "--mavlink_api_server",
-        help="server to query for mavlink GPS data",
+        dest="mavlink_api_server",
         default="mavlink-api",
         type=str,
+        help="server to query for mavlink GPS data",
     )
     
     return parser
