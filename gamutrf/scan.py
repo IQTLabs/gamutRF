@@ -75,21 +75,21 @@ def argument_parser():
         dest="sweep_sec",
         type=float,
         default=30,
-        help="Set sweep_sec [default=%(default)r]",
+        help="Set sweep_sec [default=%(default)r] - ignored if --tune-dwell-ms > 0 or --tune-step-fft > 0",
     )
     parser.add_argument(
         "--tune-dwell-ms",
         dest="tune_dwell_ms",
         type=float,
         default=0,
-        help="Set tune dwell time in ms (0 is use sweep_sec) [default=%(default)r]",
+        help="Set tune dwell time in ms [default=%(default)r] - ignored if --tune-step-fft > 0",
     )
     parser.add_argument(
         "--tune-step-fft",
         dest="tune_step_fft",
         type=int,
         default=0,
-        help="tune FFT step (0 is use sweep_sec) [default=%(default)r]",
+        help="tune FFT step [default=%(default)r] - if 0, use --tune-dwell-ms (if > 0) or --sweep-sec (if > 0)",
     )
     parser.add_argument(
         "--skip-tune-step",

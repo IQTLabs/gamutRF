@@ -131,6 +131,9 @@ class grscan(gr.top_block):
                 logging.info(
                     f"retuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
                 )
+        if not tune_step_fft:
+            logging.info("tune_step_fft cannot be 0 - defaulting to nfft")
+            tune_step_fft = nfft
         tune_dwell_ms = tune_step_fft / fft_rate * 1e3
         logging.info(
             f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
