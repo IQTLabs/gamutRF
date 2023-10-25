@@ -14,10 +14,11 @@ RUN CMAKE_BUILD_TYPE=Release cmake -DGLSLANG_GIT_TAG=13.0.0 .. && make -j "$(npr
 
 FROM ubuntu:22.04
 # TODO: ideally, should be packaged such that cmake can find it.
+# hadolint ignore=DL3008
 RUN if [ "$(arch)" = "x86_64" ] ; then \
         apt-get update && \
         apt-get install -y --no-install-recommends ca-certificates dirmngr gpg-agent gpg wget && \
-        apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/3bf863cc.pub && \
+        apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/3bf863cc.pub" && \
         echo "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/ /" | tee /etc/apt/sources.list.d/nvidia.list && \
         apt-get update && \
         apt-get install -y --no-install-recommends libnvidia-gl-545 ; \

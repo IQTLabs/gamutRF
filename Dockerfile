@@ -41,10 +41,11 @@ ENV UHD_IMAGES_DIR /usr/share/uhd/images
 ENV PATH="${PATH}:/root/.local/bin"
 RUN mkdir -p /data/gamutrf
 # install nvidia's vulkan support if x86.
+# hadolint ignore=DL3008
 RUN if [ "$(arch)" = "x86_64" ] ; then \
         apt-get update && \
         apt-get install -y --no-install-recommends ca-certificates dirmngr gpg-agent gpg wget && \
-        apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/3bf863cc.pub && \
+        apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/3bf863cc.pub" && \
         echo "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/ /" | tee /etc/apt/sources.list.d/nvidia.list && \
         apt-get update && \
         apt-get install -y --no-install-recommends libnvidia-gl-545 ; \
