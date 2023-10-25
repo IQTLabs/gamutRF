@@ -40,6 +40,14 @@ services:
     devices:
       - /dev/bus/usb:/dev/bus/usb
       - /dev/dri/renderD128:/dev/dri/renderD128
+    # Uncomment when using Nvidia GPU (container toolkit etc must be installed)
+    #deploy:
+    #  resources:
+    #     reservations:
+    #        devices:
+    #          - driver: nvidia
+    #            count: 1
+    #            capabilities: [gpu]
     command:
       - gamutrf-scan
       - --logaddr=0.0.0.0
@@ -51,6 +59,7 @@ services:
       - --nfft=256
       - --sweep-sec=8
       - --db_clamp_floor=-150
+      - --fft_batch_size=256
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
