@@ -40,37 +40,45 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
 ENV PATH="${PATH}:/root/.local/bin"
 RUN mkdir -p /data/gamutrf
-RUN apt-get update && apt-get install --no-install-recommends -y -q \
-    ca-certificates \
-    libblas3 \
-    libboost-iostreams1.74.0 \
-    libboost-program-options1.74.0 \
-    libboost-thread1.74.0 \
-    libcairo2 \
-    libev4 \
-    libfftw3-3 \
-    libgl1 \
-    libglib2.0-0 \
-    liblapack3 \
-    libopencv-core4.5d \
-    libopencv-imgcodecs4.5d \
-    libopencv-imgproc4.5d \
-    librtlsdr0 \
-    libspdlog1 \
-    libuhd4.1.0 \
-    libunwind8 \
-    libvulkan1 \
-    libzmq5 \
-    mesa-vulkan-drivers \
-    python3 \
-    python3-pyqt5 \
-    python3-pyqt5.sip \
-    python3-zmq \
-    sox \
-    sudo \
-    wget \
-    uhd-host \
-    zstd && \
+# install nvidia's vulkan support if x86.
+RUN if [ "$(arch)" = "x86_64" ] ; then \
+        apt-get update && \
+        apt-get install -y --no-install-recommends ca-certificates dirmngr gpg-agent gpg wget && \
+        apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/3bf863cc.pub && \
+        echo "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/ /" | tee /etc/apt/sources.list.d/nvidia.list && \
+        apt-get update && \
+        apt-get install -y --no-install-recommends libnvidia-gl-545 ; \
+    fi && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        libblas3 \
+        libboost-iostreams1.74.0 \
+        libboost-program-options1.74.0 \
+        libboost-thread1.74.0 \
+        libcairo2 \
+        libev4 \
+        libfftw3-3 \
+        libgl1 \
+        libglib2.0-0 \
+        liblapack3 \
+        libopencv-core4.5d \
+        libopencv-imgcodecs4.5d \
+        libopencv-imgproc4.5d \
+        librtlsdr0 \
+        libspdlog1 \
+        libuhd4.1.0 \
+        libunwind8 \
+        libvulkan1 \
+        libzmq5 \
+        mesa-vulkan-drivers \
+        python3 \
+        python3-pyqt5 \
+        python3-pyqt5.sip \
+        python3-zmq \
+        sox \
+        uhd-host \
+        wget \
+        zstd && \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 WORKDIR /gamutrf
 RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
