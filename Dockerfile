@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04
-COPY --from=iqtlabs/gnuradio:3.10.7 /usr/share/uhd/images /usr/share/uhd/images
+COPY --from=iqtlabs/gnuradio:3.10.8 /usr/share/uhd/images /usr/share/uhd/images
 COPY --from=installer /usr/local /usr/local
 COPY --from=installer /gamutrf /gamutrf
 COPY --from=installer /root/.local /root/.local
