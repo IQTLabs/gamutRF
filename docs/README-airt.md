@@ -132,24 +132,22 @@ On a non-AIRT machine that the AIRT can reach over the network, that has an nvid
 
 See https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 
-# start torchserve
-
-From gamutRF's source directory:
-
-```
-$ mkdir /tmp/torchserve
-$ cp torchserve/config.properities /tmp/torchserve
-$ docker run --gpus all -p 8081:8081 -p 8080:8080 -v /tmp/torchserve:/torchserve -d iqtlabs/gamutrf-cuda-torchserve torchserve --start --model-store /torchserve --ts-config /torchserve/config.properties --ncs --foreground
-```
-
-# create and register model
+# create model archive
 
 From gamutRF's source directory, and having obtained mini2_snr.pt:
 
 ```
 $ pip3 install torch-model-archiver
-$ torch-model-archiver --force --model-name mini2_snr --version 1.0 --serialized-file /PATH/TO/mini2_snr.pt --handler torchserve/custom_handler.py --export-path /tmp/torchserve
-$ curl -X POST "localhost:8081/models?model_name=mini2_snr&url=mini2_snr.mar&initial_workers=4&batch_size=2"
+$ mkdir /tmp/model_store
+$ torch-model-archiver --force --model-name mini2_snr --version 1.0 --serialized-file /PATH/TO/mini2_snr.pt --handler torchserve/custom_handler.py --export-path /tmp/model_store
+```
+
+# start torchserve
+
+From gamutRF's source directory (mini2_snr is the default model name in torchserve-cuda.yml):
+
+```
+$ VOL_PREFIX=/tmp/model_store docker compose -f orchestrator.yml -f torchserve-cuda.yml up -d torchserve
 ```
 
 Now, when starting the scanner, on the AIRT:
