@@ -1,0 +1,15 @@
+version: "3.3"
+networks:
+  gamutrf:
+services:
+  torchserve:
+    restart: always
+    image: iqtlabs/gamutrf-torchserve:latest
+    networks:
+      - gamutrf
+    ports:
+      - '8080:8080'
+    volumes:
+      - '${VOL_PREFIX}:/model_store'
+    command:
+      - --models mini2_snr=mini2_snr.mar

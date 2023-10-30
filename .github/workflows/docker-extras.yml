@@ -34,7 +34,7 @@ jobs:
     - name: Build and push platforms
       uses: docker/build-push-action@v5
       with:
-        context: docker
+        context: .
         file: docker/Dockerfile.torchserve
         platforms: linux/amd64,linux/arm64
         push: true
@@ -68,7 +68,7 @@ jobs:
     - name: Build and push platforms
       uses: docker/build-push-action@v5
       with:
-        context: docker
+        context: .
         file: docker/Dockerfile.cuda-torchserve
         platforms: linux/amd64
         push: true

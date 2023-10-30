@@ -31,10 +31,12 @@ class Yolov8Handler(ObjectDetector):
     def initialize(self, context):
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
+            print("Yolov8Handler: using cuda")
         elif XLA_AVAILABLE:
             self.device = xm.xla_device()
         else:
             self.device = torch.device("cpu")
+            print("Yolov8Handler: using cpu")
 
         properties = context.system_properties
         self.manifest = context.manifest
