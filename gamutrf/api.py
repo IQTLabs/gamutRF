@@ -166,6 +166,13 @@ def argument_parser():
         type=str,
         help="server to query for external GPS data",
     )
+    parser.add_argument(
+        "--external_gps_server_port",
+        dest="external_gps_server_port",
+        default="8888",
+        type=str,
+        help="server port to query for external GPS data",
+    )
     
     return parser
 
@@ -242,8 +249,8 @@ class API:
             compass = True,
             use_external_gps = self.arguments.use_external_gps,
             use_external_heading = self.arguments.use_external_heading,
-            external_gps_server = ORCHESTRATOR,
-            external_gps_server_port = 8888
+            external_gps_server = self.arguments.external_gps_server,
+            external_gps_server_port = self.arguments.external_gps_server_port
         )
         self.q = queue.Queue(self.arguments.qsize)
         self.sdr_recorder = get_recorder(

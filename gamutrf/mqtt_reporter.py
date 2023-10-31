@@ -10,7 +10,7 @@ import paho.mqtt.client as mqtt
 
 
 class MQTTReporter:
-    def __init__(self, name, mqtt_server=None, gps_server=None, compass=False, use_external_gps=False, use_external_heading=False, external_gps_server=None):
+    def __init__(self, name, mqtt_server=None, gps_server=None, compass=False, use_external_gps=False, use_external_heading=False, external_gps_server=None, external_gps_server_port=None):
         self.name = name
         self.mqtt_server = mqtt_server
         self.compass = compass
@@ -20,6 +20,7 @@ class MQTTReporter:
         self.use_external_gps = use_external_gps
         self.use_external_heading = use_external_heading
         self.external_gps_server = external_gps_server
+        self.external_gps_server_port = external_gps_server_port
         self.external_gps_msg = None
 
     @staticmethod
@@ -44,7 +45,7 @@ class MQTTReporter:
         if self.use_external_heading:
             try:
                 self.heading=(
-                    float(httpx.get(f"http://{self.external_gps_server}:8888/heading").text)
+                    float(httpx.get(f"http://{self.external_gps_server}:{self.external_gps_server_port}/heading").text)
                 )
             except Exception as err:
                 logging.error("could not update external heading: %s", err)
@@ -74,7 +75,7 @@ class MQTTReporter:
         #Use external external GPS
         if self.use_external_gps:
             try:
-                self.external_gps_msg=json.loads(httpx.get(f"http://{self.external_gps_server}:8888/gps-data").text)
+                self.external_gps_msg=json.loads(httpx.get(f"http://{self.external_gps_server}:{self.external_gps_server_port}/gps-data").text)
                 
                 publish_args.update(
                     {
