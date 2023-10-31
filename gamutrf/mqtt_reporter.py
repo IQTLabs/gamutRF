@@ -55,9 +55,11 @@ class MQTTReporter:
         if self.use_external_heading:
             try:
                 self.heading = float(
-                    httpx.get(
-                        f"http://{self.external_gps_server}:{self.external_gps_server_port}/heading"
-                    ).text
+                    json.loads(
+                        httpx.get(
+                            f"http://{self.external_gps_server}:{self.external_gps_server_port}/heading"
+                        ).text
+                    )["heading"]
                 )
             except Exception as err:
                 logging.error("could not update external heading: %s", err)
