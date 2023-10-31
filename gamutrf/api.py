@@ -146,14 +146,14 @@ def argument_parser():
         help="get RSSI values",
     )
     parser.add_argument(
-        "--use_external_gps", 
+        "--use_external_gps",
         dest="use_external_gps",
         default=False,
         action=argparse.BooleanOptionalAction,
         help="Use external Pixhawk/MAVLINK GPS",
     )
     parser.add_argument(
-        "--use_external_heading", 
+        "--use_external_heading",
         dest="use_external_heading",
         default=False,
         action=argparse.BooleanOptionalAction,
@@ -173,7 +173,7 @@ def argument_parser():
         type=str,
         help="server port to query for external GPS data",
     )
-    
+
     return parser
 
 
@@ -243,14 +243,14 @@ class API:
     def __init__(self, arguments):
         self.arguments = arguments
         self.mqtt_reporter = MQTTReporter(
-            name = self.arguments.name,
-            mqtt_server = self.arguments.mqtt_server,
-            gps_server = ORCHESTRATOR,
-            compass = True,
-            use_external_gps = self.arguments.use_external_gps,
-            use_external_heading = self.arguments.use_external_heading,
-            external_gps_server = self.arguments.external_gps_server,
-            external_gps_server_port = self.arguments.external_gps_server_port
+            name=self.arguments.name,
+            mqtt_server=self.arguments.mqtt_server,
+            gps_server=ORCHESTRATOR,
+            compass=True,
+            use_external_gps=self.arguments.use_external_gps,
+            use_external_heading=self.arguments.use_external_heading,
+            external_gps_server=self.arguments.external_gps_server,
+            external_gps_server_port=self.arguments.external_gps_server_port,
         )
         self.q = queue.Queue(self.arguments.qsize)
         self.sdr_recorder = get_recorder(
