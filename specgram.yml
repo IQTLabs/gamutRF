@@ -1,5 +1,5 @@
-# On Pi4/Ubuntu, also requires systemd.unified_cgroup_hierarchy=0 added to /boot/firmware/cmdline.txt,
-# to fall back to cgroup v1.
+# On Pi4/Ubuntu, also requires systemd.unified_cgroup_hierarchy=0 added to
+# /boot/firmware/cmdline.txt, to fall back to cgroup v1.
 version: "3.3"
 networks:
   gamutrf:

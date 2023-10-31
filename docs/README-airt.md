@@ -85,7 +85,7 @@ install gr-iqtlabs
 $ git clone https://github.com/google/flatbuffers -b v23.5.26
 $ git clone https://github.com/nlohmann/json -b v3.11.2
 $ git clone https://github.com/deepsig/libsigmf -b v1.0.2
-$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.44
+$ git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.46
 $ mkdir -p flatbuffers/build && cd flatbuffers/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
 $ mkdir -p json/build && cd json/build && cmake -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV .. && make -j $(nproc) && make install && cd ../..
 $ mkdir -p libsigmf/build && cd libsigmf/build && cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON -DCMAKE_INSTALL_PREFIX=~/.conda/envs/$CONDA_DEFAULT_ENV -DCMAKE_CXX_FLAGS="-I $HOME/.conda/envs/$CONDA_DEFAULT_ENV/include" .. && make -j $(nproc) && make install && cd ../..
@@ -132,24 +132,22 @@ On a non-AIRT machine that the AIRT can reach over the network, that has an nvid
 
 See https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 
-# start torchserve
-
-From gamutRF's source directory:
-
-```
-$ mkdir /tmp/torchserve
-$ cp torchserve/config.properities /tmp/torchserve
-$ docker run --gpus all -p 8081:8081 -p 8080:8080 -v /tmp/torchserve:/torchserve -d iqtlabs/gamutrf-cuda-torchserve torchserve --start --model-store /torchserve --ts-config /torchserve/config.properties --ncs --foreground
-```
-
-# create and register model
+# create model archive
 
 From gamutRF's source directory, and having obtained mini2_snr.pt:
 
 ```
 $ pip3 install torch-model-archiver
-$ torch-model-archiver --force --model-name mini2_snr --version 1.0 --serialized-file /PATH/TO/mini2_snr.pt --handler torchserve/custom_handler.py --export-path /tmp/torchserve
-$ curl -X POST "localhost:8081/models?model_name=mini2_snr&url=mini2_snr.mar&initial_workers=4&batch_size=2"
+$ mkdir /tmp/model_store
+$ torch-model-archiver --force --model-name mini2_snr --version 1.0 --serialized-file /PATH/TO/mini2_snr.pt --handler torchserve/custom_handler.py --export-path /tmp/model_store
+```
+
+# start torchserve
+
+From gamutRF's source directory (mini2_snr is the default model name in torchserve-cuda.yml):
+
+```
+$ VOL_PREFIX=/tmp/model_store docker compose -f orchestrator.yml -f torchserve-cuda.yml up -d torchserve
 ```
 
 Now, when starting the scanner, on the AIRT:
