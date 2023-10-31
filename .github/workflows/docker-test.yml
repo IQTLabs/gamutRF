@@ -7,9 +7,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: docker build
       run: |
-        cd docker
-        docker build -f Dockerfile.torchserve . -t iqtlabs/gamutrf-torchserve:latest
-        cd ..
+        docker build -f docker/Dockerfile.torchserve . -t iqtlabs/gamutrf-torchserve:latest
         ./tests/test_torchserve.sh
   test-gamutrf-extra-images:
     runs-on: ubuntu-latest

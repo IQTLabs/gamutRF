@@ -131,6 +131,9 @@ class grscan(gr.top_block):
                 logging.info(
                     f"retuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
                 )
+        if not tune_step_fft:
+            logging.info("tune_step_fft cannot be 0 - defaulting to nfft")
+            tune_step_fft = nfft
         tune_dwell_ms = tune_step_fft / fft_rate * 1e3
         logging.info(
             f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
@@ -151,7 +154,6 @@ class grscan(gr.top_block):
             pretune,
         )
         self.fft_blocks = fft_blocks + self.get_db_blocks(nfft, samp_rate, scaling)
-        self.fft_to_inference_block = self.fft_blocks[-1]
 
         retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
@@ -179,7 +181,7 @@ class grscan(gr.top_block):
         logging.info("serving FFT on %s", zmq_addr)
         self.fft_blocks.append((zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")))
 
-        self.inference_blocks = []
+        self.inference_blocks = [blocks.null_sink(gr.sizeof_float * nfft)]
         if inference_output_dir:
             x = 640
             y = 640
@@ -190,26 +192,24 @@ class grscan(gr.top_block):
             image_dir = Path(inference_output_dir, "images")
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
             image_dir.mkdir(parents=True, exist_ok=True)
-            self.image_inference_block = self.iqtlabs.image_inference(
-                tag="rx_freq",
-                vlen=nfft,
-                x=x,
-                y=y,
-                image_dir=str(image_dir),
-                convert_alpha=255,
-                norm_alpha=0,
-                norm_beta=1,
-                norm_type=32,  # cv::NORM_MINMAX = 32
-                colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
-                interpolation=1,  # cv::INTER_LINEAR = 1,
-                flip=0,
-                min_peak_points=inference_min_db,
-                model_server=inference_model_server,
-                model_name=inference_model_name,
-            )
             self.inference_blocks = [
-                blocks.stream_to_vector(gr.sizeof_float * nfft, 1),
-                self.image_inference_block,
+                self.iqtlabs.image_inference(
+                    tag="rx_freq",
+                    vlen=nfft,
+                    x=x,
+                    y=y,
+                    image_dir=str(image_dir),
+                    convert_alpha=255,
+                    norm_alpha=0,
+                    norm_beta=1,
+                    norm_type=32,  # cv::NORM_MINMAX = 32
+                    colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
+                    interpolation=1,  # cv::INTER_LINEAR = 1,
+                    flip=0,
+                    min_peak_points=inference_min_db,
+                    model_server=inference_model_server,
+                    model_name=inference_model_name,
+                ),
                 yolo_bbox(
                     str(Path(inference_output_dir, "predictions")),
                     inference_min_confidence,
@@ -223,17 +223,18 @@ class grscan(gr.top_block):
         else:
             self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
         self.connect_blocks(self.sources[0], self.sources[1:])
-        self.connect_blocks(self.fft_to_inference_block, self.inference_blocks)
+        self.connect((retune_fft, 1), (self.inference_blocks[0], 0))
+        self.connect_blocks(self.inference_blocks[0], self.inference_blocks[1:])
         for pipeline_blocks in (
             self.fft_blocks,
             self.samples_blocks,
         ):
             self.connect_blocks(self.sources[-1], pipeline_blocks)
 
-    def connect_blocks(self, source, other_blocks):
+    def connect_blocks(self, source, other_blocks, last_block_port=0):
         last_block = source
         for block in other_blocks:
-            self.connect((last_block, 0), (block, 0))
+            self.connect((last_block, last_block_port), (block, 0))
             last_block = block
 
     def get_db_blocks(self, nfft, samp_rate, scaling):
