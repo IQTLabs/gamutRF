@@ -1,0 +1,14 @@
+version: '3'
+services:
+  mavlink-api:
+    image: mavlink-api:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "8888:8888"
+    devices:
+      - "/dev/pixhawk_serial:/dev/tty.serial1"
+#    networks:
+#      - gamutrf
+    restart: unless-stopped
