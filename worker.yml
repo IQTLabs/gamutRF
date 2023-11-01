@@ -37,9 +37,9 @@ services:
       #- --rssi
       #- --rssi_threshold=-110
       #- --rssi_throttle=10
-      - --use_mavlink_gps
-      - --use_mavlink_heading
-      - --mavlink_api_server=10.20.25.43
+      #- --use_external_gps
+      #- --use_external_heading
+      #- --external_gps_server=$ORCHESTRATOR
   watchtower:
     image: containrrr/watchtower:latest
     restart: always
