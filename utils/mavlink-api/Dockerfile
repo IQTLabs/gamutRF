@@ -1,4 +1,4 @@
-FROM python:3.11-slim@sha256:1591aa8c01b5b37ab31dbe5662c5bdcf40c2f1bce4ef1c1fd24802dae3d01052
+FROM python:3.11-slim@sha256:f89d4d260b6a5caa6aa8e0e14b162deb76862890c91779c31f762b22e72a6cef
 
 WORKDIR /app
 ENV PYTHONPATH=${PYTHONPATH}:${PWD}
@@ -10,4 +10,4 @@ RUN poetry install --no-dev
 
 COPY mavlink-api.py .
 
-ENTRYPOINT ["python3", "-u", "mavlink-api.py"]
+ENTRYPOINT ["python3", "mavlink-api.py"]

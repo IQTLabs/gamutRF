@@ -14,7 +14,7 @@ udevadm info -a /dev/ttyAMC0  #<--use correct serial port>
 
 Test if you have the correct port:
 ```bash
-python3 utils/mavlink_serial_test.py /dev/ttyACM9
+python3 utils/mavlink_serial_test.py /dev/ttyACM0
 ```
 
 Create a udev rule to map the hardware to a custom port
