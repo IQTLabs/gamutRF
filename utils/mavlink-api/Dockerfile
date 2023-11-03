@@ -10,4 +10,4 @@ RUN poetry install --no-dev
 
 COPY mavlink-api.py .
 
-ENTRYPOINT ["python3", "mavlink-api.py"]
+CMD ["python3", "mavlink-api.py"]
