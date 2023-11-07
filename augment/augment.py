@@ -99,7 +99,7 @@ def augment(signal, filename, output_dir, n, transforms_text):
     i = 0
     base_augment_name = os.path.basename(filename)
     dot = base_augment_name.find(".")
-    if dot != "-1":
+    if dot != -1:
         base_augment_name = base_augment_name[:dot]
     for _ in range(n):
         while True:
