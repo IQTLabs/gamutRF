@@ -17,3 +17,5 @@ ENV DEBIAN_FRONTEND noninteractive
 COPY --from=torchsig-builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
 RUN python3 -c "from torchsig.transforms import transforms"
 RUN python3 -c "from gamutrf import grscan"
+COPY augment/augment.py /root/augment.py
+ENTRYPOINT ["/root/augment.py"]
