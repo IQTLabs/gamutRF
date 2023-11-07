@@ -95,7 +95,7 @@ def write_signal(filename, signal, transforms_text):
 
 def augment(signal, filename, output_dir, n, transforms_text):
     # TODO: sadly, due to Torchsig complexity, literal_eval can't be used.
-    transforms = eval(transforms_text) # nosec
+    transforms = eval(transforms_text)  # nosec
     i = 0
     base_augment_name = os.path.basename(filename)
     dot = base_augment_name.find(".")
@@ -114,7 +114,9 @@ def augment(signal, filename, output_dir, n, transforms_text):
 
 
 def argument_parser():
-    parser = ArgumentParser()
+    parser = ArgumentParser(
+        description="Run transforms on a recording from https://github.com/TorchDSP/torchsig/blob/main/torchsig/transforms/transforms.py"
+    )
     parser.add_argument(
         "filename",
         type=str,
