@@ -1,7 +1,7 @@
 import pytest
 import sys
 
-from gamutrf.__main__ import api
+from gamutrf.__main__ import worker
 from gamutrf.__main__ import freqxlator
 from gamutrf.__main__ import samples2raw
 from gamutrf.__main__ import scan
@@ -12,9 +12,9 @@ from gamutrf.__main__ import specgram
 sys.argv.append("-h")
 
 
-def test_main_api():
+def test_main_worker():
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        api()
+        worker()
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == 0
 

@@ -32,7 +32,7 @@ jobs:
         docker build -f docker/Dockerfile.torchsig . -t iqtlabs/gamutrf-torchsig:latest
         docker run -t iqtlabs/gamutrf:latest gamutrf-scan --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-sigfinder --help
-        docker run -t iqtlabs/gamutrf:latest gamutrf-api --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-worker --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-samples2raw --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-freqxlator --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-waterfall --help

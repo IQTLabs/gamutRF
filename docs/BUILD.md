@@ -295,7 +295,7 @@ If run in `recorder` mode (the default) no changes on the worker are needed, but
 
 If run in `RSSI` mode the `worker.yml` file under the gamutrf directory needs to be updated to include the following options:
 ```
-  gamutrf-api:
+  gamutrf-worker:
     restart: always
     image: iqtlabs/gamutrf:latest
     networks:
@@ -319,7 +319,7 @@ If run in `RSSI` mode the `worker.yml` file under the gamutrf directory needs to
       - nice
       - '-n'
       - '-19'
-      - gamutrf-api
+      - gamutrf-worker
       - --no-agc
       - --rxb=62914560
       - '--gain=${GAIN}'
