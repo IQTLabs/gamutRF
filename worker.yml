@@ -4,7 +4,7 @@ version: "3.3"
 networks:
   gamutrf:
 services:
-  api:
+  worker:
     restart: always
     image: iqtlabs/gamutrf:latest
     networks:
@@ -29,7 +29,7 @@ services:
       - nice
       - '-n'
       - '-19'
-      - gamutrf-api
+      - gamutrf-worker
       - --no-agc
       - --rxb=62914560
       - '--gain=${GAIN}'

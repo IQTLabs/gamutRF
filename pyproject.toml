@@ -48,7 +48,7 @@ pytype = "2023.10.31"
 pdbpp = "^0.10.3"
 
 [tool.poetry.scripts]
-gamutrf-api = 'gamutrf.__main__:api'
+gamutrf-worker = 'gamutrf.__main__:worker'
 gamutrf-freqxlator = 'gamutrf.__main__:freqxlator'
 gamutrf-samples2raw = 'gamutrf.__main__:samples2raw'
 gamutrf-scan = 'gamutrf.__main__:scan'

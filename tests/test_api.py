@@ -2,7 +2,7 @@ import time
 import pytest
 from falcon import testing
 
-from gamutrf import api
+from gamutrf import worker
 
 
 class FakeArgs:
@@ -32,7 +32,7 @@ class FakeArgs:
 
 @pytest.fixture(scope="module")
 def client():
-    app = api.API(FakeArgs())
+    app = worker.API(FakeArgs())
     return testing.TestClient(app.app)
 
 
@@ -46,21 +46,21 @@ def test_routes(client):
 
 
 def test_report_rssi():
-    app = api.API(FakeArgs())
+    app = worker.API(FakeArgs())
     app.report_rssi({"center_freq": 1e6}, -35, time.time())
 
 
 def test_serve_recording():
-    app = api.API(FakeArgs())
+    app = worker.API(FakeArgs())
     app.q.put({"center_freq": 1e6, "sample_count": 1e6})
     app.serve_recording(app.record)
 
 
 def test_serve_rssi():
-    app = api.API(FakeArgs())
+    app = worker.API(FakeArgs())
     app.q.put({"center_freq": 1e6, "sample_count": 1e6, "sample_rate": 1e6})
     app.serve_rssi()
 
 
 def test_argument_parse():
-    api.argument_parser()
+    worker.argument_parser()

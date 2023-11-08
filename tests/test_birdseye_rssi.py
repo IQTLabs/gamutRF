@@ -74,7 +74,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                 command=[
                     "timeout",
                     "60s",
-                    "gamutrf-api",
+                    "gamutrf-worker",
                     "--rssi_threshold=-100",
                     "--rssi",
                     f"--sdr=file:{testraw}",
