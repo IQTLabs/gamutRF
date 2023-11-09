@@ -1,3 +1,4 @@
+# nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM python:3.11-slim@sha256:f89d4d260b6a5caa6aa8e0e14b162deb76862890c91779c31f762b22e72a6cef
 
 WORKDIR /app
@@ -10,5 +11,5 @@ RUN poetry install --no-dev
 
 COPY mavlink-api.py .
 
-# hadolint ignore=DL3002,DL3004
+# nosemgrep:github.workflows.config.missing-user
 CMD ["python3", "mavlink-api.py"]
