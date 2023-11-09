@@ -10,4 +10,5 @@ RUN poetry install --no-dev
 
 COPY mavlink-api.py .
 
+# hadolint ignore=DL3003,DL3004
 CMD ["python3", "mavlink-api.py"]
