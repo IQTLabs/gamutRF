@@ -326,6 +326,7 @@ class API:
 
     def proxy_rssi(self, rssi_addr, record_args):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            # codeql[py/bind-socket-all-network-interfaces]
             sock.bind((rssi_addr, RSSI_UDP_PORT))  # nosec
             self.process_rssi(record_args, sock)
 
@@ -334,6 +335,7 @@ class API:
         logging.info(f"got request {record_args}")
         if self.arguments.rssi_external:
             logging.info("proxying external RSSI")
+            # codeql[py/bind-socket-all-network-interfaces]
             self.proxy_rssi("0.0.0.0", record_args)  # nosec
         else:
             center_freq = int(record_args["center_freq"])
