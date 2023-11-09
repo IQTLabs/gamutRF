@@ -76,7 +76,11 @@ For example, make a recording with a sample rate of 20.48e6, for 2 seconds (4096
 $ wget -nv -O- localhost:8000/v1/record/100000000/409600000/20480000
 ```
 
-If the worker is started with `--rssi`, that same ```record``` call will cause the worker to publish RSSI values instead of recording (the duration argument must be present, but is not used).
+To stream RSSI values instead, call (note that the duration argument must be present, but is not currently used):
+
+```
+$ wget -nv -O- localhost:8000/v1/rssi/100000000/409600000/20480000
+```
 
 ## Working with worker I/Q recordings
 
