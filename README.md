@@ -76,11 +76,14 @@ For example, make a recording with a sample rate of 20.48e6, for 2 seconds (4096
 $ wget -nv -O- localhost:8000/v1/record/100000000/409600000/20480000
 ```
 
-To stream RSSI values instead, call (note that the duration argument must be present, but is not currently used):
+To stream RSSI values instead, call:
 
 ```
 $ wget -nv -O- localhost:8000/v1/rssi/100000000/409600000/20480000
 ```
+
+If the sample count parameter is 0, the stream will not end
+until a new RPC (whether rssi or record) is received.
 
 ## Working with worker I/Q recordings
 
