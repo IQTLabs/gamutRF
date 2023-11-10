@@ -31,10 +31,13 @@ class BirdseyeRSSITestCase(unittest.TestCase):
         tb.wait()
 
     def verify_birdseye_stream(self, gamutdir, freq):
+        sample_rate = 1000000
+        duration = 10
+        sample_count = duration * sample_rate
         for _ in range(15):
             try:
                 response = requests.get(
-                    f"http://localhost:8000/v1/rssi/{int(freq)}/1000000/1000000"
+                    f"http://localhost:8000/v1/rssi/{int(freq)}/{sample_count}/{sample_rate}"
                 )
                 self.assertEqual(200, response.status_code, response)
                 break
@@ -42,7 +45,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                 time.sleep(1)
         mqtt_logs = None
         line_json = None
-        for _ in range(30):
+        for _ in range(duration):
             self.assertTrue(os.path.exists(gamutdir))
             mqtt_logs = glob.glob(os.path.join(gamutdir, "mqtt-rssi-*log"))
             for log_name in mqtt_logs:
@@ -72,8 +75,6 @@ class BirdseyeRSSITestCase(unittest.TestCase):
             container = client.containers.run(
                 test_tag,
                 command=[
-                    "timeout",
-                    "60s",
                     "gamutrf-worker",
                     "--rssi_threshold=-100",
                     f"--sdr=file:{testraw}",
