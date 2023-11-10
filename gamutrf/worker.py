@@ -320,6 +320,12 @@ class API:
 
     def process_rssi(self, record_args, sock):
         last_rssi_time = 0
+        duration = 0
+        if record_args["sample_count"]:
+            duration = float(record_args["sample_count"]) / float(
+                record_args["sample_rate"]
+            )
+        start_time = time.time()
         while self.q.empty():
             rssi_raw, _ = sock.recvfrom(FLOAT_SIZE)
             rssi = struct.unpack("f", rssi_raw)[0]
@@ -328,6 +334,8 @@ class API:
             if rssi > MAX_RSSI:
                 continue
             now = time.time()
+            if duration and now - start_time > duration:
+                break
             now_diff = now - last_rssi_time
             if now_diff < self.arguments.rssi_interval:
                 continue
@@ -349,7 +357,6 @@ class API:
         else:
             center_freq = int(record_args["center_freq"])
             try:
-                # TODO: enable duration
                 rssi_server = BirdsEyeRSSI(
                     self.arguments,
                     record_args["sample_rate"],
