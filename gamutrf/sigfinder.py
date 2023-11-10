@@ -81,7 +81,8 @@ class Result:
             signal_hz = int(int(req.media["frequency"]) * 1e6)
             record_bps = int(int(req.media["bandwidth"]) * MB)
             record_samples = int(record_bps * int(req.media["duration"]))
-            recorder_args = f"record/{signal_hz}/{record_samples}/{record_bps}"
+            action = req.media["action"]
+            recorder_args = f"{action}/{signal_hz}/{record_samples}/{record_bps}"
             timeout = int(req.media["duration"])
             response = None
             if int(req.media["repeat"]) == -1:

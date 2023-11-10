@@ -34,7 +34,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
         for _ in range(15):
             try:
                 response = requests.get(
-                    f"http://localhost:8000/v1/record/{int(freq)}/1000000/1000000"
+                    f"http://localhost:8000/v1/rssi/{int(freq)}/1000000/1000000"
                 )
                 self.assertEqual(200, response.status_code, response)
                 break
@@ -76,7 +76,6 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                     "60s",
                     "gamutrf-worker",
                     "--rssi_threshold=-100",
-                    "--rssi",
                     f"--sdr=file:{testraw}",
                 ],
                 ports={"8000/tcp": 8000},
