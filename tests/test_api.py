@@ -52,14 +52,12 @@ def test_report_rssi():
 
 def test_serve_recording():
     app = worker.API(FakeArgs())
-    app.q.put({"center_freq": 1e6, "sample_count": 1e6})
-    app.serve_recording(app.record)
+    app.serve_recording(app.record, {"center_freq": 1e6, "sample_count": 1e6})
 
 
 def test_serve_rssi():
     app = worker.API(FakeArgs())
-    app.q.put({"center_freq": 1e6, "sample_count": 1e6, "sample_rate": 1e6})
-    app.serve_rssi()
+    app.serve_rssi({"center_freq": 1e6, "sample_count": 1e6, "sample_rate": 1e6})
 
 
 def test_argument_parse():

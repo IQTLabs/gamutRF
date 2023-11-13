@@ -139,13 +139,6 @@ def argument_parser():
         help="add sigmf meta file",
     )
     parser.add_argument(
-        "--rssi",
-        dest="enable_rssi",
-        default=False,
-        action=argparse.BooleanOptionalAction,
-        help="get RSSI values",
-    )
-    parser.add_argument(
         "--use_external_gps",
         dest="use_external_gps",
         default=False,
@@ -206,11 +199,12 @@ class Info:
         resp.status = falcon.HTTP_200
 
 
-class Record:
+class Action:
     def __init__(self, arguments, q, sdr_recorder):
         self.arguments = arguments
         self.q = q
         self.sdr_recorder = sdr_recorder
+        self.action = None
 
     def on_get(self, _req, resp, center_freq, sample_count, sample_rate):
         # TODO check if chosen SDR can do the supplied sample_count
@@ -228,6 +222,7 @@ class Record:
         if status is None:
             self.q.put(
                 {
+                    "action": self.action,
                     "center_freq": int(center_freq),
                     "sample_count": int(sample_count),
                     "sample_rate": int(sample_rate),
@@ -237,6 +232,18 @@ class Record:
             resp.status = falcon.HTTP_200
 
         resp.text = json.dumps({"status": status})
+
+
+class Record(Action):
+    def __init__(self, arguments, q, sdr_recorder):
+        super().__init__(arguments, q, sdr_recorder)
+        self.action = "record"
+
+
+class Rssi(Action):
+    def __init__(self, arguments, q, sdr_recorder):
+        super().__init__(arguments, q, sdr_recorder)
+        self.action = "record"
 
 
 class API:
@@ -267,10 +274,14 @@ class API:
         logging.info("run recorder")
         while True:
             logging.info("awaiting request")
-            if self.arguments.enable_rssi:
-                self.serve_rssi()
+            action_args = self.q.get()
+            action = action_args["action"]
+            if action == "record":
+                self.serve_recording(record_func, action_args)
+            elif action == "rssi":
+                self.serve_rssi(action_args)
             else:
-                self.serve_recording(record_func)
+                logging.error("no such action: %s", action)
 
     def record(self, center_freq, sample_count, sample_rate=20e6):
         return self.sdr_recorder.run_recording(
@@ -286,8 +297,7 @@ class API:
             self.arguments.antenna,
         )
 
-    def serve_recording(self, record_func):
-        record_args = self.q.get()
+    def serve_recording(self, record_func, record_args):
         logging.info(f"got a request: {record_args}")
         record_status = record_func(**record_args)
         if record_status == -1:
@@ -310,6 +320,12 @@ class API:
 
     def process_rssi(self, record_args, sock):
         last_rssi_time = 0
+        duration = 0
+        if record_args["sample_count"]:
+            duration = float(record_args["sample_count"]) / float(
+                record_args["sample_rate"]
+            )
+        start_time = time.time()
         while self.q.empty():
             rssi_raw, _ = sock.recvfrom(FLOAT_SIZE)
             rssi = struct.unpack("f", rssi_raw)[0]
@@ -318,6 +334,8 @@ class API:
             if rssi > MAX_RSSI:
                 continue
             now = time.time()
+            if duration and now - start_time > duration:
+                break
             now_diff = now - last_rssi_time
             if now_diff < self.arguments.rssi_interval:
                 continue
@@ -326,14 +344,15 @@ class API:
 
     def proxy_rssi(self, rssi_addr, record_args):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            # codeql[py/bind-socket-all-network-interfaces]
             sock.bind((rssi_addr, RSSI_UDP_PORT))  # nosec
             self.process_rssi(record_args, sock)
 
-    def serve_rssi(self):
-        record_args = self.q.get()
+    def serve_rssi(self, record_args):
         logging.info(f"got request {record_args}")
         if self.arguments.rssi_external:
             logging.info("proxying external RSSI")
+            # codeql[py/bind-socket-all-network-interfaces]
             self.proxy_rssi("0.0.0.0", record_args)  # nosec
         else:
             center_freq = int(record_args["center_freq"])
@@ -359,7 +378,12 @@ class API:
 
     @staticmethod
     def paths():
-        return ["", "/info", "/record/{center_freq}/{sample_count}/{sample_rate}"]
+        return [
+            "",
+            "/info",
+            "/record/{center_freq}/{sample_count}/{sample_rate}",
+            "/rssi/{center_freq}/{sample_count}/{sample_rate}",
+        ]
 
     @staticmethod
     def version():
@@ -370,7 +394,8 @@ class API:
         endpoints = Endpoints()
         info = Info(self.arguments)
         record = Record(self.arguments, self.q, self.sdr_recorder)
-        funcs = [endpoints, info, record]
+        rssi = Rssi(self.arguments, self.q, self.sdr_recorder)
+        funcs = [endpoints, info, record, rssi]
         return dict(zip(p, funcs))
 
     def run(self):
