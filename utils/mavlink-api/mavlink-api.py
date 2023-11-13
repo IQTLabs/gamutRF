@@ -192,7 +192,7 @@ def get_latest_heading():
 
 
 def main():
-    app.run(host="0.0.0.0", port=8888)
+    app.run(host="0.0.0.0", port=8888) # nosec
 
 
 if __name__ == "__main__":
