@@ -4,7 +4,7 @@ FROM python:3.11-slim@sha256:f89d4d260b6a5caa6aa8e0e14b162deb76862890c91779c31f7
 WORKDIR /app
 ENV PYTHONPATH=${PYTHONPATH}:${PWD}
 
-RUN pip3 install poetry
+RUN pip3 install poetry==1.1.5
 COPY pyproject.toml .
 RUN poetry config virtualenvs.create false
 RUN poetry install --no-dev
