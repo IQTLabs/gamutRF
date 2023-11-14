@@ -1,4 +1,4 @@
-# How to build a gamutRF system
+# Building a GamutRF System
 
 ## Prerequisites
 
@@ -16,10 +16,12 @@
 ## Installation overview
 
 These instructions are for 2 different machines:
- - One that is the orchestrator which will do signal scanning, serve up GPS and heading, send out requests to workers to collect I/Q or RSSI sample for a given frequency, and run the [BirdsEye](https://github.com/IQTLabs/BirdsEye) interface.
- - One that is the worker which will do collection as instructed via API from the orchestrator.  There can be `n` number of workers assigned to a given orchestrator.
+ - One that is the [orchestrator](#orchestrator) which will do signal scanning, serve up GPS and heading, send out requests to workers to collect I/Q or RSSI sample for a given frequency, and run the [BirdsEye](https://github.com/IQTLabs/BirdsEye) interface.
+ - One that is the [worker](#worker) which will do collection as instructed via API from the orchestrator.  There can be `n` number of workers assigned to a given orchestrator.
 
-### Orchestrator
+ For instructions on builing the AIR-T system see the [AIR-T README](./README-airt.md).
+
+## Orchestrator
 
 1. Install Raspberry Pi4 to 7" Touchscreen
 
@@ -51,7 +53,7 @@ curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 sudo apt install -y git libjpeg-dev python3 python3-pip python3-tk uhd-host gpsd gpsd-clients chrony pps-tools onboard at-spi2-core tmux
-sudo /usr/lib/uhd/utils/uhd_images_downloader.py -t "b2|usb"
+sudo /usr/libexec/uhd/utils/uhd_images_downloader.py -t "b2|usb"
 git clone https://github.com/IQTLabs/gamutRF
 git clone https://github.com/IQTLabs/BirdsEye
 sudo su -
