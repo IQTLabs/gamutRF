@@ -1,0 +1,9 @@
+FROM nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3
+ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /root
+COPY torchserve/install-orin-torchserve.sh /torchserve/install-orin-torchserve.sh
+RUN /torchserve/install-orin-torchserve.sh
+RUN /usr/local/bin/torchserve --help
+COPY torchserve/config.properties /torchserve/config.properties
+COPY torchserve/torchserve-entrypoint.sh /torchserve/torchserve-entrypoint.sh
+CMD ["/torchserve/torchserve-entrypoint.sh"]
