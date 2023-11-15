@@ -139,7 +139,8 @@ From gamutRF's source directory, and having obtained mini2_snr.pt:
 ```
 $ pip3 install torch-model-archiver
 $ mkdir /tmp/model_store
-$ torch-model-archiver --force --model-name mini2_snr --version 1.0 --serialized-file /PATH/TO/mini2_snr.pt --handler torchserve/custom_handler.py --export-path /tmp/model_store
+$ wget https://raw.githubusercontent.com/pytorch/serve/master/examples/object_detector/yolo/yolov8/requirements.txt
+$ torch-model-archiver --force --model-name mini2_snr --version 1.0 --serialized-file /PATH/TO/mini2_snr.pt --handler torchserve/custom_handler.py --export-path /tmp/model_store -r requirements.txt
 ```
 
 # start torchserve

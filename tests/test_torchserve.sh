@@ -8,7 +8,8 @@ cp torchserve/custom_handler.py $TMPDIR/
 cd $TMPDIR
 # TODO: use gamutRF weights here.
 wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
-torch-model-archiver --force --model-name yolov8n --version 1.0 --serialized-file yolov8n.pt --handler custom_handler.py
+wget https://raw.githubusercontent.com/pytorch/serve/master/examples/object_detector/yolo/yolov8/requirements.txt
+torch-model-archiver --force --model-name yolov8n --version 1.0 --serialized-file yolov8n.pt --handler custom_handler.py -r requirements.txt
 rm -rf model_store && mkdir model_store
 mv yolov8n.mar model_store/
 docker run -v $(pwd)/model_store:/model_store --net host --entrypoint timeout -d iqtlabs/gamutrf-torchserve 60s /torchserve/torchserve-entrypoint.sh --models yolov8n=yolov8n.mar
