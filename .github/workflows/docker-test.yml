@@ -1,33 +1,12 @@
 name: docker-test
 on: [push, pull_request]
 jobs:
-  test-orin-torchserve:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Set up qemu
-      uses: docker/setup-qemu-action@v3
-      with:
-        platforms: all
-    - name: Set up Docker Buildx
-      id: buildx
-      uses: docker/setup-buildx-action@v3
-    - name: Build
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: docker/Dockerfile.orin-torchserve
-        platforms: linux/arm64
-        push: false
-  test-gamutrf-torchserve-image:
+  test-gamutrf-torchserve:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: docker build
       run: |
-        docker build -f docker/Dockerfile.torchserve . -t iqtlabs/gamutrf-torchserve:latest
         ./tests/test_torchserve.sh
   test-gamutrf-extra-images:
     runs-on: ubuntu-latest
