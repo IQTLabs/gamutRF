@@ -4,7 +4,7 @@ networks:
 services:
   torchserve:
     restart: always
-    image: iqtlabs/gamutrf-torchserve:latest
+    image: iqtlabs/torchserve:latest
     networks:
       - gamutrf
     ports:

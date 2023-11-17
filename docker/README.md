@@ -8,8 +8,6 @@ Description of the various files and their functions:
 - Dockerfile.base - 
 - Dockerfile.mqtt - 
 - Dockerfile.vkfft - 
-- Dockerfile.torchserve - 
-- Dockerfile.cuda-torchserve - 
 - Dockerfile.airspyfm - 
 
 Docker compose
@@ -18,4 +16,4 @@ Docker compose
 - specgram.yml - 
 - prometheus.yml - 
 - monitoring.yml - 
-- freespacer.ym - 
+- freespacer.yml -

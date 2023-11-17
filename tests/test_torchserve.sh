@@ -13,7 +13,7 @@ torch-model-archiver --force --model-name yolov8n --version 1.0 --serialized-fil
 rm -rf model_store && mkdir model_store
 mv yolov8n.mar model_store/
 # TODO: --runtime nvidia is required for Orin
-docker run -v $(pwd)/model_store:/model_store -p 8080:8080 --rm --name testts --entrypoint timeout -d iqtlabs/gamutrf-torchserve 180s /torchserve/torchserve-entrypoint.sh --models yolov8n=yolov8n.mar
+docker run -v $(pwd)/model_store:/model_store -p 8080:8080 --rm --name testts --entrypoint timeout -d iqtlabs/torchserve 180s /torchserve/torchserve-entrypoint.sh --models yolov8n=yolov8n.mar
 # TODO: use gamutRF test spectogram image
 wget https://github.com/pytorch/serve/raw/master/examples/object_detector/yolo/yolov8/persons.jpg
 wget -q --retry-connrefused --retry-on-host-error --body-file=persons.jpg --method=PUT -O- --header='Content-Type: image/jpg' http://127.0.0.1:8080/predictions/yolov8n | jq
