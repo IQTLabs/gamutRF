@@ -43,6 +43,9 @@ class FakeUHDSource:
     def get_time_now(self):
         return self.time_spec
 
+    def set_thread_priority(self, _priority):
+        return
+
 
 class FakeUHD:
     def __init__(self):
@@ -61,6 +64,9 @@ class FakeSoapySource:
         return
 
     def set_bandwidth(self, _channel, _bw):
+        return
+
+    def set_thread_priority(self, _priority):
         return
 
 

@@ -78,5 +78,5 @@ def get_source(
         )
         if sdr == "SoapyAIRT":
             workaround_start_hook = airt_workaround_start_hook
-
+    sources[0].set_thread_priority(99)
     return sources, cmd_port, workaround_start_hook

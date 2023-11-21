@@ -10,6 +10,6 @@ services:
     ports:
       - '8080:8080'
     volumes:
-      - '${VOL_PREFIX}:/model_store'
+      - '${VOL_PREFIX}/model_store:/model_store'
     command:
       - --models mini2_snr=mini2_snr.mar
