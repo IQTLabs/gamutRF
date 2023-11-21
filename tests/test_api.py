@@ -9,6 +9,7 @@ class FakeArgs:
     def __init__(self):
         self.name = "test"
         self.mqtt_server = ""
+        self.gps_server = ""
         self.use_external_gps = False
         self.use_external_heading = False
         self.external_gps_server = ""
