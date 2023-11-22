@@ -1,4 +1,5 @@
 import logging
+import os
 import signal
 import time
 import sys
@@ -25,6 +26,8 @@ from gamutrf.flask_handler import FlaskHandler
 from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ
 
 running = True
+
+ORCHESTRATOR = os.getenv("ORCHESTRATOR", "orchestrator")
 
 
 def init_prom_vars():
