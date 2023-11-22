@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 import json
 import sys
+import time
 import numpy as np
 
 try:
     from gnuradio import gr  # pytype: disable=import-error
+    from gamutrf.mqtt_reporter import MQTTReporter
 except ModuleNotFoundError as err:  # pragma: no cover
     print(
         "Run from outside a supported environment, please run via Docker (https://github.com/IQTLabs/gamutRF#readme): %s"
@@ -20,8 +22,28 @@ DELIM = "\n\n"
 class inference2mqtt(gr.sync_block):
     def __init__(
         self,
+        name,
+        mqtt_server,
+        gps_server,
+        use_external_gps,
+        use_external_heading,
+        external_gps_server,
+        external_gps_server_port,
+        log_path,
     ):
         self.yaml_buffer = ""
+        self.start_time = time.time()
+        self.mqtt_reporter = MQTTReporter(
+            name=name,
+            mqtt_server=mqtt_server,
+            gps_server=gps_server,
+            compass=True,
+            use_external_gps=use_external_gps,
+            use_external_heading=use_external_heading,
+            external_gps_server=external_gps_server,
+            external_gps_server_port=external_gps_server_port,
+        )
+        self.log_path = log_path
 
         gr.sync_block.__init__(
             self,
@@ -47,5 +69,6 @@ class inference2mqtt(gr.sync_block):
         return n
 
     def process_item(self, item):
-        print(item)
+        self.mqtt_reporter.publish("gamutrf/inference", item)
+        self.mqtt_reporter.log(self.log_path, "inference", self.start_time, item)
         return
