@@ -20,7 +20,7 @@ except ModuleNotFoundError as err:  # pragma: no cover
     sys.exit(1)
 
 from gamutrf.grsource import get_source
-from gamutrf.gryolo import yolo_bbox
+from gamutrf.grinference2mqtt import inference2mqtt
 from gamutrf.utils import endianstr
 
 
@@ -189,16 +189,14 @@ class grscan(gr.top_block):
             image_vlen = np.prod(image_shape)
             prediction_shape = (1, 8, 8400)
             prediction_vlen = np.prod(prediction_shape)
-            image_dir = Path(inference_output_dir, "images")
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
-            image_dir.mkdir(parents=True, exist_ok=True)
             self.inference_blocks = [
                 self.iqtlabs.image_inference(
                     tag="rx_freq",
                     vlen=nfft,
                     x=x,
                     y=y,
-                    image_dir=str(image_dir),
+                    image_dir=inference_output_dir,
                     convert_alpha=255,
                     norm_alpha=0,
                     norm_beta=1,
@@ -209,12 +207,9 @@ class grscan(gr.top_block):
                     min_peak_points=inference_min_db,
                     model_server=inference_model_server,
                     model_name=inference_model_name,
+                    confidence=inference_min_confidence,
                 ),
-                yolo_bbox(
-                    str(Path(inference_output_dir, "predictions")),
-                    inference_min_confidence,
-                    inference_nms_threshold,
-                ),
+                inference2mqtt(),
             ]
 
         if pretune:

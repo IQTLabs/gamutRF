@@ -10,7 +10,7 @@ services:
     ports:
       - '8080:8080'
     volumes:
-      - '${VOL_PREFIX}:/model_store'
+      - '${VOL_PREFIX}/model_store:/model_store'
     deploy:
       resources:
         reservations:
