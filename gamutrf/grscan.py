@@ -33,9 +33,12 @@ class grscan(gr.top_block):
         dc_block_len=0,
         dc_block_long=False,
         description="",
+        external_gps_server="",
+        external_gps_server_port=8888,
         fft_batch_size=256,
         freq_end=1e9,
         freq_start=100e6,
+        gps_server="",
         igain=0,
         inference_min_confidence=0.5,
         inference_nms_threshold=0.5,
@@ -46,6 +49,7 @@ class grscan(gr.top_block):
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
         logport=8001,
+        mqtt_server="",
         nfft=1024,
         pretune=False,
         rotate_secs=0,
@@ -61,6 +65,8 @@ class grscan(gr.top_block):
         tune_dwell_ms=0,
         tuneoverlap=0.5,
         tuning_ranges="",
+        use_external_gps=False,
+        use_external_heading=False,
         vkfft=False,
         wavelearner=None,
         write_samples=0,
@@ -209,7 +215,16 @@ class grscan(gr.top_block):
                     model_name=inference_model_name,
                     confidence=inference_min_confidence,
                 ),
-                inference2mqtt(),
+                inference2mqtt(
+                    "inference2mqtt",
+                    mqtt_server,
+                    gps_server,
+                    use_external_gps,
+                    use_external_heading,
+                    external_gps_server,
+                    external_gps_server_port,
+                    inference_output_dir,
+                ),
             ]
 
         if pretune:

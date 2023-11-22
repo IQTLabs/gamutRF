@@ -319,6 +319,46 @@ def argument_parser():
         action=BooleanOptionalAction,
         help="send tag:now command when retuning",
     )
+    parser.add_argument(
+        "--use_external_gps",
+        dest="use_external_gps",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Use external Pixhawk/MAVLINK GPS",
+    )
+    parser.add_argument(
+        "--use_external_heading",
+        dest="use_external_heading",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Use external (Pixhawk/MAVLINK) heading",
+    )
+    parser.add_argument(
+        "--external_gps_server",
+        dest="external_gps_server",
+        default=ORCHESTRATOR,
+        type=str,
+        help="server to query for external GPS data",
+    )
+    parser.add_argument(
+        "--external_gps_server_port",
+        dest="external_gps_server_port",
+        default="8888",
+        type=str,
+        help="server port to query for external GPS data",
+    )
+    parser.add_argument(
+        "--mqtt_server",
+        help="MQTT server to report RSSI",
+        default=ORCHESTRATOR,
+        type=str,
+    )
+    parser.add_argument(
+        "--gps_server",
+        help="GPS Server to get lat,long, and heading",
+        default=ORCHESTRATOR,
+        type=str,
+    )
     return parser
 
 
