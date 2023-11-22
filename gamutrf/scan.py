@@ -323,14 +323,14 @@ def argument_parser():
         "--use_external_gps",
         dest="use_external_gps",
         default=False,
-        action=argparse.BooleanOptionalAction,
+        action=BooleanOptionalAction,
         help="Use external Pixhawk/MAVLINK GPS",
     )
     parser.add_argument(
         "--use_external_heading",
         dest="use_external_heading",
         default=False,
-        action=argparse.BooleanOptionalAction,
+        action=BooleanOptionalAction,
         help="Use external (Pixhawk/MAVLINK) heading",
     )
     parser.add_argument(
