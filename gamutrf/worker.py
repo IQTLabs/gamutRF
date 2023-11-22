@@ -96,6 +96,12 @@ def argument_parser():
         type=str,
     )
     parser.add_argument(
+        "--gps_server",
+        help="GPS Server to get lat,long, and heading",
+        default=ORCHESTRATOR,
+        type=str,
+    )
+    parser.add_argument(
         "--rssi_interval",
         help="rate limit in seconds for RSSI updates to MQTT",
         default=1.0,
@@ -252,7 +258,7 @@ class API:
         self.mqtt_reporter = MQTTReporter(
             name=self.arguments.name,
             mqtt_server=self.arguments.mqtt_server,
-            gps_server=ORCHESTRATOR,
+            gps_server=self.arguments.gps_server,
             compass=True,
             use_external_gps=self.arguments.use_external_gps,
             use_external_heading=self.arguments.use_external_heading,
