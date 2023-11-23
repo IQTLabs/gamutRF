@@ -3,7 +3,6 @@
 import logging
 import sys
 from pathlib import Path
-import numpy as np
 
 try:
     from gnuradio import filter as grfilter  # pytype: disable=import-error
@@ -160,7 +159,6 @@ class grscan(gr.top_block):
             pretune,
         )
         self.fft_blocks = fft_blocks + self.get_db_blocks(nfft, samp_rate, scaling)
-
         retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
             nfft,
@@ -191,10 +189,6 @@ class grscan(gr.top_block):
         if inference_output_dir:
             x = 640
             y = 640
-            image_shape = (x, y, 3)
-            image_vlen = np.prod(image_shape)
-            prediction_shape = (1, 8, 8400)
-            prediction_vlen = np.prod(prediction_shape)
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
             self.inference_blocks = [
                 self.iqtlabs.image_inference(
@@ -209,7 +203,7 @@ class grscan(gr.top_block):
                     norm_type=32,  # cv::NORM_MINMAX = 32
                     colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
                     interpolation=1,  # cv::INTER_LINEAR = 1,
-                    flip=0,
+                    flip=0,  # 0 means flipping around the x-axis
                     min_peak_points=inference_min_db,
                     model_server=inference_model_server,
                     model_name=inference_model_name,
@@ -234,6 +228,7 @@ class grscan(gr.top_block):
             self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
         self.connect_blocks(self.sources[0], self.sources[1:])
         self.connect((retune_fft, 1), (self.inference_blocks[0], 0))
+
         self.connect_blocks(self.inference_blocks[0], self.inference_blocks[1:])
         for pipeline_blocks in (
             self.fft_blocks,
@@ -287,7 +282,7 @@ class grscan(gr.top_block):
             blocks.vector_to_stream(gr.sizeof_gr_complex * nfft, fft_batch_size),
         ]
         if fft_roll:
-            offload_blocks.append(self.iqtlabs.vector_roll(nfft)),
+            offload_blocks.append(self.iqtlabs.vector_roll(nfft))
         return offload_blocks
 
     def get_fft_blocks(
