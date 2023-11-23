@@ -84,6 +84,7 @@ COPY --from=iqtlabs/gnuradio:3.10.8 /usr/share/uhd/images /usr/share/uhd/images
 COPY --from=installer /usr/local /usr/local
 COPY --from=installer /gamutrf /gamutrf
 COPY --from=installer /root/.local /root/.local
+RUN ldconfig -v
 WORKDIR /gamutrf
 RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
 RUN ldd /usr/local/bin/uhd_sample_recorder
