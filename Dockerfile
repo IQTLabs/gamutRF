@@ -2,7 +2,6 @@
 FROM ubuntu:22.04 as installer
 ARG PIPCONF
 ENV PIPCONF=$PIPCONF
-COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -23,6 +22,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2 && \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip
+COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 WORKDIR /gamutrf
 COPY gamutrf gamutrf/
 COPY bin bin/
