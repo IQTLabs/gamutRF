@@ -1,28 +1,25 @@
-import requests
 import json
 import logging
-import os
-import socket
 import time
-import csv
-import time
-from datetime import datetime
 
 import gpsd
 import httpx
+
 
 def get_adafruit_gps():
     try:
         if gpsd.gpsd_stream is None:
             gpsd.connect(host="127.0.0.1", port=2947)
         packet = gpsd.get_current()
-        vals= {"timestamp": time.time(),
-                "position": packet.position(),
-                "altitude": packet.altitude(),
-                "gps_time": packet.get_time().timestamp(),
-                "map_url": packet.map_url(),
-                "heading": None,
-                "gps": "fix"}
+        vals = {
+            "timestamp": time.time(),
+            "position": packet.position(),
+            "altitude": packet.altitude(),
+            "gps_time": packet.get_time().timestamp(),
+            "map_url": packet.map_url(),
+            "heading": None,
+            "gps": "fix",
+        }
     except (BrokenPipeError, gpsd.NoFixError, AttributeError) as err:
         logging.error("could not update with GPS: %s", err)
         vals = {
@@ -36,10 +33,11 @@ def get_adafruit_gps():
         }
     return vals
 
+
 def get_pixhawk_gps():
     try:
         external_gps_msg = json.loads(httpx.get(f"http://127.0.0.1:8888/gps-data").text)
-        
+
         vals = {
             "timestamp": time.time(),
             "position": (
@@ -66,17 +64,21 @@ def get_pixhawk_gps():
         }
     return vals
 
+
 def write_to_csv(filename, data):
-    with open(filename, 'a', newline='') as csvfile:
+    with open(filename, "a", newline="") as csvfile:
         fieldnames = data.keys()
+        import csv
+
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         if csvfile.tell() == 0:
             writer.writeheader()
         writer.writerow(data)
 
+
 # Define the file names for the CSV files
-adafruit_csv_filename = 'adafruit_gps_data.csv'
-pixhawk_csv_filename = 'pixhawk_gps_data.csv'
+adafruit_csv_filename = "adafruit_gps_data.csv"
+pixhawk_csv_filename = "pixhawk_gps_data.csv"
 
 while True:
     # Get data from Adafruit GPS

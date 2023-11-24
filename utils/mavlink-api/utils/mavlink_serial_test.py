@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 import sys
-from pymavlink import mavutil
+from pymavlink import mavutil  # pytype: disable=import-error
 
 if len(sys.argv) < 2:
     print("Usage: python mavlink_serial_test.py <serial_port>")
