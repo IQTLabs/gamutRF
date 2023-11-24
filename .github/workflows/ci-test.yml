@@ -63,6 +63,9 @@ jobs:
       - name: Code Quality - Black
         run: |
           poetry run black gamutrf --check
+          poetry run black utils --check
+          poetry run black torchserve --check
+          poetry run black augment --check
       - name: Code Quality - Pylint
         run: |
           poetry run pylint --fail-under=6 gamutrf/
@@ -71,7 +74,9 @@ jobs:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
         run: |
           sudo pip3 install pytype=="$(grep -E "pytype = " pyproject.toml | grep -Eo "[0-9\.]+")" && \
-            pytype -k gamutrf/
+            sudo pip3 install -U pyserial && \
+            pytype -k gamutrf/ && \
+            pytype -k utils/mavlink-api
       - name: Test with pytest
         env:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages

@@ -1,8 +1,7 @@
-from flask import Flask, jsonify
-from pymavlink import mavutil
 import threading
 import time
-import serial
+from flask import Flask, jsonify
+from pymavlink import mavutil  # pytype: disable=import-error
 
 app = Flask(__name__)
 
@@ -16,6 +15,7 @@ class MAVLINKGPSHandler:
         self.latitude = None
         self.longitude = None
         self.altitude = None
+        self.heading = None
         self.relative_alt = None
         self.time_usec = None
         self.vx = None
@@ -32,7 +32,7 @@ class MAVLINKGPSHandler:
         self.mavlink_thread.daemon = True
         self.mavlink_thread.start()
 
-    def GLOBAL_POSITION_INT_parser(self, data: dict = None) -> dict:
+    def GLOBAL_POSITION_INT_parser(self, data=None):
         """Selected required data from data received from Pixhawk, and
         convert to required units.
         Args:
@@ -41,7 +41,7 @@ class MAVLINKGPSHandler:
             clean_data (dict): Required data to be published
         """
         # If data supplied, else use last msg
-        if data == None:
+        if data is None:
             data = self.latest_GLOBAL_POSITION_INT_msg.to_dict()
 
         # Check for stale GPS
@@ -57,15 +57,12 @@ class MAVLINKGPSHandler:
         self.vx = data["vx"] / 100.0  # meters/second
         self.vy = data["vy"] / 100.0  # meters/second
         self.vz = data["vz"] / 100.0  # meters/second
-        return
 
-    def GPS_RAW_INT_parser(self, data: dict = None) -> dict:
+    def GPS_RAW_INT_parser(self, data=None):
         """Selected required data from data received from Pixhawk, and
         convert to required units.
         Args:
             data (dict): Data received from the Pixhawk device
-        Returns:
-            clean_data (dict): Required data to be published
 
         GPS_FIX_TYPE
         [Enum] Type of GPS fix
@@ -82,7 +79,7 @@ class MAVLINKGPSHandler:
         8	    GPS_FIX_TYPE_PPP	    PPP, 3D position.
         """
         # If data supplied, else use last msg
-        if data == None:
+        if data is None:
             data = self.latest_GPS_RAW_INT_msg.to_dict()
 
         # Check for stale GPS
@@ -91,8 +88,6 @@ class MAVLINKGPSHandler:
         # Update fix type
         self.time_usec = data["time_usec"]  # UNIX Epoch time uSec
         self.gps_fix_type = data["fix_type"]
-
-        return
 
     def gps_stale_check(self):
         # Check for stale GPS data
@@ -160,8 +155,7 @@ def get_latest_gps_fix_status():
             ),
             200,
         )
-    else:
-        return jsonify({"error": "No GPS data available"}), 404
+    return jsonify({"error": "No GPS data available"}), 404
 
 
 @app.route("/gps-data", methods=["GET"])
@@ -170,8 +164,7 @@ def get_latest_gps_data():
         mavlink_gps_handler.GLOBAL_POSITION_INT_parser()
         msg = mavlink_gps_handler.create_gps_json_payload()
         return jsonify(msg), 200
-    else:
-        return jsonify({"error": "No GPS data available"}), 404
+    return jsonify({"error": "No GPS data available"}), 404
 
 
 @app.route("/heading", methods=["GET"])
@@ -187,12 +180,11 @@ def get_latest_heading():
             ),
             200,
         )
-    else:
-        return jsonify({"error": "No heading data available"}), 404
+    return jsonify({"error": "No heading data available"}), 404
 
 
 def main():
-    app.run(host="0.0.0.0", port=8888) # nosec
+    app.run(host="0.0.0.0", port=8888)  # nosec
 
 
 if __name__ == "__main__":
