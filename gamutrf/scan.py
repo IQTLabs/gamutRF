@@ -362,6 +362,12 @@ def argument_parser():
         default=ORCHESTRATOR,
         type=str,
     )
+    parser.add_argument(
+        "--low_power_hold_down",
+        help="Gate samples on low power sample period (recommended for Ettus)",
+        default=True,
+        action=BooleanOptionalAction,
+    )
     return parser
 
 
