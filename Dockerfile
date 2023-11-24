@@ -29,7 +29,7 @@ COPY bin bin/
 COPY templates templates/
 COPY poetry.lock pyproject.toml README.md /gamutrf/
 RUN if [ "$PIPCONF" != "" ] ; then echo -e "$PIPCONF" > /etc/pip.conf ; fi
-RUN poetry run pip install --no-cache-dir pandas==$(grep pandas pyproject.toml | grep -Eo "[0-9\.]+") && \
+RUN poetry run pip install --no-cache-dir pandas=="$(grep pandas pyproject.toml | grep -Eo '[0-9\.]+')" && \
     poetry install --no-interaction --no-dev --no-ansi
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
