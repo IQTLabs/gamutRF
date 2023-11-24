@@ -1,5 +1,5 @@
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
-FROM python:3.12-slim@sha256:32477c7ecb3b18a47cff8eb5b8149bc21c858998b0ae2bb36f4ddb43cc79d240
+FROM python:3.11-slim
 
 WORKDIR /app
 ENV PYTHONPATH=${PYTHONPATH}:${PWD}

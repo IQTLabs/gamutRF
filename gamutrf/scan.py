@@ -27,8 +27,6 @@ from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ
 
 running = True
 
-ORCHESTRATOR = os.getenv("ORCHESTRATOR", "orchestrator")
-
 
 def init_prom_vars():
     prom_vars = {
@@ -339,7 +337,7 @@ def argument_parser():
     parser.add_argument(
         "--external_gps_server",
         dest="external_gps_server",
-        default=ORCHESTRATOR,
+        default="127.0.0.1",
         type=str,
         help="server to query for external GPS data",
     )
@@ -353,13 +351,13 @@ def argument_parser():
     parser.add_argument(
         "--mqtt_server",
         help="MQTT server to report RSSI",
-        default=ORCHESTRATOR,
+        default="127.0.0.1",
         type=str,
     )
     parser.add_argument(
         "--gps_server",
         help="GPS Server to get lat,long, and heading",
-        default=ORCHESTRATOR,
+        default="127.0.0.1",
         type=str,
     )
     parser.add_argument(
