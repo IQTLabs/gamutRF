@@ -63,10 +63,13 @@ services:
       - --tune-step-fft=0
       - --db_clamp_floor=-150
       - --fft_batch_size=256
-      # - --inference_min_db=-50
-      # - --inference_model_name=mini2_snr
+      - --use_external_gps
+      - --use_external_heading
+      - --inference_min_confidence=0.8
+      - --inference_min_db=-50
+      - --inference_model_name=mini2_snr
+      - --inference_output_dir=/logs/inference
       # - --inference_model_server=torchserve:8080
-      # - --inference_output_dir=/logs/inference
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s

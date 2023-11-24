@@ -1,14 +1,16 @@
 version: '3'
+networks:
+  gamutrf:
 services:
   mavlink-api:
-    image: mavlink-api:latest
+    image: iqtlabs/gamutrf-mavlink-api:latest
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: utils/mavlink-api
+      dockerfile: utils/mavlink-api/Dockerfile
     ports:
       - "8888:8888"
     devices:
       - "/dev/pixhawk_serial:/dev/tty.serial1"
-#    networks:
-#      - gamutrf
+    networks:
+      - gamutrf
     restart: unless-stopped
