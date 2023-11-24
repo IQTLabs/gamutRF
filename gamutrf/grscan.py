@@ -48,6 +48,7 @@ class grscan(gr.top_block):
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
         logport=8001,
+        low_power_hold_down=False,
         mqtt_server="",
         nfft=1024,
         pretune=False,
@@ -179,6 +180,7 @@ class grscan(gr.top_block):
             rotate_secs,
             False,
             self.tag_now,
+            not pretune and low_power_hold_down,
         )
         self.fft_blocks.append(retune_fft)
         zmq_addr = f"tcp://{logaddr}:{logport}"
