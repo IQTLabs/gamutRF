@@ -1,7 +1,5 @@
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04 as installer
-ARG PIPCONF
-ENV PIPCONF=$PIPCONF
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -24,13 +22,14 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     python3 -m pip install --no-cache-dir --upgrade pip
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 WORKDIR /gamutrf
+COPY poetry.lock pyproject.toml README.md /gamutrf/
+RUN poetry run pip install --no-cache-dir pandas=="$(grep pandas pyproject.toml | grep -Eo '[0-9\.]+')"
+# dependency install is cached for faster rebuild, if only gamutrf source changed.
+RUN poetry install --no-interaction --no-ansi --no-dev --no-root
 COPY gamutrf gamutrf/
 COPY bin bin/
 COPY templates templates/
-COPY poetry.lock pyproject.toml README.md /gamutrf/
-RUN if [ "$PIPCONF" != "" ] ; then echo -e "$PIPCONF" > /etc/pip.conf ; fi
-RUN poetry run pip install --no-cache-dir pandas=="$(grep pandas pyproject.toml | grep -Eo '[0-9\.]+')" && \
-    poetry install --no-interaction --no-dev --no-ansi
+RUN poetry install --no-interaction --no-ansi --no-dev
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04
