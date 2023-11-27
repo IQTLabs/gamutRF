@@ -321,6 +321,13 @@ def argument_parser():
         help="send tag:now command when retuning",
     )
     parser.add_argument(
+        "--compass",
+        dest="compass",
+        default=False,
+        action=BooleanOptionalAction,
+        help="use compass",
+    )
+    parser.add_argument(
         "--use_external_gps",
         dest="use_external_gps",
         default=False,
@@ -337,7 +344,7 @@ def argument_parser():
     parser.add_argument(
         "--external_gps_server",
         dest="external_gps_server",
-        default="127.0.0.1",
+        default="",
         type=str,
         help="server to query for external GPS data",
     )
@@ -351,13 +358,13 @@ def argument_parser():
     parser.add_argument(
         "--mqtt_server",
         help="MQTT server to report RSSI",
-        default="127.0.0.1",
+        default="mqtt",
         type=str,
     )
     parser.add_argument(
         "--gps_server",
         help="GPS Server to get lat,long, and heading",
-        default="127.0.0.1",
+        default="",
         type=str,
     )
     parser.add_argument(

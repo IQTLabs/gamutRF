@@ -27,6 +27,7 @@ class grscan(gr.top_block):
     def __init__(
         self,
         bucket_range=1.0,
+        compass=False,
         db_clamp_ceil=50,
         db_clamp_floor=-200,
         dc_block_len=0,
@@ -214,6 +215,7 @@ class grscan(gr.top_block):
                 inference2mqtt(
                     "inference2mqtt",
                     mqtt_server,
+                    compass,
                     gps_server,
                     use_external_gps,
                     use_external_heading,
