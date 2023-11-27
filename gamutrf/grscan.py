@@ -188,30 +188,33 @@ class grscan(gr.top_block):
         logging.info("serving FFT on %s", zmq_addr)
         self.fft_blocks.append((zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")))
 
+        self.inference_blocks = []
         if inference_output_dir:
             x = 640
             y = 640
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
-            self.inference_blocks = [
-                self.iqtlabs.image_inference(
-                    tag="rx_freq",
-                    vlen=nfft,
-                    x=x,
-                    y=y,
-                    image_dir=inference_output_dir,
-                    convert_alpha=255,
-                    norm_alpha=0,
-                    norm_beta=1,
-                    norm_type=32,  # cv::NORM_MINMAX = 32
-                    colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
-                    interpolation=1,  # cv::INTER_LINEAR = 1,
-                    flip=0,  # 0 means flipping around the x-axis
-                    min_peak_points=inference_min_db,
-                    model_server=inference_model_server,
-                    model_name=inference_model_name,
-                    confidence=inference_min_confidence,
-                )
-            ]
+            self.inference_blocks.extend(
+                [
+                    self.iqtlabs.image_inference(
+                        tag="rx_freq",
+                        vlen=nfft,
+                        x=x,
+                        y=y,
+                        image_dir=inference_output_dir,
+                        convert_alpha=255,
+                        norm_alpha=0,
+                        norm_beta=1,
+                        norm_type=32,  # cv::NORM_MINMAX = 32
+                        colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
+                        interpolation=1,  # cv::INTER_LINEAR = 1,
+                        flip=0,  # 0 means flipping around the x-axis
+                        min_peak_points=inference_min_db,
+                        model_server=inference_model_server,
+                        model_name=inference_model_name,
+                        confidence=inference_min_confidence,
+                    )
+                ]
+            )
             if mqtt_server:
                 self.inference_blocks.extend(
                     [
