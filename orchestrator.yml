@@ -57,12 +57,14 @@ services:
       - --igain=40
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
-      - --samp-rate=8.192e6
-      - --nfft=256
-      - --tune-dwell-ms=100
-      - --tune-step-fft=0
+      - --samp-rate=20.48e6
+      - --nfft=1024
+      - --tune-dwell-ms=0
+      - --tune-step-fft=512
       - --db_clamp_floor=-150
       - --fft_batch_size=256
+      - --mqtt_server=mqtt
+      - --no-compass
       - --use_external_gps
       - --use_external_heading
       - --inference_min_confidence=0.8

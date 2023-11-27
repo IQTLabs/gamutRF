@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import json
+import queue
 import sys
+import threading
 import time
 import numpy as np
 
@@ -24,6 +26,7 @@ class inference2mqtt(gr.sync_block):
         self,
         name,
         mqtt_server,
+        compass,
         gps_server,
         use_external_gps,
         use_external_heading,
@@ -32,18 +35,23 @@ class inference2mqtt(gr.sync_block):
         log_path,
     ):
         self.yaml_buffer = ""
-        self.start_time = time.time()
-        self.mqtt_reporter = MQTTReporter(
-            name=name,
-            mqtt_server=mqtt_server,
-            gps_server=gps_server,
-            compass=True,
-            use_external_gps=use_external_gps,
-            use_external_heading=use_external_heading,
-            external_gps_server=external_gps_server,
-            external_gps_server_port=external_gps_server_port,
+        self.mqtt_reporter = None
+        self.q = queue.Queue()
+        self.mqtt_reporter_thread = threading.Thread(
+            target=self.reporter_thread,
+            args=(
+                name,
+                mqtt_server,
+                gps_server,
+                compass,
+                use_external_gps,
+                use_external_heading,
+                external_gps_server,
+                external_gps_server_port,
+                log_path,
+            ),
         )
-        self.log_path = log_path
+        self.mqtt_reporter_thread.start()
 
         gr.sync_block.__init__(
             self,
@@ -51,6 +59,35 @@ class inference2mqtt(gr.sync_block):
             in_sig=[np.ubyte],
             out_sig=None,
         )
+
+    def reporter_thread(
+        self,
+        name,
+        mqtt_server,
+        gps_server,
+        compass,
+        use_external_gps,
+        use_external_heading,
+        external_gps_server,
+        external_gps_server_port,
+        log_path,
+    ):
+        start_time = time.time()
+        mqtt_reporter = MQTTReporter(
+            name=name,
+            mqtt_server=mqtt_server,
+            gps_server=gps_server,
+            compass=compass,
+            use_external_gps=use_external_gps,
+            use_external_heading=use_external_heading,
+            external_gps_server=external_gps_server,
+            external_gps_server_port=external_gps_server_port,
+        )
+        while True:
+            item = self.q.get()
+            mqtt_reporter.publish("gamutrf/inference", item)
+            mqtt_reporter.log(log_path, "inference", start_time, item)
+            self.q.task_done()
 
     def work(self, input_items, output_items):
         n = 0
@@ -69,6 +106,4 @@ class inference2mqtt(gr.sync_block):
         return n
 
     def process_item(self, item):
-        self.mqtt_reporter.publish("gamutrf/inference", item)
-        self.mqtt_reporter.log(self.log_path, "inference", self.start_time, item)
-        return
+        self.q.put(item)
