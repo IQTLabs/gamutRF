@@ -31,46 +31,6 @@ COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/uhd_sample_recorder
 WORKDIR /root/uhd_sample_recorder/build
 RUN CMAKE_BUILD_TYPE=Release cmake ../lib && make -j $(nproc) && cp uhd_sample_recorder /usr/local/bin
 
-FROM ubuntu:22.04 as driver-builder
-COPY --from=iqtlabs/gnuradio:3.10.8 /usr/local /usr/local
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  build-essential \
-  ca-certificates \
-  cmake \
-  git \
-  libbladerf-dev \
-  libboost-all-dev \
-  libfftw3-dev \
-  libgmp-dev \
-  liblimesuite-dev \
-  librtlsdr-dev \
-  libuhd-dev \
-  libusb-1.0-0-dev \
-  pkg-config \
-  unzip \
-  wget
-WORKDIR /root
-RUN git clone https://github.com/SignalHound/soapy-bb60
-RUN git clone https://github.com/pothosware/SoapyBladeRF -b soapy-bladerf-0.4.1
-RUN git clone https://github.com/pothosware/SoapyRTLSDR -b soapy-rtl-sdr-0.3.3
-RUN git clone https://github.com/pothosware/SoapyUHD -b soapy-uhd-0.4.1
-RUN git clone https://github.com/Nuand/bladeRF.git -b 2023.02
-RUN git clone https://github.com/anarkiwi/lime-tools -b samples
-RUN wget https://signalhound.com/sigdownloads/SDK/signal_hound_sdk_08_25_23.zip -Osdk.zip && unzip sdk.zip && rm sdk.zip
-WORKDIR /root/soapy-bb60/SoapyBB60C/build
-RUN if [ "$(arch)" = "x86_64" ] ; then cp /root/signal_hound_sdk/device_apis/bb_series/include/* /usr/local/include/ && cp /root/signal_hound_sdk/device_apis/bb_series/lib/linux/Ubuntu*18.04/* /usr/local/lib && ldconfig -v -n /usr/local/lib && ln -sf /usr/local/lib/libbb_api.so.5 /usr/local/lib/libbb_api.so && cmake .. && make -j "$(nproc)" && make install ; fi
-WORKDIR /root/SoapyBladeRF/build
-RUN cmake .. && make -j "$(nproc)" && make install
-WORKDIR /root/SoapyRTLSDR/build
-RUN cmake .. && make -j "$(nproc)" && make install
-WORKDIR /root/SoapyUHD/build
-RUN cmake .. && make -j "$(nproc)" && make install
-WORKDIR /root/bladeRF/host/build
-RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_UDEV_RULES=ON -DENABLE_BACKEND_LIBUSB=TRUE .. && make -j "$(nproc)" && make install
-WORKDIR /root/lime-tools/build
-RUN cmake .. && make install
-
 FROM ubuntu:22.04 as gr-iqtlabs-builder
 COPY --from=iqtlabs/gnuradio:3.10.8 /usr/local /usr/local
 ENV DEBIAN_FRONTEND noninteractive
@@ -112,7 +72,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-numpy \
     &&  apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 COPY --from=iqtlabs/gnuradio:3.10.8 /usr/local /usr/local
-COPY --from=driver-builder /usr/local /usr/local
+COPY --from=iqtlabs/gamutrf-driver /usr/local /usr/local
 COPY --from=gr-iqtlabs-builder /usr/local /usr/local
 COPY --from=uhd_sample_recorder-builder /usr/local /usr/local
 RUN ldconfig -v
