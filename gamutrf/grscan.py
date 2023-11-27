@@ -212,6 +212,7 @@ class grscan(gr.top_block):
                         model_server=inference_model_server,
                         model_name=inference_model_name,
                         confidence=inference_min_confidence,
+                        max_rows=tune_step_fft,
                     )
                 ]
             )
