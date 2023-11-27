@@ -188,7 +188,6 @@ class grscan(gr.top_block):
         logging.info("serving FFT on %s", zmq_addr)
         self.fft_blocks.append((zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")))
 
-        self.inference_blocks = [blocks.null_sink(gr.sizeof_float * nfft)]
         if inference_output_dir:
             x = 640
             y = 640
@@ -211,19 +210,28 @@ class grscan(gr.top_block):
                     model_server=inference_model_server,
                     model_name=inference_model_name,
                     confidence=inference_min_confidence,
-                ),
-                inference2mqtt(
-                    "inference2mqtt",
-                    mqtt_server,
-                    compass,
-                    gps_server,
-                    use_external_gps,
-                    use_external_heading,
-                    external_gps_server,
-                    external_gps_server_port,
-                    inference_output_dir,
-                ),
+                )
             ]
+            if mqtt_server:
+                self.inference_blocks.extend(
+                    [
+                        inference2mqtt(
+                            "inference2mqtt",
+                            mqtt_server,
+                            compass,
+                            gps_server,
+                            use_external_gps,
+                            use_external_heading,
+                            external_gps_server,
+                            external_gps_server_port,
+                            inference_output_dir,
+                        )
+                    ]
+                )
+            else:
+                self.inference_blocks.extend([blocks.null_sink(1)])
+        if not self.inference_blocks:
+            self.inference_blocks = [blocks.null_sink(gr.sizeof_float * nfft)]
 
         if pretune:
             self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
