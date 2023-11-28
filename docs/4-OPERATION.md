@@ -17,7 +17,7 @@ While there are other options, these options primarily influence gamutRF's scann
 
 | Option | Description |
 | -- | -- |
-| --freq-start and --freq-end | Start and end of frequency range to scan in Hz |
+| --freq-start and --freq-end | Start and end of frequency range to scan in Hz (if --freq-end=0, will run in "stare" mode, static scanning from --freq-start to --freq_start + (--tuneoverlap * --samp_rate))|
 | --tuning_ranges | Overrides --freq-start and --freq-end if present. A comma separated list of ranges in Hz to scan, for example ```2.2e9-2.6e9,5.1e9-5.9e9``` |
 | --igain | SDR input gain in dB |
 | --samp-rate | Number of samples/sec |
