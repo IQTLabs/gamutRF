@@ -12,25 +12,6 @@ RUN cmake .. && make -j "$(nproc)" && make install
 WORKDIR /root/libsigmf/build
 RUN cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON .. && make -j "$(nproc)" && make install
 
-FROM ubuntu:22.04 as uhd_sample_recorder-builder
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  build-essential \
-  ca-certificates \
-  cmake \
-  git \
-  libboost-all-dev \
-  libuhd-dev \
-  libvulkan-dev \
-  sudo
-WORKDIR /root
-RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.8
-WORKDIR /root/uhd_sample_recorder
-RUN ./bin/install-deps.sh && rm -rf VkFFT
-COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/uhd_sample_recorder
-WORKDIR /root/uhd_sample_recorder/build
-RUN CMAKE_BUILD_TYPE=Release cmake ../lib && make -j $(nproc) && cp uhd_sample_recorder /usr/local/bin
-
 FROM ubuntu:22.04 as gr-iqtlabs-builder
 COPY --from=iqtlabs/gnuradio:3.10.8 /usr/local /usr/local
 ENV DEBIAN_FRONTEND noninteractive
@@ -73,7 +54,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     &&  apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 COPY --from=iqtlabs/gnuradio:3.10.8 /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-driver /usr/local /usr/local
+COPY --from=iqtlabs/gamutrf-uhd-sr /usr/local /usr/local
 COPY --from=gr-iqtlabs-builder /usr/local /usr/local
-COPY --from=uhd_sample_recorder-builder /usr/local /usr/local
 RUN ldconfig -v
 RUN python3 -c "from gnuradio import soapy, iqtlabs ; from gnuradio.iqtlabs import vkfft"
