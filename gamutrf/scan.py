@@ -48,7 +48,7 @@ def argument_parser():
         dest="freq_end",
         type=eng_float,
         default=eng_notation.num_to_str(MAX_FREQ),
-        help="Set freq_end [default=%(default)r]",
+        help="Set freq_end [default=%(default)r] (if 0, configure stare mode at --freq-start)",
     )
     parser.add_argument(
         "--freq-start",
@@ -380,11 +380,12 @@ def check_options(options):
     if options.samp_rate % options.nfft:
         print("NFFT should be a factor of sample rate")
 
-    if options.freq_start > options.freq_end:
-        return "freq_start must be less than freq_end"
+    if options.freq_end:
+        if options.freq_start > options.freq_end:
+            return "freq_start must be less than freq_end"
 
-    if options.freq_end > 6e9:
-        return "freq_end must be less than 6GHz"
+        if options.freq_end > 6e9:
+            return "freq_end must be less than 6GHz"
 
     if options.freq_start < 10e6:
         return "freq_start must be at least 10MHz"

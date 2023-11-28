@@ -75,6 +75,14 @@ class grscan(gr.top_block):
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
+        tune_step_hz = int(samp_rate * tuneoverlap)
+
+        if freq_end == 0:
+            freq_end = freq_start + (tune_step_hz - 1)
+            logging.info(
+                f"using stare mode, scan from {freq_start/1e6}MHz to {freq_end/1e6}MHz"
+            )
+
         ##################################################
         # Parameters
         ##################################################
@@ -126,7 +134,6 @@ class grscan(gr.top_block):
                 ]
             )
         freq_range = freq_end - freq_start
-        tune_step_hz = int(samp_rate * tuneoverlap)
         fft_rate = int(samp_rate / nfft)
 
         if not tune_step_fft:

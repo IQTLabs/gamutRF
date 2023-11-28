@@ -575,8 +575,13 @@ def update_fig(config, state, results):
         )
         scan_duration = scan_df.ts.max() - scan_df.ts.min()
         tune_count = scan_df.tune_count.max()
-        tune_rate_hz = tune_count / scan_duration
-        tune_dwell_ms = (scan_duration * 1e3) / tune_count
+
+        if scan_duration:
+            tune_rate_hz = tune_count / scan_duration
+            tune_dwell_ms = (scan_duration * 1e3) / tune_count
+        else:
+            tune_rate_hz = 0
+            tune_dwell_ms = 0
         idx = (
             ((scan_df.freq - config.min_freq) / config.freq_resolution)
             .round()

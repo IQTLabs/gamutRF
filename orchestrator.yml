@@ -40,14 +40,15 @@ services:
     devices:
       - /dev/bus/usb:/dev/bus/usb
       - /dev/dri/renderD128:/dev/dri/renderD128
-    # Uncomment when using Nvidia GPU (container toolkit etc must be installed)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #        devices:
-    #          - driver: nvidia
-    #            count: 1
-    #            capabilities: [gpu]
+    # nvidia container toolkit etc must be installed.
+    # Comment out "deploy" if on non-x86 platform (e.g. Pi4)
+    deploy:
+       resources:
+         reservations:
+            devices:
+              - driver: nvidia
+                count: 1
+                capabilities: [gpu]
     volumes:
       - '${VOL_PREFIX}:/logs'
     command:
@@ -68,9 +69,11 @@ services:
       - --use_external_gps
       - --use_external_heading
       - --inference_min_confidence=0.8
-      - --inference_min_db=-50
+      - --inference_min_db=-80
       - --inference_model_name=mini2_snr
-      - --inference_output_dir=/logs/inference
+      # - --external_gps_server=1.2.3.4
+      # - --external_gps_server_port=8888
+      # - --inference_output_dir=/logs/inference
       # - --inference_model_server=torchserve:8080
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
