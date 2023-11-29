@@ -68,7 +68,7 @@ services:
       - --no-compass
       - --use_external_gps
       - --use_external_heading
-      - --inference_min_confidence=0.8
+      - --inference_min_confidence=0.25
       - --inference_min_db=-80
       - --inference_model_name=mini2_snr
       # - --external_gps_server=1.2.3.4

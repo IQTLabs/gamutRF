@@ -41,7 +41,6 @@ class grscan(gr.top_block):
         gps_server="",
         igain=0,
         inference_min_confidence=0.5,
-        inference_nms_threshold=0.5,
         inference_min_db=-200,
         inference_model_server="",
         inference_model_name="",
