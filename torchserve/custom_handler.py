@@ -1,5 +1,6 @@
 # based on pytorch's yolov8n example.
 
+import json
 from collections import defaultdict
 import os
 
@@ -41,6 +42,9 @@ class Yolov8Handler(ObjectDetector):
         properties = context.system_properties
         self.manifest = context.manifest
         model_dir = properties.get("model_dir")
+        # https://docs.ultralytics.com/modes/predict/#inference-arguments
+        with open("model_config.json", "r") as f:
+            self.model_config = json.load(f)
         self.model_pt_path = None
         if "serializedFile" in self.manifest["model"]:
             serialized_file = self.manifest["model"]["serializedFile"]
@@ -62,6 +66,10 @@ class Yolov8Handler(ObjectDetector):
         model = YOLO(model_pt_path)
         model.to(self.device)
         return model
+
+    def inference(self, data, *args, **kwargs):
+        kwargs.update(self.model_config)
+        return super().inference(data, *args, **kwargs)
 
     def postprocess(self, res):
         output = []
