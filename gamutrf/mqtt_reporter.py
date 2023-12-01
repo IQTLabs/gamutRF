@@ -32,6 +32,19 @@ class MQTTReporter:
         self.external_gps_server = external_gps_server
         self.external_gps_server_port = external_gps_server_port
         self.external_gps_msg = None
+        self.gps_configured = True
+        if not self.gps_server and not self.external_gps_server:
+            logging.error("mqtt enabled, no gps_server or external_gps_server found")
+            self.gps_configured = False
+        if (
+            self.external_gps_server
+            and not self.use_external_gps
+            and not self.gps_server
+        ):
+            logging.error(
+                "mqtt enabled and only external_gps_server found, but no use_external_gps flag"
+            )
+            self.gps_configured = False
 
     @staticmethod
     def log(path, prefix, start_time, record_args):
@@ -72,17 +85,7 @@ class MQTTReporter:
                 logging.error("could not update heading: %s", err)
 
     def add_gps(self, publish_args):
-        if not self.gps_server and not self.external_gps_server:
-            logging.error("no gps_server or external_gps_server found")
-            return publish_args
-        if (
-            self.external_gps_server
-            and not self.use_external_gps
-            and not self.gps_server
-        ):
-            logging.error(
-                "only external_gps_server found, but no use_external_gps flag"
-            )
+        if not self.gps_configured:
             return publish_args
         publish_args.update(
             {
