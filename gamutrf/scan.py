@@ -152,7 +152,7 @@ def argument_parser():
         "--rotate_secs",
         dest="rotate_secs",
         type=int,
-        default=900,
+        default=300,
         help="rotate storage directories every N seconds",
     )
     parser.add_argument(

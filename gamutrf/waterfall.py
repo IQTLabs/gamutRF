@@ -36,7 +36,7 @@ def safe_savefig(path):
     tmp_path = os.path.join(dirname, "." + basename)
     plt.savefig(tmp_path)
     os.rename(tmp_path, path)
-    logging.info("wrote %s", path)
+    logging.debug("wrote %s", path)
     return path
 
 
