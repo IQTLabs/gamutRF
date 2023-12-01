@@ -366,6 +366,20 @@ def argument_parser():
         default=True,
         action=BooleanOptionalAction,
     )
+    parser.add_argument(
+        "--n_image",
+        dest="n_image",
+        type=int,
+        default=0,
+        help="if > 1, only log 1/n images",
+    )
+    parser.add_argument(
+        "--n_inference",
+        dest="n_inference",
+        type=int,
+        default=0,
+        help="if > 1, only send 1/n images for inference",
+    )
     return parser
 
 

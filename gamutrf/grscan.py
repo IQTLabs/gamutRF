@@ -50,6 +50,8 @@ class grscan(gr.top_block):
         logport=8001,
         low_power_hold_down=False,
         mqtt_server="",
+        n_image=0,
+        n_inference=0,
         nfft=1024,
         pretune=False,
         rotate_secs=0,
@@ -219,6 +221,9 @@ class grscan(gr.top_block):
                         model_name=inference_model_name,
                         confidence=inference_min_confidence,
                         max_rows=tune_step_fft,
+                        rotate_secs=rotate_secs,
+                        n_image=n_image,
+                        n_inference=n_inference,
                     )
                 ]
             )
