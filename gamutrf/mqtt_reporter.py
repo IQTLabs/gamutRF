@@ -96,13 +96,13 @@ class MQTTReporter:
 
         # Use external external GPS
         if self.use_external_gps:
-            try:
-                self.external_gps_msg = json.loads(
-                    http_get(
-                        f"http://{self.external_gps_server}:{self.external_gps_server_port}/gps-data"
-                    ).text
-                )
-
+            external_gps_msg = http_get(
+                f"http://{self.external_gps_server}:{self.external_gps_server_port}/gps-data"
+            )
+            if external_gps_msg is None:
+                logging.error("could not update with external GPS")
+            else:
+                self.external_gps_msg = json.loads(external_gps_msg.text)
                 publish_args.update(
                     {
                         "position": (
@@ -116,9 +116,6 @@ class MQTTReporter:
                         "gps": "fix",
                     }
                 )
-
-            except Exception as err:
-                logging.error("could not update with external GPS: %s", err)
 
         # Use internal GPIO GPS
         else:
