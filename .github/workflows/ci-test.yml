@@ -50,6 +50,7 @@ jobs:
           sudo ldconfig -v && \
           poetry config virtualenvs.create false && \
           poetry install --no-interaction && \
+          poetry install --no-interaction -C utils/mavlink-api && \
           sudo dpkg -r --force-depends python3-numpy
       - name: test gamutrf-samples2raw
         env:
