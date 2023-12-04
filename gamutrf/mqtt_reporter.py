@@ -66,23 +66,19 @@ class MQTTReporter:
 
     def get_heading(self):
         if self.use_external_heading:
-            try:
-                self.heading = float(
-                    json.loads(
-                        http_get(
-                            f"http://{self.external_gps_server}:{self.external_gps_server_port}/heading"
-                        ).text
-                    )["heading"]
-                )
-            except Exception as err:
-                logging.error("could not update external heading: %s", err)
+            heading_result = http_get(
+                f"http://{self.external_gps_server}:{self.external_gps_server_port}/heading"
+            )
+            if heading_result is None:
+                logging.error("could not update external heading")
+            else:
+                self.heading = float(json.loads(heading_result.text)["heading"])
         else:
-            try:
-                self.heading = str(
-                    float(http_get(f"http://{self.gps_server}:8000/v1/heading").text)
-                )
-            except Exception as err:
-                logging.error("could not update heading: %s", err)
+            heading_result = http_get(f"http://{self.gps_server}:8000/v1/heading")
+            if heading_result is None:
+                logging.error("could not update heading")
+            else:
+                self.heading = str(float(heading_result.text))
 
     def add_gps(self, publish_args):
         if not self.gps_configured:
