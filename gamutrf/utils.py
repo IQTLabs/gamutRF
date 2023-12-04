@@ -134,4 +134,3 @@ def http_get(url, timeout=10):
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as err:
         logging.error(f"{url}: {str(err)}")
         return None
-
