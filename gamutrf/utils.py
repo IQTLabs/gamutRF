@@ -2,7 +2,6 @@
 import logging
 import os
 import re
-import requests
 import sys
 from pathlib import Path
 
