@@ -5,8 +5,8 @@ import socket
 import time
 
 import gpsd
-import httpx
 import paho.mqtt.client as mqtt
+from gamutrf.utils import http_get
 
 
 class MQTTReporter:
@@ -69,7 +69,7 @@ class MQTTReporter:
             try:
                 self.heading = float(
                     json.loads(
-                        httpx.get(
+                        http_get(
                             f"http://{self.external_gps_server}:{self.external_gps_server_port}/heading"
                         ).text
                     )["heading"]
@@ -79,7 +79,7 @@ class MQTTReporter:
         else:
             try:
                 self.heading = str(
-                    float(httpx.get(f"http://{self.gps_server}:8000/v1/heading").text)
+                    float(http_get(f"http://{self.gps_server}:8000/v1/heading").text)
                 )
             except Exception as err:
                 logging.error("could not update heading: %s", err)
@@ -102,7 +102,7 @@ class MQTTReporter:
         if self.use_external_gps:
             try:
                 self.external_gps_msg = json.loads(
-                    httpx.get(
+                    http_get(
                         f"http://{self.external_gps_server}:{self.external_gps_server_port}/gps-data"
                     ).text
                 )
