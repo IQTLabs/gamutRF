@@ -21,7 +21,7 @@ services:
       - --declination=0
   mqtt:
     restart: always
-    image: iqtlabs/gamutrf-mqtt:latest
+    image: iqtlabs/edgetech-mqtt-dev:latest
     networks:
       - gamutrf
     ports:

@@ -6,7 +6,6 @@ This directory contains the scripts for building the various Docker containers n
 Description of the various files and their functions:
 - Dockerfile - 
 - Dockerfile.base - 
-- Dockerfile.mqtt - 
 - Dockerfile.vkfft - 
 - Dockerfile.airspyfm - 
 
