@@ -16,7 +16,6 @@ jobs:
       run: |
         cd docker
         docker build -f Dockerfile.airspyfm . -t iqtlabs/gamutrf-airspyfm:latest
-        docker build -f Dockerfile.mqtt . -t iqtlabs/gamutrf-mqtt:latest
   test-gamutrf-mavlink-api:
     runs-on: ubuntu-latest
     steps:
