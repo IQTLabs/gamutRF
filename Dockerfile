@@ -23,13 +23,13 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 WORKDIR /gamutrf
 COPY poetry.lock pyproject.toml README.md /gamutrf/
-RUN poetry run pip install --no-cache-dir pandas=="$(grep pandas pyproject.toml | grep -Eo '[0-9\.]+')"
+RUN --mount=type=cache,target=/root/.cache poetry run pip install --no-cache-dir pandas=="$(grep pandas pyproject.toml | grep -Eo '[0-9\.]+')"
 # dependency install is cached for faster rebuild, if only gamutrf source changed.
-RUN poetry install --no-interaction --no-ansi --no-dev --no-root
+RUN --mount=type=cache,target=/root/.cache poetry install --no-interaction --no-ansi --no-dev --no-root
 COPY gamutrf gamutrf/
 COPY bin bin/
 COPY templates templates/
-RUN poetry install --no-interaction --no-ansi --no-dev
+RUN --mount=type=cache,target=/root/.cache poetry install --no-interaction --no-ansi --no-dev
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04
