@@ -5,8 +5,8 @@ import socket
 import time
 
 import gpsd
-import httpx
 import paho.mqtt.client as mqtt
+from gamutrf.utils import http_get
 
 
 class MQTTReporter:
@@ -66,23 +66,19 @@ class MQTTReporter:
 
     def get_heading(self):
         if self.use_external_heading:
-            try:
-                self.heading = float(
-                    json.loads(
-                        httpx.get(
-                            f"http://{self.external_gps_server}:{self.external_gps_server_port}/heading"
-                        ).text
-                    )["heading"]
-                )
-            except Exception as err:
-                logging.error("could not update external heading: %s", err)
+            heading_result = http_get(
+                f"http://{self.external_gps_server}:{self.external_gps_server_port}/heading"
+            )
+            if heading_result is None:
+                logging.error("could not update external heading")
+            else:
+                self.heading = float(json.loads(heading_result.text)["heading"])
         else:
-            try:
-                self.heading = str(
-                    float(httpx.get(f"http://{self.gps_server}:8000/v1/heading").text)
-                )
-            except Exception as err:
-                logging.error("could not update heading: %s", err)
+            heading_result = http_get(f"http://{self.gps_server}:8000/v1/heading")
+            if heading_result is None:
+                logging.error("could not update heading")
+            else:
+                self.heading = str(float(heading_result.text))
 
     def add_gps(self, publish_args):
         if not self.gps_configured:
@@ -100,13 +96,13 @@ class MQTTReporter:
 
         # Use external external GPS
         if self.use_external_gps:
-            try:
-                self.external_gps_msg = json.loads(
-                    httpx.get(
-                        f"http://{self.external_gps_server}:{self.external_gps_server_port}/gps-data"
-                    ).text
-                )
-
+            external_gps_msg = http_get(
+                f"http://{self.external_gps_server}:{self.external_gps_server_port}/gps-data"
+            )
+            if external_gps_msg is None:
+                logging.error("could not update with external GPS")
+            else:
+                self.external_gps_msg = json.loads(external_gps_msg.text)
                 publish_args.update(
                     {
                         "position": (
@@ -120,9 +116,6 @@ class MQTTReporter:
                         "gps": "fix",
                     }
                 )
-
-            except Exception as err:
-                logging.error("could not update with external GPS: %s", err)
 
         # Use internal GPIO GPS
         else:

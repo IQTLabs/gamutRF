@@ -11,7 +11,6 @@ import bjoern
 import falcon
 import jinja2
 import numpy as np
-import requests
 import schedule
 
 from prometheus_client import Counter
@@ -25,7 +24,7 @@ from gamutrf.sigwindows import get_center
 from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import ROLLING_FACTOR
-from gamutrf.utils import rotate_file_n, SCAN_FRES
+from gamutrf.utils import http_get, rotate_file_n, SCAN_FRES
 from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners
 
 
@@ -255,14 +254,7 @@ def process_scan(args, scan_configs, prom_vars, df, lastbins):
 
 
 def recorder_req(recorder, recorder_args, timeout):
-    url = f"{recorder}/v1/{recorder_args}"
-    try:
-        req = requests.get(url, timeout=timeout)
-        logging.debug(str(req))
-        return req
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as err:
-        logging.debug(str(err))
-        return None
+    return http_get(f"{recorder}/v1/{recorder_args}", timeout=timeout)
 
 
 def get_freq_exclusions(args):

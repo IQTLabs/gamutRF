@@ -1,10 +1,12 @@
 #!/usr/bin/python3
+import logging
 import os
 import re
 import sys
 from pathlib import Path
 
 import numpy as np
+import requests
 
 MTU = 8962
 SCAN_FRES = 1e4
@@ -121,3 +123,13 @@ def get_nondot_files(filedir, glob="*.s*.*"):
         for path in Path(filedir).rglob(glob)
         if not os.path.basename(path).startswith(".")
     ]
+
+
+def http_get(url, timeout=10):
+    try:
+        req = requests.get(url, timeout=timeout)
+        logging.debug(str(req))
+        return req
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as err:
+        logging.error(f"{url}: {str(err)}")
+        return None
