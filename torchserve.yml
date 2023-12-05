@@ -12,5 +12,6 @@ services:
       - '8081:8081'
     volumes:
       - '${VOL_PREFIX}/model_store:/model_store'
+      - '/root/.cache:/root/.cache'
     command:
       - --models mini2_snr=mini2_snr.mar
