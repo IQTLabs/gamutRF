@@ -69,6 +69,7 @@ class Yolov8Handler(ObjectDetector):
 
     def inference(self, data, *args, **kwargs):
         kwargs.update(self.model_config)
+        print(f"inference got input tensor {data.shape}")
         return super().inference(data, *args, **kwargs)
 
     def postprocess(self, res):
@@ -81,4 +82,5 @@ class Yolov8Handler(ObjectDetector):
                 name = data.names[int(cls)]
                 result_dict[name].append({"conf": conf.item(), "xywh": xywh.tolist()})
             output.append(result_dict)
+        print(f"postprocess returned results for {len(output)} inference(s)")
         return output
