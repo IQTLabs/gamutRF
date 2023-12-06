@@ -81,8 +81,8 @@ jobs:
       - name: Test with pytest
         env:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
+          DOCKER_BUILDKIT: 1
         run: |
-          poetry run pip uninstall docker-compose || true
           poetry run pytest --cov-report term-missing --cov=. --cov-report=xml tests/
       - name: Upload coverage
         uses: codecov/codecov-action@v3
