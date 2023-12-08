@@ -9,13 +9,14 @@ import unittest
 import docker
 import numpy as np
 import requests
+import subprocess
 
 from gamutrf.birdseye_rssi import BirdsEyeRSSI
 
 
 class FakeArgs:
-    def __init__(self):
-        self.sdr = "file:/dev/zero"
+    def __init__(self, filename):
+        self.sdr = "file:" + filename
         self.threshold = -100
         self.mean_window = 4096
         self.rssi_threshold = -100
@@ -24,11 +25,14 @@ class FakeArgs:
 
 class BirdseyeRSSITestCase(unittest.TestCase):
     def test_birdseye_smoke(self):
-        tb = BirdsEyeRSSI(FakeArgs(), 1e3, 1e3)
-        tb.start()
-        time.sleep(10)
-        tb.stop()
-        tb.wait()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filename = os.path.join(tmpdir,  "gamutrf_recording1_1000Hz_1000sps.raw")
+            subprocess.check_call(["dd", "if=/dev/zero", "of=" + filename, "bs=1M", "count=1"])
+            tb = BirdsEyeRSSI(FakeArgs(filename), 1e3, 1e3)
+            tb.start()
+            time.sleep(10)
+            tb.stop()
+            tb.wait()
 
     def verify_birdseye_stream(self, gamutdir, freq):
         sample_rate = 1000000
@@ -61,7 +65,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
     def test_birdseye_endtoend_rssi(self):
         test_tag = "iqtlabs/gamutrf:latest"
         with tempfile.TemporaryDirectory() as tempdir:
-            testraw = os.path.join(tempdir, "test.raw")
+            testraw = os.path.join(tempdir, "gamutrf_recording1_1000Hz_1000sps.raw")
             gamutdir = os.path.join(tempdir, "gamutrf")
             testdata = (
                 np.random.random(int(1e6)).astype(np.float32)
