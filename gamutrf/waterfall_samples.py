@@ -6,69 +6,7 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 from gamutrf.utils import is_fft
-from gamutrf.sample_reader import get_reader
-from gamutrf.utils import SAMPLE_DTYPES, SAMPLE_FILENAME_RE
-
-FFT_FILENAME_RE = re.compile(
-    r"^.+_([0-9]+)_([0-9]+)points_([0-9]+)Hz_([0-9]+)sps\.(s\d+|raw).*$"
-)
-
-
-def parse_filename(filename):
-    # FFT is always float not matter the original sample type.
-    if is_fft(filename):
-        sample_type = "raw"
-        match = FFT_FILENAME_RE.match(filename)
-        try:
-            timestamp = int(match.group(1))
-            nfft = int(match.group(2))
-            freq_center = int(match.group(3))
-            sample_rate = int(match.group(4))
-            # sample_type = match.group(3)
-        except AttributeError:
-            timestamp = None
-            nfft = None
-            freq_center = None
-            sample_rate = None
-            sample_type = None
-    else:
-        match = SAMPLE_FILENAME_RE.match(filename)
-        nfft = None
-        try:
-            timestamp = int(match.group(1))
-            freq_center = int(match.group(2))
-            sample_rate = int(match.group(3))
-            sample_type = match.group(4)
-        except AttributeError:
-            timestamp = None
-            freq_center = None
-            sample_rate = None
-            sample_type = None
-
-    sample_dtype, sample_type = SAMPLE_DTYPES.get(sample_type, (None, None))
-    sample_bits = None
-    sample_len = None
-    if sample_dtype:
-        if is_fft(filename):
-            sample_dtype = np.float32
-            sample_bits = 32
-            sample_len = 4
-        else:
-            sample_dtype = np.dtype([("i", sample_dtype), ("q", sample_dtype)])
-            sample_bits = sample_dtype[0].itemsize * 8
-            sample_len = sample_dtype[0].itemsize * 2
-    file_info = {
-        "filename": filename,
-        "freq_center": freq_center,
-        "sample_rate": sample_rate,
-        "sample_dtype": sample_dtype,
-        "sample_len": sample_len,
-        "sample_type": sample_type,
-        "sample_bits": sample_bits,
-        "nfft": nfft,
-        "timestamp": timestamp,
-    }
-    return file_info
+from gamutrf.sample_reader import get_reader, parse_filename
 
 
 def read_samples(filename, sample_dtype, sample_bytes, seek_bytes=0, nfft=None, n=None):

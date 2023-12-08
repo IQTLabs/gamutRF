@@ -13,8 +13,7 @@ from torchsig.transforms.functional import (
     uniform_discrete_distribution,
 )
 from torchsig.utils.types import SignalData, SignalDescription
-from gamutrf.sample_reader import read_recording
-from gamutrf.waterfall_samples import parse_filename
+from gamutrf.sample_reader import read_recording, parse_filename
 
 
 def make_signal(samples, sample_rate, center_frequency):
