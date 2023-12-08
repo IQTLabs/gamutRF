@@ -1,17 +1,13 @@
 """Main entrypoint for GamutRF"""
-from gamutrf.worker import main as worker_main
 from gamutrf.compress_dirs import main as compress_dirs_main
 from gamutrf.freqxlator import main as freqxlator_main
+from gamutrf.offline import main as offline_main
 from gamutrf.samples2raw import main as samples2raw_main
 from gamutrf.scan import main as scan_main
 from gamutrf.sigfinder import main as sigfinder_main
 from gamutrf.specgram import main as specgram_main
 from gamutrf.waterfall import main as waterfall_main
-
-
-def worker():
-    """Entrypoint for worker"""
-    worker_main()
+from gamutrf.worker import main as worker_main
 
 
 def compress_dirs():
@@ -22,6 +18,11 @@ def compress_dirs():
 def freqxlator():
     """Entrypoint for freqxlator"""
     freqxlator_main()
+
+
+def offline():
+    """Entrypoint for offline"""
+    offline_main()
 
 
 def samples2raw():
@@ -47,3 +48,8 @@ def specgram():
 def waterfall():
     """Entrypoint for waterfall"""
     waterfall_main()
+
+
+def worker():
+    """Entrypoint for worker"""
+    worker_main()

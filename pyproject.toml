@@ -10,51 +10,50 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+"RPi.GPIO" = {version = "0.7.1", markers = "platform_machine != 'aarch64'"}
+Flask = "3.0.0"
+Jinja2 = "3.1.2"
 bjoern = "3.2.2"
+cairocffi = "^1.3.0"
 falcon = "3.1.3"
 falcon-cors = "1.1.7"
 gpsd-py3 = "0.3.0"
-Jinja2 = "3.1.2"
 matplotlib = "3.8.2"
 numpy = "1.26.2"
 paho-mqtt = "1.6.1"
 pandas = "2.1.3"
 prometheus_client = "0.19.0"
+pycairo = "^1.21.0"
+python = ">=3.9,<3.13"
+pyzmq = "^25.1.0"
 requests = "2.31.0"
-"RPi.GPIO" = {version = "0.7.1", markers = "platform_machine != 'aarch64'"}
 schedule = "1.2.1"
 scipy = "1.11.4"
 sigmf = "1.1.3"
-zstandard = "0.22.0"
-pycairo = "^1.21.0"
-cairocffi = "^1.3.0"
-Flask = "3.0.0"
 sysrsync = "^1.1.1"
-pyzmq = "^25.1.0"
+zstandard = "0.22.0"
 
 [tool.poetry.dev-dependencies]
 attr = "0.3.2"
 attrs = "23.1.0"
 black = "23.11.0"
 docker = "6.1.3"
+pdbpp = "^0.10.3"
 pylint = "3.0.2"
 pytest = "7.4.3"
 pytest-cov = "4.1.0"
 pytype = "2023.12.7"
-pdbpp = "^0.10.3"
 
 [tool.poetry.scripts]
-gamutrf-worker = 'gamutrf.__main__:worker'
+gamutrf-compress_dirs = 'gamutrf.__main__:compress_dirs'
 gamutrf-freqxlator = 'gamutrf.__main__:freqxlator'
+gamutrf-offline= 'gamutrf.__main__:offline'
 gamutrf-samples2raw = 'gamutrf.__main__:samples2raw'
 gamutrf-scan = 'gamutrf.__main__:scan'
-
 gamutrf-sigfinder = 'gamutrf.__main__:sigfinder'
 gamutrf-specgram = 'gamutrf.__main__:specgram'
-gamutrf-compress_dirs = 'gamutrf.__main__:compress_dirs'
-
 gamutrf-waterfall = 'gamutrf.__main__:waterfall'
+gamutrf-worker = 'gamutrf.__main__:worker'
 
 [tool.poetry.urls]
 homepage = "https://github.com/IQTLabs/gamutRF"

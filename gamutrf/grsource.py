@@ -79,6 +79,9 @@ class file_source_tagger(gr.sync_block):
             self.need_tags = False
         n = len(output_items[0])
         samples = self.samples[self.i : self.i + n]
+        if len(samples) < n:
+            self.i = self.n_samples
+            return 0
         self.i += len(samples)
         output_items[0][:] = samples
         return len(samples)

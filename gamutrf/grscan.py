@@ -169,6 +169,9 @@ class grscan(gr.top_block):
             pretune,
         )
         self.fft_blocks = fft_blocks + self.get_db_blocks(nfft, samp_rate, scaling)
+        fft_dir = sample_dir
+        if not write_samples:
+            fft_dir = ""
         retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
             nfft,
@@ -181,7 +184,7 @@ class grscan(gr.top_block):
             skip_tune_step,
             db_clamp_floor,
             db_clamp_ceil,
-            sample_dir,
+            fft_dir,
             write_samples,
             bucket_range,
             tuning_ranges,

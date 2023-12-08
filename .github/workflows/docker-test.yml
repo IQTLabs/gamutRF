@@ -35,12 +35,13 @@ jobs:
         docker build -f docker/Dockerfile.base docker -t iqtlabs/gamutrf-base:latest
         docker build -f Dockerfile . -t iqtlabs/gamutrf:latest
         docker build -f docker/Dockerfile.torchsig . -t iqtlabs/gamutrf-torchsig:latest
+        docker run -t iqtlabs/gamutrf:latest gamutrf-compress_dirs --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-freqxlator --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-offline --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-samples2raw --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-scan --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-sigfinder --help
-        docker run -t iqtlabs/gamutrf:latest gamutrf-worker --help
-        docker run -t iqtlabs/gamutrf:latest gamutrf-samples2raw --help
-        docker run -t iqtlabs/gamutrf:latest gamutrf-freqxlator --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-waterfall --help
-        docker run -t iqtlabs/gamutrf:latest gamutrf-compress_dirs --help
+        docker run -t iqtlabs/gamutrf:latest gamutrf-worker --help
         sudo apt-get update && sudo apt-get install -qy python3-pip
         docker compose -f orchestrator.yml -f worker.yml -f docker/monitoring.yml -f specgram.yml build
