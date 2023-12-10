@@ -50,7 +50,8 @@ class file_source_tagger(gr.sync_block):
             in_sig=None,
             out_sig=[np.complex64],
         )
-        _, self.samples, self.center_freq = get_samples(input_file)
+        _, self.samples, meta = get_samples(input_file)
+        self.center_freq = meta["center_frequency"]
         self.n_samples = len(self.samples)
         self.i = 0
         self.message_port_register_in(pmt.intern(cmd_port))

@@ -13,60 +13,19 @@ from torchsig.transforms.functional import (
     uniform_discrete_distribution,
 )
 from torchsig.utils.types import SignalData, SignalDescription
-from gamutrf.sample_reader import read_recording, parse_filename
+from gamutrf.sample_reader import read_recording, get_samples
 
 
-def make_signal(samples, sample_rate, center_frequency):
+def make_signal(samples, meta):
     num_iq_samples = samples.shape[0]
     desc = SignalDescription(
-        sample_rate=sample_rate,
+        sample_rate=meta["sample_rate"],
         num_iq_samples=num_iq_samples,
-        center_frequency=center_frequency,
+        center_frequency=meta["center_frequency"],
     )
     # TODO: subclass SignalData with alternate constructor that can take just numpy array
     signal = SignalData(samples.tobytes(), np.float32, np.complex128, desc)
     return signal
-
-
-def get_nosigmf_file(filename):
-    meta = parse_filename(filename)
-    sample_rate = meta["sample_rate"]
-    sample_dtype = meta["sample_dtype"]
-    sample_len = meta["sample_len"]
-    center_frequency = meta["freq_center"]
-    samples = None
-    for samples_buffer in read_recording(
-        filename, sample_rate, sample_dtype, sample_len, max_sample_secs=None
-    ):
-        if samples is None:
-            samples = samples_buffer
-        else:
-            samples = np.concatenate([samples, samples_buffer])
-    signal = make_signal(samples, sample_rate, center_frequency)
-    return filename, signal
-
-
-def get_signal(filename):
-    if not os.path.exists(filename):
-        raise FileNotFoundError(filename)
-    meta_ext = filename.find(".sigmf-meta")
-    if meta_ext == -1:
-        return get_nosigmf_file(filename)
-
-    meta = sigmf.sigmffile.fromfile(filename)
-    data_filename = filename[:meta_ext]
-    meta.set_data_file(data_filename)
-    # read_samples() always converts to host cf32.
-    samples = meta.read_samples()
-    global_meta = meta.get_global_info()
-    sample_rate = global_meta["core:sample_rate"]
-    sample_type = global_meta["core:datatype"]
-    captures_meta = meta.get_captures()
-    center_frequency = None
-    if captures_meta:
-        center_frequency = captures_meta[0].get("core:frequency", None)
-    signal = make_signal(samples, sample_rate, center_frequency)
-    return data_filename, signal
 
 
 def write_signal(filename, signal, transforms_text):
@@ -133,7 +92,8 @@ def argument_parser():
 
 def main():
     options = argument_parser().parse_args()
-    data_filename, signal = get_signal(options.filename)
+    data_filename, samples, meta = get_samples(options.filename)
+    signal = make_signal(samples, meta)
     augment(signal, data_filename, options.outdir, options.n, options.transforms)
 
 

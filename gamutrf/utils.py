@@ -20,7 +20,7 @@ SCAN_FROLL = 1e6
 # UHD_IMAGES_DIR=/usr/share/uhd/images ./examples/rx_samples_to_file --args num_recv_frames=1000,recv_frame_size=16360 --file test.gz --nsamps 200000000 --rate 20000000 --freq 101e6 --spb 20000000
 ETTUS_ARGS = "num_recv_frames=1000,recv_frame_size=16360,type=b200"
 ETTUS_ANT = "TX/RX"
-SAMPLE_FILENAME_RE = re.compile(r"^.+\D(\d+)_(\d+)Hz_(\d+)sps\.c*([fisu]\d+|raw).*$")
+SAMPLE_FILENAME_RE = re.compile(r"^.+\D(\d+)_(\d+)Hz.*\D(\d+)sps\.c*([fisu]\d+|raw).*$")
 
 SAMPLE_DTYPES = {
     "i8": ("<i1", "signed-integer"),
@@ -81,40 +81,6 @@ def replace_ext(filename, ext, all_ext=False):
 
 def is_fft(filename):
     return os.path.basename(filename).startswith("fft_")
-
-
-def parse_filename(filename):
-    # TODO: parse from sigmf.
-    match = SAMPLE_FILENAME_RE.match(filename)
-    try:
-        epoch_time = int(match.group(1))
-        freq_center = int(match.group(2))
-        sample_rate = int(match.group(3))
-        sample_type = match.group(4)
-    except AttributeError:
-        epoch_time = None
-        freq_center = None
-        sample_rate = None
-        sample_type = None
-    # FFT is always float not matter the original sample type.
-    if is_fft(filename):
-        sample_type = "raw"
-    sample_dtype, sample_type = SAMPLE_DTYPES.get(sample_type, (None, None))
-    sample_bits = None
-    sample_len = None
-    if sample_dtype:
-        sample_dtype = np.dtype([("i", sample_dtype), ("q", sample_dtype)])
-        sample_bits = sample_dtype[0].itemsize * 8
-        sample_len = sample_dtype[0].itemsize * 2
-    return (
-        epoch_time,
-        freq_center,
-        sample_rate,
-        sample_dtype,
-        sample_len,
-        sample_type,
-        sample_bits,
-    )
 
 
 def get_nondot_files(filedir, glob="*.s*.*"):

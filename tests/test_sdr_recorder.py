@@ -12,7 +12,9 @@ class SDRRecorderTestCase(unittest.TestCase):
 
     def get_file_recorder(self, tmpdir):
         filename = os.path.join(tmpdir, "gamutrf_recording1_1000Hz_1000sps.raw")
-        subprocess.check_call(["dd", "if=/dev/zero", "of=" + filename, "bs=1M", "count=1"])
+        subprocess.check_call(
+            ["dd", "if=/dev/zero", "of=" + filename, "bs=1M", "count=1"]
+        )
         return get_recorder("file:" + filename, 3600)
 
     def test_sdr_recorder(self):

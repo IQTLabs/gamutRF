@@ -7,7 +7,7 @@ import time
 
 from gnuradio import iqtlabs
 from gamutrf.grscan import grscan
-from gamutrf.sample_reader import parse_filename
+from gamutrf.sample_reader import get_samples
 
 
 def argument_parser():
@@ -63,19 +63,20 @@ def main():
     options = argument_parser().parse_args()
     filename = options.filename
     out_dir = os.path.dirname(filename)
-    meta = parse_filename(filename)
+    _data_filename, _samples, meta = get_samples(filename)
+    freq_start = int(meta["center_frequency"] - (meta["sample_rate"] / 2))
     tb = grscan(
         db_clamp_floor=-1e9,
         fft_batch_size=256,
         freq_end=0,
-        freq_start=meta["freq_center"],
+        freq_start=freq_start,
         inference_min_db=-1e9,
         inference_output_dir=out_dir,
         iqtlabs=iqtlabs,
         n_image=options.n_image,
         nfft=options.nfft,
         pretune=True,
-        samp_rate=meta["sample_rate"],
+        samp_rate=int(meta["sample_rate"]),
         sample_dir=out_dir,
         sdr="file:" + filename,
         tune_step_fft=options.tune_step_fft,

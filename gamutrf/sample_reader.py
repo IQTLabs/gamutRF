@@ -8,9 +8,7 @@ import zstandard
 import numpy as np
 from gamutrf.utils import SAMPLE_DTYPES, SAMPLE_FILENAME_RE, is_fft
 
-FFT_FILENAME_RE = re.compile(
-    r"^.+_([0-9]+)_([0-9]+)points_([0-9]+)Hz_([0-9]+)sps\.(s\d+|raw).*$"
-)
+POINTS_RE = re.compile(r"^.+\D([0-9]+)points_.+$")
 
 
 def get_reader(filename):
@@ -36,51 +34,41 @@ def get_reader(filename):
 
 
 def parse_filename(filename):
+    timestamp = None
+    nfft = None
+    center_frequency = None
+    sample_rate = None
+    sample_type = None
+
     # FFT is always float not matter the original sample type.
     if is_fft(filename):
         sample_type = "raw"
-        match = FFT_FILENAME_RE.match(filename)
-        try:
-            timestamp = int(match.group(1))
-            nfft = int(match.group(2))
-            freq_center = int(match.group(3))
-            sample_rate = int(match.group(4))
-            # sample_type = match.group(3)
-        except AttributeError:
-            timestamp = None
-            nfft = None
-            freq_center = None
-            sample_rate = None
-            sample_type = None
-    else:
-        match = SAMPLE_FILENAME_RE.match(filename)
-        nfft = None
-        try:
-            timestamp = int(match.group(1))
-            freq_center = int(match.group(2))
-            sample_rate = int(match.group(3))
-            sample_type = match.group(4)
-        except AttributeError:
-            timestamp = None
-            freq_center = None
-            sample_rate = None
-            sample_type = None
+        match = POINTS_RE.match(filename)
+        if match is not None:
+            nfft = int(match.group(1))
+
+    match = SAMPLE_FILENAME_RE.match(filename)
+    if match is not None:
+        timestamp, center_frequency, sample_rate, sample_type = (
+            int(match.group(1)),
+            int(match.group(2)),
+            int(match.group(3)),
+            match.group(4),
+        )
 
     sample_dtype, sample_type = SAMPLE_DTYPES.get(sample_type, (None, None))
     sample_bits = None
     sample_len = None
     if sample_dtype:
         if is_fft(filename):
-            sample_dtype = np.float32
-            sample_bits = 32
-            sample_len = 4
+            sample_dtype = np.dtype([("i", np.float32), ("q", np.float32)])
         else:
             sample_dtype = np.dtype([("i", sample_dtype), ("q", sample_dtype)])
-            sample_bits = sample_dtype[0].itemsize * 8
-            sample_len = sample_dtype[0].itemsize * 2
-    file_info = {
+        sample_bits = sample_dtype[0].itemsize * 8
+        sample_len = sample_dtype[0].itemsize * 2
+    meta = {
         "filename": filename,
-        "freq_center": freq_center,
+        "center_frequency": center_frequency,
         "sample_rate": sample_rate,
         "sample_dtype": sample_dtype,
         "sample_len": sample_len,
@@ -89,7 +77,7 @@ def parse_filename(filename):
         "nfft": nfft,
         "timestamp": timestamp,
     }
-    return file_info
+    return meta
 
 
 def read_recording(
@@ -143,19 +131,19 @@ def read_recording(
 
 def get_nosigmf_samples(filename):
     meta = parse_filename(filename)
-    sample_rate = meta["sample_rate"]
-    sample_dtype = meta["sample_dtype"]
-    sample_len = meta["sample_len"]
-    center_frequency = meta["freq_center"]
     samples = None
     for samples_buffer in read_recording(
-        filename, sample_rate, sample_dtype, sample_len, max_sample_secs=None
+        filename,
+        meta["sample_rate"],
+        meta["sample_dtype"],
+        meta["sample_len"],
+        max_sample_secs=None,
     ):
         if samples is None:
             samples = samples_buffer
         else:
             samples = np.concatenate([samples, samples_buffer])
-    return filename, samples, center_frequency
+    return filename, samples, meta
 
 
 def get_samples(filename):
@@ -168,13 +156,18 @@ def get_samples(filename):
     meta = sigmf.sigmffile.fromfile(filename)
     data_filename = filename[:meta_ext]
     meta.set_data_file(data_filename)
-    # read_samples() always converts to host cf32.
     samples = meta.read_samples()
     global_meta = meta.get_global_info()
-    sample_rate = global_meta["core:sample_rate"]
-    sample_type = global_meta["core:datatype"]
     captures_meta = meta.get_captures()
     center_frequency = None
     if captures_meta:
         center_frequency = captures_meta[0].get("core:frequency", None)
-    return data_filename, samples, center_frequency
+    meta = {
+        "sample_rate": global_meta["core:sample_rate"],
+        "sample_dtype": global_meta["core:datatype"],
+        "sample_len": samples[
+            0
+        ].itemsize,  # read_samples() always converts to host cf32.
+        "center_frequency": center_frequency,
+    }
+    return data_filename, samples, meta
