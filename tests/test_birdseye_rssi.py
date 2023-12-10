@@ -26,8 +26,10 @@ class FakeArgs:
 class BirdseyeRSSITestCase(unittest.TestCase):
     def test_birdseye_smoke(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            filename = os.path.join(tmpdir,  "gamutrf_recording1_1000Hz_1000sps.raw")
-            subprocess.check_call(["dd", "if=/dev/zero", "of=" + filename, "bs=1M", "count=1"])
+            filename = os.path.join(tmpdir, "gamutrf_recording1_1000Hz_1000sps.raw")
+            subprocess.check_call(
+                ["dd", "if=/dev/zero", "of=" + filename, "bs=1M", "count=1"]
+            )
             tb = BirdsEyeRSSI(FakeArgs(filename), 1e3, 1e3)
             tb.start()
             time.sleep(10)

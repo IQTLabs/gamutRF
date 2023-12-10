@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from gamutrf.specgram import process_all_recordings
-from gamutrf.utils import parse_filename
+from gamutrf.sample_reader import parse_filename
 
 
 class FakeArgs:
@@ -49,16 +49,8 @@ class SpecgramTestCase(unittest.TestCase):
             recording = os.path.join(
                 str(tempdir), "testrecording_123_100Hz_1000sps.raw"
             )
-            (
-                _epoch_time,
-                _freq_center,
-                sample_rate,
-                _sample_dtype,
-                sample_len,
-                _sample_type,
-                _sample_bits,
-            ) = parse_filename(recording)
-            samples = chr(0) * int(sample_len * sample_rate)
+            meta = parse_filename(recording)
+            samples = chr(0) * int(meta["sample_len"] * meta["sample_rate"])
             with open(recording, "wb") as f:
                 f.write(samples.encode("utf8"))
             fakeargs = FakeArgs(

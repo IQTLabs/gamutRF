@@ -131,23 +131,23 @@ def main():
         processing_batch = []
         for f in sample_files:
             f = os.path.join(sample_dir, f)
-            # freq_center, sample_rate, sample_dtype, sample_bytes, sample_type, sample_bits, _, timestamp = parse_filename(f)
+            # center_frequency, sample_rate, sample_dtype, sample_bytes, sample_type, sample_bits, _, timestamp = parse_filename(f)
             file_info = parse_filename(f)
-            freq_center = file_info["freq_center"]
+            center_frequency = file_info["center_frequency"]
             sample_rate = file_info["sample_rate"]
             if (
                 (
-                    ((freq_center + (sample_rate / 2)) >= min_freq)
-                    and ((freq_center + (sample_rate / 2)) <= max_freq)
+                    ((center_frequency + (sample_rate / 2)) >= min_freq)
+                    and ((center_frequency + (sample_rate / 2)) <= max_freq)
                 )
                 or (
-                    ((freq_center - (sample_rate / 2)) >= min_freq)
-                    and ((freq_center - (sample_rate / 2)) <= max_freq)
+                    ((center_frequency - (sample_rate / 2)) >= min_freq)
+                    and ((center_frequency - (sample_rate / 2)) <= max_freq)
                 )
             ) and f not in processed_files:
                 if (
                     not processing_batch
-                    or processing_batch[-1]["freq_center"] < freq_center
+                    or processing_batch[-1]["center_frequency"] < center_frequency
                 ):
                     processing_batch.append(file_info)
                 else:
@@ -166,12 +166,12 @@ def main():
                 filename = file_info["filename"]
                 sample_dtype = file_info["sample_dtype"]
                 sample_bytes = file_info["sample_len"]
-                freq_center = file_info["freq_center"]
+                center_frequency = file_info["center_frequency"]
                 sample_rate = file_info["sample_rate"]
                 sample_type = file_info["sample_type"]
                 sample_bits = file_info["sample_bits"]
                 timestamp = file_info["timestamp"]
-                # filename, freq_center, sample_rate, sample_dtype, sample_bytes, sample_type, sample_bits, _, timestamp = parse_filename(f)
+                # filename, center_frequency, sample_rate, sample_dtype, sample_bytes, sample_type, sample_bits, _, timestamp = parse_filename(f)
 
                 samples = read_samples(
                     filename, sample_dtype, sample_bytes, seek_bytes=0, nfft=nfft, n=n
@@ -188,17 +188,17 @@ def main():
                     return_onesided=False,
                 )
                 freq_bins = np.fft.fftshift(freq_bins)
-                # print(f"{freq_bins.shape=}{freq_center + freq_bins=}")
+                # print(f"{freq_bins.shape=}{center_frequency + freq_bins=}")
 
                 idx = np.array(
                     [
                         round((item - min_freq) / freq_resolution)
-                        for item in freq_bins + freq_center
+                        for item in freq_bins + center_frequency
                     ]
                 ).astype(int)
                 # print(f"{idx=}")
                 # print(f"{np.where(idx>=0)}")
-                # print(f"{(freq_bins+freq_center)[np.where(idx>=0)]=}")
+                # print(f"{(freq_bins+center_frequency)[np.where(idx>=0)]=}")
                 # print(f"{freq_bins.shape=}, {S.shape=}")
 
                 S = np.fft.fftshift(S, axes=0)

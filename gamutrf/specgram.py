@@ -13,9 +13,8 @@ from scipy.fft import fftfreq  # pylint disable=no-name-in-module
 
 from gamutrf.utils import get_nondot_files
 from gamutrf.utils import is_fft
-from gamutrf.utils import parse_filename
 from gamutrf.utils import replace_ext
-from gamutrf.sample_reader import read_recording
+from gamutrf.sample_reader import read_recording, parse_filename
 
 
 def stride_windows(x, n, noverlap=0, axis=0):
@@ -273,22 +272,16 @@ def plot_spectrogram(
 
 
 def process_recording(args, recording):
-    (
-        _epoch_time,
-        freq_center,
-        sample_rate,
-        sample_dtype,
-        sample_len,
-        _sample_type,
-        _sample_bits,
-    ) = parse_filename(recording)
+    meta = parse_filename(recording)
+    center_frequency = meta["center_frequency"]
+    sample_rate = int(meta["sample_rate"])
+    sample_len = int(meta["sample_len"])
+    sample_dtype = meta["sample_dtype"]
     spectrogram_filename = replace_ext(recording, args.iext, all_ext=True)
     if args.skip_exist and os.path.exists(spectrogram_filename):
         print(f"skipping {recording}")
         return
     if is_fft(recording):
-        # always in complex float format.
-        sample_dtype = np.dtype([("i", "float32"), ("q", "float32")])
         if not args.skip_fft:
             print(f"skipping precomputed FFT {recording}")
             return
@@ -310,7 +303,7 @@ def process_recording(args, recording):
         spectrogram_filename,
         args.nfft,
         sample_rate,
-        freq_center,
+        center_frequency,
         args.cmap,
         args.ytics,
         args.bare,

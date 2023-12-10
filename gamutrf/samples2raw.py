@@ -1,7 +1,7 @@
 import argparse
 import subprocess
 
-from gamutrf.utils import parse_filename
+from gamutrf.sample_reader import parse_filename
 from gamutrf.utils import replace_ext
 
 
@@ -16,10 +16,11 @@ def make_procs_args(sample_filename, outfmt):
         procs_args.append(["zstdcat", sample_filename])
         out_filename = replace_ext(out_filename, "")
 
-    _, _, sample_rate, _sample_dtype, _sample_len, in_format, in_bits = parse_filename(
-        out_filename
-    )
-    print(_, sample_rate, _sample_dtype, _sample_len, in_format, in_bits)
+    meta = parse_filename(out_filename)
+    sample_rate = meta["sample_rate"]
+    in_format = meta["sample_type"]
+    in_bits = meta["sample_bits"]
+    print(meta)
     out_filename = replace_ext(out_filename, "raw", all_ext=True)
     sox_in = sample_filename
     if procs_args:
