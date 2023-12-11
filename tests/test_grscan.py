@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import glob
+import os
+import subprocess
 import tempfile
 import time
 import unittest
@@ -101,11 +103,33 @@ class GrscanTestCase(unittest.TestCase):
         for sdr in ("ettus", "bladerf"):
             self.assertRaises(RuntimeError, get_source, sdr, 1e3, 10)
 
-    def run_grscan_smoke(self, pretune, wavelearner, write_samples):
+    def run_grscan_smoke(self, pretune, wavelearner, write_samples, test_file):
         with tempfile.TemporaryDirectory() as tempdir:
+            freq_start = 1e9
+            freq_end = 2e9
+            samp_rate = int(1.024e6)
+            sdr = "tuneable_test_source"
+            if test_file:
+                freq_end = 0
+                sdr_file = os.path.join(
+                    tempdir,
+                    f"gamutrf_recording1_{int(freq_start)}Hz_{int(samp_rate)}sps.raw",
+                )
+                subprocess.check_call(
+                    [
+                        "dd",
+                        "if=/dev/urandom",
+                        f"of={sdr_file}",
+                        f"bs={samp_rate}",
+                        "count=10",
+                    ]
+                )
+                sdr = "file:" + sdr_file
             tb = grscan(
-                sdr="tuneable_test_source",
-                samp_rate=int(1.024e6),
+                freq_start=freq_start,
+                freq_end=freq_end,
+                sdr=sdr,
+                samp_rate=samp_rate,
                 write_samples=write_samples,
                 sample_dir=tempdir,
                 iqtlabs=iqtlabs,
@@ -128,9 +152,10 @@ class GrscanTestCase(unittest.TestCase):
 
     def test_grscan_smoke(self):
         for pretune in (True, False):
+            self.run_grscan_smoke(pretune, False, True, True)
             for wavelearner in (FakeWaveLearner(), None):
                 for write_samples in (0, 1):
-                    self.run_grscan_smoke(pretune, wavelearner, write_samples)
+                    self.run_grscan_smoke(pretune, wavelearner, write_samples, False)
 
 
 if __name__ == "__main__":  # pragma: no cover
