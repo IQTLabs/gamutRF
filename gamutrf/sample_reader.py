@@ -155,6 +155,11 @@ def get_samples(filename):
 
     meta = sigmf.sigmffile.fromfile(filename)
     data_filename = filename[:meta_ext]
+    if os.path.splitext(data_filename)[-1] != ".sigmf-data":
+        data_filename = data_filename + ".sigmf-data"
+    if not os.path.exists(data_filename):
+        raise FileNotFoundError(data_filename)
+
     meta.set_data_file(data_filename)
     samples = meta.read_samples()
     global_meta = meta.get_global_info()

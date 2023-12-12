@@ -144,6 +144,8 @@ def main():
     options = argument_parser().parse_args()
     filename = options.filename
     out_dir = os.path.dirname(filename)
+    if out_dir == "":
+        out_dir = "."
     _data_filename, _samples, meta = get_samples(filename)
     freq_start = int(meta["center_frequency"] - (meta["sample_rate"] / 2))
     scan_args = {
