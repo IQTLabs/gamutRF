@@ -154,21 +154,22 @@ class grscan(gr.top_block):
             f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
         )
 
-        fft_blocks = self.get_fft_blocks(
-            vkfft,
-            fft_batch_size,
-            nfft,
-            dc_block_len,
-            dc_block_long,
-            freq_start,
-            freq_end,
-            tune_step_hz,
-            tune_step_fft,
-            skip_tune_step,
-            tuning_ranges,
-            pretune,
+        self.fft_blocks = (
+            self.get_dc_blocks(dc_block_len, dc_block_long)
+            + self.get_fft_blocks(
+                vkfft,
+                fft_batch_size,
+                nfft,
+                freq_start,
+                freq_end,
+                tune_step_hz,
+                tune_step_fft,
+                skip_tune_step,
+                tuning_ranges,
+                pretune,
+            )
+            + self.get_db_blocks(nfft, samp_rate, scaling)
         )
-        self.fft_blocks = fft_blocks + self.get_db_blocks(nfft, samp_rate, scaling)
         fft_dir = sample_dir
         if not write_samples:
             fft_dir = ""
@@ -288,12 +289,10 @@ class grscan(gr.top_block):
     def get_window(self, nfft):
         return window.hann(nfft)
 
-    def get_offload_fft_block(
+    def get_pretune_block(
         self,
         fft_batch_size,
         nfft,
-        fft_block,
-        fft_roll,
         freq_start,
         freq_end,
         tune_step_hz,
@@ -302,50 +301,9 @@ class grscan(gr.top_block):
         tuning_ranges,
         pretune,
     ):
-        offload_blocks = [
-            self.retune_pre_fft,
-            blocks.multiply_const_vff(
-                [val for val in self.get_window(nfft) for _ in range(2)]
-                * fft_batch_size
-            ),
-            fft_block,
-            blocks.vector_to_stream(gr.sizeof_gr_complex * nfft, fft_batch_size),
-        ]
-        if fft_roll:
-            offload_blocks.append(self.iqtlabs.vector_roll(nfft))
-        return offload_blocks
-
-    def get_fft_blocks(
-        self,
-        vkfft,
-        fft_batch_size,
-        nfft,
-        dc_block_len,
-        dc_block_long,
-        freq_start,
-        freq_end,
-        tune_step_hz,
-        tune_step_fft,
-        skip_tune_step,
-        tuning_ranges,
-        pretune,
-    ):
-        fft_block = None
-        fft_roll = False
-        if self.wavelearner:
-            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), (nfft), True)
-            fft_roll = True
-        elif vkfft:
-            fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
-        else:
-            fft_batch_size = 1
-
-        fft_blocks = []
-        if dc_block_len:
-            fft_blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
-
+        # if pretuning, the pretune block will also do the batching.
         if pretune:
-            self.retune_pre_fft = self.iqtlabs.retune_pre_fft(
+            return self.iqtlabs.retune_pre_fft(
                 nfft,
                 fft_batch_size,
                 "rx_freq",
@@ -357,35 +315,74 @@ class grscan(gr.top_block):
                 tuning_ranges,
                 self.tag_now,
             )
-        else:
-            self.retune_pre_fft = blocks.stream_to_vector(
-                gr.sizeof_gr_complex, fft_batch_size * nfft
-            )
+        # otherwise, the pretuning block will just do batching.
+        return blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft)
 
-        if fft_block:
-            fft_blocks.extend(
-                self.get_offload_fft_block(
-                    fft_batch_size,
-                    nfft,
-                    fft_block,
-                    fft_roll,
-                    freq_start,
-                    freq_end,
-                    tune_step_hz,
-                    tune_step_fft,
-                    skip_tune_step,
-                    tuning_ranges,
-                    pretune,
-                )
-            )
+    def get_offload_fft_blocks(
+        self,
+        vkfft,
+        fft_batch_size,
+        nfft,
+    ):
+        fft_block = None
+        fft_roll = False
+        if self.wavelearner:
+            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), (nfft), True)
+            fft_roll = True
+        elif vkfft:
+            fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
         else:
-            fft_blocks.extend(
-                [
-                    self.retune_pre_fft,
-                    fft.fft_vcc(nfft, True, self.get_window(nfft), True, 1),
-                ]
-            )
-        return fft_blocks
+            fft_batch_size = 1
+            fft_blocks = [
+                fft.fft_vcc(nfft, True, self.get_window(nfft), True, 1),
+            ]
+            return fft_batch_size, fft_blocks
+
+        fft_blocks = [
+            blocks.multiply_const_vff(
+                [val for val in self.get_window(nfft) for _ in range(2)]
+                * fft_batch_size
+            ),
+            fft_block,
+            blocks.vector_to_stream(gr.sizeof_gr_complex * nfft, fft_batch_size),
+        ]
+        if fft_roll:
+            fft_blocks.append(self.iqtlabs.vector_roll(nfft))
+        return fft_batch_size, fft_blocks
+
+    def get_dc_blocks(self, dc_block_len, dc_block_long):
+        if dc_block_len:
+            return [grfilter.dc_blocker_cc(dc_block_len, dc_block_long)]
+        return []
+
+    def get_fft_blocks(
+        self,
+        vkfft,
+        fft_batch_size,
+        nfft,
+        freq_start,
+        freq_end,
+        tune_step_hz,
+        tune_step_fft,
+        skip_tune_step,
+        tuning_ranges,
+        pretune,
+    ):
+        fft_batch_size, fft_blocks = self.get_offload_fft_blocks(
+            vkfft, fft_batch_size, nfft
+        )
+        self.retune_pre_fft = self.get_pretune_block(
+            fft_batch_size,
+            nfft,
+            freq_start,
+            freq_end,
+            tune_step_hz,
+            tune_step_fft,
+            skip_tune_step,
+            tuning_ranges,
+            pretune,
+        )
+        return [self.retune_pre_fft] + fft_blocks
 
     def start(self):
         super().start()
