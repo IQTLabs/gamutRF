@@ -20,7 +20,7 @@ from gamutrf.sigfinder import ok_response
 from gamutrf.sigfinder import process_scans
 from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import rotate_file_n
-from gamutrf.zmqreceiver import fft_proxy, ZmqReceiver, parse_scanners
+from zmqbucket.zmqbucket import fft_proxy, ZmqReceiver, parse_scanners
 
 
 def null_proxy(*args, **kwargs):

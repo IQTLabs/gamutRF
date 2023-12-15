@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "zmqbucket"
+version = "0.5.40"
+description = "gamutrf zmqbucket"
+authors = ["cglewis <clewis@iqt.org>"]
+license = "Apache-2.0"
+packages = [
+    { include = "zmqbucket" },
+]
+
+[tool.poetry.dependencies]
+pandas = "2.1.4"
+python = ">=3.9,<3.13"
+pyzmq = "^25.1.0"
+zstandard = "0.22.0"
+
+[tool.poetry.urls]
+homepage = "https://github.com/IQTLabs/gamutRF"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

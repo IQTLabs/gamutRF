@@ -49,6 +49,9 @@ jobs:
           done && \
           sudo ldconfig -v && \
           poetry config virtualenvs.create false && \
+          cd zmqbucket && \
+          poetry install --no-interaction && \
+          cd .. && \
           poetry install --no-interaction && \
           poetry install --no-interaction -C utils/mavlink-api && \
           sudo dpkg -r --force-depends python3-numpy

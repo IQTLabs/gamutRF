@@ -23,7 +23,7 @@ from scipy.ndimage import gaussian_filter
 
 from gamutrf.peak_finder import get_peak_finder
 from gamutrf.utils import SCAN_FRES
-from gamutrf.zmqreceiver import ZmqReceiver, parse_scanners, frame_resample
+from zmqbucket.zmqbucket import ZmqReceiver, parse_scanners, frame_resample
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
 warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
