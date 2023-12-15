@@ -52,15 +52,6 @@ jobs:
           poetry install --no-interaction && \
           poetry install --no-interaction -C utils/mavlink-api && \
           sudo dpkg -r --force-depends python3-numpy
-      - name: test gamutrf-samples2raw
-        env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
-        run: |
-          gamutrf-samples2raw --help && \
-          dd if=/dev/zero of=/tmp/gamutrf_recording_ettus__gain40_1_1Hz_1000000sps.s16 bs=4 count=1000000 && \
-          gamutrf-samples2raw /tmp/gamutrf_recording_ettus__gain40_1_1Hz_1000000sps.s16 --outfmt=float && \
-          dd if=/dev/zero of=/tmp/floats bs=8 count=1000000 && \
-          diff /tmp/gamutrf_recording_ettus__gain40_1_1Hz_1000000sps.raw /tmp/floats
       - name: Code Quality - Black
         run: |
           poetry run black gamutrf --check

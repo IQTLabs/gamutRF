@@ -108,14 +108,6 @@ gamutRF provides a tool to convert a recording or directory of recordings into a
 
 Use the ```--help``` option to change how the spectogram is generated (for example, to change the sample rate).
 
-### Translating recordings to "gnuradio" format
-
-Most SDR tools by convention take an uncompressed raw binary file as input, of [gnuradio type complex](https://blog.sdr.hu/grblocks/types.html). The user must explicitly specify to most SDR tools what sample rate the file was made at to correctly process it. gamutRF provides a tool that converts a gamutRF I/Q recording (which may be compressed) to an uncompressed binary file. For example:
-
-```
-docker run -v /tmp:/tmp -ti iqtlabs/gamutrf gamutrf-samples2raw /tmp/gamutrf_recording_ettus_directional_gain70_1234_100000000Hz_20971520sps.s16.zst
-```
-
 ### Reviewing a recording interactively in gqrx
 
 [gqrx](https://gqrx.dk/) is a multiplatform open source tool that allows some basic SDR operations like visualizing or audio demodulating an I/Q sample recording (see the [github releases page](https://github.com/gqrx-sdr/gqrx/releases), for a MacOS .dmg file). To use gqrx with a gamutRF recording, first translate the recording to gnuradio format (see above). Then open gqrx.
@@ -128,22 +120,10 @@ docker run -v /tmp:/tmp -ti iqtlabs/gamutrf gamutrf-samples2raw /tmp/gamutrf_rec
 * Set ```Decimation``` to None.
 * Finally select ```OK``` and then ```play``` from the gqrx interface to watch the recording play.
 
-### Reducing recording sample rate
-
-You may want to reduce the sample rate of a recording or re-center it with respect to frequency (e.g. to use another demodulator tool that doesn't support a high sample rate). gamutRF provides the ```freqxlator``` tool to do this.
-
-* Translate your gamutRF recording to gnuradio format (see above).
-* Use ```freqxlator``` to create a new recording at a lower sample rate, potentially with a different center frequency.
-
-For example, to reduce a recording made with gamutRF's default sample rate to 1/10th the rate while adjusting the center frequency down by 1MHz, use:
-
-```docker run -ti iqtlabs/gamutrf gamutrf-freqxlator --samp-rate 20971520 --center -1e6 --dec 10 gamutrf_recording_gain70_1234_100000000Hz_20971520sps.raw gamutrf_recording_gain70_1234_100000000Hz_2097152sps.raw```
-
 ### Demodulating AM/FM audio from a recording
 
 gamutRF provides a tool to demodulate AM/FM audio from a recording as an example use case.
 
-* Use the ```freqxlator``` tool to make a new recording at no more than 1Msps and has the frequency to be demodulated centered.
 * Use the ```airspyfm``` tool to demodulate audio to a WAV file.
 
 For example, to decode an FM recording which must be at the center frequency of a recording:
