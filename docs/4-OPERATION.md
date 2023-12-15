@@ -96,6 +96,14 @@ until a new RPC (whether rssi or record) is received.
 
 Below are some untility functions for working with GamutRF and the collected IQ files.
 
+### Running GamutRF pipeline from IQ file
+
+gamutrf-offline can be used to run a previously recorded IQ file through GamutRF to simulate expected behavior of FFT, spectrogram generation, and model performance. To run in offline mode you will need to supply the relevant IQ file as either .sigmf-data file and the relevant .sigmf-meta file or the .zst or raw IQ file with the appropriately formatted naming convention.
+
+```bash
+docker run -v $(pwd):/gamutrf/data -ti iqtlabs/gamutrf gamutrf-offline --tune-step-fft=512 --db_clamp_floor=-150 --fft_batch_size=256 --nfft=1024 "data/{source_file}.sigmf-meta"
+```
+
 ### Working with worker I/Q recordings
 
 Workers make recordings that are compressed with zstandard, and are typically in complex number, int16 format, and include the center frequency and sample rate that the recording was made with. gamutRF tools can generally work with such files directly, but other tools require the recordings to be converted (see below).
