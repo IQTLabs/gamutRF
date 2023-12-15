@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "zmqbucket"
+name = "gamutrflib"
 version = "0.5.40"
-description = "gamutrf zmqbucket"
+description = "gamutrf non-gnuradio common code"
 authors = ["cglewis <clewis@iqt.org>"]
 license = "Apache-2.0"
 packages = [
-    { include = "zmqbucket" },
+    { include = "gamutrflib" },
 ]
 
 [tool.poetry.dependencies]

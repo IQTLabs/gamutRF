@@ -25,7 +25,7 @@ from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.sigwindows import find_sig_windows
 from gamutrf.sigwindows import ROLLING_FACTOR
 from gamutrf.utils import http_get, rotate_file_n, SCAN_FRES
-from zmqbucket.zmqbucket import ZmqReceiver, parse_scanners
+from gamutrflib.zmqbucket import ZmqReceiver, parse_scanners
 
 
 MB = int(1.024e6)
