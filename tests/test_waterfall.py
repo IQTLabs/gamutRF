@@ -9,7 +9,7 @@ import time
 import unittest
 import pandas as pd
 from gamutrf.waterfall import argument_parser, waterfall
-from gamutrf.peak_finder import get_peak_finder
+from gamutrflib.peak_finder import get_peak_finder
 
 
 class FakeZmqReceiver:

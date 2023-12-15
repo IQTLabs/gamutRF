@@ -21,7 +21,7 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from matplotlib import style
 from scipy.ndimage import gaussian_filter
 
-from gamutrf.peak_finder import get_peak_finder
+from gamutrflib.peak_finder import get_peak_finder
 from gamutrf.utils import SCAN_FRES
 from gamutrflib.zmqbucket import ZmqReceiver, parse_scanners, frame_resample
 

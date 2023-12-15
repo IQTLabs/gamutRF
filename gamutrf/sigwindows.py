@@ -4,7 +4,7 @@ from collections import Counter
 from collections import defaultdict
 
 import numpy as np
-from gamutrf.peak_finder import get_peak_finder
+from gamutrflib.peak_finder import get_peak_finder
 from gamutrf.utils import SCAN_FRES, SCAN_FROLL
 
 
