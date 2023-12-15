@@ -49,7 +49,7 @@ jobs:
           done && \
           sudo ldconfig -v && \
           poetry config virtualenvs.create false && \
-          cd zmqbucket && \
+          cd gamutrflib && \
           poetry install --no-interaction && \
           cd .. && \
           poetry install --no-interaction && \
