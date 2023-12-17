@@ -33,7 +33,7 @@ jobs:
         docker build -f docker/Dockerfile.driver docker -t iqtlabs/gamutrf-driver:latest
         docker build -f docker/Dockerfile.uhd-sr docker -t iqtlabs/gamutrf-uhd-sr:latest
         docker build -f docker/Dockerfile.base docker -t iqtlabs/gamutrf-base:latest
-        docker build -f docker/Dockerfile.waterfall docker -t iqtlabs/gamutrf-waterfall:latest
+        docker build -f docker/Dockerfile.waterfall . -t iqtlabs/gamutrf-waterfall:latest
         docker build -f Dockerfile . -t iqtlabs/gamutrf:latest
         docker build -f docker/Dockerfile.torchsig . -t iqtlabs/gamutrf-torchsig:latest
         docker run -t iqtlabs/gamutrf:latest gamutrf-compress_dirs --help
