@@ -107,7 +107,7 @@ services:
       - "PIN_TRIGGER=17"
   waterfall:
     restart: always
-    image: iqtlabs/gamutrf:latest
+    image: iqtlabs/gamutrf-waterfall:latest
     networks:
       - gamutrf
     ports:

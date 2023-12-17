@@ -52,15 +52,20 @@ jobs:
           cd gamutrflib && \
           poetry install --no-interaction && \
           cd .. && \
+          cd gamutrfwaterfall && \
+          poetry install --no-interaction && \
+          cd .. && \
           poetry install --no-interaction && \
           poetry install --no-interaction -C utils/mavlink-api && \
           sudo dpkg -r --force-depends python3-numpy
       - name: Code Quality - Black
         run: |
-          poetry run black gamutrf --check
-          poetry run black utils --check
-          poetry run black torchserve --check
           poetry run black augment --check
+          poetry run black gamutrf --check
+          poetry run black gamutrflib --check
+          poetry run black gamutrfwaterfall --check
+          poetry run black torchserve --check
+          poetry run black utils --check
       - name: Code Quality - Pylint
         run: |
           poetry run pylint --fail-under=6 gamutrf/
@@ -71,12 +76,14 @@ jobs:
           sudo pip3 install pytype=="$(grep -E "pytype = " pyproject.toml | grep -Eo "[0-9\.]+")" && \
             sudo pip3 install -U pyserial && \
             pytype -k gamutrf/ && \
+            pytype -k gamutrflib/ && \
+            pytype -k gamutrfwaterfall/ && \
             pytype -k utils/mavlink-api
       - name: Test with pytest
         env:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
         run: |
-          poetry run pytest --cov-report term-missing --cov=. --cov-report=xml tests/
+          poetry run pytest --cov-report term-missing --cov=. --cov-report=xml tests/ gamutrfwaterfall/tests
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
