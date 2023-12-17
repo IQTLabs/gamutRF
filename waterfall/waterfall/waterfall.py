@@ -22,12 +22,13 @@ from matplotlib import style
 from scipy.ndimage import gaussian_filter
 
 from gamutrflib.peak_finder import get_peak_finder
-from gamutrf.utils import SCAN_FRES
 from gamutrflib.zmqbucket import ZmqReceiver, parse_scanners, frame_resample
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
 warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
 warnings.filterwarnings(action="ignore", message="Degrees of freedom <= 0 for slice.")
+
+SCAN_FRES = 1e4
 
 
 def safe_savefig(path):
