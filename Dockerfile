@@ -14,7 +14,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     libev-dev \
     python3 \
     python3-dev \
-    python3-pip && \
+    python3-pip \
+    python3-pyqt5 \
+    python3-pyqt5.sip && \
     curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2 && \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip
@@ -65,6 +67,8 @@ RUN if [ "$(arch)" = "x86_64" ] ; then \
         libopencv-core4.5d \
         libopencv-imgcodecs4.5d \
         libopencv-imgproc4.5d \
+        python3-pyqt5 \
+        python3-pyqt5.sip \
         librtlsdr0 \
         libspdlog1 \
         libuhd4.1.0 \
