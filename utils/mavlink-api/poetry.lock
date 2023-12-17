@@ -403,14 +403,14 @@ files = [
 
 [[package]]
 name = "pymavlink"
-version = "2.4.40"
+version = "2.4.41"
 description = "Python MAVLink code"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pymavlink-2.4.40-py3-none-any.whl", hash = "sha256:f1be2eb9ceafe1686c99876fa762774dabd66de8134ec10fd5d3c9469bf23949"},
-    {file = "pymavlink-2.4.40.tar.gz", hash = "sha256:3d6a552ad344a1fff9e0c811361ac9d8bb8201cf6aacad7224d516fa037ccb30"},
+    {file = "pymavlink-2.4.41-py3-none-any.whl", hash = "sha256:5cbc975a1192359d60ea75bede789486a84e50d2ea07435b33a32ee5cb13c11f"},
+    {file = "pymavlink-2.4.41.tar.gz", hash = "sha256:ed3225ce985d06103aab251afc883d04a98a1d6db5c73995e7de4caacb1f66cd"},
 ]
 
 [package.dependencies]
