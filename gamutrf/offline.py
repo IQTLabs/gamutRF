@@ -30,7 +30,7 @@ def main():
         }
         for override_dir in ("inference_output_dir", "sample_dir"):
             override_val = getattr(options, override_dir)
-            if not override:
+            if not override_val:
                 override_val = out_dir
             scan_args[override_dir] = override_val
         scan_args.update(
