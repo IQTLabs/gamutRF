@@ -5,7 +5,6 @@ import re
 import sys
 from pathlib import Path
 
-import numpy as np
 import requests
 
 MTU = 8962

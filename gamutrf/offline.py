@@ -1,9 +1,7 @@
 #!/usr/bin/python3
-from argparse import ArgumentParser, BooleanOptionalAction
 import glob
 import os
 import logging
-import tempfile
 import time
 
 from gnuradio import iqtlabs

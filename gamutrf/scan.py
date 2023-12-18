@@ -1,5 +1,4 @@
 import logging
-import os
 import signal
 import time
 import sys
@@ -272,7 +271,7 @@ def argument_parser():
         dest="scaling",
         type=str,
         default="spectrum",
-        help="""Same as --scaling parameter in scipy.signal.spectrogram(). 
+        help="""Same as --scaling parameter in scipy.signal.spectrogram().
         Selects between computing the power spectral density ('density') 
         where `Sxx` has units of V**2/Hz and computing the power
         spectrum ('spectrum') where `Sxx` has units of V**2, if `x`
