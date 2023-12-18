@@ -1,9 +1,7 @@
 #!/usr/bin/python3
-from argparse import ArgumentParser, BooleanOptionalAction
 import glob
 import os
 import logging
-import tempfile
 import time
 
 from gnuradio import iqtlabs
@@ -17,7 +15,6 @@ def main():
     parser = argument_parser()
     parser.add_argument("filename", type=str, help="Recording filename (or glob)")
     options = parser.parse_args()
-    filename = options.filename
     for filename in glob.glob(options.filename):
         out_dir = os.path.dirname(filename)
         if out_dir == "":

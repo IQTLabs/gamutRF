@@ -1,13 +1,11 @@
 #!/usr/bin/python3
 import os
-import tempfile
 import unittest
 
 from gamutrf.sigwindows import choose_record_signal
 from gamutrf.sigwindows import choose_recorders
 from gamutrf.sigwindows import freq_excluded
 from gamutrf.sigwindows import parse_freq_excluded
-from gamutrf.sigwindows import ROLLOVERHZ, ROLLING_FACTOR
 
 
 TESTDIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")

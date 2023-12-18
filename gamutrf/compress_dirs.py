@@ -1,11 +1,8 @@
 import argparse
-import logging
 import os
 import sys
 import time
 import tarfile
-import gzip
-import subprocess
 import sysrsync
 
 
@@ -25,8 +22,8 @@ def check_tld(top_dir, args):
         f"Folders inside '{top_dir}' that are more than {args.threshold_seconds} seconds old:"
     )
 
-    for dir in os.listdir(top_dir):
-        dir_path = os.path.join(top_dir, dir)
+    for sdir in os.listdir(top_dir):
+        dir_path = os.path.join(top_dir, sdir)
         if os.path.isdir(dir_path):
             folder_mtime = os.path.getmtime(dir_path)
             if current_time - folder_mtime > args.threshold_seconds:
@@ -54,7 +51,7 @@ def tar_directories(dir_paths, args):
 
         with tarfile.open(tar_filename, file_mode) as tar_file:
             # Add all files in the directory to the tar file
-            for root, dirs, files in os.walk(dir_path):
+            for root, _dirs, files in os.walk(dir_path):
                 for file in files:
                     file_path = os.path.join(root, file)
                     tar_file.add(file_path)
@@ -66,7 +63,7 @@ def tar_directories(dir_paths, args):
 
         # Delete if --delete
         if args.delete:
-            for root, dirs, files in os.walk(dir_path):
+            for root, _dirs, files in os.walk(dir_path):
                 for file in files:
                     file_path = os.path.join(root, file)
                     os.remove(file_path)
@@ -186,9 +183,9 @@ def main():
         for filename in tarred_filenames:
             print(filename)
         print("...finished processing files")
-        if args.export_path != None:
+        if args.export_path is not None:
             print(f"Exporting tar files to {args.export_path}")
-            exported_filepath = export_to_path(args.dir, args.export_path, args)
+            export_to_path(args.dir, args.export_path, args)
             print(f"...done exporting to {args.export_path}")
     else:
         print("No valid folders found.")
