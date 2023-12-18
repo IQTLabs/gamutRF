@@ -29,14 +29,14 @@ See the [build doc](docs/3-BUILD.md) for instruction on setting up a GamutRF sys
 
 ## Documentation
 
-[1 - Introduction](docs/1-INTRODUCTION.md)
-[2 - System Overview](docs/2-SYSTEM_OVERVIEW.md)
-[3 - Build](docs/3-BUILD.md)
-[4 - Operation](docs/4-OPERATION.md)
-[5 - ML Tooling](docs/5-ML_TOOLING.md)
-[6 - Testing](docs/6-TESTING.md)
-[7 - Troubleshooting](docs/7-TROUBLESHOOTING.md)
-[AIRT Support](docs/README-airt.md)
+[1 - Introduction](docs/1-INTRODUCTION.md)  
+[2 - System Overview](docs/2-SYSTEM_OVERVIEW.md)  
+[3 - Build](docs/3-BUILD.md)  
+[4 - Operation](docs/4-OPERATION.md)  
+[5 - ML Tooling](docs/5-ML_TOOLING.md)  
+[6 - Testing](docs/6-TESTING.md)  
+[7 - Troubleshooting](docs/7-TROUBLESHOOTING.md)  
+[AIRT Support](docs/README-airt.md)  
 
 ## Contributing
 
