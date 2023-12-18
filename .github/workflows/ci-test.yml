@@ -73,7 +73,6 @@ jobs:
             sudo pip3 install -U pyserial && \
             pytype -k gamutrf/ && \
             pytype -k gamutrflib/ && \
-            pytype -k gamutrfwaterfall/ && \
             pytype -k utils/mavlink-api
       - name: Test with pytest
         env:

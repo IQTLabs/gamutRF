@@ -26,6 +26,7 @@ from gamutrf.flask_handler import FlaskHandler
 from gamutrf.utils import SAMP_RATE, MIN_FREQ, MAX_FREQ
 
 running = True
+DYNAMIC_EXCLUDE_OPTIONS = ["apiport", "promport", "updatetimeout"]
 
 
 def init_prom_vars():
@@ -419,8 +420,7 @@ def run_loop(options, prom_vars, wavelearner):
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    dynamic_exclude_options = ["apiport", "promport", "updatetimeout"]
-    handler = FlaskHandler(options, check_options, dynamic_exclude_options)
+    handler = FlaskHandler(options, check_options, DYNAMIC_EXCLUDE_OPTIONS)
     handler.start()
 
     while running:
@@ -435,7 +435,7 @@ def run_loop(options, prom_vars, wavelearner):
             {
                 k: getattr(handler.options, k)
                 for k in dir(handler.options)
-                if not k.startswith("_") and not k in dynamic_exclude_options
+                if not k.startswith("_") and not k in DYNAMIC_EXCLUDE_OPTIONS
             }
         )
         tb = grscan(**scan_args)
