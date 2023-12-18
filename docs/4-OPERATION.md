@@ -94,7 +94,7 @@ until a new RPC (whether rssi or record) is received.
 
 ## Utility Functions
 
-Below are some untility functions for working with GamutRF and the collected IQ files.
+Below are some utility functions for working with GamutRF and the collected IQ files.
 
 ### Running GamutRF pipeline from IQ file
 
