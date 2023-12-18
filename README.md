@@ -11,7 +11,7 @@ over a network.
 
 gamutRF provides tools to work with I/Q sample recordings, and to also record GPS location/compass metadata for the system itself. gamutRF typically runs on networks of Raspberry Pi4s, but can also run on x86 machines, and is based on gnuradio.
 
-See also [instructions on how to build a gamutRF system](docs/BUILD.md).
+See also [instructions on how to build a gamutRF system](docs/3-BUILD.md).
 
 ## Scanner theory of operation
 
@@ -25,7 +25,18 @@ As there will almost certainly be more signals than workers available, sigfinder
 
 ## Build and Operating gamutRF
 
-See the [build doc](docs/2-BUILD.md) for instruction on setting up a GamutRF system. Next see the [operating instructions](docs/4-OPERATION.md) for instructions on operating GamutRF.
+See the [build doc](docs/3-BUILD.md) for instruction on setting up a GamutRF system. Next see the [operating instructions](docs/4-OPERATION.md) for instructions on operating GamutRF.
+
+## Documentation
+
+[1 - Introduction](docs/1-INTRODUCTION.md)
+[2 - System Overview](docs/2-SYSTEM_OVERVIEW.md)
+[3 - Build](docs/3-BUILD.md)
+[4 - Operation](docs/4-OPERATION.md)
+[5 - ML Tooling](docs/5-ML_TOOLING.md)
+[6 - Testing](docs/6-TESTING.md)
+[7 - Troubleshooting](docs/7-TROUBLESHOOTING.md)
+[AIRT Support](docs/README-airt.md)
 
 ## Contributing
 
