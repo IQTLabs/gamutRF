@@ -2,6 +2,7 @@
 import glob
 import json
 import os
+import subprocess
 import tempfile
 import time
 import unittest
@@ -9,7 +10,6 @@ import unittest
 import docker
 import numpy as np
 import requests
-import subprocess
 
 from gamutrf.birdseye_rssi import BirdsEyeRSSI
 
