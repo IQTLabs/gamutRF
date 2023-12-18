@@ -28,17 +28,18 @@ def main():
             and k != "filename"
             and k not in DYNAMIC_EXCLUDE_OPTIONS
         }
+        for override_dir in ("inference_output_dir", "sample_dir"):
+            override_val = getattr(options, override_dir)
+            if not override:
+                override_val = out_dir
+            scan_args[override_dir] = override_val
         scan_args.update(
             {
                 "iqtlabs": iqtlabs,
                 "freq_end": 0,
                 "freq_start": freq_start,
-                "inference_output_dir": getattr(
-                    options, "inference_output_dir", out_dir
-                ),
                 "pretune": True,
                 "samp_rate": int(meta["sample_rate"]),
-                "sample_dir": getattr(options, "sample_dir", out_dir),
                 "sdr": "file:" + filename,
             }
         )

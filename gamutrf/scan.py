@@ -152,7 +152,7 @@ def argument_parser():
         "--rotate_secs",
         dest="rotate_secs",
         type=int,
-        default=300,
+        default=0,
         help="rotate storage directories every N seconds",
     )
     parser.add_argument(
@@ -351,7 +351,7 @@ def argument_parser():
     parser.add_argument(
         "--mqtt_server",
         help="MQTT server to report RSSI",
-        default="mqtt",
+        default="",
         type=str,
     )
     parser.add_argument(
