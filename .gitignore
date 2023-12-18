@@ -141,3 +141,6 @@ tests/gamutrf_test_dir/*.tar*
 *.DS_Store
 
 \#*
+torchserve/*mar
+torchserve/*txt
+torchserve/*pt

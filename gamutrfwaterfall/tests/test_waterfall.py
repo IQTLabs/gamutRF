@@ -8,7 +8,7 @@ import tempfile
 import time
 import unittest
 import pandas as pd
-from gamutrf.waterfall import argument_parser, waterfall
+from gamutrfwaterfall.waterfall import argument_parser, waterfall
 from gamutrflib.peak_finder import get_peak_finder
 
 

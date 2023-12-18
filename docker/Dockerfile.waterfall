@@ -1,0 +1,39 @@
+# nosemgrep:github.workflows.config.dockerfile-source-not-pinned
+FROM ubuntu:22.04 as installer
+ENV DEBIAN_FRONTEND noninteractive
+ENV PATH="${PATH}:/root/.local/bin"
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update && apt-get install --no-install-recommends -y -q \
+    ca-certificates \
+    curl \
+    gcc \
+    git \
+    libcairo2-dev \
+    libev-dev \
+    python3 \
+    python3-dev \
+    python3-pip && \
+    curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2 && \
+    poetry config virtualenvs.create false
+WORKDIR /gamutrflib
+COPY gamutrflib /gamutrflib/
+RUN poetry install --no-interaction --no-ansi --no-dev
+WORKDIR /gamutrfwaterfall
+COPY gamutrfwaterfall /gamutrfwaterfall/
+RUN poetry install --no-interaction --no-ansi --no-dev
+
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND noninteractive
+ENV PATH="${PATH}:/root/.local/bin"
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update && apt-get install --no-install-recommends -y -q \
+    curl \
+    git \
+    libev4 \
+    libcairo2 \
+    python3
+COPY --from=installer /root/.local /root/.local
+COPY --from=installer /usr/local /usr/local
+COPY --from=installer /gamutrflib /gamutrflib
+COPY --from=installer /gamutrfwaterfall /gamutrfwaterfall
+CMD ["gamutrf-waterfall", "--help"]

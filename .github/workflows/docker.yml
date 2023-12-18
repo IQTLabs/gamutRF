@@ -67,6 +67,15 @@ jobs:
         push: true
         tags: iqtlabs/gamutrf-base:${{ steps.change_version.outputs.VERSION }}
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+    - name: Build and push platforms waterfall
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: docker/Dockerfile.waterfall
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-waterfall:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
   buildx-gamutrf:
     needs: [buildx-base]
     runs-on: ubuntu-latest
