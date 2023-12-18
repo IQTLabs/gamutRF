@@ -420,7 +420,7 @@ def run_loop(options, prom_vars, wavelearner):
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    handler = FlaskHandler(options, check_options, dynamic_exclude_options)
+    handler = FlaskHandler(options, check_options, DYNAMIC_EXCLUDE_OPTIONS)
     handler.start()
 
     while running:
