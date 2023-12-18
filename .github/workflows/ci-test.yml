@@ -49,14 +49,10 @@ jobs:
           done && \
           sudo ldconfig -v && \
           poetry config virtualenvs.create false && \
-          cd gamutrflib && \
-          poetry install --no-interaction && \
-          cd .. && \
-          cd gamutrfwaterfall && \
-          poetry install --no-interaction && \
-          cd .. && \
-          poetry install --no-interaction && \
+          poetry install --no-interaction -C gamutrflib && \
+          poetry install --no-interaction -C gamutrfwaterfall && \
           poetry install --no-interaction -C utils/mavlink-api && \
+          poetry install --no-interaction && \
           sudo dpkg -r --force-depends python3-numpy
       - name: Code Quality - Black
         run: |
@@ -68,7 +64,7 @@ jobs:
           poetry run black utils --check
       - name: Code Quality - Pylint
         run: |
-          poetry run pylint --fail-under=6 gamutrf/
+          poetry run pylint --fail-under=6 gamutrf/ gamutrflib/ gamutrfwaterfall/
       - name: Code Quality - Pytype
         env:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages

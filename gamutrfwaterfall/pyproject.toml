@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "gamutrf waterfall"
+name = "gamutrfwaterfall"
 version = "0.5.40"
 description = "An orchestrated SDR scanner"
 authors = ["cglewis <clewis@iqt.org>"]
