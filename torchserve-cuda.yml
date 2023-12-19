@@ -5,6 +5,8 @@ services:
   torchserve:
     restart: always
     image: iqtlabs/cuda-torchserve:v0.0.6
+    healthcheck:
+      start_period: 120s
     networks:
       - gamutrf
     ports:
@@ -12,7 +14,7 @@ services:
       - '8081:8081'
     volumes:
       - '${VOL_PREFIX}/model_store:/model_store'
-      - '/root/.cache:/root/.cache'
+      - '/root/.cache/pip:/root/.cache/pip'
     deploy:
       resources:
         reservations:

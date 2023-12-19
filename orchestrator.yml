@@ -43,12 +43,17 @@ services:
     # nvidia container toolkit etc must be installed.
     # Comment out "deploy" if on non-x86 platform (e.g. Pi4)
     deploy:
-       resources:
-         reservations:
-            devices:
-              - driver: nvidia
-                count: 1
-                capabilities: [gpu]
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # if torchserve is not being used, comment out the
+    # dependency.
+    depends_on:
+      torchserve:
+        condition: service_healthy
     volumes:
       - '${VOL_PREFIX}:/logs'
     command:
