@@ -4,7 +4,7 @@ networks:
 services:
   torchserve:
     restart: always
-    image: iqtlabs/cuda-torchserve:v0.0.5
+    image: iqtlabs/cuda-torchserve:v0.0.6
     networks:
       - gamutrf
     ports:
