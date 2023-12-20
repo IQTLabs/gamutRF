@@ -2180,14 +2180,14 @@ test = ["asv", "gmpy2", "mpmath", "pooch", "pytest", "pytest-cov", "pytest-timeo
 
 [[package]]
 name = "sigmf"
-version = "1.1.3"
+version = "1.1.5"
 description = "Python module for interacting with SigMF recordings."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "SigMF-1.1.3-py3-none-any.whl", hash = "sha256:6f33064ddce5ff0ce2b1e2a44215b16a7f8424523a6d9c0f5072205a2cf242ce"},
-    {file = "SigMF-1.1.3.tar.gz", hash = "sha256:f305c8b50092e44d117d2fc97966c02a961e7a321ead5dbc4b27f3891229eb03"},
+    {file = "SigMF-1.1.5-py3-none-any.whl", hash = "sha256:121c3fc26b20c4ea3edfebbb43f330c9cbfa775393c2007152ba9ecef9348a70"},
+    {file = "SigMF-1.1.5.tar.gz", hash = "sha256:061881335bc486ca050dfc944603d4d02e39539ba0c42ce9815cf7a9ebbd96e9"},
 ]
 
 [package.dependencies]
@@ -2449,4 +2449,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "cfb880511f9f8037555822faa5481b144cff090ce6ed394a877f09a1f905ffe5"
+content-hash = "9315724c5578457a248b2ac6a3613632d0d21d20632277683d6d5ea59a3bfa2f"
