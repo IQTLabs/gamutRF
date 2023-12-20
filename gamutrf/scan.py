@@ -380,6 +380,14 @@ def argument_parser():
         default=0,
         help="if > 1, only send 1/n images for inference",
     )
+    parser.add_argument(
+        "--colormap",
+        dest="colormap",
+        type=int,
+        default=16,
+        help="""OpenCV colormap for spectrograms. See
+        https://docs.opencv.org/4.x/d3/d50/group__imgproc__colormap.html""",
+    )
     return parser
 
 
