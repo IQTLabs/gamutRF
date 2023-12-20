@@ -27,6 +27,7 @@ class grscan(gr.top_block):
     def __init__(
         self,
         bucket_range=1.0,
+        colormap=16,
         compass=False,
         db_clamp_ceil=50,
         db_clamp_floor=-200,
@@ -217,7 +218,7 @@ class grscan(gr.top_block):
                         norm_alpha=0,
                         norm_beta=1,
                         norm_type=32,  # cv::NORM_MINMAX = 32
-                        colormap=16,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
+                        colormap=colormap,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
                         interpolation=1,  # cv::INTER_LINEAR = 1,
                         flip=0,  # 0 means flipping around the x-axis
                         min_peak_points=inference_min_db,
