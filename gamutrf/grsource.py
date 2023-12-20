@@ -87,10 +87,8 @@ class file_source_tagger(gr.sync_block):
         return len(samples)
 
 
-def get_throttle(samp_rate, rate=0.1):
-    return blocks.throttle(
-        gr.sizeof_gr_complex, samp_rate, True, max(int(rate * samp_rate), 1)
-    )
+def get_throttle(samp_rate, items=1024):
+    return blocks.throttle(gr.sizeof_gr_complex, samp_rate, True, items)
 
 
 def get_source(
