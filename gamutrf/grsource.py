@@ -87,6 +87,12 @@ class file_source_tagger(gr.sync_block):
         return len(samples)
 
 
+def get_throttle(samp_rate, rate=0.1):
+    return blocks.throttle(
+        gr.sizeof_gr_complex, samp_rate, True, max(int(rate * samp_rate), 1)
+    )
+
+
 def get_source(
     sdr,
     samp_rate,
@@ -110,7 +116,7 @@ def get_source(
         if url.scheme == "file" and os.path.exists(url.path):
             sources = [
                 file_source_tagger(url.path, cmd_port),
-                blocks.throttle(gr.sizeof_gr_complex, samp_rate, True),
+                get_throttle(samp_rate),
             ]
         else:
             raise ValueError("unsupported/missing file location")
@@ -119,7 +125,7 @@ def get_source(
         cmd_port = "cmd"
         sources = [
             iqtlabs.tuneable_test_source(freq_divisor),
-            blocks.throttle(gr.sizeof_gr_complex, samp_rate, True),
+            get_throttle(samp_rate),
         ]
     elif sdr == "ettus":
         sources = get_ettus_source(sdrargs, samp_rate, center_freq, agc, gain, uhd_lib)
