@@ -38,14 +38,12 @@ def main():
                 "iqtlabs": iqtlabs,
                 "freq_end": 0,
                 "freq_start": freq_start,
-                "pretune": True,
                 "samp_rate": int(meta["sample_rate"]),
                 "sdr": "file:" + filename,
+                "pretune": True,
             }
         )
         tb = grscan(**scan_args)
         tb.start()
-        while not tb.sources[0].complete():
-            time.sleep(1)
-        tb.stop()
         tb.wait()
+        tb.stop()
