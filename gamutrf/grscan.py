@@ -78,8 +78,10 @@ class grscan(gr.top_block):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
         tune_step_hz = int(samp_rate * tuneoverlap)
+        stare = False
 
         if freq_end == 0:
+            stare = True
             freq_end = freq_start + (tune_step_hz - 1)
             logging.info(
                 f"using stare mode, scan from {freq_start/1e6}MHz to {freq_end/1e6}MHz"
@@ -154,6 +156,8 @@ class grscan(gr.top_block):
         logging.info(
             f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
         )
+        if stare and tune_dwell_ms > 1e3:
+            logging.warn(">1s dwell time in stare mode, updates will be slow!")
 
         self.fft_blocks = (
             self.get_dc_blocks(dc_block_len, dc_block_long)

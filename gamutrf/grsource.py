@@ -37,13 +37,13 @@ def airt_workaround_start_hook(self):
         self.sources[0].set_bandwidth(0, rate)
 
 
-class file_source_tagger(gr.sync_block):
+class file_source_tagger(gr.basic_block):
     def __init__(
         self,
         input_file,
         cmd_port,
     ):
-        gr.sync_block.__init__(
+        gr.basic_block.__init__(
             self,
             name="file_source_tagger",
             in_sig=None,
@@ -71,9 +71,9 @@ class file_source_tagger(gr.sync_block):
             pmt.from_double(self.center_freq),
         )
 
-    def work(self, input_items, output_items):
+    def general_work(self, input_items, output_items):
         if self.complete():
-            return 0
+            return -1
         if self.need_tags:
             self.add_tags()
             self.need_tags = False
@@ -81,7 +81,7 @@ class file_source_tagger(gr.sync_block):
         samples = self.samples[self.i : self.i + n]
         if len(samples) < n:
             self.i = self.n_samples
-            return 0
+            return -1
         self.i += len(samples)
         output_items[0][:] = samples
         return len(samples)
