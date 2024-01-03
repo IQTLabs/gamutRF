@@ -323,6 +323,10 @@ class grscan(gr.top_block):
         # otherwise, the pretuning block will just do batching.
         return blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft)
 
+    def apply_window(self, nfft, fft_batch_size):
+        window_constants = [val for val in self.get_window(nfft) for _ in range(2)]
+        return blocks.multiply_const_vff(window_constants * fft_batch_size)
+
     def get_offload_fft_blocks(
         self,
         vkfft,
@@ -338,16 +342,10 @@ class grscan(gr.top_block):
             fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
         else:
             fft_batch_size = 1
-            fft_blocks = [
-                fft.fft_vcc(nfft, True, self.get_window(nfft), True, 1),
-            ]
-            return fft_batch_size, fft_blocks
+            fft_block = fft.fft_vcc(nfft, True, [], True, 1)
 
         fft_blocks = [
-            blocks.multiply_const_vff(
-                [val for val in self.get_window(nfft) for _ in range(2)]
-                * fft_batch_size
-            ),
+            self.apply_window(nfft, fft_batch_size),
             fft_block,
         ]
         if fft_batch_size > 1:
