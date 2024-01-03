@@ -41,7 +41,7 @@ def main():
                 "samp_rate": int(meta["sample_rate"]),
                 "sdr": "file:" + filename,
                 "pretune": True,
-                "fft_batch_size": 1,
+                "inference_min_db": -1e9,
             }
         )
         tb = grscan(**scan_args)
