@@ -349,8 +349,11 @@ class grscan(gr.top_block):
                 * fft_batch_size
             ),
             fft_block,
-            blocks.vector_to_stream(gr.sizeof_gr_complex * nfft, fft_batch_size),
         ]
+        if fft_batch_size > 1:
+            fft_blocks.append(
+                blocks.vector_to_stream(gr.sizeof_gr_complex * nfft, fft_batch_size)
+            )
         if fft_roll:
             fft_blocks.append(self.iqtlabs.vector_roll(nfft))
         return fft_batch_size, fft_blocks
