@@ -108,9 +108,7 @@ class file_source_tagger(gr.basic_block):
             c = len(samples)
             self.i += c
             if c < len(output_items[0]):
-                zeros = np.zeros(
-                    len(output_items[0]) - c, dtype=np.complex64
-                )
+                zeros = np.zeros(len(output_items[0]) - c, dtype=np.complex64)
                 samples = np.append(samples, zeros)
         else:
             # feed zeros until received first tag request
