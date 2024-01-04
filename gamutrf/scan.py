@@ -228,7 +228,7 @@ def argument_parser():
         "--inference_min_db",
         dest="inference_min_db",
         type=float,
-        default=-50,
+        default=-200,
         help="run inference over minimum dB power",
     )
     parser.add_argument(
