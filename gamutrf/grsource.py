@@ -105,17 +105,17 @@ class file_source_tagger(gr.basic_block):
         if self.tags_sent:
             n = min(self.nfft, len(output_items[0]))
             samples = self.samples[self.i : self.i + n]
-            self.i += len(samples)
-            if len(samples) < len(output_items[0]):
-                zeros = np.zeros(
-                    len(output_items[0]) - len(samples), dtype=np.complex64
-                )
+            c = len(samples)
+            self.i += c
+            if c < len(output_items[0]):
+                zeros = np.zeros(len(output_items[0]) - c, dtype=np.complex64)
                 samples = np.append(samples, zeros)
         else:
             # feed zeros until received first tag request
             samples = np.zeros(len(output_items[0]), dtype=np.complex64)
+            c = len(samples)
         output_items[0][:] = samples
-        return len(samples)
+        return c
 
 
 def get_throttle(samp_rate, items):
