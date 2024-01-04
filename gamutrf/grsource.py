@@ -63,6 +63,7 @@ class file_source_tagger(gr.basic_block):
         self.set_msg_handler(pmt.intern(cmd_port), self.handle_cmd)
         self.need_tags = False
         self.tags_sent = 0
+        logging.info("opened %s with %u samples", input_file, self.n_samples)
 
     def complete(self):
         return self.i >= self.n_samples
@@ -81,6 +82,7 @@ class file_source_tagger(gr.basic_block):
         sample_time = self.ctime + (
             (self.tags_sent * self.nfft * self.tune_step_fft) / float(self.sample_rate)
         )
+        logging.info("%.1f%%", self.i / self.n_samples * 100)
         sample_sec = int(sample_time)
         sample_fsec = sample_time - sample_sec
         pmt_sample_time = pmt.make_tuple(
@@ -95,6 +97,7 @@ class file_source_tagger(gr.basic_block):
 
     def general_work(self, input_items, output_items):
         if self.complete():
+            logging.info("100%%")
             return -1
         if self.need_tags:
             self.add_tags()
