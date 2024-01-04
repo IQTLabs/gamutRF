@@ -92,16 +92,16 @@ class FakeTb:
 
 class GrscanTestCase(unittest.TestCase):
     def test_fake_uhd(self):
-        get_source("ettus", 1e3, 10, uhd_lib=FakeUHD())
+        get_source("ettus", 1e3, 10, 1024, 1024, uhd_lib=FakeUHD())
 
     def test_fake_soapy(self):
-        sources, _, workaround = get_source("SoapyAIRT", 1e3, 10, soapy_lib=FakeSoapy())
+        sources, _, workaround = get_source("SoapyAIRT", 1e3, 10, 1024, 1024, soapy_lib=FakeSoapy())
         tb = FakeTb(sources, workaround, 100e6)
         tb.start()
 
     def test_get_source_smoke(self):
         for sdr in ("ettus", "bladerf"):
-            self.assertRaises(RuntimeError, get_source, sdr, 1e3, 10)
+            self.assertRaises(RuntimeError, get_source, sdr, 1e3, 10, 1024, 1024)
 
     def run_grscan_smoke(self, pretune, wavelearner, write_samples, test_file):
         with tempfile.TemporaryDirectory() as tempdir:

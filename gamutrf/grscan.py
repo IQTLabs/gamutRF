@@ -105,14 +105,6 @@ class grscan(gr.top_block):
         ##################################################
 
         logging.info(f"will scan from {freq_start} to {freq_end}")
-        self.sources, cmd_port, self.workaround_start_hook = get_source(
-            sdr,
-            samp_rate,
-            igain,
-            agc=False,
-            center_freq=freq_start,
-            sdrargs=sdrargs,
-        )
 
         self.samples_blocks = []
         if write_samples:
@@ -158,6 +150,17 @@ class grscan(gr.top_block):
         )
         if stare and tune_dwell_ms > 1e3:
             logging.warn(">1s dwell time in stare mode, updates will be slow!")
+
+        self.sources, cmd_port, self.workaround_start_hook = get_source(
+            sdr,
+            samp_rate,
+            igain,
+            nfft,
+            tune_step_fft,
+            agc=False,
+            center_freq=freq_start,
+            sdrargs=sdrargs,
+        )
 
         self.fft_blocks = (
             self.get_dc_blocks(dc_block_len, dc_block_long)

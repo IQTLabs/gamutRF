@@ -42,6 +42,8 @@ class file_source_tagger(gr.basic_block):
         self,
         input_file,
         cmd_port,
+        nfft,
+        tune_step_fft,
     ):
         gr.basic_block.__init__(
             self,
@@ -50,12 +52,17 @@ class file_source_tagger(gr.basic_block):
             out_sig=[np.complex64],
         )
         _, self.samples, meta = get_samples(input_file)
+        self.ctime = os.path.getctime(input_file)
         self.center_freq = meta["center_frequency"]
+        self.sample_rate = meta["sample_rate"]
         self.n_samples = len(self.samples)
+        self.nfft = nfft
+        self.tune_step_fft = tune_step_fft
         self.i = 0
         self.message_port_register_in(pmt.intern(cmd_port))
         self.set_msg_handler(pmt.intern(cmd_port), self.handle_cmd)
-        self.need_tags = True
+        self.need_tags = False
+        self.tags_sent = 0
 
     def complete(self):
         return self.i >= self.n_samples
@@ -64,11 +71,26 @@ class file_source_tagger(gr.basic_block):
         self.need_tags = True
 
     def add_tags(self):
+        self.tags_sent += 1
         self.add_item_tag(
             0,
             self.nitems_written(0),
             pmt.intern("rx_freq"),
             pmt.from_double(self.center_freq),
+        )
+        sample_time = self.ctime + (
+            (self.tags_sent * self.nfft * self.tune_step_fft) / float(self.sample_rate)
+        )
+        sample_sec = int(sample_time)
+        sample_fsec = sample_time - sample_sec
+        pmt_sample_time = pmt.make_tuple(
+            pmt.from_long(sample_sec), pmt.from_double(sample_fsec)
+        )
+        self.add_item_tag(
+            0,
+            self.nitems_written(0),
+            pmt.intern("rx_time"),
+            pmt_sample_time,
         )
 
     def general_work(self, input_items, output_items):
@@ -77,17 +99,23 @@ class file_source_tagger(gr.basic_block):
         if self.need_tags:
             self.add_tags()
             self.need_tags = False
-        n = len(output_items[0])
-        samples = self.samples[self.i : self.i + n]
-        if len(samples) < n:
-            self.i = self.n_samples
-            return -1
-        self.i += len(samples)
+        if self.tags_sent:
+            n = min(self.nfft, len(output_items[0]))
+            samples = self.samples[self.i : self.i + n]
+            self.i += len(samples)
+            if len(samples) < len(output_items[0]):
+                zeros = np.zeros(
+                    len(output_items[0]) - len(samples), dtype=np.complex64
+                )
+                samples = np.append(samples, zeros)
+        else:
+            # feed zeros until received first tag request
+            samples = np.zeros(len(output_items[0]), dtype=np.complex64)
         output_items[0][:] = samples
         return len(samples)
 
 
-def get_throttle(samp_rate, items=1024):
+def get_throttle(samp_rate, items):
     return blocks.throttle(gr.sizeof_gr_complex, samp_rate, True, items)
 
 
@@ -95,6 +123,8 @@ def get_source(
     sdr,
     samp_rate,
     gain,
+    nfft,
+    tune_step_fft,
     agc=False,
     center_freq=None,
     sdrargs=None,
@@ -113,8 +143,7 @@ def get_source(
     if url.scheme:
         if url.scheme == "file" and os.path.exists(url.path):
             sources = [
-                file_source_tagger(url.path, cmd_port),
-                get_throttle(samp_rate),
+                file_source_tagger(url.path, cmd_port, nfft, tune_step_fft),
             ]
         else:
             raise ValueError("unsupported/missing file location")
@@ -123,7 +152,7 @@ def get_source(
         cmd_port = "cmd"
         sources = [
             iqtlabs.tuneable_test_source(freq_divisor),
-            get_throttle(samp_rate),
+            get_throttle(samp_rate, nfft),
         ]
     elif sdr == "ettus":
         sources = get_ettus_source(sdrargs, samp_rate, center_freq, agc, gain, uhd_lib)
