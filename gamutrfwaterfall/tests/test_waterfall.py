@@ -93,6 +93,7 @@ class UtilsTestCase(unittest.TestCase):
                 5,  # args.height,
                 10,  # args.waterfall_height,
                 100,  # args.waterfall_width,
+                5,  # args.refresh,
                 True,  # args.batch
                 zmqr,
             )

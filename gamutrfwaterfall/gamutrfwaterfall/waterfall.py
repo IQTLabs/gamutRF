@@ -271,7 +271,12 @@ def argument_parser():
         type=int,
         help="Waterfall width (maximum)",
     )
-
+    parser.add_argument(
+        "--refresh",
+        default=5,
+        type=int,
+        help="Waterfall refresh time",
+    )
     return parser
 
 
@@ -899,6 +904,7 @@ def waterfall(
     waterfall_height,
     waterfall_width,
     batch,
+    refresh,
     zmqr,
 ):
     style.use("fast")
@@ -980,6 +986,7 @@ def waterfall(
         if need_reset_fig:
             reset_fig(config, state)
             need_reset_fig = False
+        last_gap = time.time()
         while True:
             scan_configs, scan_df = zmqr.read_buff(
                 scan_fres=config.freq_resolution * 1e6
@@ -1017,6 +1024,8 @@ def waterfall(
                 )
                 continue
             results.append((scan_configs, scan_df))
+            if results and time.time() - last_gap > (refresh / 2):
+                break
         if need_reconfig:
             continue
         if results:
@@ -1085,7 +1094,7 @@ def main():
             engine = "agg"
             batch = True
             savefig_path = os.path.join(tempdir, "waterfall.png")
-            flask = FlaskHandler(savefig_path, args.port)
+            flask = FlaskHandler(savefig_path, args.port, refresh=args.refresh)
             flask.start()
 
         zmqr = ZmqReceiver(
@@ -1108,6 +1117,7 @@ def main():
             args.waterfall_height,
             args.waterfall_width,
             batch,
+            args.refresh,
             zmqr,
         )
 
