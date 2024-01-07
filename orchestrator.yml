@@ -68,7 +68,7 @@ services:
       - --tune-dwell-ms=0
       - --tune-step-fft=512
       - --db_clamp_floor=-150
-      - --fft_batch_size=256
+      - --fft_batch_size=32
       - --mqtt_server=mqtt
       - --no-compass
       - --use_external_gps
@@ -78,6 +78,7 @@ services:
       - --inference_model_name=mini2_snr
       - --n_inference=10
       - --n_image=10
+      - --vkfft
       # - --external_gps_server=1.2.3.4
       # - --external_gps_server_port=8888
       # - --inference_output_dir=/logs/inference
