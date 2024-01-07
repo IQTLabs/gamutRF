@@ -95,7 +95,9 @@ class GrscanTestCase(unittest.TestCase):
         get_source("ettus", 1e3, 10, 1024, 1024, uhd_lib=FakeUHD())
 
     def test_fake_soapy(self):
-        sources, _, workaround = get_source("SoapyAIRT", 1e3, 10, 1024, 1024, soapy_lib=FakeSoapy())
+        sources, _, workaround = get_source(
+            "SoapyAIRT", 1e3, 10, 1024, 1024, soapy_lib=FakeSoapy()
+        )
         tb = FakeTb(sources, workaround, 100e6)
         tb.start()
 
