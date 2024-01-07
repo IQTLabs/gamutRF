@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     python3-pip \
     python3-pyqt5 \
     python3-pyqt5.sip && \
-    curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2 && \
+    curl -sSL https://install.python-poetry.org | python3 - --version 1.7.1 && \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
