@@ -177,14 +177,15 @@ class ZmqScanner:
                 self.fftbuffer = pd.concat([self.fftbuffer, df])
             if self.fftbuffer["sweep_start"].nunique() > 1:
                 min_sweep_start = self.fftbuffer["sweep_start"].min()
+                max_sweep_start = self.fftbuffer["sweep_start"].max()
                 frame_df = self.fftbuffer[
-                    self.fftbuffer["sweep_start"] == min_sweep_start
+                    self.fftbuffer["sweep_start"] != max_sweep_start
                 ].copy()
                 frame_df["tune_count"] = (
                     frame_df["tune_count"].max() - frame_df["tune_count"].min()
                 )
                 self.fftbuffer = self.fftbuffer[
-                    self.fftbuffer["sweep_start"] != min_sweep_start
+                    self.fftbuffer["sweep_start"] == max_sweep_start
                 ]
                 scan_config = self.scan_configs[min_sweep_start]
                 del self.scan_configs[min_sweep_start]
@@ -264,15 +265,20 @@ class ZmqReceiver:
         return False
 
     def read_buff(self, log=None, discard_time=0, scan_fres=0):
-        results = [scanner.read_buff(log, discard_time) for scanner in self.scanners]
-        if self.last_results:
-            for i, result in enumerate(results):
-                _scan_config, df = result
-                if df is not None:
-                    self.last_results[i] = result
-                    logging.info("%s got scan result", self.scanners[i])
-        else:
-            self.last_results = results
+        while True:
+            results = [scanner.read_buff(log, discard_time) for scanner in self.scanners]
+            new_results = 0
+            if self.last_results:
+               for i, result in enumerate(results):
+                   _scan_config, df = result
+                   if df is not None:
+                       self.last_results[i] = result
+                       new_results += 1
+                       logging.info("%s got scan result", self.scanners[i])
+            else:
+                self.last_results = results
+            if new_results == 0:
+                break
 
         scan_configs = []
         dfs = []
