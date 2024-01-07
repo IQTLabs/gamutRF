@@ -988,10 +988,16 @@ def waterfall(
             need_reset_fig = False
         last_gap = time.time()
         while True:
+            gap_time = time.time() - last_gap
+            if results and gap_time > refresh / 2:
+                break
             scan_configs, scan_df = zmqr.read_buff(
                 scan_fres=config.freq_resolution * 1e6
             )
             if scan_df is None:
+                if batch and gap_time < refresh / 2:
+                    time.sleep(0.1)
+                    continue
                 break
             last_config = make_config(
                 scan_configs,
@@ -1024,8 +1030,6 @@ def waterfall(
                 )
                 continue
             results.append((scan_configs, scan_df))
-            if results and time.time() - last_gap > (refresh / 2):
-                break
         if need_reconfig:
             continue
         if results:

@@ -227,7 +227,8 @@ class ZmqScanner:
             lines = self.txtbuf_to_lines(log)
             if lines:
                 df = self.lines_to_df(lines)
-                scan_config, frame_df = self.read_new_frame_df(df, discard_time)
+                if df is not None:
+                    scan_config, frame_df = self.read_new_frame_df(df, discard_time)
         return scan_config, frame_df
 
 
@@ -266,15 +267,17 @@ class ZmqReceiver:
 
     def read_buff(self, log=None, discard_time=0, scan_fres=0):
         while True:
-            results = [scanner.read_buff(log, discard_time) for scanner in self.scanners]
+            results = [
+                scanner.read_buff(log, discard_time) for scanner in self.scanners
+            ]
             new_results = 0
             if self.last_results:
-               for i, result in enumerate(results):
-                   _scan_config, df = result
-                   if df is not None:
-                       self.last_results[i] = result
-                       new_results += 1
-                       logging.info("%s got scan result", self.scanners[i])
+                for i, result in enumerate(results):
+                    _scan_config, df = result
+                    if df is not None:
+                        self.last_results[i] = result
+                        new_results += 1
+                        logging.info("%s got scan result", self.scanners[i])
             else:
                 self.last_results = results
             if new_results == 0:
