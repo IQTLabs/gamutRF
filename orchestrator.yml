@@ -123,7 +123,7 @@ services:
     command:
       - gamutrf-waterfall
       - --scanners=gamutrf:10000
-      - --save_path=/logs
+      - --save_path=/logs/waterfall
       - --port=9003
       - --detection_type=narrowband
       - --n_detect=1
