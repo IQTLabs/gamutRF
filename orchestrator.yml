@@ -78,7 +78,8 @@ services:
       - --inference_model_name=mini2_snr
       - --n_inference=10
       - --n_image=10
-      - --vkfft
+      - --no-vkfft
+      - --rotate_secs=300
       # - --external_gps_server=1.2.3.4
       # - --external_gps_server_port=8888
       # - --inference_output_dir=/logs/inference
