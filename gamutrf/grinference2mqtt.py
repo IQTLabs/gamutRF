@@ -34,7 +34,7 @@ class inference2mqtt(gr.sync_block):
         external_gps_server_port,
         log_path,
     ):
-        self.yaml_buffer = ""
+        self.json_buffer = ""
         self.mqtt_reporter = None
         self.q = queue.Queue()
         self.mqtt_reporter_thread = threading.Thread(
@@ -94,14 +94,14 @@ class inference2mqtt(gr.sync_block):
         for input_item in input_items:
             raw_input_item = input_item.tobytes().decode("utf8")
             n += len(raw_input_item)
-            self.yaml_buffer += raw_input_item
+            self.json_buffer += raw_input_item
         while True:
-            delim_pos = self.yaml_buffer.find(DELIM)
+            delim_pos = self.json_buffer.find(DELIM)
             if delim_pos == -1:
                 break
-            raw_item = self.yaml_buffer[:delim_pos]
+            raw_item = self.json_buffer[:delim_pos]
             item = json.loads(raw_item)
-            self.yaml_buffer = self.yaml_buffer[delim_pos + len(DELIM) :]
+            self.json_buffer = self.json_buffer[delim_pos + len(DELIM) :]
             self.process_item(item)
         return n
 

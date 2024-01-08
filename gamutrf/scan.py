@@ -135,6 +135,20 @@ def argument_parser():
         help="Log FFT results to this port",
     )
     parser.add_argument(
+        "--inference_addr",
+        dest="inference_addr",
+        type=str,
+        default="0.0.0.0",  # nosec
+        help="Log inference results to this address",
+    )
+    parser.add_argument(
+        "--inference_port",
+        dest="inference_port",
+        type=int,
+        default=8002,
+        help="Log inference results to this port",
+    )
+    parser.add_argument(
         "--promport",
         dest="promport",
         type=int,
