@@ -1098,18 +1098,20 @@ class FlaskHandler:
 
     def serve_predictions(self):
         if self.predictions_path and self.predictions:
-            predictions = sorted(glob.glob(self.predictions_path, recursive=True))[
-                -self.predictions :
-            ]
+            predictions = sorted(
+                [
+                    (os.stat(prediction).st_ctime, prediction)
+                    for prediction in glob.glob(self.predictions_path, recursive=True)
+                ]
+            )[-self.predictions :]
             if not predictions:
                 return "no recent predictions at %s" % self.predictions_path, 200
             images = []
             now = time.time()
-            for prediction in predictions:
-                stat = os.stat(prediction)
+            for ctime, prediction in sorted(predictions, reverse=True):
                 images.append(
                     "%s (age %.1fs)<p><img src=%s></img></p>"
-                    % (prediction, now - stat.st_ctime, prediction)
+                    % (prediction, now - ctime, prediction)
                 )
             content = (
                 '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
