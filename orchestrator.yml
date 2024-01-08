@@ -34,6 +34,7 @@ services:
     ports:
       - '9001:9000'
       - '10000:10000'
+      - '10001:10001'
     cap_add:
       - SYS_NICE
       - SYS_RAWIO
@@ -73,6 +74,8 @@ services:
       - --no-compass
       - --use_external_gps
       - --use_external_heading
+      - --inference_addr=0.0.0.0
+      - --inference_port=10001
       - --inference_min_confidence=0.25
       - --inference_min_db=-80
       - --inference_model_name=mini2_snr

@@ -41,6 +41,8 @@ class grscan(gr.top_block):
         freq_start=100e6,
         gps_server="",
         igain=0,
+        inference_addr="0.0.0.0",  # nosec
+        inference_port=8002,
         inference_min_confidence=0.5,
         inference_min_db=-200,
         inference_model_server="",
@@ -204,9 +206,12 @@ class grscan(gr.top_block):
             not pretune and low_power_hold_down,
         )
         self.fft_blocks.append(retune_fft)
-        zmq_addr = f"tcp://{logaddr}:{logport}"
-        logging.info("serving FFT on %s", zmq_addr)
-        self.fft_blocks.append((zeromq.pub_sink(1, 1, zmq_addr, 100, False, 65536, "")))
+        fft_zmq_addr = f"tcp://{logaddr}:{logport}"
+        inference_zmq_addr = f"tcp://{inference_addr}:{inference_port}"
+        logging.info("serving FFT on %s", fft_zmq_addr)
+        self.fft_blocks.append(
+            (zeromq.pub_sink(1, 1, fft_zmq_addr, 100, False, 65536, ""))
+        )
 
         self.inference_blocks = []
         if inference_output_dir:
@@ -255,20 +260,23 @@ class grscan(gr.top_block):
                         )
                     ]
                 )
-            else:
-                self.inference_blocks.extend([blocks.null_sink(1)])
-        if not self.inference_blocks:
-            self.inference_blocks = [blocks.null_sink(gr.sizeof_float * nfft)]
-
         if pretune:
             self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
             self.msg_connect((self.retune_pre_fft, "tune"), (retune_fft, "cmd"))
         else:
             self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
         self.connect_blocks(self.sources[0], self.sources[1:])
-        self.connect((retune_fft, 1), (self.inference_blocks[0], 0))
 
-        self.connect_blocks(self.inference_blocks[0], self.inference_blocks[1:])
+        if self.inference_blocks:
+            self.connect((retune_fft, 1), (self.inference_blocks[0], 0))
+            self.connect_blocks(self.inference_blocks[0], self.inference_blocks[1:])
+            self.connect_blocks(
+                self.inference_blocks[0],
+                [zeromq.pub_sink(1, 1, inference_zmq_addr, 100, False, 65536, "")],
+            )
+        else:
+            self.connect((retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft)))
+
         for pipeline_blocks in (
             self.fft_blocks,
             self.samples_blocks,
