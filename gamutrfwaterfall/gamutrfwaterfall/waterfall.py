@@ -1,6 +1,7 @@
 import argparse
 import csv
 import datetime
+import glob
 import json
 import logging
 import multiprocessing
@@ -15,7 +16,7 @@ from pathlib import Path
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from flask import Flask, current_app
+from flask import Flask, current_app, send_file
 from matplotlib.collections import LineCollection
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from matplotlib import style
@@ -276,6 +277,18 @@ def argument_parser():
         default=5,
         type=int,
         help="Waterfall refresh time",
+    )
+    parser.add_argument(
+        "--predictions_path",
+        default="/logs/inference/**/predictions*png",
+        type=str,
+        help="If set, render recent predictions",
+    )
+    parser.add_argument(
+        "--predictions",
+        default=1,
+        type=int,
+        help="If set, render N recent predictions",
     )
     return parser
 
@@ -1043,15 +1056,19 @@ def waterfall(
 
 
 class FlaskHandler:
-    def __init__(self, savefig_path, port, refresh=5):
+    def __init__(self, savefig_path, predictions_path, predictions, port, refresh):
         self.savefig_path = savefig_path
         self.refresh = refresh
+        self.predictions_path = predictions_path
+        self.predictions = predictions
         self.app = Flask(__name__, static_folder=os.path.dirname(savefig_path))
         self.savefig_file = os.path.basename(self.savefig_path)
-        self.app.add_url_rule("/", "", self.serve)
+        self.app.add_url_rule("/predictions", "predictions", self.serve_predictions)
         self.app.add_url_rule(
             "/" + self.savefig_file, self.savefig_file, self.serve_waterfall
         )
+        self.app.add_url_rule("/", "", self.serve, defaults={"path": ""})
+        self.app.add_url_rule("/<path:path>", "", self.serve)
         self.process = multiprocessing.Process(
             target=self.app.run,
             kwargs={"host": "0.0.0.0", "port": port},  # nosec
@@ -1060,7 +1077,13 @@ class FlaskHandler:
     def start(self):
         self.process.start()
 
-    def serve(self):
+    def serve(self, path):
+        if path:
+            full_path = os.path.realpath(os.path.join("/", path))
+            if os.path.exists(full_path):
+                return send_file(full_path, mimetype="image/png")
+            else:
+                return "%s: not found" % full_path, 404
         if os.path.exists(self.savefig_path):
             return (
                 '<html><head><meta http-equiv="refresh" content="%u"></head><body><img src="%s"></img></body></html>'
@@ -1072,6 +1095,30 @@ class FlaskHandler:
             % self.refresh,
             200,
         )
+
+    def serve_predictions(self):
+        if self.predictions_path and self.predictions:
+            predictions = sorted(
+                [
+                    (os.stat(prediction).st_ctime, prediction)
+                    for prediction in glob.glob(self.predictions_path, recursive=True)
+                ]
+            )[-self.predictions :]
+            if not predictions:
+                return "no recent predictions at %s" % self.predictions_path, 200
+            images = []
+            now = time.time()
+            for ctime, prediction in sorted(predictions, reverse=True):
+                images.append(
+                    "%s (age %.1fs)<p><img src=%s></img></p>"
+                    % (prediction, now - ctime, prediction)
+                )
+            content = (
+                '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
+                % (self.refresh, "".join(images))
+            )
+            return content, 200
+        return "prediction serving is disabled", 200
 
     def serve_waterfall(self):
         return current_app.send_static_file(self.savefig_file)
@@ -1098,7 +1145,13 @@ def main():
             engine = "agg"
             batch = True
             savefig_path = os.path.join(tempdir, "waterfall.png")
-            flask = FlaskHandler(savefig_path, args.port, refresh=args.refresh)
+            flask = FlaskHandler(
+                savefig_path,
+                args.predictions_path,
+                args.predictions,
+                args.port,
+                args.refresh,
+            )
             flask.start()
 
         zmqr = ZmqReceiver(
