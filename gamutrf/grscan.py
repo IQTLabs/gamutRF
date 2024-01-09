@@ -272,7 +272,7 @@ class grscan(gr.top_block):
             self.connect_blocks(self.inference_blocks[0], self.inference_blocks[1:])
             self.connect_blocks(
                 self.inference_blocks[0],
-                [zeromq.pub_sink(1, 1, inference_zmq_addr, 100, False, 65536, "")],
+                [zeromq.pub_sink(1, 1, inference_zmq_addr, 100, False, 8192, "")],
             )
         else:
             self.connect((retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft)))

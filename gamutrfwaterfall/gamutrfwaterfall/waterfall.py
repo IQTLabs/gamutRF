@@ -9,8 +9,10 @@ import os
 import shutil
 import signal
 import tempfile
+import threading
 import time
 import warnings
+import zmq
 from pathlib import Path
 
 import matplotlib
@@ -279,16 +281,22 @@ def argument_parser():
         help="Waterfall refresh time",
     )
     parser.add_argument(
-        "--predictions_path",
-        default="/logs/inference/**/predictions*png",
-        type=str,
-        help="If set, render recent predictions",
-    )
-    parser.add_argument(
         "--predictions",
-        default=1,
+        default=3,
         type=int,
         help="If set, render N recent predictions",
+    )
+    parser.add_argument(
+        "--inference_server",
+        default="",
+        type=str,
+        help="Address of scanner for inference feed",
+    )
+    parser.add_argument(
+        "--inference_port",
+        default=10002,
+        type=int,
+        help="Port on scanner to connect to inference feed",
     )
     return parser
 
@@ -1056,12 +1064,16 @@ def waterfall(
 
 
 class FlaskHandler:
-    def __init__(self, savefig_path, predictions_path, predictions, port, refresh):
+    def __init__(
+        self, savefig_path, predictions, port, refresh, inference_server, inference_port
+    ):
+        self.inference_addr = f"tcp://{inference_server}:{inference_port}"
         self.savefig_path = savefig_path
+        self.static_folder = os.path.dirname(savefig_path)
+        self.predictions_file = "predictions.html"
         self.refresh = refresh
-        self.predictions_path = predictions_path
         self.predictions = predictions
-        self.app = Flask(__name__, static_folder=os.path.dirname(savefig_path))
+        self.app = Flask(__name__, static_folder=self.static_folder)
         self.savefig_file = os.path.basename(self.savefig_path)
         self.app.add_url_rule("/predictions", "predictions", self.serve_predictions)
         self.app.add_url_rule(
@@ -1073,9 +1085,72 @@ class FlaskHandler:
             target=self.app.run,
             kwargs={"host": "0.0.0.0", "port": port},  # nosec
         )
+        self.zmq_process = multiprocessing.Process(target=self.poll_zmq)
 
     def start(self):
         self.process.start()
+        self.zmq_process.start()
+
+    def poll_zmq(self):
+        zmq_context = zmq.Context()
+        socket = zmq_context.socket(zmq.SUB)
+        socket.connect(self.inference_addr)
+        socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        DELIM = "\n\n"
+        json_buffer = ""
+        item_buffer = []
+
+        def write_content(content):
+            tmpfile = os.path.join(self.static_folder, "." + self.predictions_file)
+            with open(tmpfile, "w") as f:
+                f.write(
+                    '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
+                    % (self.refresh, content)
+                )
+            os.rename(tmpfile, os.path.join(self.static_folder, self.predictions_file))
+
+        write_content("no predictions yet")
+
+        while True:
+            try:
+                while True:
+                    sock_txt = socket.recv(flags=zmq.NOBLOCK).decode("utf8")
+                    json_buffer += sock_txt
+            except zmq.error.Again:
+                pass
+            new_predictions = False
+            while True:
+                delim_pos = json_buffer.find(DELIM)
+                if delim_pos == -1:
+                    break
+                raw_item = json_buffer[:delim_pos]
+                json_buffer = json_buffer[delim_pos + len(DELIM) :]
+                try:
+                    item = json.loads(raw_item)
+                except json.decoder.JSONDecodeError as e:
+                    continue
+                if "predictions_image_path" not in item["metadata"]:
+                    continue
+                item_buffer.append(item)
+                new_predictions = True
+
+            if new_predictions:
+                item_buffer = item_buffer[-self.predictions :]
+                predictions = sorted(
+                    [(float(item["metadata"]["ts"]), item) for item in item_buffer]
+                )[-self.predictions :]
+                images = []
+                now = time.time()
+                for ts, item in sorted(predictions, reverse=True):
+                    image = item["metadata"]["predictions_image_path"]
+                    ctime = os.stat(image).st_ctime
+                    images.append(
+                        "%s (age %.1fs, ctime age %.1fs)<p><img src=%s></img></p>"
+                        % (image, now - ts, now - ctime, image)
+                    )
+                write_content("".join(images))
+            else:
+                time.sleep(0.1)
 
     def serve(self, path):
         if path:
@@ -1097,28 +1172,7 @@ class FlaskHandler:
         )
 
     def serve_predictions(self):
-        if self.predictions_path and self.predictions:
-            predictions = sorted(
-                [
-                    (os.stat(prediction).st_ctime, prediction)
-                    for prediction in glob.glob(self.predictions_path, recursive=True)
-                ]
-            )[-self.predictions :]
-            if not predictions:
-                return "no recent predictions at %s" % self.predictions_path, 200
-            images = []
-            now = time.time()
-            for ctime, prediction in sorted(predictions, reverse=True):
-                images.append(
-                    "%s (age %.1fs)<p><img src=%s></img></p>"
-                    % (prediction, now - ctime, prediction)
-                )
-            content = (
-                '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
-                % (self.refresh, "".join(images))
-            )
-            return content, 200
-        return "prediction serving is disabled", 200
+        return current_app.send_static_file(self.predictions_file)
 
     def serve_waterfall(self):
         return current_app.send_static_file(self.savefig_file)
@@ -1147,10 +1201,11 @@ def main():
             savefig_path = os.path.join(tempdir, "waterfall.png")
             flask = FlaskHandler(
                 savefig_path,
-                args.predictions_path,
                 args.predictions,
                 args.port,
                 args.refresh,
+                args.inference_server,
+                args.inference_port,
             )
             flask.start()
 
