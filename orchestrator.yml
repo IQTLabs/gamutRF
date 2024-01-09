@@ -77,7 +77,7 @@ services:
       - --inference_addr=0.0.0.0
       - --inference_port=10001
       - --inference_min_confidence=0.25
-      - --inference_min_db=-80
+      - --inference_min_db=-1e9
       - --inference_model_name=mini2_snr
       - --n_inference=10
       - --n_image=10
@@ -85,8 +85,8 @@ services:
       - --rotate_secs=300
       # - --external_gps_server=1.2.3.4
       # - --external_gps_server_port=8888
-      # - --inference_output_dir=/logs/inference
-      # - --inference_model_server=torchserve:8080
+      - --inference_output_dir=/logs/inference
+      - --inference_model_server=torchserve:8080
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
@@ -127,6 +127,8 @@ services:
     command:
       - gamutrf-waterfall
       - --scanners=gamutrf:10000
+      - --inference_server=gamutrf
+      - --inference_port=10001
       - --save_path=/logs/waterfall
       - --port=9003
       - --detection_type=narrowband
