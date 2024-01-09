@@ -1,7 +1,6 @@
 import argparse
 import csv
 import datetime
-import glob
 import json
 import logging
 import multiprocessing
@@ -9,15 +8,14 @@ import os
 import shutil
 import signal
 import tempfile
-import threading
 import time
 import warnings
-import zmq
 from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import zmq
 from flask import Flask, current_app, send_file
 from matplotlib.collections import LineCollection
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
@@ -56,7 +54,7 @@ def draw_title(
     freq_resolution,
 ):
     title_text = {
-        "Time": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+        "Time": str(datetime.datetime.now().isoformat()),
         "Scan time": "%.2fs" % scan_duration,
         "Step FFTs": "%u" % tune_step_fft,
         "Step size": "%.2fMHz" % (tune_step_hz / 1e6),
@@ -1102,7 +1100,7 @@ class FlaskHandler:
 
         def write_content(content):
             tmpfile = os.path.join(self.static_folder, "." + self.predictions_file)
-            with open(tmpfile, "w") as f:
+            with open(tmpfile, "w", encoding="utf8") as f:
                 f.write(
                     '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
                     % (self.refresh, content)
@@ -1118,7 +1116,6 @@ class FlaskHandler:
                     json_buffer += sock_txt
             except zmq.error.Again:
                 pass
-            new_predictions = False
             while True:
                 delim_pos = json_buffer.find(DELIM)
                 if delim_pos == -1:
@@ -1127,38 +1124,34 @@ class FlaskHandler:
                 json_buffer = json_buffer[delim_pos + len(DELIM) :]
                 try:
                     item = json.loads(raw_item)
-                except json.decoder.JSONDecodeError as e:
+                except json.decoder.JSONDecodeError:
                     continue
+                ts = float(item["metadata"]["ts"])
                 if "predictions_image_path" not in item["metadata"]:
                     continue
-                item_buffer.append(item)
-                new_predictions = True
-
-            if new_predictions:
-                item_buffer = item_buffer[-self.predictions :]
-                predictions = sorted(
-                    [(float(item["metadata"]["ts"]), item) for item in item_buffer]
-                )[-self.predictions :]
-                images = []
-                now = time.time()
-                for ts, item in sorted(predictions, reverse=True):
-                    image = item["metadata"]["predictions_image_path"]
-                    ctime = os.stat(image).st_ctime
-                    images.append(
-                        "%s (age %.1fs, ctime age %.1fs)<p><img src=%s></img></p>"
-                        % (image, now - ts, now - ctime, image)
-                    )
-                write_content("".join(images))
-            else:
-                time.sleep(0.1)
+                ts = float(item["metadata"]["ts"])
+                item_buffer.append((ts, item))
+            item_buffer = item_buffer[-self.predictions :]
+            predictions = sorted(item_buffer, key=lambda x: x[0], reverse=True)
+            images = []
+            now = time.time()
+            for ts, item in predictions:
+                image = item["metadata"]["predictions_image_path"]
+                images.append(
+                    "%s (age %.1fs)<p><img src=%s></img></p>" % (image, now - ts, image)
+                )
+            if images:
+                write_content(
+                    f"<p>{datetime.datetime.now().isoformat()}</p>" + "".join(images)
+                )
+            time.sleep(0.1)
 
     def serve(self, path):
         if path:
             full_path = os.path.realpath(os.path.join("/", path))
             if os.path.exists(full_path):
                 return send_file(full_path, mimetype="image/png")
-            else:
-                return "%s: not found" % full_path, 404
+            return "%s: not found" % full_path, 404
         if os.path.exists(self.savefig_path):
             return (
                 '<html><head><meta http-equiv="refresh" content="%u"></head><body><img src="%s"></img></body></html>'

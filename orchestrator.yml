@@ -77,10 +77,10 @@ services:
       - --inference_addr=0.0.0.0
       - --inference_port=10001
       - --inference_min_confidence=0.25
-      - --inference_min_db=-80
+      - --inference_min_db=-1e9
       - --inference_model_name=mini2_snr
-      - --n_inference=20
-      - --n_image=20
+      - --n_inference=10
+      - --n_image=10
       - --no-vkfft
       - --rotate_secs=300
       # - --external_gps_server=1.2.3.4
