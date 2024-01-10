@@ -52,7 +52,7 @@ class file_source_tagger(gr.basic_block):
             out_sig=[np.complex64],
         )
         _, self.samples, meta = get_samples(input_file)
-        self.ctime = os.path.getctime(input_file)
+        self.timestamp = meta["timestamp"]
         self.center_freq = meta["center_frequency"]
         self.sample_rate = meta["sample_rate"]
         self.n_samples = len(self.samples)
@@ -79,7 +79,7 @@ class file_source_tagger(gr.basic_block):
             pmt.intern("rx_freq"),
             pmt.from_double(self.center_freq),
         )
-        sample_time = self.ctime + (
+        sample_time = self.timestamp + (
             (self.tags_sent * self.nfft * self.tune_step_fft) / float(self.sample_rate)
         )
         logging.info("%.1f%%", self.i / self.n_samples * 100)
