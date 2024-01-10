@@ -79,8 +79,8 @@ services:
       - --inference_min_confidence=0.25
       - --inference_min_db=-1e9
       - --inference_model_name=mini2_snr
-      - --n_inference=10
-      - --n_image=10
+      - --n_inference=5
+      - --n_image=5
       - --no-vkfft
       - --rotate_secs=300
       # - --external_gps_server=1.2.3.4
