@@ -398,7 +398,7 @@ def argument_parser():
         "--colormap",
         dest="colormap",
         type=int,
-        default=16,
+        default=20,
         help="""OpenCV colormap for spectrograms. See
         https://docs.opencv.org/4.x/d3/d50/group__imgproc__colormap.html""",
     )

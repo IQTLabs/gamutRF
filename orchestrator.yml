@@ -83,6 +83,7 @@ services:
       - --n_image=5
       - --no-vkfft
       - --rotate_secs=300
+      - --colormap=20
       # - --external_gps_server=1.2.3.4
       # - --external_gps_server_port=8888
       - --inference_output_dir=/logs/inference
