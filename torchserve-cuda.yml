@@ -23,4 +23,5 @@ services:
               count: 1
               capabilities: [gpu]
     command:
+      # can be multiple models, e.g. mini2_snr=mini2_snr.mar,another_mini2_snr=another_mini2_snr.mar
       - --models mini2_snr=mini2_snr.mar

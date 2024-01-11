@@ -235,12 +235,13 @@ class grscan(gr.top_block):
                         flip=0,  # 0 means flipping around the x-axis
                         min_peak_points=inference_min_db,
                         model_server=inference_model_server,
-                        model_name=inference_model_name,
+                        model_names=inference_model_name,
                         confidence=inference_min_confidence,
                         max_rows=tune_step_fft,
                         rotate_secs=rotate_secs,
                         n_image=n_image,
                         n_inference=n_inference,
+                        samp_rate=int(samp_rate),
                     )
                 ]
             )
