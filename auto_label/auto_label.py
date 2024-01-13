@@ -9,6 +9,80 @@ from skimage.filters import threshold_multiotsu
 # Other useful resources
 # Contour approximation https://docs.opencv.org/4.x/dd/d49/tutorial_py_contour_features.html
 
+
+tbs_crs_args = {
+    "invert": True,
+    "pre_threshold": True,
+    "histogram_equalization": True,
+    "pre_thresh_morphology":[
+        {
+            "morph_func":cv.erode, 
+            "kernel":np.ones((2,1),np.uint8),
+        }, 
+        {
+            "morph_func":cv.dilate, 
+            "kernel":np.ones((2,1), np.uint8),
+        }, 
+        {
+            "morph_func":cv.erode, 
+            "kernel":np.ones((4,1),np.uint8),
+        },
+        { 
+            "morph_func":cv.dilate, 
+            "kernel": np.ones((10,2), np.uint8),
+        }, 
+        {
+            "morph_func": cv.erode, 
+            "kernel": np.ones((10,1),np.uint8),
+            "kwargs":{
+                "iterations": 2,
+            },
+        },
+        { 
+            "morph_func": cv.dilate, 
+            "kernel": np.ones((15, 2), np.uint8),
+        },
+    ],
+    "kernel_open": cv.getStructuringElement(cv.MORPH_RECT, (4, 50)),#np.ones((50, 4), np.uint8),
+    "kernel_close": cv.getStructuringElement(cv.MORPH_RECT, (6, 25)),#np.ones((25, 6), np.uint8)
+    "post_thresh_morphology": [
+        {
+            "morph_func": cv.dilate,
+            "kernel": np.ones((1,4), np.uint8),
+        }
+    ],
+    "bilateral_kernel_size": 2,
+    "group_horizontal": False, 
+    "area_threshold": 0.7,
+    "yolo_label": 0,
+    "vertical": True,
+    "dc_block": True,
+    "horizontal_adjust": -4
+}
+
+wifi_args = {
+    "invert": True,
+    "pre_threshold": False,
+    "histogram_equalization": False,
+    "pre_thresh_morphology": [
+        {
+            "morph_func": cv.MORPH_CLOSE,
+            "kernel": cv.getStructuringElement(cv.MORPH_RECT, (65, 1)),
+        }
+    ],
+    "kernel_open": cv.getStructuringElement(cv.MORPH_RECT, (65, 1)),#np.ones((3, 3), np.uint8), 
+    "kernel_close": cv.getStructuringElement(cv.MORPH_RECT, (65, 1)),#np.ones((15, 15), np.uint8),
+    "post_thresh_morphology":[],
+    "bilateral_kernel_size": 8,
+    "group_horizontal": True, 
+    "area_threshold": 0.7,
+    "yolo_label": 0,
+    "vertical":False, 
+    "dc_block":False,
+    "horizontal_adjust":0,
+}
+
+
 debug = True
 
 def multi_otsu(imgray):
@@ -78,7 +152,23 @@ def cv_plot(img, title):
         cv.waitKey(0)
         cv.destroyAllWindows()
 
-def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilateral_kernel_size, group_horizontal, area_threshold, yolo_label, vertical, dc_block, horizontal_adjust ):
+def label(
+    filename, 
+    invert, 
+    kernel_open, 
+    kernel_close, 
+    bilateral_kernel_size, 
+    group_horizontal, 
+    area_threshold, 
+    yolo_label, 
+    vertical, 
+    dc_block, 
+    horizontal_adjust, 
+    pre_threshold, 
+    post_thresh_morphology, 
+    histogram_equalization,
+    pre_thresh_morphology,
+):
     print(filename)
     img = cv.imread(filename)
     original_img = img.copy()
@@ -95,14 +185,14 @@ def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilate
     # if debug:
     #     multi_thresh = multi_otsu(imgray)
     
-    if vertical: 
+    if pre_threshold: 
         multi_thresh = multi_otsu(imgray)
-
         ret, imgray_new = cv.threshold(imgray, multi_thresh[1], 255, cv.THRESH_TOZERO)
         cv_plot(np.hstack((imgray, imgray_new)), "thresh trunc")
         imgray = imgray_new
 
 
+    if histogram_equalization:
         # imgray = cv.equalizeHist(imgray)
         # cv_plot(np.hstack((imgray_original, imgray)), "histogram")
 
@@ -110,56 +200,27 @@ def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilate
         imgray_new = clahe.apply(imgray)
         cv_plot(np.hstack((imgray, imgray_new)), "histogram clahe")
         imgray = imgray_new
-
     
-
-        kernel = np.ones((2,1),np.uint8)
-        imgray_new = cv.erode(imgray,kernel,iterations = 1)
-        cv_plot(np.hstack((imgray, imgray_new)), "erosions")
-        imgray = imgray_new
-
-        kernel = np.ones((2,1), np.uint8)
-        imgray_new = cv.dilate(imgray,kernel,iterations = 1)
-        cv_plot(np.hstack((imgray, imgray_new)), "dilation")
-        imgray = imgray_new
-
-  
-
-        kernel = np.ones((4,1),np.uint8)
-        imgray_new = cv.erode(imgray,kernel,iterations = 1)
-        cv_plot(np.hstack((imgray, imgray_new)), "erosions")
-        imgray = imgray_new
-
-        kernel = np.ones((10,2), np.uint8)
-        imgray_new = cv.dilate(imgray,kernel,iterations = 1)
-        cv_plot(np.hstack((imgray, imgray_new)), "dilation")
-        imgray = imgray_new
-
-        kernel = np.ones((10,1),np.uint8) # (10,2)
-        imgray_new = cv.erode(imgray,kernel,iterations = 2)
-        cv_plot(np.hstack((imgray, imgray_new)), "erosions")
-        imgray = imgray_new
-
-        kernel = np.ones((15, 2), np.uint8)
-        imgray_new = cv.dilate(imgray,kernel,iterations = 1)
-        cv_plot(np.hstack((imgray, imgray_new)), "dilation")
-        imgray = imgray_new
-
-        # imgray_new = cv.medianBlur(imgray,3)
-        # cv_plot(np.hstack((imgray, imgray_new)), "median blur")
-        # imgray=imgray_new
+    for morphology in pre_thresh_morphology:
+        morph_func = morphology["morph_func"]
+        kernel = morphology["kernel"]
+        kwargs = morphology["kwargs"] if "kwargs" in morphology else {}
+        if morph_func in [cv.dilate, cv.erode]:
+            imgray_new = morph_func(imgray, kernel, **kwargs)
+            cv_plot(np.hstack((imgray, imgray_new)), f"pre_thresh_morphology: {morph_func.__name__}")
+            imgray = imgray_new
+        elif morph_func in [cv.MORPH_OPEN, cv.MORPH_CLOSE]:
+            imgray_new = cv.morphologyEx(imgray, morph_func, kernel, **kwargs)
+            cv_plot(np.hstack((imgray, imgray_new)), f"pre_thresh_morphology: {morph_func}")
+            imgray = imgray_new
+        else: 
+            raise ValueError(f"pre_thresh_morphology function not valid: {morph_func}")
 
 
-    for morphology, kernel in custom_morphology:
-        imgray_new = cv.morphologyEx(imgray, morphology, kernel)
-        
-        cv_plot(np.hstack((imgray, imgray_new)), "custom morphology")
-        imgray = imgray_new
-
-    # (moved to wifi args dict) custom morphology for use with Wi-Fi (long horizontal filter to connect horizontal components)
-    # kernel = cv.getStructuringElement(cv.MORPH_RECT, (65, 1))
-    # imgray = cv.morphologyEx(imgray, cv.MORPH_CLOSE, kernel)
-    # cv_plot(imgray, "wifi kernel")
+    # imgray_new = cv.medianBlur(imgray,3)
+    # cv_plot(np.hstack((imgray, imgray_new)), "median blur")
+    # imgray=imgray_new
+ 
  
     # opening and closing
     # https://docs.opencv.org/3.4/d9/d61/tutorial_py_morphological_ops.html
@@ -199,22 +260,22 @@ def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilate
     # ret, thresh = cv.threshold(imgray, 160, 255, 0)
     # cv_plot(thresh, "global_thresh")
 
-    
-    for morph_func, kernel in post_thresh_morphology:
-        if morph_func in [cv.dilate or cv.erode]:
-            thresh_new = morph_func(thresh, kernel)
-            cv_plot(np.hstack((thresh, thresh_new)), "post_thresh_morphology")
+    for morphology in post_thresh_morphology:
+        morph_func = morphology["morph_func"]
+        kernel = morphology["kernel"]
+        kwargs = morphology["kwargs"] if "kwargs" in morphology else {}
+        if morph_func in [cv.dilate, cv.erode]:
+            thresh_new = morph_func(thresh, kernel, **kwargs)
+            cv_plot(np.hstack((thresh, thresh_new)), f"post_thresh_morphology: {morph_func.__name__}")
+            thresh = thresh_new
         elif morph_func in [cv.MORPH_OPEN, cv.MORPH_CLOSE]:
-            thresh_new = cv.morphologyEx(thresh, morph_func, kernel)
-            cv_plot(np.hstack((thresh, thresh_new)), "post_thresh_morphology")
+            thresh_new = cv.morphologyEx(thresh, morph_func, kernel, **kwargs)
+            cv_plot(np.hstack((thresh, thresh_new)), f"pre_thresh_morphology: {morph_func}")
+            thresh = thresh_new
         else: 
-            raise ValueError("post_thresh_morphology function not valid")
+            raise ValueError(f"post_thresh_morphology function not valid: {morph_func}")
 
-    # if vertical:
-    #     kernel = np.ones((1, 4), np.uint8)
-    #     thresh_new = cv.dilate(thresh,kernel,iterations = 1)
-    #     cv_plot(np.hstack((thresh, thresh_new)), "dilation")
-    #     thresh = thresh_new
+
 
     # find contours 
     contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
@@ -292,37 +353,6 @@ def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilate
             no_label_img_filename = os.path.join(os.path.dirname(filename), "no_labels", os.path.basename(filename))
             cv.imwrite(no_label_img_filename, img)
 
-
-
-
-tbs_crs_args = {
-    "invert": True,
-    "custom_morphology": [],#[(cv.MORPH_OPEN, cv.getStructuringElement(cv.MORPH_RECT, (1, 5))),(cv.MORPH_CLOSE, cv.getStructuringElement(cv.MORPH_RECT, (1,5)))],
-    "kernel_open": cv.getStructuringElement(cv.MORPH_RECT, (4, 50)),#np.ones((50, 4), np.uint8),
-    "kernel_close": cv.getStructuringElement(cv.MORPH_RECT, (6, 25)),#np.ones((25, 6), np.uint8)
-    "post_thresh_morphology": [(cv.dilate, np.ones((1,4), np.uint8))]
-    "bilateral_kernel_size": 2,
-    "group_horizontal": False, 
-    "area_threshold": 0.7,
-    "yolo_label": 0,
-    "vertical": True,
-    "dc_block": True,
-    "horizontal_adjust": -4
-}
-
-wifi_args = {
-    "invert": True,
-    "custom_morphology": [(cv.MORPH_CLOSE, cv.getStructuringElement(cv.MORPH_RECT, (65, 1)))],
-    "kernel_open": cv.getStructuringElement(cv.MORPH_RECT, (65, 1)),#np.ones((3, 3), np.uint8), 
-    "kernel_close": cv.getStructuringElement(cv.MORPH_RECT, (65, 1)),#np.ones((15, 15), np.uint8),
-    "bilateral_kernel_size": 8,
-    "group_horizontal": True, 
-    "area_threshold": 0.7,
-    "yolo_label": 0,
-    "vertical":False, 
-    "dc_block":False,
-    "horizontal_adjust":0,
-}
 
 args_dict = ({
     "wifi": wifi_args,
