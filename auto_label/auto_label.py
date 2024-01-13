@@ -182,7 +182,7 @@ def label(
     histogram_equalization,
     pre_thresh_morphology,
 ):
-    print(filename)
+    print(f"Processing {filename}")
     img = cv.imread(filename)
     original_img = img.copy()
     imgray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -366,6 +366,7 @@ def label(
             "labels",
             os.path.splitext(os.path.basename(filename))[0] + ".txt",
         )
+        print(f"Writing YOLOv8 labels to {yolo_label_filename}")
         with open(yolo_label_filename, "w") as yolo_label_file:
             for box in yolo_boxes:
                 row = " ".join(str(b) for b in box) + "\n"
@@ -377,11 +378,13 @@ def label(
                 "labels",
                 "label_" + os.path.basename(filename),
             )
+            print(f"Writing labelled image to {label_img_filename}")
             cv.imwrite(label_img_filename, img)
         else:
             no_label_img_filename = os.path.join(
                 os.path.dirname(filename), "no_labels", os.path.basename(filename)
             )
+            print(f"Writing non-labelled image to {no_label_img_filename}")
             cv.imwrite(no_label_img_filename, img)
 
 
@@ -409,6 +412,7 @@ def main():
         "--debug",
         action=argparse.BooleanOptionalAction,
         default=False,
+        help="Display image plots.",
     )
     args = parser.parse_args()
 
@@ -436,7 +440,8 @@ def main():
         raise ValueError("filepath must be existing directory or filename")
 
     # loop through files
-    for img_filename in files:
+    for i, img_filename in enumerate(files):
+        print(f"\n[{i+1}/{len(files)}]")
         label(img_filename, **label_args)
 
 
