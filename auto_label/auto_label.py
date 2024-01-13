@@ -6,6 +6,9 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 from skimage.filters import threshold_multiotsu
 
+# Other useful resources
+# Contour approximation https://docs.opencv.org/4.x/dd/d49/tutorial_py_contour_features.html
+
 debug = True
 
 def multi_otsu(imgray):
@@ -196,11 +199,22 @@ def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilate
     # ret, thresh = cv.threshold(imgray, 160, 255, 0)
     # cv_plot(thresh, "global_thresh")
 
-    if vertical:
-        kernel = np.ones((1, 4), np.uint8)
-        thresh_new = cv.dilate(thresh,kernel,iterations = 1)
-        cv_plot(np.hstack((thresh, thresh_new)), "dilation")
-        thresh = thresh_new
+    
+    for morph_func, kernel in post_thresh_morphology:
+        if morph_func in [cv.dilate or cv.erode]:
+            thresh_new = morph_func(thresh, kernel)
+            cv_plot(np.hstack((thresh, thresh_new)), "post_thresh_morphology")
+        elif morph_func in [cv.MORPH_OPEN, cv.MORPH_CLOSE]:
+            thresh_new = cv.morphologyEx(thresh, morph_func, kernel)
+            cv_plot(np.hstack((thresh, thresh_new)), "post_thresh_morphology")
+        else: 
+            raise ValueError("post_thresh_morphology function not valid")
+
+    # if vertical:
+    #     kernel = np.ones((1, 4), np.uint8)
+    #     thresh_new = cv.dilate(thresh,kernel,iterations = 1)
+    #     cv_plot(np.hstack((thresh, thresh_new)), "dilation")
+    #     thresh = thresh_new
 
     # find contours 
     contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
@@ -213,18 +227,11 @@ def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilate
             good_contours.append(contours[i])
     contours = good_contours
 
-    # Contour approximation https://docs.opencv.org/4.x/dd/d49/tutorial_py_contour_features.html
-    # epsilon = 0.01*cv.arcLength(cnt,True)
-    # cnt = cv.approxPolyDP(cnt,epsilon,True)
-
-    # Convex hull
-    # cnt = cv.convexHull(cnt)
-
     # convert contours to bounding rectangles 
     rects = [list(cv.boundingRect(cnt)) for cnt in contours]
 
-    if group_horizontal:
-        # group contours across horizontal axis
+    # group contours across horizontal axis
+    if group_horizontal: 
         rects = group_horizontal_rects(rects)
 
     # remove large contours (covering entire image)
@@ -234,18 +241,17 @@ def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilate
         if rect[2]*rect[3] < image_area*area_threshold:
             good_rects.append(rect)
     rects = good_rects
-
     
+    # don't include DC bias 
     if dc_block:
         good_rects = []
         for rect in rects:
-
             if abs(rect[0] - img.shape[1]/2) > 5 and abs(rect[0]+rect[2] - img.shape[1]/2) > 5:
                 good_rects.append(rect)
         rects = good_rects
 
+    # manually adjust bounding boxes 
     if horizontal_adjust:
-        print(rects)
         for rect in rects:
             rect[0] += horizontal_adjust
     
@@ -286,11 +292,15 @@ def label(filename, invert, custom_morphology, kernel_open, kernel_close, bilate
             no_label_img_filename = os.path.join(os.path.dirname(filename), "no_labels", os.path.basename(filename))
             cv.imwrite(no_label_img_filename, img)
 
+
+
+
 tbs_crs_args = {
     "invert": True,
     "custom_morphology": [],#[(cv.MORPH_OPEN, cv.getStructuringElement(cv.MORPH_RECT, (1, 5))),(cv.MORPH_CLOSE, cv.getStructuringElement(cv.MORPH_RECT, (1,5)))],
     "kernel_open": cv.getStructuringElement(cv.MORPH_RECT, (4, 50)),#np.ones((50, 4), np.uint8),
     "kernel_close": cv.getStructuringElement(cv.MORPH_RECT, (6, 25)),#np.ones((25, 6), np.uint8)
+    "post_thresh_morphology": [(cv.dilate, np.ones((1,4), np.uint8))]
     "bilateral_kernel_size": 2,
     "group_horizontal": False, 
     "area_threshold": 0.7,
@@ -314,6 +324,10 @@ wifi_args = {
     "horizontal_adjust":0,
 }
 
+args_dict = ({
+    "wifi": wifi_args,
+    "tbs_crossfire": tbs_crs_args,
+})
 
 def main():
     parser = argparse.ArgumentParser()
@@ -324,6 +338,12 @@ def main():
         help="Filename or directory.",
     )
     parser.add_argument(
+        "signal_type",
+        type=str,
+        choices=["wifi", "tbs_crossfire"],
+        help="Type of signal. Will decide labelling parameters."
+    )
+    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         default=False,
@@ -331,10 +351,12 @@ def main():
     args = parser.parse_args()
 
     filepath = args.filepath
+    label_args = args_dict[args.signal_type]
     global debug
     debug = args.debug
 
     img_extensions = ('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')
+
     # get files
     files = []
     if os.path.isfile(filepath):
@@ -348,7 +370,7 @@ def main():
 
     # loop through files
     for img_filename in files:
-        label(img_filename, **tbs_crs_args)
+        label(img_filename, **label_args)
 
 
 if __name__ == "__main__":
