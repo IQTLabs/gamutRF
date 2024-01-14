@@ -31,6 +31,7 @@ schedule = "1.2.1"
 scipy = "1.11.4"
 sigmf = "1.1.5"
 sysrsync = "^1.1.1"
+webcolors = "1.13"
 zstandard = "0.22.0"
 
 [tool.poetry.dev-dependencies]

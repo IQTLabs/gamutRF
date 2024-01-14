@@ -42,12 +42,13 @@ class grscan(gr.top_block):
         gps_server="",
         igain=0,
         inference_addr="0.0.0.0",  # nosec
-        inference_port=8002,
         inference_min_confidence=0.5,
         inference_min_db=-200,
-        inference_model_server="",
         inference_model_name="",
+        inference_model_server="",
         inference_output_dir="",
+        inference_port=8002,
+        inference_text_color="",
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
         logport=8001,
@@ -66,8 +67,9 @@ class grscan(gr.top_block):
         sigmf=True,
         skip_tune_step=0,
         sweep_sec=30,
-        tune_step_fft=0,
+        tag_now=False,
         tune_dwell_ms=0,
+        tune_step_fft=0,
         tuneoverlap=0.5,
         tuning_ranges="",
         use_external_gps=False,
@@ -75,7 +77,6 @@ class grscan(gr.top_block):
         vkfft=False,
         wavelearner=None,
         write_samples=0,
-        tag_now=False,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
@@ -242,6 +243,7 @@ class grscan(gr.top_block):
                         n_image=n_image,
                         n_inference=n_inference,
                         samp_rate=int(samp_rate),
+                        text_color=inference_text_color,
                     )
                 ]
             )

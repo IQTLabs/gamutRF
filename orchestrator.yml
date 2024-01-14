@@ -78,6 +78,7 @@ services:
       - --inference_port=10001
       - --inference_min_confidence=0.25
       - --inference_min_db=-1e9
+      - --inference_text_color=black
       # can be multiple, separate with comma
       - --inference_model_name=mini2_snr
       - --n_inference=5
