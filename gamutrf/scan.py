@@ -2,6 +2,7 @@ import logging
 import signal
 import time
 import sys
+import webcolors
 from argparse import ArgumentParser, BooleanOptionalAction
 
 try:
@@ -147,6 +148,13 @@ def argument_parser():
         type=int,
         default=8002,
         help="Log inference results to this port",
+    )
+    parser.add_argument(
+        "--inference_text_color",
+        dest="inference_text_color",
+        type=str,
+        default="white",
+        help="CSS3 color name for inference text (https://www.w3.org/wiki/CSS/Properties/color/keywords)",
     )
     parser.add_argument(
         "--promport",
@@ -424,6 +432,12 @@ def check_options(options):
 
     if options.scaling not in ["spectrum", "density"]:
         return "scaling must be 'spectrum' or 'density'"
+
+    if options.inference_text_color:
+        wc = webcolors.name_to_rgb(options.inference_text_color, "css3")
+        options.inference_text_color = ",".join(
+            [str(c) for c in [wc.blue, wc.green, wc.red]]
+        )
 
     return ""
 
