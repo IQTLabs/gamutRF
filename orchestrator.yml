@@ -69,7 +69,7 @@ services:
       - --tune-dwell-ms=0
       - --tune-step-fft=512
       - --db_clamp_floor=-150
-      - --fft_batch_size=16
+      - --fft_batch_size=256
       - --mqtt_server=mqtt
       - --no-compass
       - --use_external_gps
