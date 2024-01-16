@@ -359,6 +359,7 @@ class grscan(gr.top_block):
         else:
             fft_batch_size = 1
             fft_block = fft.fft_vcc(nfft, True, [], True, 1)
+        fft_block.set_thread_priority(99)
 
         fft_blocks = [
             self.apply_window(nfft, fft_batch_size),
