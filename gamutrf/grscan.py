@@ -322,7 +322,7 @@ class grscan(gr.top_block):
     ):
         # if pretuning, the pretune block will also do the batching.
         if pretune:
-            return self.iqtlabs.retune_pre_fft(
+            block = self.iqtlabs.retune_pre_fft(
                 nfft,
                 fft_batch_size,
                 "rx_freq",
@@ -334,8 +334,10 @@ class grscan(gr.top_block):
                 tuning_ranges,
                 self.tag_now,
             )
-        # otherwise, the pretuning block will just do batching.
-        return blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft)
+        else:
+            # otherwise, the pretuning block will just do batching.
+            block = blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft)
+        return block
 
     def apply_window(self, nfft, fft_batch_size):
         window_constants = [val for val in self.get_window(nfft) for _ in range(2)]
@@ -350,13 +352,14 @@ class grscan(gr.top_block):
         fft_block = None
         fft_roll = False
         if self.wavelearner:
-            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), (nfft), True)
+            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), nfft, True)
             fft_roll = True
         elif vkfft:
-            fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
+            fft_block = self.iqtlabs.vkfft(fft_batch_size, nfft, True)
         else:
             fft_batch_size = 1
             fft_block = fft.fft_vcc(nfft, True, [], True, 1)
+        fft_block.set_thread_priority(99)
 
         fft_blocks = [
             self.apply_window(nfft, fft_batch_size),
