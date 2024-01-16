@@ -315,6 +315,13 @@ def argument_parser():
         help="offload FFT batch size",
     )
     parser.add_argument(
+        "--fft_processor_affinity",
+        dest="fft_processor_affinity",
+        type=int,
+        default=0,
+        help="FFT processor affinity",
+    )
+    parser.add_argument(
         "--vkfft",
         dest="vkfft",
         default=True,

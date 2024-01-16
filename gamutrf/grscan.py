@@ -37,6 +37,7 @@ class grscan(gr.top_block):
         external_gps_server="",
         external_gps_server_port=8888,
         fft_batch_size=256,
+        fft_processor_affinity=0,
         freq_end=1e9,
         freq_start=100e6,
         gps_server="",
@@ -178,6 +179,7 @@ class grscan(gr.top_block):
                 skip_tune_step,
                 tuning_ranges,
                 pretune,
+                fft_processor_affinity,
             )
             + self.get_db_blocks(nfft, samp_rate, scaling)
         )
@@ -348,6 +350,7 @@ class grscan(gr.top_block):
         vkfft,
         fft_batch_size,
         nfft,
+        fft_processor_affinity,
     ):
         fft_block = None
         fft_roll = False
@@ -355,11 +358,15 @@ class grscan(gr.top_block):
             fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), nfft, True)
             fft_roll = True
         elif vkfft:
+            # VkFFT handles batches by using set_multiple_output(), so we do not need
+            # to wrap it.
             fft_block = self.iqtlabs.vkfft(fft_batch_size, nfft, True)
-        else:
             fft_batch_size = 1
+        else:
             fft_block = fft.fft_vcc(nfft, True, [], True, 1)
+            fft_batch_size = 1
         fft_block.set_thread_priority(99)
+        fft_block.set_processor_affinity([fft_processor_affinity])
 
         fft_blocks = [
             self.apply_window(nfft, fft_batch_size),
@@ -390,9 +397,13 @@ class grscan(gr.top_block):
         skip_tune_step,
         tuning_ranges,
         pretune,
+        fft_processor_affinity,
     ):
         fft_batch_size, fft_blocks = self.get_offload_fft_blocks(
-            vkfft, fft_batch_size, nfft
+            vkfft,
+            fft_batch_size,
+            nfft,
+            fft_processor_affinity,
         )
         self.retune_pre_fft = self.get_pretune_block(
             fft_batch_size,
