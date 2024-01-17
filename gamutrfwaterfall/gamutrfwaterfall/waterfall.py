@@ -1137,8 +1137,13 @@ class FlaskHandler:
             now = time.time()
             for ts, item in predictions:
                 image = item["metadata"]["predictions_image_path"]
+                age = now - ts
+                style = ""
+                if age > 3 * self.refresh:
+                    style = 'style="color:red;"'
                 images.append(
-                    "%s (age %.1fs)<p><img src=%s></img></p>" % (image, now - ts, image)
+                    "<p %s>%s (age %.1fs)</p><p %s><img src=%s></img></p>"
+                    % (style, image, age, style, image)
                 )
             if images:
                 write_content(
