@@ -58,6 +58,7 @@ class grscan(gr.top_block):
         n_image=0,
         n_inference=0,
         nfft=1024,
+        peak_fft_range=0,
         pretune=False,
         rotate_secs=0,
         samp_rate=4.096e6,
@@ -154,6 +155,7 @@ class grscan(gr.top_block):
         )
         if stare and tune_dwell_ms > 1e3:
             logging.warn(">1s dwell time in stare mode, updates will be slow!")
+        peak_fft_range = min(peak_fft_range, tune_step_fft)
 
         self.sources, cmd_port, self.workaround_start_hook = get_source(
             sdr,
@@ -207,6 +209,7 @@ class grscan(gr.top_block):
             False,
             self.tag_now,
             not pretune and low_power_hold_down,
+            peak_fft_range,
         )
         self.fft_blocks.append(retune_fft)
         fft_zmq_addr = f"tcp://{logaddr}:{logport}"

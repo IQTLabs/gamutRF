@@ -417,6 +417,13 @@ def argument_parser():
         help="""OpenCV colormap for spectrograms. See
         https://docs.opencv.org/4.x/d3/d50/group__imgproc__colormap.html""",
     )
+    parser.add_argument(
+        "--peak_fft_range",
+        dest="peak_fft_range",
+        type=int,
+        default=0,
+        help="If > 0, find peak of FFT averages over this many rows",
+    )
     return parser
 
 
