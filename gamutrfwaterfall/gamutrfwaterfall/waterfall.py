@@ -623,7 +623,8 @@ def update_fig(config, state, results):
 
         scan_time = scan_df.ts.iloc[-1]
         row_time = datetime.datetime.fromtimestamp(scan_time)
-        state.scan_times.append(scan_time)
+        if scan_time not in state.scan_config_history:
+            state.scan_times.append(scan_time)
         state.scan_config_history[scan_time] = scan_configs
         while len(state.scan_times) > config.waterfall_height:
             remove_time = state.scan_times.pop(0)
@@ -1089,6 +1090,15 @@ class FlaskHandler:
         self.process.start()
         self.zmq_process.start()
 
+    def write_predictions_content(self, content):
+        tmpfile = os.path.join(self.static_folder, "." + self.predictions_file)
+        with open(tmpfile, "w", encoding="utf8") as f:
+            f.write(
+                '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
+                % (self.refresh, content)
+            )
+        os.rename(tmpfile, os.path.join(self.static_folder, self.predictions_file))
+
     def poll_zmq(self):
         zmq_context = zmq.Context()
         socket = zmq_context.socket(zmq.SUB)
@@ -1097,17 +1107,7 @@ class FlaskHandler:
         DELIM = "\n\n"
         json_buffer = ""
         item_buffer = []
-
-        def write_content(content):
-            tmpfile = os.path.join(self.static_folder, "." + self.predictions_file)
-            with open(tmpfile, "w", encoding="utf8") as f:
-                f.write(
-                    '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
-                    % (self.refresh, content)
-                )
-            os.rename(tmpfile, os.path.join(self.static_folder, self.predictions_file))
-
-        write_content("no predictions yet")
+        self.write_predictions_content("no predictions yet")
 
         while True:
             try:
@@ -1146,7 +1146,7 @@ class FlaskHandler:
                     % (style, image, age, style, image)
                 )
             if images:
-                write_content(
+                self.write_predictions_content(
                     f"<p>{datetime.datetime.now().isoformat()}</p>" + "".join(images)
                 )
             time.sleep(0.1)
