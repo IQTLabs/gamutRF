@@ -1064,11 +1064,18 @@ def waterfall(
 
 class FlaskHandler:
     def __init__(
-        self, savefig_path, predictions, port, refresh, inference_server, inference_port
+        self,
+        savefig_path,
+        static_folder,
+        predictions,
+        port,
+        refresh,
+        inference_server,
+        inference_port,
     ):
         self.inference_addr = f"tcp://{inference_server}:{inference_port}"
         self.savefig_path = savefig_path
-        self.static_folder = os.path.dirname(savefig_path)
+        self.static_folder = static_folder
         self.predictions_file = "predictions.html"
         self.refresh = refresh
         self.predictions = predictions
@@ -1085,6 +1092,7 @@ class FlaskHandler:
             kwargs={"host": "0.0.0.0", "port": port},  # nosec
         )
         self.zmq_process = multiprocessing.Process(target=self.poll_zmq)
+        self.write_predictions_content("no predictions yet")
 
     def start(self):
         self.process.start()
@@ -1107,7 +1115,6 @@ class FlaskHandler:
         DELIM = "\n\n"
         json_buffer = ""
         item_buffer = []
-        self.write_predictions_content("no predictions yet")
 
         while True:
             try:
@@ -1199,6 +1206,7 @@ def main():
             savefig_path = os.path.join(tempdir, "waterfall.png")
             flask = FlaskHandler(
                 savefig_path,
+                tempdir,
                 args.predictions,
                 args.port,
                 args.refresh,
