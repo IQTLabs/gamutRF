@@ -1,6 +1,7 @@
 version: "3.3"
 networks:
   gamutrf:
+    driver: bridge
 services:
   torchserve:
     restart: always
