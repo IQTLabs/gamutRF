@@ -110,30 +110,6 @@ class grscan(gr.top_block):
         ##################################################
 
         logging.info(f"will scan from {freq_start} to {freq_end}")
-
-        self.samples_blocks = []
-        if write_samples:
-            Path(sample_dir).mkdir(parents=True, exist_ok=True)
-            self.samples_blocks.extend(
-                [
-                    blocks.complex_to_interleaved_short(False, 32767),
-                    blocks.stream_to_vector(gr.sizeof_short, nfft * 2),
-                    self.iqtlabs.write_freq_samples(
-                        "rx_freq",
-                        gr.sizeof_short,
-                        "_".join(("ci16", endianstr())),
-                        nfft * 2,
-                        sample_dir,
-                        "samples",
-                        write_samples,
-                        skip_tune_step,
-                        int(samp_rate),
-                        rotate_secs,
-                        igain,
-                        sigmf,
-                    ),
-                ]
-            )
         freq_range = freq_end - freq_start
         fft_rate = int(samp_rate / nfft)
 
@@ -168,26 +144,53 @@ class grscan(gr.top_block):
             sdrargs=sdrargs,
         )
 
+        fft_batch_size, self.fft_blocks = self.get_fft_blocks(
+            vkfft,
+            fft_batch_size,
+            nfft,
+            freq_start,
+            freq_end,
+            tune_step_hz,
+            tune_step_fft,
+            skip_tune_step,
+            tuning_ranges,
+            pretune,
+            fft_processor_affinity,
+            low_power_hold_down,
+        )
         self.fft_blocks = (
             self.get_dc_blocks(dc_block_len, dc_block_long)
-            + self.get_fft_blocks(
-                vkfft,
-                fft_batch_size,
-                nfft,
-                freq_start,
-                freq_end,
-                tune_step_hz,
-                tune_step_fft,
-                skip_tune_step,
-                tuning_ranges,
-                pretune,
-                fft_processor_affinity,
-            )
+            + self.fft_blocks
             + self.get_db_blocks(nfft, samp_rate, scaling)
         )
-        fft_dir = sample_dir
-        if not write_samples:
-            fft_dir = ""
+        fft_dir = ""
+        self.samples_blocks = []
+        if write_samples:
+            fft_dir = sample_dir
+            Path(sample_dir).mkdir(parents=True, exist_ok=True)
+            self.samples_blocks.extend(
+                [
+                    # blocks.vector_to_stream(
+                    #    gr.sizeof_gr_complex, fft_batch_size * nfft
+                    # ),
+                    # blocks.complex_to_interleaved_short(False, 32767),
+                    # blocks.stream_to_vector(gr.sizeof_short, nfft * 2),
+                    self.iqtlabs.write_freq_samples(
+                        "rx_freq",
+                        gr.sizeof_gr_complex,
+                        "_".join(("cf32", endianstr())),
+                        fft_batch_size * nfft,
+                        sample_dir,
+                        "samples",
+                        write_samples,
+                        skip_tune_step,
+                        int(samp_rate),
+                        rotate_secs,
+                        igain,
+                        sigmf,
+                    ),
+                ]
+            )
         retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
             nfft,
@@ -284,11 +287,8 @@ class grscan(gr.top_block):
         else:
             self.connect((retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft)))
 
-        for pipeline_blocks in (
-            self.fft_blocks,
-            self.samples_blocks,
-        ):
-            self.connect_blocks(self.sources[-1], pipeline_blocks)
+        self.connect_blocks(self.sources[-1], self.fft_blocks)
+        self.connect_blocks(self.retune_pre_fft, self.samples_blocks)
 
     def connect_blocks(self, source, other_blocks, last_block_port=0):
         last_block = source
@@ -323,6 +323,7 @@ class grscan(gr.top_block):
         skip_tune_step,
         tuning_ranges,
         pretune,
+        low_power_hold_down,
     ):
         # if pretuning, the pretune block will also do the batching.
         if pretune:
@@ -337,6 +338,7 @@ class grscan(gr.top_block):
                 skip_tune_step,
                 tuning_ranges,
                 self.tag_now,
+                low_power_hold_down,
             )
         else:
             # otherwise, the pretuning block will just do batching.
@@ -400,6 +402,7 @@ class grscan(gr.top_block):
         tuning_ranges,
         pretune,
         fft_processor_affinity,
+        low_power_hold_down,
     ):
         fft_batch_size, fft_blocks = self.get_offload_fft_blocks(
             vkfft,
@@ -417,8 +420,9 @@ class grscan(gr.top_block):
             skip_tune_step,
             tuning_ranges,
             pretune,
+            low_power_hold_down,
         )
-        return [self.retune_pre_fft] + fft_blocks
+        return (fft_batch_size, [self.retune_pre_fft] + fft_blocks)
 
     def start(self):
         super().start()
