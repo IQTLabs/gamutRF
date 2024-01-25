@@ -9,8 +9,71 @@ from skimage.filters import threshold_multiotsu
 # Other useful resources
 # Contour approximation https://docs.opencv.org/4.x/dd/d49/tutorial_py_contour_features.html
 
+def rect_filter_msk(rects, shape):
+    max_width = 95 
+    max_height = 25
 
-def rect_filter_fhss_css_args(rects, shape):
+    good_rects = []
+    if len(rects) > 10: 
+        rects = []
+    
+    #print(f"{rects=}")
+    for rect in rects:
+        x, y, w, h = rect
+
+        if (w < 0.5*max_width) and (h < 0.5*max_height):
+            continue
+        if (w > 1.1*max_width) or (w < 0.1*max_width) or (h < 0.1*max_height) or (h > 1.2*max_height):
+            continue
+
+        if w < (.7*max_width) and w > (.19*max_width): 
+            center = x + (0.5*w)
+            x = int(max(center - (.5*max_width), 0))
+            w = int(min(center+(.5*max_width)-x, shape[1]-1-x))
+        
+        if w*h < (.5 * max_width*max_height):
+            continue
+        good_rects.append([x, y, w, h])
+    #print(f"{good_rects=}")
+    return good_rects
+msk_args = {
+    "invert": False,
+    "pre_threshold": 1,
+    "histogram_equalization": False,
+    "pre_thresh_morphology": [
+        # {
+        #     "morph_func": cv.MORPH_CLOSE,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (50,30)),
+        # },
+        # {
+        #     "morph_func": cv.MORPH_OPEN,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (3,3)),
+        # },
+        # {
+        #     "morph_func": cv.MORPH_CLOSE,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (24,12)),
+        # },
+
+    ],
+    "kernel_open": cv.getStructuringElement(
+        cv.MORPH_RECT, (3,3), #(10,10)
+    ),  # np.ones((3, 3), np.uint8),
+    "kernel_close": cv.getStructuringElement(
+        cv.MORPH_RECT, (24,12)
+    ),  # np.ones((15, 15), np.uint8),
+    "threshold_op": 0,
+    "post_thresh_morphology": [],
+    "bilateral_kernel_size": 8,
+    "group_horizontal": False,
+    "area_threshold": 0.7,
+    "yolo_label": 0,
+    "vertical": False,
+    "dc_block": None,
+    "horizontal_adjust": 0,
+    "custom_rect_filter": rect_filter_msk,
+}
+
+def rect_filter_fhss_css(rects, shape):
     max_width = 100 
     max_height = 65
 
@@ -26,10 +89,10 @@ def rect_filter_fhss_css_args(rects, shape):
         if (w > 1.1*max_width) or (h > 1.1*max_height):
             continue
 
-        if w < 70 and w > 22: 
+        if w < (.7*max_width) and w > (.22*max_width): 
             center = x + (0.5*w)
-            x = int(max(center - 50, 0))
-            w = int(min(center+50-x, shape[1]-1-x))
+            x = int(max(center - (max_width*0.5), 0))
+            w = int(min(center+(max_width*0.5)-x, shape[1]-1-x))
         good_rects.append([x, y, w, h])
     return good_rects
         
@@ -83,7 +146,7 @@ fhss_css_args = {
     "vertical": False,
     "dc_block": None,
     "horizontal_adjust": 0,
-    "custom_rect_filter": rect_filter_fhss_css_args,
+    "custom_rect_filter": rect_filter_fhss_css,
 }
 
 
@@ -258,6 +321,7 @@ def cv_plot(img, title):
     if debug:
         cv.imshow(title, img)
         k = cv.waitKey(0)
+
         if k in [3, 27]:
             exit()
         cv.destroyAllWindows()
@@ -511,6 +575,7 @@ args_dict = {
     "wifi": wifi_args,
     "tbs_crossfire": tbs_crs_args,
     "fhss_css": fhss_css_args,
+    "msk": msk_args,
 }
 
 
