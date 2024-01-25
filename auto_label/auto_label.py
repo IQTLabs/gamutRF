@@ -10,9 +10,86 @@ from skimage.filters import threshold_multiotsu
 # Contour approximation https://docs.opencv.org/4.x/dd/d49/tutorial_py_contour_features.html
 
 
+def rect_filter_fhss_css_args(rects, shape):
+    max_width = 100 
+    max_height = 65
+
+    good_rects = []
+    if len(rects) > 10: 
+        rects = []
+    
+    for rect in rects:
+        x, y, w, h = rect
+
+        if (w < 0.5*max_width) and (h < 0.5*max_height):
+            continue
+        if (w > 1.1*max_width) or (h > 1.1*max_height):
+            continue
+
+        if w < 70 and w > 22: 
+            center = x + (0.5*w)
+            x = int(max(center - 50, 0))
+            w = int(min(center+50-x, shape[1]-1-x))
+        good_rects.append([x, y, w, h])
+    return good_rects
+        
+
+fhss_css_args = {
+    "invert": True,
+    "pre_threshold": 0,
+    "histogram_equalization": False,
+    "pre_thresh_morphology": [
+        # {
+        #     "morph_func": cv.MORPH_CLOSE,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (50,30)),
+        # },
+        {
+            "morph_func": cv.MORPH_OPEN,
+            "kernel": cv.getStructuringElement(cv.MORPH_RECT, (3,3)),
+        },
+        {
+            "morph_func": cv.MORPH_CLOSE,
+            "kernel": cv.getStructuringElement(cv.MORPH_RECT, (12,12)),
+        },
+        # {
+        #     "morph_func": cv.MORPH_OPEN,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (10,10)),
+        # },
+        # {
+        #     "morph_func": cv.MORPH_CLOSE,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (10,10)),
+        # },
+        # {
+        #     "morph_func": cv.MORPH_OPEN,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (10,10)),
+        # },
+        # {
+        #     "morph_func": cv.MORPH_CLOSE,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (10,10)),
+        # },
+    ],
+    "kernel_open": cv.getStructuringElement(
+        cv.MORPH_RECT, (12,12), #(10,10)
+    ),  # np.ones((3, 3), np.uint8),
+    "kernel_close": cv.getStructuringElement(
+        cv.MORPH_RECT, (15,15)
+    ),  # np.ones((15, 15), np.uint8),
+    "threshold_op": 0,
+    "post_thresh_morphology": [],
+    "bilateral_kernel_size": 8,
+    "group_horizontal": False,
+    "area_threshold": 0.7,
+    "yolo_label": 0,
+    "vertical": False,
+    "dc_block": None,
+    "horizontal_adjust": 0,
+    "custom_rect_filter": rect_filter_fhss_css_args,
+}
+
+
 tbs_crs_args = {
     "invert": True,
-    "pre_threshold": True,
+    "pre_threshold": 1,
     "histogram_equalization": True,
     "pre_thresh_morphology": [
         {
@@ -49,6 +126,7 @@ tbs_crs_args = {
     "kernel_close": cv.getStructuringElement(
         cv.MORPH_RECT, (6, 25)
     ),  # np.ones((25, 6), np.uint8)
+    "threshold_op": "otsu",
     "post_thresh_morphology": [
         {
             "morph_func": cv.dilate,
@@ -60,13 +138,13 @@ tbs_crs_args = {
     "area_threshold": 0.7,
     "yolo_label": 0,
     "vertical": True,
-    "dc_block": True,
+    "dc_block": 5,
     "horizontal_adjust": -4,
 }
 
 wifi_args = {
     "invert": True,
-    "pre_threshold": False,
+    "pre_threshold": -1,
     "histogram_equalization": False,
     "pre_thresh_morphology": [
         {
@@ -80,17 +158,35 @@ wifi_args = {
     "kernel_close": cv.getStructuringElement(
         cv.MORPH_RECT, (65, 1)
     ),  # np.ones((15, 15), np.uint8),
+    "threshold_op": "otsu",
     "post_thresh_morphology": [],
     "bilateral_kernel_size": 8,
     "group_horizontal": True,
     "area_threshold": 0.7,
     "yolo_label": 0,
     "vertical": False,
-    "dc_block": False,
+    "dc_block": None,
     "horizontal_adjust": 0,
 }
 
-
+default_args = {
+    "invert": None,
+    "pre_threshold": None,
+    "histogram_equalization": None,
+    "pre_thresh_morphology": None,
+    "kernel_open": None,
+    "kernel_close": None,
+    "threshold_op": None,
+    "post_thresh_morphology": None,
+    "bilateral_kernel_size": None,
+    "group_horizontal": None,
+    "area_threshold": None,
+    "yolo_label": None,
+    "vertical": None,
+    "dc_block": None,
+    "horizontal_adjust": None,
+    "custom_rect_filter": None,
+}
 debug = True
 
 
@@ -161,7 +257,9 @@ def group_horizontal_rects(rects):
 def cv_plot(img, title):
     if debug:
         cv.imshow(title, img)
-        cv.waitKey(0)
+        k = cv.waitKey(0)
+        if k in [3, 27]:
+            exit()
         cv.destroyAllWindows()
 
 
@@ -178,28 +276,34 @@ def label(
     dc_block,
     horizontal_adjust,
     pre_threshold,
+    threshold_op,
     post_thresh_morphology,
     histogram_equalization,
     pre_thresh_morphology,
+    custom_rect_filter,
 ):
     print(f"Processing {filename}")
+    if debug: 
+        print(f"Currently in debugging mode. While using GUI window, press any key to continue and ESC or Ctrl+c to exit.")
     img = cv.imread(filename)
     original_img = img.copy()
     imgray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    cv_plot(np.hstack((img, cv.cvtColor(imgray,cv.COLOR_GRAY2RGB))), "imgray")
 
     # invert image (depends on colormap)
     if invert:
-        imgray = cv.bitwise_not(imgray)
-    cv_plot(imgray, "imgray")
+        imgray_new = cv.bitwise_not(imgray)
+        cv_plot(np.hstack((imgray,imgray_new)), "imgray invert")
+        imgray = imgray_new
     imgray_original = imgray.copy()
 
     # display multi otsu thresholding (informational)
-    # if debug:
-    #     multi_thresh = multi_otsu(imgray)
-
-    if pre_threshold:
+    if debug:
         multi_thresh = multi_otsu(imgray)
-        ret, imgray_new = cv.threshold(imgray, multi_thresh[1], 255, cv.THRESH_TOZERO)
+
+    if pre_threshold >= 0:
+        multi_thresh = multi_otsu(imgray)
+        ret, imgray_new = cv.threshold(imgray, multi_thresh[pre_threshold], 255, cv.THRESH_TOZERO)
         cv_plot(np.hstack((imgray, imgray_new)), "thresh trunc")
         imgray = imgray_new
 
@@ -267,9 +371,21 @@ def label(
     # cv.waitKey(0)
     # cv.destroyAllWindows()
 
-    # thresholding (otsu)
-    ret, thresh = cv.threshold(imgray, 0, 255, cv.THRESH_OTSU)
-    cv_plot(thresh, "otsu threshold")
+    if debug:
+        multi_thresh = multi_otsu(imgray)
+
+    if threshold_op == "otsu":
+        # thresholding (otsu)
+        ret, thresh = cv.threshold(imgray, 0, 255, cv.THRESH_OTSU)
+        cv_plot(np.hstack((imgray,thresh)), "otsu threshold")
+    elif isinstance(threshold_op, int):
+        multi_thresh = multi_otsu(imgray)
+        ret, thresh = cv.threshold(imgray, multi_thresh[threshold_op], 255, cv.THRESH_TOZERO)
+        cv_plot(np.hstack((imgray, thresh)), f"thresh trunc {threshold_op}")
+    else: 
+        raise ValueError("threshold_op must be str or int")
+
+
 
     # thresholding (global, hardcoded)
     # ret, thresh = cv.threshold(imgray, 160, 255, 0)
@@ -309,25 +425,20 @@ def label(
     # convert contours to bounding rectangles
     rects = [list(cv.boundingRect(cnt)) for cnt in contours]
 
+    if custom_rect_filter: 
+        rects = custom_rect_filter(rects, img.shape)
+
     # group contours across horizontal axis
     if group_horizontal:
         rects = group_horizontal_rects(rects)
-
-    # remove large contours (covering entire image)
-    image_area = img.shape[0] * img.shape[1]
-    good_rects = []
-    for rect in rects:
-        if rect[2] * rect[3] < image_area * area_threshold:
-            good_rects.append(rect)
-    rects = good_rects
 
     # don't include DC bias
     if dc_block:
         good_rects = []
         for rect in rects:
             if (
-                abs(rect[0] - img.shape[1] / 2) > 5
-                and abs(rect[0] + rect[2] - img.shape[1] / 2) > 5
+                abs(rect[0] - img.shape[1] / 2) > dc_block
+                and abs(rect[0] + rect[2] - img.shape[1] / 2) > dc_block
             ):
                 good_rects.append(rect)
         rects = good_rects
@@ -336,6 +447,14 @@ def label(
     if horizontal_adjust:
         for rect in rects:
             rect[0] += horizontal_adjust
+
+    # remove large contours (covering entire image)
+    image_area = img.shape[0] * img.shape[1]
+    good_rects = []
+    for rect in rects:
+        if rect[2] * rect[3] < image_area * area_threshold:
+            good_rects.append(rect)
+    rects = good_rects
 
     yolo_boxes = []
 
@@ -391,6 +510,7 @@ def label(
 args_dict = {
     "wifi": wifi_args,
     "tbs_crossfire": tbs_crs_args,
+    "fhss_css": fhss_css_args,
 }
 
 
@@ -405,7 +525,7 @@ def main():
     parser.add_argument(
         "signal_type",
         type=str,
-        choices=["wifi", "tbs_crossfire"],
+        choices=list(args_dict.keys()),
         help="Type of signal. Will decide labelling parameters.",
     )
     parser.add_argument(
@@ -417,7 +537,8 @@ def main():
     args = parser.parse_args()
 
     filepath = args.filepath
-    label_args = args_dict[args.signal_type]
+    label_args = default_args
+    label_args.update(args_dict[args.signal_type])
     global debug
     debug = args.debug
 
