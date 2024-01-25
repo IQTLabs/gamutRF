@@ -10,29 +10,102 @@ from skimage.filters import threshold_multiotsu
 # Contour approximation https://docs.opencv.org/4.x/dd/d49/tutorial_py_contour_features.html
 
 
-def rect_filter_fhss_css_args(rects, shape):
-    max_width = 100 
-    max_height = 65
+def rect_filter_msk(rects, shape):
+    max_width = 95
+    max_height = 25
 
     good_rects = []
-    if len(rects) > 10: 
+    if len(rects) > 10:
         rects = []
-    
+
+    # print(f"{rects=}")
     for rect in rects:
         x, y, w, h = rect
 
-        if (w < 0.5*max_width) and (h < 0.5*max_height):
+        if (w < 0.5 * max_width) and (h < 0.5 * max_height):
             continue
-        if (w > 1.1*max_width) or (h > 1.1*max_height):
+        if (
+            (w > 1.1 * max_width)
+            or (w < 0.1 * max_width)
+            or (h < 0.1 * max_height)
+            or (h > 1.2 * max_height)
+        ):
             continue
 
-        if w < 70 and w > 22: 
-            center = x + (0.5*w)
-            x = int(max(center - 50, 0))
-            w = int(min(center+50-x, shape[1]-1-x))
+        if w < (0.7 * max_width) and w > (0.19 * max_width):
+            center = x + (0.5 * w)
+            x = int(max(center - (0.5 * max_width), 0))
+            w = int(min(center + (0.5 * max_width) - x, shape[1] - 1 - x))
+
+        if w * h < (0.5 * max_width * max_height):
+            continue
+        good_rects.append([x, y, w, h])
+    # print(f"{good_rects=}")
+    return good_rects
+
+
+msk_args = {
+    # Note: msk must use Viridis colormap
+    "invert": False,
+    "pre_threshold": 1,
+    "histogram_equalization": False,
+    "pre_thresh_morphology": [
+        # {
+        #     "morph_func": cv.MORPH_CLOSE,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (50,30)),
+        # },
+        # {
+        #     "morph_func": cv.MORPH_OPEN,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (3,3)),
+        # },
+        # {
+        #     "morph_func": cv.MORPH_CLOSE,
+        #     "kernel": cv.getStructuringElement(cv.MORPH_RECT, (24,12)),
+        # },
+    ],
+    "kernel_open": cv.getStructuringElement(
+        cv.MORPH_RECT,
+        (3, 3),  # (10,10)
+    ),  # np.ones((3, 3), np.uint8),
+    "kernel_close": cv.getStructuringElement(
+        cv.MORPH_RECT, (24, 12)
+    ),  # np.ones((15, 15), np.uint8),
+    "threshold_op": 0,
+    "post_thresh_morphology": [],
+    "bilateral_kernel_size": 8,
+    "group_horizontal": False,
+    "area_threshold": 0.7,
+    "yolo_label": 0,
+    "vertical": False,
+    "dc_block": None,
+    "horizontal_adjust": 0,
+    "custom_rect_filter": rect_filter_msk,
+}
+
+
+def rect_filter_fhss_css(rects, shape):
+    max_width = 100
+    max_height = 65
+
+    good_rects = []
+    if len(rects) > 10:
+        rects = []
+
+    for rect in rects:
+        x, y, w, h = rect
+
+        if (w < 0.5 * max_width) and (h < 0.5 * max_height):
+            continue
+        if (w > 1.1 * max_width) or (h > 1.1 * max_height):
+            continue
+
+        if w < (0.7 * max_width) and w > (0.22 * max_width):
+            center = x + (0.5 * w)
+            x = int(max(center - (max_width * 0.5), 0))
+            w = int(min(center + (max_width * 0.5) - x, shape[1] - 1 - x))
         good_rects.append([x, y, w, h])
     return good_rects
-        
+
 
 fhss_css_args = {
     "invert": True,
@@ -45,11 +118,11 @@ fhss_css_args = {
         # },
         {
             "morph_func": cv.MORPH_OPEN,
-            "kernel": cv.getStructuringElement(cv.MORPH_RECT, (3,3)),
+            "kernel": cv.getStructuringElement(cv.MORPH_RECT, (3, 3)),
         },
         {
             "morph_func": cv.MORPH_CLOSE,
-            "kernel": cv.getStructuringElement(cv.MORPH_RECT, (12,12)),
+            "kernel": cv.getStructuringElement(cv.MORPH_RECT, (12, 12)),
         },
         # {
         #     "morph_func": cv.MORPH_OPEN,
@@ -69,10 +142,11 @@ fhss_css_args = {
         # },
     ],
     "kernel_open": cv.getStructuringElement(
-        cv.MORPH_RECT, (12,12), #(10,10)
+        cv.MORPH_RECT,
+        (12, 12),  # (10,10)
     ),  # np.ones((3, 3), np.uint8),
     "kernel_close": cv.getStructuringElement(
-        cv.MORPH_RECT, (15,15)
+        cv.MORPH_RECT, (15, 15)
     ),  # np.ones((15, 15), np.uint8),
     "threshold_op": 0,
     "post_thresh_morphology": [],
@@ -83,7 +157,7 @@ fhss_css_args = {
     "vertical": False,
     "dc_block": None,
     "horizontal_adjust": 0,
-    "custom_rect_filter": rect_filter_fhss_css_args,
+    "custom_rect_filter": rect_filter_fhss_css,
 }
 
 
@@ -258,6 +332,7 @@ def cv_plot(img, title):
     if debug:
         cv.imshow(title, img)
         k = cv.waitKey(0)
+
         if k in [3, 27]:
             exit()
         cv.destroyAllWindows()
@@ -283,17 +358,19 @@ def label(
     custom_rect_filter,
 ):
     print(f"Processing {filename}")
-    if debug: 
-        print(f"Currently in debugging mode. While using GUI window, press any key to continue and ESC or Ctrl+c to exit.")
+    if debug:
+        print(
+            f"Currently in debugging mode. While using GUI window, press any key to continue and ESC or Ctrl+c to exit."
+        )
     img = cv.imread(filename)
     original_img = img.copy()
     imgray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    cv_plot(np.hstack((img, cv.cvtColor(imgray,cv.COLOR_GRAY2RGB))), "imgray")
+    cv_plot(np.hstack((img, cv.cvtColor(imgray, cv.COLOR_GRAY2RGB))), "imgray")
 
     # invert image (depends on colormap)
     if invert:
         imgray_new = cv.bitwise_not(imgray)
-        cv_plot(np.hstack((imgray,imgray_new)), "imgray invert")
+        cv_plot(np.hstack((imgray, imgray_new)), "imgray invert")
         imgray = imgray_new
     imgray_original = imgray.copy()
 
@@ -303,7 +380,9 @@ def label(
 
     if pre_threshold >= 0:
         multi_thresh = multi_otsu(imgray)
-        ret, imgray_new = cv.threshold(imgray, multi_thresh[pre_threshold], 255, cv.THRESH_TOZERO)
+        ret, imgray_new = cv.threshold(
+            imgray, multi_thresh[pre_threshold], 255, cv.THRESH_TOZERO
+        )
         cv_plot(np.hstack((imgray, imgray_new)), "thresh trunc")
         imgray = imgray_new
 
@@ -377,15 +456,15 @@ def label(
     if threshold_op == "otsu":
         # thresholding (otsu)
         ret, thresh = cv.threshold(imgray, 0, 255, cv.THRESH_OTSU)
-        cv_plot(np.hstack((imgray,thresh)), "otsu threshold")
+        cv_plot(np.hstack((imgray, thresh)), "otsu threshold")
     elif isinstance(threshold_op, int):
         multi_thresh = multi_otsu(imgray)
-        ret, thresh = cv.threshold(imgray, multi_thresh[threshold_op], 255, cv.THRESH_TOZERO)
+        ret, thresh = cv.threshold(
+            imgray, multi_thresh[threshold_op], 255, cv.THRESH_TOZERO
+        )
         cv_plot(np.hstack((imgray, thresh)), f"thresh trunc {threshold_op}")
-    else: 
+    else:
         raise ValueError("threshold_op must be str or int")
-
-
 
     # thresholding (global, hardcoded)
     # ret, thresh = cv.threshold(imgray, 160, 255, 0)
@@ -425,7 +504,7 @@ def label(
     # convert contours to bounding rectangles
     rects = [list(cv.boundingRect(cnt)) for cnt in contours]
 
-    if custom_rect_filter: 
+    if custom_rect_filter:
         rects = custom_rect_filter(rects, img.shape)
 
     # group contours across horizontal axis
@@ -511,6 +590,7 @@ args_dict = {
     "wifi": wifi_args,
     "tbs_crossfire": tbs_crs_args,
     "fhss_css": fhss_css_args,
+    "msk": msk_args,
 }
 
 
