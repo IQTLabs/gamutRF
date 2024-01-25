@@ -45,6 +45,7 @@ def rect_filter_msk(rects, shape):
 
 
 msk_args = {
+    # Note: msk must use Viridis colormap
     "invert": False,
     "pre_threshold": 1,
     "histogram_equalization": False,
