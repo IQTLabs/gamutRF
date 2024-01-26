@@ -242,7 +242,8 @@ def argument_parser():
     parser.add_argument(
         "--dc_ettus_auto_offset",
         dest="dc_ettus_auto_offset",
-        action="store_true",
+        default=True,
+        action=BooleanOptionalAction,
         help="Use Ettus DC Auto offset",
     )
     parser.add_argument(
