@@ -240,7 +240,7 @@ def argument_parser():
         help="Use dc_block_cc long form",
     )
     parser.add_argument(
-        "--disable_ettus_auto_offset",
+        "--disable_ettus_dc_offset",
         dest="dc_ettus_auto_offset",
         action="store_false",
         help="Use Ettus DC Auto offset",
