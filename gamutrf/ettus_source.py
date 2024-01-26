@@ -3,7 +3,9 @@ from gamutrf.utils import ETTUS_ANT
 from gamutrf.utils import ETTUS_ARGS
 
 
-def get_ettus_source(sdrargs, samp_rate, center_freq, agc, gain, uhd, dc_ettus_auto_offset):
+def get_ettus_source(
+    sdrargs, samp_rate, center_freq, agc, gain, uhd, dc_ettus_auto_offset
+):
     if not sdrargs:
         sdrargs = ETTUS_ARGS
     source = uhd.usrp_source(
