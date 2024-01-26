@@ -240,6 +240,12 @@ def argument_parser():
         help="Use dc_block_cc long form",
     )
     parser.add_argument(
+        "--dc_ettus_auto_offset",
+        dest="dc_ettus_auto_offset",
+        action="store_true",
+        help="Use Ettus DC Auto offset",
+    )
+    parser.add_argument(
         "--inference_min_confidence",
         dest="inference_min_confidence",
         type=float,

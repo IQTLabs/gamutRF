@@ -33,6 +33,7 @@ class grscan(gr.top_block):
         db_clamp_floor=-200,
         dc_block_len=0,
         dc_block_long=False,
+        dc_ettus_auto_offset=True,
         description="",
         external_gps_server="",
         external_gps_server_port=8888,
@@ -142,6 +143,7 @@ class grscan(gr.top_block):
             agc=False,
             center_freq=freq_start,
             sdrargs=sdrargs,
+            dc_ettus_auto_offset=dc_ettus_auto_offset
         )
 
         fft_batch_size, self.fft_blocks = self.get_fft_blocks(
