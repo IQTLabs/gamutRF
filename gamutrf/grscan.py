@@ -143,7 +143,7 @@ class grscan(gr.top_block):
             agc=False,
             center_freq=freq_start,
             sdrargs=sdrargs,
-            dc_ettus_auto_offset=dc_ettus_auto_offset
+            dc_ettus_auto_offset=dc_ettus_auto_offset,
         )
 
         fft_batch_size, self.fft_blocks = self.get_fft_blocks(

@@ -125,7 +125,7 @@ def spectral_helper(
                 result /= Fs
                 # Scale the spectrum by the norm of the window to compensate for
                 # windowing loss; see Bendat & Piersol Sec 11.5.2.
-                result /= (window**2).sum()
+                result /= (window ** 2).sum()
             else:
                 # In this case, preserve power in the segment, not amplitude
                 result /= window.sum() ** 2
