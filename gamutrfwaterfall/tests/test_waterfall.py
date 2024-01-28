@@ -40,9 +40,9 @@ class FakeZmqReceiver:
                     for i in range(rows)
                 ]
             )
-            df.loc[
-                (df.freq >= self.peak_min) & (df.freq <= self.peak_max), "db"
-            ] = self.peak_val
+            df.loc[(df.freq >= self.peak_min) & (df.freq <= self.peak_max), "db"] = (
+                self.peak_val
+            )
             df["freq"] /= 1e6
             self.serve_results = [
                 (
