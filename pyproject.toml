@@ -37,7 +37,7 @@ zstandard = "0.22.0"
 [tool.poetry.dev-dependencies]
 attr = "0.3.2"
 attrs = "23.2.0"
-black = "23.12.1"
+black = "24.1.0"
 docker = "7.0.0"
 pdbpp = "^0.10.3"
 pylint = "3.0.3"
