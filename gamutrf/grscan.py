@@ -50,6 +50,8 @@ class grscan(gr.top_block):
         inference_output_dir="",
         inference_port=8002,
         inference_text_color="",
+        iq_inference_model_name="",
+        iq_inference_model_server="",
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
         logport=8001,
@@ -163,6 +165,7 @@ class grscan(gr.top_block):
             + self.fft_blocks
             + self.get_db_blocks(nfft, samp_rate, scaling)
         )
+        self.last_db_block = self.fft_blocks[-1]
         fft_dir = ""
         self.samples_blocks = []
         if write_samples:
@@ -277,13 +280,36 @@ class grscan(gr.top_block):
             self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
         self.connect_blocks(self.sources[0], self.sources[1:])
 
-        if self.inference_blocks:
-            self.connect((retune_fft, 1), (self.inference_blocks[0], 0))
-            self.connect_blocks(self.inference_blocks[0], self.inference_blocks[1:])
-            self.connect_blocks(
-                self.inference_blocks[0],
-                [zeromq.pub_sink(1, 1, inference_zmq_addr, 100, False, 65536, "")],
+        # TODO: support simultaneous inference types.
+        # TODO: provide new block that receives JSON-over-PMT and outputs to MQTT/zmq.
+        iq_inference = iq_inference_model_server and iq_inference_model_name
+        if self.inference_blocks or iq_inference:
+            inference_zmq = zeromq.pub_sink(
+                1, 1, inference_zmq_addr, 100, False, 65536, ""
             )
+
+            if iq_inference:
+                iq_inference = iqtlabs.iq_inference(
+                    tag="rx_freq",
+                    vlen=nfft,
+                    sample_buffer=tune_step_fft,
+                    min_peak_points=inference_min_db,
+                    model_server=iq_inference_model_server,
+                    model_names=iq_inference_model_name,
+                    confidence=inference_min_confidence,
+                    n_inference=n_inference,
+                    samp_rate=int(samp_rate),
+                )
+                self.connect((self.retune_pre_fft, 0), (iq_inference, 0))
+                self.connect((self.last_db_block, 0), (iq_inference, 1))
+                self.connect((iq_inference, 0), (inference_zmq, 0))
+                self.connect(
+                    (retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft))
+                )
+            else:
+                self.connect((retune_fft, 1), (self.inference_blocks[0], 0))
+                self.connect_blocks(self.inference_blocks[0], self.inference_blocks[1:])
+                self.connect_blocks(self.inference_blocks[0], [inference_zmq])
         else:
             self.connect((retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft)))
 
@@ -427,3 +453,6 @@ class grscan(gr.top_block):
     def start(self):
         super().start()
         self.workaround_start_hook(self)
+        logging.info("raw edge and message edge lists follow")
+        logging.info(self.edge_list())
+        logging.info(self.msg_edge_list())

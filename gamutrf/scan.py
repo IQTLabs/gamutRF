@@ -261,6 +261,20 @@ def argument_parser():
         help="torchserve model server inference API address (e.g. localhost:1234)",
     )
     parser.add_argument(
+        "--iq_inference_model_name",
+        dest="iq_inference_model_name",
+        type=str,
+        default="",
+        help="torchserve model name",
+    )
+    parser.add_argument(
+        "--iq_inference_model_server",
+        dest="iq_inference_model_server",
+        type=str,
+        default="",
+        help="torchserve model server inference API address (e.g. localhost:1234)",
+    )
+    parser.add_argument(
         "--inference_model_name",
         dest="inference_model_name",
         type=str,
@@ -452,6 +466,11 @@ def check_options(options):
         options.inference_text_color = ",".join(
             [str(c) for c in [wc.blue, wc.green, wc.red]]
         )
+
+    image_inference = options.inference_model_server and options.inference_model_name
+    iq_inference = options.iq_inference_model_server and options.iq_inference_model_name
+    if image_inference and iq_inference:
+        return "simultaneous image and I/Q inference not yet supported"
 
     return ""
 
