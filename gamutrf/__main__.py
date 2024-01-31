@@ -1,4 +1,5 @@
 """Main entrypoint for GamutRF"""
+
 from gamutrf.compress_dirs import main as compress_dirs_main
 from gamutrf.offline import main as offline_main
 from gamutrf.scan import main as scan_main
