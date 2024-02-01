@@ -1,4 +1,5 @@
 import time
+import logging
 from gamutrf.utils import ETTUS_ANT
 from gamutrf.utils import ETTUS_ARGS
 
