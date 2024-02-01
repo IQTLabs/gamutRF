@@ -91,6 +91,8 @@ services:
       # - --external_gps_server_port=8888
       - --inference_output_dir=/logs/inference
       - --inference_model_server=torchserve:8080
+      # - --iq_inference_model_server=torchserve:8080
+      # - --iq_inference_model_name=mini2_snr
       - --pretune
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
