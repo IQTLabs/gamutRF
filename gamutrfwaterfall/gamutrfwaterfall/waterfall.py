@@ -1,7 +1,6 @@
 import argparse
 import csv
 import datetime
-import glob
 import json
 import logging
 import multiprocessing
@@ -16,6 +15,7 @@ from pathlib import Path
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import zmq
 from flask import Flask, current_app, send_file
 from matplotlib.collections import LineCollection
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
@@ -54,7 +54,7 @@ def draw_title(
     freq_resolution,
 ):
     title_text = {
-        "Time": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+        "Time": str(datetime.datetime.now().isoformat()),
         "Scan time": "%.2fs" % scan_duration,
         "Step FFTs": "%u" % tune_step_fft,
         "Step size": "%.2fMHz" % (tune_step_hz / 1e6),
@@ -279,16 +279,22 @@ def argument_parser():
         help="Waterfall refresh time",
     )
     parser.add_argument(
-        "--predictions_path",
-        default="/logs/inference/**/predictions*png",
-        type=str,
-        help="If set, render recent predictions",
-    )
-    parser.add_argument(
         "--predictions",
-        default=1,
+        default=3,
         type=int,
         help="If set, render N recent predictions",
+    )
+    parser.add_argument(
+        "--inference_server",
+        default="",
+        type=str,
+        help="Address of scanner for inference feed",
+    )
+    parser.add_argument(
+        "--inference_port",
+        default=10002,
+        type=int,
+        help="Port on scanner to connect to inference feed",
     )
     return parser
 
@@ -617,7 +623,8 @@ def update_fig(config, state, results):
 
         scan_time = scan_df.ts.iloc[-1]
         row_time = datetime.datetime.fromtimestamp(scan_time)
-        state.scan_times.append(scan_time)
+        if scan_time not in state.scan_config_history:
+            state.scan_times.append(scan_time)
         state.scan_config_history[scan_time] = scan_configs
         while len(state.scan_times) > config.waterfall_height:
             remove_time = state.scan_times.pop(0)
@@ -1056,12 +1063,23 @@ def waterfall(
 
 
 class FlaskHandler:
-    def __init__(self, savefig_path, predictions_path, predictions, port, refresh):
+    def __init__(
+        self,
+        savefig_path,
+        static_folder,
+        predictions,
+        port,
+        refresh,
+        inference_server,
+        inference_port,
+    ):
+        self.inference_addr = f"tcp://{inference_server}:{inference_port}"
         self.savefig_path = savefig_path
+        self.static_folder = static_folder
+        self.predictions_file = "predictions.html"
         self.refresh = refresh
-        self.predictions_path = predictions_path
         self.predictions = predictions
-        self.app = Flask(__name__, static_folder=os.path.dirname(savefig_path))
+        self.app = Flask(__name__, static_folder=self.static_folder)
         self.savefig_file = os.path.basename(self.savefig_path)
         self.app.add_url_rule("/predictions", "predictions", self.serve_predictions)
         self.app.add_url_rule(
@@ -1073,17 +1091,79 @@ class FlaskHandler:
             target=self.app.run,
             kwargs={"host": "0.0.0.0", "port": port},  # nosec
         )
+        self.zmq_process = multiprocessing.Process(target=self.poll_zmq)
+        self.write_predictions_content("no predictions yet")
 
     def start(self):
         self.process.start()
+        self.zmq_process.start()
+
+    def write_predictions_content(self, content):
+        tmpfile = os.path.join(self.static_folder, "." + self.predictions_file)
+        with open(tmpfile, "w", encoding="utf8") as f:
+            f.write(
+                '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
+                % (self.refresh, content)
+            )
+        os.rename(tmpfile, os.path.join(self.static_folder, self.predictions_file))
+
+    def poll_zmq(self):
+        zmq_context = zmq.Context()
+        socket = zmq_context.socket(zmq.SUB)
+        socket.connect(self.inference_addr)
+        socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        DELIM = "\n\n"
+        json_buffer = ""
+        item_buffer = []
+
+        while True:
+            try:
+                while True:
+                    sock_txt = socket.recv(flags=zmq.NOBLOCK).decode("utf8")
+                    json_buffer += sock_txt
+            except zmq.error.Again:
+                pass
+            while True:
+                delim_pos = json_buffer.find(DELIM)
+                if delim_pos == -1:
+                    break
+                raw_item = json_buffer[:delim_pos]
+                json_buffer = json_buffer[delim_pos + len(DELIM) :]
+                try:
+                    item = json.loads(raw_item)
+                except json.decoder.JSONDecodeError:
+                    continue
+                ts = float(item["metadata"]["ts"])
+                if "predictions_image_path" not in item["metadata"]:
+                    continue
+                ts = float(item["metadata"]["ts"])
+                item_buffer.append((ts, item))
+            item_buffer = item_buffer[-self.predictions :]
+            predictions = sorted(item_buffer, key=lambda x: x[0], reverse=True)
+            images = []
+            now = time.time()
+            for ts, item in predictions:
+                image = item["metadata"]["predictions_image_path"]
+                age = now - ts
+                style = ""
+                if age > 3 * self.refresh:
+                    style = 'style="color:red;"'
+                images.append(
+                    "<p %s>%s (age %.1fs)</p><p %s><img src=%s></img></p>"
+                    % (style, image, age, style, image)
+                )
+            if images:
+                self.write_predictions_content(
+                    f"<p>{datetime.datetime.now().isoformat()}</p>" + "".join(images)
+                )
+            time.sleep(0.1)
 
     def serve(self, path):
         if path:
             full_path = os.path.realpath(os.path.join("/", path))
             if os.path.exists(full_path):
                 return send_file(full_path, mimetype="image/png")
-            else:
-                return "%s: not found" % full_path, 404
+            return "%s: not found" % full_path, 404
         if os.path.exists(self.savefig_path):
             return (
                 '<html><head><meta http-equiv="refresh" content="%u"></head><body><img src="%s"></img></body></html>'
@@ -1097,28 +1177,7 @@ class FlaskHandler:
         )
 
     def serve_predictions(self):
-        if self.predictions_path and self.predictions:
-            predictions = sorted(
-                [
-                    (os.stat(prediction).st_ctime, prediction)
-                    for prediction in glob.glob(self.predictions_path, recursive=True)
-                ]
-            )[-self.predictions :]
-            if not predictions:
-                return "no recent predictions at %s" % self.predictions_path, 200
-            images = []
-            now = time.time()
-            for ctime, prediction in sorted(predictions, reverse=True):
-                images.append(
-                    "%s (age %.1fs)<p><img src=%s></img></p>"
-                    % (prediction, now - ctime, prediction)
-                )
-            content = (
-                '<html><head><meta http-equiv="refresh" content="%u"></head><body>%s</body></html>'
-                % (self.refresh, "".join(images))
-            )
-            return content, 200
-        return "prediction serving is disabled", 200
+        return current_app.send_static_file(self.predictions_file)
 
     def serve_waterfall(self):
         return current_app.send_static_file(self.savefig_file)
@@ -1147,10 +1206,12 @@ def main():
             savefig_path = os.path.join(tempdir, "waterfall.png")
             flask = FlaskHandler(
                 savefig_path,
-                args.predictions_path,
+                tempdir,
                 args.predictions,
                 args.port,
                 args.refresh,
+                args.inference_server,
+                args.inference_port,
             )
             flask.start()
 

@@ -165,8 +165,34 @@ def get_samples(filename):
     global_meta = meta.get_global_info()
     captures_meta = meta.get_captures()
     center_frequency = None
+    timestamp = None
     if captures_meta:
         center_frequency = captures_meta[0].get("core:frequency", None)
+        timestamp = captures_meta[0].get("core:datetime", None)
+        if timestamp is not None:
+            TS_RE = re.compile(r"^([^\.]+)([\.\d]+)Z$")
+            ts_match = TS_RE.match(timestamp)
+            if ts_match is None:
+                print(
+                    "invalid SigMF timestamp (does not match %s): %s"
+                    % (TS_RE, timestamp)
+                )
+                timestamp = None
+            else:
+                secs_str, remainder = ts_match.group(1), float(ts_match.group(2))
+                remainder_str = ("%.3f" % remainder)[1:]
+                try:
+                    timestamp = sigmf.utils.parse_iso8601_datetime(
+                        secs_str + remainder_str + "Z"
+                    ).timestamp()
+                except ValueError as e:
+                    print("invalid SigMF timestamp: %s" % e)
+    if timestamp is None:
+        filename_meta = parse_filename(data_filename)
+        timestamp = filename_meta.get("timestamp", timestamp)
+    if timestamp is None:
+        print("warning: no SigMF or filename timestamp available, using ctime")
+        timestamp = os.stat(data_filename).st_ctime
     meta = {
         "sample_rate": global_meta["core:sample_rate"],
         "sample_dtype": global_meta["core:datatype"],
@@ -174,5 +200,6 @@ def get_samples(filename):
             0
         ].itemsize,  # read_samples() always converts to host cf32.
         "center_frequency": center_frequency,
+        "timestamp": timestamp,
     }
     return data_filename, samples, meta

@@ -19,7 +19,7 @@ except ModuleNotFoundError as err:  # pragma: no cover
     sys.exit(1)
 
 from gamutrf.grsource import get_source
-from gamutrf.grinference2mqtt import inference2mqtt
+from gamutrf.grinferenceoutput import inferenceoutput
 from gamutrf.utils import endianstr
 
 
@@ -37,17 +37,21 @@ class grscan(gr.top_block):
         external_gps_server="",
         external_gps_server_port=8888,
         fft_batch_size=256,
+        fft_processor_affinity=0,
         freq_end=1e9,
         freq_start=100e6,
         gps_server="",
         igain=0,
         inference_addr="0.0.0.0",  # nosec
-        inference_port=8002,
         inference_min_confidence=0.5,
         inference_min_db=-200,
-        inference_model_server="",
         inference_model_name="",
+        inference_model_server="",
         inference_output_dir="",
+        inference_port=8002,
+        inference_text_color="",
+        iq_inference_model_name="",
+        iq_inference_model_server="",
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
         logport=8001,
@@ -56,6 +60,7 @@ class grscan(gr.top_block):
         n_image=0,
         n_inference=0,
         nfft=1024,
+        peak_fft_range=0,
         pretune=False,
         rotate_secs=0,
         samp_rate=4.096e6,
@@ -66,8 +71,9 @@ class grscan(gr.top_block):
         sigmf=True,
         skip_tune_step=0,
         sweep_sec=30,
-        tune_step_fft=0,
+        tag_now=False,
         tune_dwell_ms=0,
+        tune_step_fft=0,
         tuneoverlap=0.5,
         tuning_ranges="",
         use_external_gps=False,
@@ -75,7 +81,6 @@ class grscan(gr.top_block):
         vkfft=False,
         wavelearner=None,
         write_samples=0,
-        tag_now=False,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
@@ -107,30 +112,6 @@ class grscan(gr.top_block):
         ##################################################
 
         logging.info(f"will scan from {freq_start} to {freq_end}")
-
-        self.samples_blocks = []
-        if write_samples:
-            Path(sample_dir).mkdir(parents=True, exist_ok=True)
-            self.samples_blocks.extend(
-                [
-                    blocks.complex_to_interleaved_short(False, 32767),
-                    blocks.stream_to_vector(gr.sizeof_short, nfft * 2),
-                    self.iqtlabs.write_freq_samples(
-                        "rx_freq",
-                        gr.sizeof_short,
-                        "_".join(("ci16", endianstr())),
-                        nfft * 2,
-                        sample_dir,
-                        "samples",
-                        write_samples,
-                        skip_tune_step,
-                        int(samp_rate),
-                        rotate_secs,
-                        igain,
-                        sigmf,
-                    ),
-                ]
-            )
         freq_range = freq_end - freq_start
         fft_rate = int(samp_rate / nfft)
 
@@ -152,6 +133,7 @@ class grscan(gr.top_block):
         )
         if stare and tune_dwell_ms > 1e3:
             logging.warn(">1s dwell time in stare mode, updates will be slow!")
+        peak_fft_range = min(peak_fft_range, tune_step_fft)
 
         self.sources, cmd_port, self.workaround_start_hook = get_source(
             sdr,
@@ -164,28 +146,56 @@ class grscan(gr.top_block):
             sdrargs=sdrargs,
         )
 
+        fft_batch_size, self.fft_blocks = self.get_fft_blocks(
+            vkfft,
+            fft_batch_size,
+            nfft,
+            freq_start,
+            freq_end,
+            tune_step_hz,
+            tune_step_fft,
+            skip_tune_step,
+            tuning_ranges,
+            pretune,
+            fft_processor_affinity,
+            low_power_hold_down,
+        )
         self.fft_blocks = (
             self.get_dc_blocks(dc_block_len, dc_block_long)
-            + self.get_fft_blocks(
-                vkfft,
-                fft_batch_size,
-                nfft,
-                freq_start,
-                freq_end,
-                tune_step_hz,
-                tune_step_fft,
-                skip_tune_step,
-                tuning_ranges,
-                pretune,
-            )
+            + self.fft_blocks
             + self.get_db_blocks(nfft, samp_rate, scaling)
         )
-        fft_dir = sample_dir
-        if not write_samples:
-            fft_dir = ""
+        self.last_db_block = self.fft_blocks[-1]
+        fft_dir = ""
+        self.samples_blocks = []
+        if write_samples:
+            fft_dir = sample_dir
+            Path(sample_dir).mkdir(parents=True, exist_ok=True)
+            self.samples_blocks.extend(
+                [
+                    # blocks.vector_to_stream(
+                    #    gr.sizeof_gr_complex, fft_batch_size * nfft
+                    # ),
+                    # blocks.complex_to_interleaved_short(False, 32767),
+                    # blocks.stream_to_vector(gr.sizeof_short, nfft * 2),
+                    self.iqtlabs.write_freq_samples(
+                        "rx_freq",
+                        gr.sizeof_gr_complex,
+                        "_".join(("cf32", endianstr())),
+                        fft_batch_size * nfft,
+                        sample_dir,
+                        "samples",
+                        write_samples,
+                        skip_tune_step,
+                        int(samp_rate),
+                        rotate_secs,
+                        igain,
+                        sigmf,
+                    ),
+                ]
+            )
         retune_fft = self.iqtlabs.retune_fft(
             "rx_freq",
-            nfft,
             nfft,
             int(samp_rate),
             int(freq_start),
@@ -204,6 +214,7 @@ class grscan(gr.top_block):
             False,
             self.tag_now,
             not pretune and low_power_hold_down,
+            peak_fft_range,
         )
         self.fft_blocks.append(retune_fft)
         fft_zmq_addr = f"tcp://{logaddr}:{logport}"
@@ -214,52 +225,85 @@ class grscan(gr.top_block):
         )
 
         self.inference_blocks = []
+        self.inference_output_block = None
+        self.image_inference_block = None
+        self.iq_inference_block = None
+
         if inference_output_dir:
+            Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
+
+        if inference_model_server and inference_model_name:
             x = 640
             y = 640
-            Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
-            self.inference_blocks.extend(
-                [
-                    self.iqtlabs.image_inference(
-                        tag="rx_freq",
-                        vlen=nfft,
-                        x=x,
-                        y=y,
-                        image_dir=inference_output_dir,
-                        convert_alpha=255,
-                        norm_alpha=0,
-                        norm_beta=1,
-                        norm_type=32,  # cv::NORM_MINMAX = 32
-                        colormap=colormap,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
-                        interpolation=1,  # cv::INTER_LINEAR = 1,
-                        flip=0,  # 0 means flipping around the x-axis
-                        min_peak_points=inference_min_db,
-                        model_server=inference_model_server,
-                        model_name=inference_model_name,
-                        confidence=inference_min_confidence,
-                        max_rows=tune_step_fft,
-                        rotate_secs=rotate_secs,
-                        n_image=n_image,
-                        n_inference=n_inference,
-                    )
-                ]
+            self.image_inference_block = self.iqtlabs.image_inference(
+                tag="rx_freq",
+                vlen=nfft,
+                x=x,
+                y=y,
+                image_dir=inference_output_dir,
+                convert_alpha=255,
+                norm_alpha=0,
+                norm_beta=1,
+                norm_type=32,  # cv::NORM_MINMAX = 32
+                colormap=colormap,  # cv::COLORMAP_VIRIDIS = 16, cv::COLORMAP_TURBO = 20,
+                interpolation=1,  # cv::INTER_LINEAR = 1,
+                flip=0,  # 0 means flipping around the x-axis
+                min_peak_points=inference_min_db,
+                model_server=inference_model_server,
+                model_names=inference_model_name,
+                confidence=inference_min_confidence,
+                max_rows=tune_step_fft,
+                rotate_secs=rotate_secs,
+                n_image=n_image,
+                n_inference=n_inference,
+                samp_rate=int(samp_rate),
+                text_color=inference_text_color,
             )
-            if mqtt_server:
-                self.inference_blocks.extend(
-                    [
-                        inference2mqtt(
-                            "inference2mqtt",
-                            mqtt_server,
-                            compass,
-                            gps_server,
-                            use_external_gps,
-                            use_external_heading,
-                            external_gps_server,
-                            external_gps_server_port,
-                            inference_output_dir,
-                        )
-                    ]
+            self.inference_blocks.append(self.image_inference_block)
+
+        if iq_inference_model_server and iq_inference_model_name:
+            self.iq_inference_block = iqtlabs.iq_inference(
+                tag="rx_freq",
+                vlen=nfft,
+                sample_buffer=tune_step_fft,
+                min_peak_points=inference_min_db,
+                model_server=iq_inference_model_server,
+                model_names=iq_inference_model_name,
+                confidence=inference_min_confidence,
+                n_inference=n_inference,
+                samp_rate=int(samp_rate),
+            )
+            self.inference_blocks.append(self.iq_inference_block)
+
+        # TODO: provide new block that receives JSON-over-PMT and outputs to MQTT/zmq.
+        if self.inference_blocks:
+            self.inference_output_block = inferenceoutput(
+                "inferencemqtt",
+                inference_zmq_addr,
+                mqtt_server,
+                compass,
+                gps_server,
+                use_external_gps,
+                use_external_heading,
+                external_gps_server,
+                external_gps_server_port,
+                inference_output_dir,
+                len(self.inference_blocks),
+            )
+            if self.iq_inference_block:
+                self.connect((self.retune_pre_fft, 0), (self.iq_inference_block, 0))
+                self.connect((self.last_db_block, 0), (self.iq_inference_block, 1))
+            if self.image_inference_block:
+                self.connect((retune_fft, 1), (self.image_inference_block, 0))
+            else:
+                self.connect(
+                    (retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft))
                 )
+            for i, block in enumerate(self.inference_blocks):
+                self.connect((block, 0), (self.inference_output_block, i))
+        else:
+            self.connect((retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft)))
+
         if pretune:
             self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
             self.msg_connect((self.retune_pre_fft, "tune"), (retune_fft, "cmd"))
@@ -267,21 +311,8 @@ class grscan(gr.top_block):
             self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
         self.connect_blocks(self.sources[0], self.sources[1:])
 
-        if self.inference_blocks:
-            self.connect((retune_fft, 1), (self.inference_blocks[0], 0))
-            self.connect_blocks(self.inference_blocks[0], self.inference_blocks[1:])
-            self.connect_blocks(
-                self.inference_blocks[0],
-                [zeromq.pub_sink(1, 1, inference_zmq_addr, 100, False, 65536, "")],
-            )
-        else:
-            self.connect((retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft)))
-
-        for pipeline_blocks in (
-            self.fft_blocks,
-            self.samples_blocks,
-        ):
-            self.connect_blocks(self.sources[-1], pipeline_blocks)
+        self.connect_blocks(self.sources[-1], self.fft_blocks)
+        self.connect_blocks(self.retune_pre_fft, self.samples_blocks)
 
     def connect_blocks(self, source, other_blocks, last_block_port=0):
         last_block = source
@@ -316,10 +347,11 @@ class grscan(gr.top_block):
         skip_tune_step,
         tuning_ranges,
         pretune,
+        low_power_hold_down,
     ):
         # if pretuning, the pretune block will also do the batching.
         if pretune:
-            return self.iqtlabs.retune_pre_fft(
+            block = self.iqtlabs.retune_pre_fft(
                 nfft,
                 fft_batch_size,
                 "rx_freq",
@@ -330,9 +362,12 @@ class grscan(gr.top_block):
                 skip_tune_step,
                 tuning_ranges,
                 self.tag_now,
+                low_power_hold_down,
             )
-        # otherwise, the pretuning block will just do batching.
-        return blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft)
+        else:
+            # otherwise, the pretuning block will just do batching.
+            block = blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft)
+        return block
 
     def apply_window(self, nfft, fft_batch_size):
         window_constants = [val for val in self.get_window(nfft) for _ in range(2)]
@@ -343,17 +378,23 @@ class grscan(gr.top_block):
         vkfft,
         fft_batch_size,
         nfft,
+        fft_processor_affinity,
     ):
         fft_block = None
         fft_roll = False
         if self.wavelearner:
-            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), (nfft), True)
+            fft_block = self.wavelearner.fft(int(fft_batch_size * nfft), nfft, True)
             fft_roll = True
         elif vkfft:
-            fft_block = self.iqtlabs.vkfft(int(fft_batch_size * nfft), nfft, True)
-        else:
+            # VkFFT handles batches by using set_multiple_output(), so we do not need
+            # to wrap it.
+            fft_block = self.iqtlabs.vkfft(fft_batch_size, nfft, True)
             fft_batch_size = 1
+        else:
             fft_block = fft.fft_vcc(nfft, True, [], True, 1)
+            fft_batch_size = 1
+        fft_block.set_thread_priority(99)
+        fft_block.set_processor_affinity([fft_processor_affinity])
 
         fft_blocks = [
             self.apply_window(nfft, fft_batch_size),
@@ -384,9 +425,14 @@ class grscan(gr.top_block):
         skip_tune_step,
         tuning_ranges,
         pretune,
+        fft_processor_affinity,
+        low_power_hold_down,
     ):
         fft_batch_size, fft_blocks = self.get_offload_fft_blocks(
-            vkfft, fft_batch_size, nfft
+            vkfft,
+            fft_batch_size,
+            nfft,
+            fft_processor_affinity,
         )
         self.retune_pre_fft = self.get_pretune_block(
             fft_batch_size,
@@ -398,9 +444,13 @@ class grscan(gr.top_block):
             skip_tune_step,
             tuning_ranges,
             pretune,
+            low_power_hold_down,
         )
-        return [self.retune_pre_fft] + fft_blocks
+        return (fft_batch_size, [self.retune_pre_fft] + fft_blocks)
 
     def start(self):
         super().start()
         self.workaround_start_hook(self)
+        logging.info("raw edge and message edge lists follow")
+        logging.info(self.edge_list())
+        logging.info(self.msg_edge_list())

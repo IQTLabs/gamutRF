@@ -2,6 +2,7 @@ import logging
 import signal
 import time
 import sys
+import webcolors
 from argparse import ArgumentParser, BooleanOptionalAction
 
 try:
@@ -149,6 +150,13 @@ def argument_parser():
         help="Log inference results to this port",
     )
     parser.add_argument(
+        "--inference_text_color",
+        dest="inference_text_color",
+        type=str,
+        default="white",
+        help="CSS3 color name for inference text (https://www.w3.org/wiki/CSS/Properties/color/keywords)",
+    )
+    parser.add_argument(
         "--promport",
         dest="promport",
         type=int,
@@ -253,6 +261,20 @@ def argument_parser():
         help="torchserve model server inference API address (e.g. localhost:1234)",
     )
     parser.add_argument(
+        "--iq_inference_model_name",
+        dest="iq_inference_model_name",
+        type=str,
+        default="",
+        help="torchserve model name",
+    )
+    parser.add_argument(
+        "--iq_inference_model_server",
+        dest="iq_inference_model_server",
+        type=str,
+        default="",
+        help="torchserve model server inference API address (e.g. localhost:1234)",
+    )
+    parser.add_argument(
         "--inference_model_name",
         dest="inference_model_name",
         type=str,
@@ -305,6 +327,13 @@ def argument_parser():
         type=int,
         default=256,
         help="offload FFT batch size",
+    )
+    parser.add_argument(
+        "--fft_processor_affinity",
+        dest="fft_processor_affinity",
+        type=int,
+        default=0,
+        help="FFT processor affinity",
     )
     parser.add_argument(
         "--vkfft",
@@ -398,9 +427,16 @@ def argument_parser():
         "--colormap",
         dest="colormap",
         type=int,
-        default=16,
+        default=20,
         help="""OpenCV colormap for spectrograms. See
         https://docs.opencv.org/4.x/d3/d50/group__imgproc__colormap.html""",
+    )
+    parser.add_argument(
+        "--peak_fft_range",
+        dest="peak_fft_range",
+        type=int,
+        default=0,
+        help="If > 0, find peak of FFT averages over this many rows",
     )
     return parser
 
@@ -424,6 +460,16 @@ def check_options(options):
 
     if options.scaling not in ["spectrum", "density"]:
         return "scaling must be 'spectrum' or 'density'"
+
+    if options.inference_text_color:
+        wc = webcolors.name_to_rgb(options.inference_text_color, "css3")
+        options.inference_text_color = ",".join(
+            [str(c) for c in [wc.blue, wc.green, wc.red]]
+        )
+
+    iq_inference = options.iq_inference_model_server and options.iq_inference_model_name
+    if iq_inference and not options.pretune:
+        return "I/Q inference requires pretune"
 
     return ""
 

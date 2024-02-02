@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libvulkan-dev \
   sudo
 WORKDIR /root
-RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.8
+RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.9
 WORKDIR /root/uhd_sample_recorder
 RUN ./bin/install-deps.sh && rm -rf VkFFT
 COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/uhd_sample_recorder

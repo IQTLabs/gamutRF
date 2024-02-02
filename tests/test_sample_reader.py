@@ -1,13 +1,50 @@
 #!/usr/bin/python3
+import re
 import os
 import tempfile
 import unittest
 import numpy as np
 
-from gamutrf.sample_reader import read_recording, parse_filename
+from gamutrf.sample_reader import read_recording, parse_filename, get_samples
+
+TEST_META = """
+      {
+        "global": {
+            "core:sample_rate": 20480000.0,
+            "core:antenna": "omni",
+            "core:gain": 10,
+            "core:hw": "",
+            "core:license": "",
+            "core:author": "",
+            "core:description": "FPV Drone - fpv flying",
+            "core:version": "0.0.2",
+            "core:datatype": "ci16_le"
+        },
+        "captures": [
+            {
+                "core:sample_start": 0,
+                "core:frequency": 2450000000.0,
+                "core:datetime": "2023-08-02T14:48:21.987701000Z"
+            }
+        ],
+        "annotations": []
+    }
+"""
 
 
 class ReadRecordingTestCase(unittest.TestCase):
+    def test_get_samples(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            meta = os.path.join(str(tempdir), "test.sigmf-meta")
+            data = os.path.join(str(tempdir), "test.sigmf-data")
+            with open(data, "wb") as f:
+                f.write(bytes("\x00\x00\x00\x00", encoding="utf8"))
+            with open(meta, "w", encoding="utf8") as f:
+                f.write(TEST_META)
+            data_filename, _samples, parsed_meta = get_samples(meta)
+            self.assertEqual(data, data_filename)
+            self.assertEqual(1690987701.988, parsed_meta["timestamp"])
+
     def test_read_recording(self):
         with tempfile.TemporaryDirectory() as tempdir:
             recording = os.path.join(
