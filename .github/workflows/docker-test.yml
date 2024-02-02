@@ -22,7 +22,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: docker build
       run: |
-        docker build -f utils/mavlink-api/Dockerfile utils/mavlink-api -t iqtlabs/gamutrf-mavlink-api:latest
+        docker build -f utils/mavlink-api/Dockerfile.mavlink-api utils/mavlink-api -t iqtlabs/gamutrf-mavlink-api:latest
   test-gamutrf-images:
     runs-on: ubuntu-latest
     steps:
