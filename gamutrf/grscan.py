@@ -301,6 +301,8 @@ class grscan(gr.top_block):
                 )
             for i, block in enumerate(self.inference_blocks):
                 self.connect((block, 0), (self.inference_output_block, i))
+        else:
+            self.connect((retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft)))
 
         if pretune:
             self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
