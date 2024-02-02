@@ -4,7 +4,7 @@ set -e
 TMPDIR=/tmp
 sudo apt-get update && sudo apt-get install -y jq wget
 sudo pip3 install torch-model-archiver
-cp torchserve/* $TMPDIR/
+cp torchserve/image/* $TMPDIR/
 cd $TMPDIR
 # TODO: use gamutRF weights here.
 wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt

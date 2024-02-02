@@ -7,7 +7,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: docker build
       run: |
-        timeout 600s ./tests/test_torchserve.sh
+        timeout 600s ./tests/test_image_torchserve.sh
   test-gamutrf-extra-images:
     runs-on: ubuntu-latest
     steps:
