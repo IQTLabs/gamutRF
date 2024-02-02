@@ -467,10 +467,9 @@ def check_options(options):
             [str(c) for c in [wc.blue, wc.green, wc.red]]
         )
 
-    image_inference = options.inference_model_server and options.inference_model_name
     iq_inference = options.iq_inference_model_server and options.iq_inference_model_name
-    if image_inference and iq_inference:
-        return "simultaneous image and I/Q inference not yet supported"
+    if iq_inference and not options.pretune:
+        return "I/Q inference requires pretune"
 
     return ""
 
