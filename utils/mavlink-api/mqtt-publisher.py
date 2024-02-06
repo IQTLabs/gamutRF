@@ -13,7 +13,6 @@ URL_LIST = json.loads(
     os.environ.get("URL_LIST", '[["default_target", "http://127.0.0.1:8888/gps-data"]]')
 )
 
-
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("Connected to MQTT Broker")
@@ -56,7 +55,7 @@ def fetch_and_publish(client, target_name, target_url):
         }
 
     except (httpx.HTTPError, json.JSONDecodeError, KeyError) as err:
-        print("could not update with external GPS: %s", err)
+        print(f"Could not update with {target_name}:{err}")
         data = {
             "target_name": target_name,
             "gps_stale": None,
