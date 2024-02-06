@@ -13,25 +13,26 @@ URL_LIST = json.loads(
     os.environ.get("URL_LIST", '[["default_target", "http://127.0.0.1:8888/gps-data"]]')
 )
 
+
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print("Connected to MQTT Broker")
+        logging.info("Connected to MQTT Broker")
     else:
-        print(f"Failed to connect, return code {rc}")
+        logging.error(f"Failed to connect, return code {rc}")
 
 
 def publish_data(client, target_name, data):
     topic = f"{MQTT_TOPIC}"
     try:
         rc = client.publish(topic, data)
-        print(f"Published data to {topic}: {data}")
+        logging.info(f"Published data to {topic}: {data}")
 
     except ConnectionError as err:
-        print("could not publish data: %s", err)
+        logging.error("could not publish data: %s", err)
 
     else:
         if rc != 0:
-            print("could not publish data RC=%s", rc)
+            logging.warning("could not publish data RC=%s", rc)
 
 
 def fetch_and_publish(client, target_name, target_url):
@@ -55,7 +56,7 @@ def fetch_and_publish(client, target_name, target_url):
         }
 
     except (httpx.HTTPError, json.JSONDecodeError, KeyError) as err:
-        print(f"Could not update with {target_name}:{err}")
+        logging.warning(f"Could not update with {target_name}:{err}")
         data = {
             "target_name": target_name,
             "gps_stale": None,
@@ -80,7 +81,7 @@ def main():
             client = mqtt_client.Client()
             client.on_connect = on_connect
             client.connect(MQTT_BROKER, int(MQTT_PORT))
-            print("Connected to MQTT Broker")
+            logging.info("Connected to MQTT Broker")
         except (ConnectionRefusedError, ConnectionError) as err:
             logging.error(
                 f"Could not connect to MQTT broker ({MQTT_BROKER}:{MQTT_PORT}): {err}"
@@ -88,18 +89,18 @@ def main():
             time.sleep(5)
 
         while client.is_connected():
+            logging.info(f"Initializing with {URL_LIST}")
             for target in URL_LIST:
                 if len(target) == 2:
-                    print(f"Attempting to retrieve data from {target}")
+                    logging.info(f"Attempting to retrieve data from {target}")
                     target_name, target_url = target
                     fetch_and_publish(client, target_name, target_url)
                 else:
-                    print(
+                    logging.warning(
                         "Invalid entry in URL_LIST. Each entry should be a 2-entry list."
                     )
 
             time.sleep(QUERY_INTERVAL)
-            connect_flag = client.is_connected()
 
 
 if __name__ == "__main__":

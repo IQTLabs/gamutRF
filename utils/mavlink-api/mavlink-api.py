@@ -160,8 +160,12 @@ def get_latest_gps_fix_status():
 
 @app.route("/gps-data", methods=["GET"])
 def get_latest_gps_data():
-    if mavlink_gps_handler.latest_GLOBAL_POSITION_INT_msg:
+    if (
+        mavlink_gps_handler.latest_GLOBAL_POSITION_INT_msg
+        and mavlink_gps_handler.latest_GPS_RAW_INT_msg
+    ):
         mavlink_gps_handler.GLOBAL_POSITION_INT_parser()
+        mavlink_gps_handler.GPS_RAW_INT_parser()
         msg = mavlink_gps_handler.create_gps_json_payload()
         return jsonify(msg), 200
     return jsonify({"error": "No GPS data available"}), 404
