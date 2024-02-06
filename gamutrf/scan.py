@@ -410,6 +410,12 @@ def argument_parser():
         action=BooleanOptionalAction,
     )
     parser.add_argument(
+        "--slew_rx_time",
+        help="slew rx_time based on hold down time (recommended for Ettus)",
+        default=True,
+        action=BooleanOptionalAction,
+    )
+    parser.add_argument(
         "--n_image",
         dest="n_image",
         type=int,

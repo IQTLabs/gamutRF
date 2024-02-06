@@ -70,6 +70,7 @@ class grscan(gr.top_block):
         sdrargs=None,
         sigmf=True,
         skip_tune_step=0,
+        slew_rx_time=True,
         sweep_sec=30,
         tag_now=False,
         tune_dwell_ms=0,
@@ -147,6 +148,7 @@ class grscan(gr.top_block):
         )
 
         fft_batch_size, self.fft_blocks = self.get_fft_blocks(
+            samp_rate,
             vkfft,
             fft_batch_size,
             nfft,
@@ -159,6 +161,7 @@ class grscan(gr.top_block):
             pretune,
             fft_processor_affinity,
             low_power_hold_down,
+            slew_rx_time,
         )
         self.fft_blocks = (
             self.get_dc_blocks(dc_block_len, dc_block_long)
@@ -195,26 +198,27 @@ class grscan(gr.top_block):
                 ]
             )
         retune_fft = self.iqtlabs.retune_fft(
-            "rx_freq",
-            nfft,
-            int(samp_rate),
-            int(freq_start),
-            int(freq_end),
-            tune_step_hz,
-            tune_step_fft,
-            skip_tune_step,
-            db_clamp_floor,
-            db_clamp_ceil,
-            fft_dir,
-            write_samples,
-            bucket_range,
-            tuning_ranges,
-            description,
-            rotate_secs,
-            False,
-            self.tag_now,
-            not pretune and low_power_hold_down,
-            peak_fft_range,
+            tag="rx_freq",
+            nfft=nfft,
+            samp_rate=int(samp_rate),
+            freq_start=int(freq_start),
+            freq_end=int(freq_end),
+            tune_step_hz=tune_step_hz,
+            tune_step_fft=tune_step_fft,
+            skip_tune_step_fft=skip_tune_step,
+            fft_min=db_clamp_floor,
+            fft_max=db_clamp_ceil,
+            sdir=fft_dir,
+            write_step_fft=write_samples,
+            bucket_range=bucket_range,
+            tuning_ranges=tuning_ranges,
+            description=description,
+            rotate_secs=rotate_secs,
+            pre_fft=pretune,
+            tag_now=self.tag_now,
+            low_power_hold_down=(not pretune and low_power_hold_down),
+            slew_rx_time=slew_rx_time,
+            peak_fft_range=peak_fft_range,
         )
         self.fft_blocks.append(retune_fft)
         fft_zmq_addr = f"tcp://{logaddr}:{logport}"
@@ -340,6 +344,7 @@ class grscan(gr.top_block):
         self,
         fft_batch_size,
         nfft,
+        samp_rate,
         freq_start,
         freq_end,
         tune_step_hz,
@@ -348,21 +353,24 @@ class grscan(gr.top_block):
         tuning_ranges,
         pretune,
         low_power_hold_down,
+        slew_rx_time,
     ):
         # if pretuning, the pretune block will also do the batching.
         if pretune:
             block = self.iqtlabs.retune_pre_fft(
-                nfft,
-                fft_batch_size,
-                "rx_freq",
-                int(freq_start),
-                int(freq_end),
-                tune_step_hz,
-                tune_step_fft,
-                skip_tune_step,
-                tuning_ranges,
-                self.tag_now,
-                low_power_hold_down,
+                nfft=nfft,
+                samp_rate=int(samp_rate),
+                fft_batch_size=fft_batch_size,
+                tag="rx_freq",
+                freq_start=int(freq_start),
+                freq_end=int(freq_end),
+                tune_step_hz=tune_step_hz,
+                tune_step_fft=tune_step_fft,
+                skip_tune_step_fft=skip_tune_step,
+                tuning_ranges=tuning_ranges,
+                tag_now=self.tag_now,
+                low_power_hold_down=low_power_hold_down,
+                slew_rx_time=slew_rx_time,
             )
         else:
             # otherwise, the pretuning block will just do batching.
@@ -415,6 +423,7 @@ class grscan(gr.top_block):
 
     def get_fft_blocks(
         self,
+        samp_rate,
         vkfft,
         fft_batch_size,
         nfft,
@@ -427,6 +436,7 @@ class grscan(gr.top_block):
         pretune,
         fft_processor_affinity,
         low_power_hold_down,
+        slew_rx_time,
     ):
         fft_batch_size, fft_blocks = self.get_offload_fft_blocks(
             vkfft,
@@ -437,6 +447,7 @@ class grscan(gr.top_block):
         self.retune_pre_fft = self.get_pretune_block(
             fft_batch_size,
             nfft,
+            samp_rate,
             freq_start,
             freq_end,
             tune_step_hz,
@@ -445,6 +456,7 @@ class grscan(gr.top_block):
             tuning_ranges,
             pretune,
             low_power_hold_down,
+            slew_rx_time,
         )
         return (fft_batch_size, [self.retune_pre_fft] + fft_blocks)
 
