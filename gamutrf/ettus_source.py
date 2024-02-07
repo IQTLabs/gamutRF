@@ -10,8 +10,8 @@ def get_ettus_source(
     if not sdrargs:
         sdrargs = ETTUS_ARGS
     logging.info(
-                    f"Ettus source configured with Sample Rate: {samp_rate}\tCenter Freq: {center_freq}\tEttus DC Offset enabled: {dc_ettus_auto_offset}"
-                )
+        f"Ettus source configured with Sample Rate: {samp_rate}\tCenter Freq: {center_freq}\tEttus DC Offset enabled: {dc_ettus_auto_offset}"
+    )
     source = uhd.usrp_source(
         ",".join((sdrargs, "")),
         uhd.stream_args(
