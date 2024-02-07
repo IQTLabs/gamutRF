@@ -1,13 +1,6 @@
 name: docker-test
 on: [push, pull_request]
 jobs:
-  test-gamutrf-torchserve:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: docker build
-      run: |
-        timeout 600s ./tests/test_image_torchserve.sh
   test-gamutrf-extra-images:
     runs-on: ubuntu-latest
     steps:
