@@ -35,7 +35,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: utils/mavlink-api
-        file: utils/mavlink-api/Dockerfile
+        file: utils/mavlink-api/Dockerfile.mavlink-api
         platforms: linux/amd64
         push: true
         tags: iqtlabs/gamutrf-mavlink-api:${{ steps.change_version.outputs.VERSION }}

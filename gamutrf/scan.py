@@ -286,7 +286,7 @@ def argument_parser():
         dest="inference_model_name",
         type=str,
         default="",
-        help="torchserve model name (e.g. yolov8)",
+        help="torchserve model name (e.g. mini2_snr)",
     )
     parser.add_argument(
         "--inference_output_dir",
@@ -417,6 +417,12 @@ def argument_parser():
         action=BooleanOptionalAction,
     )
     parser.add_argument(
+        "--slew_rx_time",
+        help="slew rx_time based on hold down time (recommended for Ettus)",
+        default=True,
+        action=BooleanOptionalAction,
+    )
+    parser.add_argument(
         "--n_image",
         dest="n_image",
         type=int,
@@ -474,10 +480,9 @@ def check_options(options):
             [str(c) for c in [wc.blue, wc.green, wc.red]]
         )
 
-    image_inference = options.inference_model_server and options.inference_model_name
     iq_inference = options.iq_inference_model_server and options.iq_inference_model_name
-    if image_inference and iq_inference:
-        return "simultaneous image and I/Q inference not yet supported"
+    if iq_inference and not options.pretune:
+        return "I/Q inference requires pretune"
 
     return ""
 

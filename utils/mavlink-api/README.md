@@ -27,3 +27,12 @@ Test again if it is working correctly:
 ```bash
 python3 utils/mavlink_serial_test.py /dev/pixhawk_serial
 ```
+
+## Running with GamutRF
+
+To run with gamutRF add the `-f utils/mavlink-api/docker-compose.yml` and include mavlink-api for the gamutRF interface, and mavlink-api-controller, mavlink-api-drone, and mqtt-publisher for the controller API, drone API, and MQTT publisher respectively.
+
+Ex:
+```bash
+docker compose -f orchestrator.yml -f torchserve-cuda.yml -f utils/mavlink-api/mavlink-api.yaml -f geolocate.yml down mqtt mavlink-api-controller mavlink-api-drone geolocate mqtt-publisher
+```
