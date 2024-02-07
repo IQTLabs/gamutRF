@@ -279,7 +279,7 @@ def argument_parser():
         dest="inference_model_name",
         type=str,
         default="",
-        help="torchserve model name (e.g. yolov8)",
+        help="torchserve model name (e.g. mini2_snr)",
     )
     parser.add_argument(
         "--inference_output_dir",

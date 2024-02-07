@@ -63,7 +63,6 @@ jobs:
           poetry run black gamutrf --check
           poetry run black gamutrflib --check
           poetry run black gamutrfwaterfall --check
-          poetry run black torchserve --check
           poetry run black utils --check
       - name: Code Quality - Pylint
         run: |

@@ -598,7 +598,7 @@ def label(
             "labels",
             os.path.splitext(os.path.basename(filename))[0] + ".txt",
         )
-        print(f"Writing YOLOv8 labels to {yolo_label_filename}")
+        print(f"Writing YOLO labels to {yolo_label_filename}")
         with open(yolo_label_filename, "w") as yolo_label_file:
             for box in yolo_boxes:
                 row = " ".join(str(b) for b in box) + "\n"
