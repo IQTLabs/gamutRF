@@ -87,6 +87,7 @@ services:
       - --no-vkfft
       - --rotate_secs=60
       - --colormap=20
+      - --tune-jitter-hz=0
       # - --external_gps_server=1.2.3.4
       # - --external_gps_server_port=8888
       - --inference_output_dir=/logs/inference
