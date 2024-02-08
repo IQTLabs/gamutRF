@@ -133,6 +133,7 @@ def get_source(
     sdrargs=None,
     soapy_lib=soapy,
     uhd_lib=uhd,
+    dc_ettus_auto_offset=True,
 ):
     logging.info(
         f"initializing SDR {sdr} with sample rate {samp_rate}, gain {gain}, agc {agc}"
@@ -158,7 +159,9 @@ def get_source(
             get_throttle(samp_rate, nfft),
         ]
     elif sdr == "ettus":
-        sources = get_ettus_source(sdrargs, samp_rate, center_freq, agc, gain, uhd_lib)
+        sources = get_ettus_source(
+            sdrargs, samp_rate, center_freq, agc, gain, uhd_lib, dc_ettus_auto_offset
+        )
     else:
         sources, cmd_port = get_soapy_source(
             sdr, sdrargs, samp_rate, center_freq, agc, gain, soapy_lib

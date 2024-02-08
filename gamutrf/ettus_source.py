@@ -1,11 +1,17 @@
 import time
+import logging
 from gamutrf.utils import ETTUS_ANT
 from gamutrf.utils import ETTUS_ARGS
 
 
-def get_ettus_source(sdrargs, samp_rate, center_freq, agc, gain, uhd):
+def get_ettus_source(
+    sdrargs, samp_rate, center_freq, agc, gain, uhd, dc_ettus_auto_offset
+):
     if not sdrargs:
         sdrargs = ETTUS_ARGS
+    logging.info(
+        f"Ettus source configured with Sample Rate: {samp_rate}\tCenter Freq: {center_freq}\tEttus DC Offset enabled: {dc_ettus_auto_offset}"
+    )
     source = uhd.usrp_source(
         ",".join((sdrargs, "")),
         uhd.stream_args(
@@ -20,6 +26,7 @@ def get_ettus_source(sdrargs, samp_rate, center_freq, agc, gain, uhd):
         source.set_center_freq(center_freq, 0)
     source.set_gain(gain, 0)
     source.set_rx_agc(agc, 0)
+    source.set_auto_dc_offset(dc_ettus_auto_offset, 0)
 
     now = time.time()
     now_sec = int(now)
