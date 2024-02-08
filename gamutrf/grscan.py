@@ -75,6 +75,7 @@ class grscan(gr.top_block):
         sweep_sec=30,
         tag_now=False,
         tune_dwell_ms=0,
+        tune_jitter_hz=0,
         tune_step_fft=0,
         tuneoverlap=0.5,
         tuning_ranges="",
@@ -151,6 +152,7 @@ class grscan(gr.top_block):
 
         fft_batch_size, self.fft_blocks = self.get_fft_blocks(
             samp_rate,
+            tune_jitter_hz,
             vkfft,
             fft_batch_size,
             nfft,
@@ -203,6 +205,7 @@ class grscan(gr.top_block):
             tag="rx_freq",
             nfft=nfft,
             samp_rate=int(samp_rate),
+            tune_jitter_hz=int(tune_jitter_hz),
             freq_start=int(freq_start),
             freq_end=int(freq_end),
             tune_step_hz=tune_step_hz,
@@ -347,6 +350,7 @@ class grscan(gr.top_block):
         fft_batch_size,
         nfft,
         samp_rate,
+        tune_jitter_hz,
         freq_start,
         freq_end,
         tune_step_hz,
@@ -362,6 +366,7 @@ class grscan(gr.top_block):
             block = self.iqtlabs.retune_pre_fft(
                 nfft=nfft,
                 samp_rate=int(samp_rate),
+                tune_jitter_hz=int(tune_jitter_hz),
                 fft_batch_size=fft_batch_size,
                 tag="rx_freq",
                 freq_start=int(freq_start),
@@ -426,6 +431,7 @@ class grscan(gr.top_block):
     def get_fft_blocks(
         self,
         samp_rate,
+        tune_jitter_hz,
         vkfft,
         fft_batch_size,
         nfft,
@@ -450,6 +456,7 @@ class grscan(gr.top_block):
             fft_batch_size,
             nfft,
             samp_rate,
+            tune_jitter_hz,
             freq_start,
             freq_end,
             tune_step_hz,

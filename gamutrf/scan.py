@@ -73,6 +73,13 @@ def argument_parser():
         help="Set samp_rate [default=%(default)r]",
     )
     parser.add_argument(
+        "--tune-jitter-hz",
+        dest="tune_jitter_hz",
+        type=eng_float,
+        default=0,
+        help="If > 0, apply a random tuning jitter in Hz from center frequency",
+    )
+    parser.add_argument(
         "--sweep-sec",
         dest="sweep_sec",
         type=float,
