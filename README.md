@@ -56,7 +56,7 @@ See `CONTRIBUTING.md` for more information.
 
 ## License
 
-Distributed under the [Apache 2.0](https://github.com/IQTLabs/aisonobuoy-data-science/blob/main/LICENSE.txt). See [LICENSE](./LICENSE) for more information.
+Distributed under the [Apache 2.0](./LICENSE). See [LICENSE](./LICENSE) for more information.
 
 ## Contact IQTLabs
 
