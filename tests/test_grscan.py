@@ -39,6 +39,9 @@ class FakeUHDSource:
     def set_rx_agc(self, _agc, _channel):
         return
 
+    def set_auto_dc_offset(self, _auto_offset, _channel):
+        return
+
     def set_time_now(self, time_spec, _mb):
         self.time_spec = time_spec
 
