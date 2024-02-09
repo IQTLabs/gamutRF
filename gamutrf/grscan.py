@@ -3,6 +3,7 @@
 import logging
 import sys
 from pathlib import Path
+import webcolors
 
 try:
     from gnuradio import filter as grfilter  # pytype: disable=import-error
@@ -240,6 +241,12 @@ class grscan(gr.top_block):
 
         if inference_output_dir:
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
+
+        if inference_text_color:
+            wc = webcolors.name_to_rgb(inference_text_color, "css3")
+            inference_text_color = ",".join(
+                [str(c) for c in [wc.blue, wc.green, wc.red]]
+            )
 
         if inference_model_server and inference_model_name:
             x = 640

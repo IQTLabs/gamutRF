@@ -2,7 +2,6 @@ import logging
 import signal
 import time
 import sys
-import webcolors
 from argparse import ArgumentParser, BooleanOptionalAction
 
 try:
@@ -480,12 +479,6 @@ def check_options(options):
 
     if options.scaling not in ["spectrum", "density"]:
         return "scaling must be 'spectrum' or 'density'"
-
-    if options.inference_text_color:
-        wc = webcolors.name_to_rgb(options.inference_text_color, "css3")
-        options.inference_text_color = ",".join(
-            [str(c) for c in [wc.blue, wc.green, wc.red]]
-        )
 
     iq_inference = options.iq_inference_model_server and options.iq_inference_model_name
     if iq_inference and not options.pretune:
