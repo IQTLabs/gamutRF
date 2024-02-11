@@ -6,6 +6,7 @@ import time
 
 import gpsd
 import paho.mqtt.client as mqtt
+import paho.mqtt.enums as enums
 from gamutrf.utils import http_get
 
 
@@ -60,7 +61,7 @@ class MQTTReporter:
 
     def connect(self):
         logging.info(f"connecting to {self.mqtt_server}")
-        self.mqttc = mqtt.Client()
+        self.mqttc = mqtt.Client(enums.CallbackAPIVersion.VERSION1)
         self.mqttc.connect(self.mqtt_server)
         self.mqttc.loop_start()
 
