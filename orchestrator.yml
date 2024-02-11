@@ -32,7 +32,7 @@ services:
     networks:
       - gamutrf
     ports:
-      - '9001:9000'
+      - '9001:9001'
       - '10000:10000'
       - '10001:10001'
     cap_add:
