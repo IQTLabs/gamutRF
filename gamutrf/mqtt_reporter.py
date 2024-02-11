@@ -61,7 +61,7 @@ class MQTTReporter:
 
     def connect(self):
         logging.info(f"connecting to {self.mqtt_server}")
-        self.mqttc = mqtt.Client(callback_api_version=enums.CallbackAPIVersion(1))
+        self.mqttc = mqtt.Client(enums.CallbackAPIVersion.VERSION1)
         self.mqttc.connect(self.mqtt_server)
         self.mqttc.loop_start()
 
