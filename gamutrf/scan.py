@@ -429,6 +429,12 @@ def argument_parser():
         action=BooleanOptionalAction,
     )
     parser.add_argument(
+        "--iq_power_inference",
+        help="send power as well as samples for I/Q inference)",
+        default=False,
+        action=BooleanOptionalAction,
+    )
+    parser.add_argument(
         "--n_image",
         dest="n_image",
         type=int,
