@@ -54,6 +54,7 @@ class grscan(gr.top_block):
         inference_text_color="",
         iq_inference_model_name="",
         iq_inference_model_server="",
+        iq_power_inference=False,
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
         logport=8001,
