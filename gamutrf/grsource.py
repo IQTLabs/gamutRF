@@ -72,6 +72,11 @@ class file_source_tagger(gr.basic_block):
         self.need_tags = True
 
     def add_tags(self):
+        # Ideally, We want to add simulated rx_time tags in a consistent way between
+        # runs. However, gnuradio's scheduler does not gaurantee when messages between
+        # blocks are delivered. So more or less items may be processed before
+        # a simulated tuning request is received by this block, between runs. This
+        # will result in different timestamps.
         self.tags_sent += 1
         self.add_item_tag(
             0,
