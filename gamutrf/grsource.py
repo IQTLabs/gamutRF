@@ -58,18 +58,31 @@ class file_source_tagger(gr.basic_block):
         self.n_samples = len(self.samples)
         self.nfft = nfft
         self.tune_step_fft = tune_step_fft
+        self.cmds_received = 0
+        self.tags_sent = -1
         self.i = 0
         self.message_port_register_in(pmt.intern(cmd_port))
         self.set_msg_handler(pmt.intern(cmd_port), self.handle_cmd)
-        self.need_tags = False
-        self.tags_sent = 0
+        self.set_output_multiple(self.nfft)
+        self.tagged_interval = self.nfft * self.tune_step_fft
+        self.n_samples = (
+            int(self.n_samples / self.tagged_interval) * self.tagged_interval
+        )
         logging.info("opened %s with %u samples", input_file, self.n_samples)
 
     def complete(self):
         return self.i >= self.n_samples
 
     def handle_cmd(self, _msg):
-        self.need_tags = True
+        self.cmds_received += 1
+
+    def make_rx_time(self, sample_time):
+        sample_sec = int(sample_time)
+        sample_fsec = sample_time - sample_sec
+        pmt_sample_time = pmt.make_tuple(
+            pmt.from_long(sample_sec), pmt.from_double(sample_fsec)
+        )
+        return pmt_sample_time
 
     def add_tags(self):
         # Ideally, We want to add simulated rx_time tags in a consistent way between
@@ -78,47 +91,43 @@ class file_source_tagger(gr.basic_block):
         # a simulated tuning request is received by this block, between runs. This
         # will result in different timestamps.
         self.tags_sent += 1
+        tag_pos = self.tags_sent * self.tagged_interval
+        sample_time = self.timestamp + (tag_pos / float(self.sample_rate))
+        logging.info(
+            "tag %u at pos %u (nfft item %u), %.1f%%",
+            self.tags_sent,
+            tag_pos,
+            int(tag_pos / self.nfft),
+            self.i / self.n_samples * 100,
+        )
         self.add_item_tag(
             0,
-            self.nitems_written(0),
+            tag_pos,
             pmt.intern("rx_freq"),
             pmt.from_double(self.center_freq),
         )
-        sample_time = self.timestamp + (
-            (self.tags_sent * self.nfft * self.tune_step_fft) / float(self.sample_rate)
-        )
-        logging.info("%.1f%%", self.i / self.n_samples * 100)
-        sample_sec = int(sample_time)
-        sample_fsec = sample_time - sample_sec
-        pmt_sample_time = pmt.make_tuple(
-            pmt.from_long(sample_sec), pmt.from_double(sample_fsec)
-        )
         self.add_item_tag(
             0,
-            self.nitems_written(0),
+            tag_pos,
             pmt.intern("rx_time"),
-            pmt_sample_time,
+            self.make_rx_time(sample_time),
         )
 
     def general_work(self, input_items, output_items):
         if self.complete():
-            logging.info("100%%")
+            logging.info("complete")
             return -1
-        if self.need_tags:
+        n = min(self.nfft, len(output_items[0]))
+        samples = self.samples[self.i : self.i + n]
+        c = len(samples)
+        self.i += c
+        if c < len(output_items[0]):
+            zeros = np.zeros(len(output_items[0]) - c, dtype=np.complex64)
+            samples = np.append(samples, zeros)
+        while (
+            not self.complete() and int(self.i / self.tagged_interval) != self.tags_sent
+        ):
             self.add_tags()
-            self.need_tags = False
-        if self.tags_sent:
-            n = min(self.nfft, len(output_items[0]))
-            samples = self.samples[self.i : self.i + n]
-            c = len(samples)
-            self.i += c
-            if c < len(output_items[0]):
-                zeros = np.zeros(len(output_items[0]) - c, dtype=np.complex64)
-                samples = np.append(samples, zeros)
-        else:
-            # feed zeros until received first tag request
-            samples = np.zeros(len(output_items[0]), dtype=np.complex64)
-            c = len(samples)
         output_items[0][:] = samples
         return c
 

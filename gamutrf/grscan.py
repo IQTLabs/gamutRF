@@ -249,7 +249,7 @@ class grscan(gr.top_block):
                 [str(c) for c in [wc.blue, wc.green, wc.red]]
             )
 
-        if inference_model_server and inference_model_name:
+        if (inference_model_server and inference_model_name) or inference_output_dir:
             x = 640
             y = 640
             self.image_inference_block = self.iqtlabs.image_inference(
@@ -293,6 +293,7 @@ class grscan(gr.top_block):
             self.inference_blocks.append(self.iq_inference_block)
 
         # TODO: provide new block that receives JSON-over-PMT and outputs to MQTT/zmq.
+        retune_fft_output_block = None
         if self.inference_blocks:
             self.inference_output_block = inferenceoutput(
                 "inferencemqtt",
@@ -311,15 +312,18 @@ class grscan(gr.top_block):
                 self.connect((self.retune_pre_fft, 0), (self.iq_inference_block, 0))
                 self.connect((self.last_db_block, 0), (self.iq_inference_block, 1))
             if self.image_inference_block:
-                self.connect((retune_fft, 1), (self.image_inference_block, 0))
-            else:
-                self.connect(
-                    (retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft))
-                )
+                if stare:
+                    self.connect(
+                        (self.last_db_block, 0), (self.image_inference_block, 0)
+                    )
+                else:
+                    retune_fft_output_block = self.image_inference_block
             for i, block in enumerate(self.inference_blocks):
                 self.connect((block, 0), (self.inference_output_block, i))
-        else:
-            self.connect((retune_fft, 1), (blocks.null_sink(gr.sizeof_float * nfft)))
+
+        if not retune_fft_output_block:
+            retune_fft_output_block = blocks.null_sink(gr.sizeof_float * nfft)
+        self.connect((retune_fft, 1), (retune_fft_output_block, 0))
 
         if pretune:
             self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))

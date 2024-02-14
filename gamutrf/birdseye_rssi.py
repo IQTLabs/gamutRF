@@ -27,7 +27,13 @@ class BirdsEyeRSSI(gr.top_block):
         self.mean_window = args.mean_window
         self.rssi_throttle = rssi_throttle
         sources, _cmd_port, _workaround_start_hook = get_source(
-            args.sdr, samp_rate, args.gain, agc, center_freq
+            sdr=args.sdr,
+            samp_rate=samp_rate,
+            gain=args.gain,
+            nfft=1024,
+            tune_step_fft=512,
+            agc=agc,
+            center_freq=center_freq,
         )
 
         rssi_blocks = sources + [

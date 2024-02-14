@@ -15,6 +15,7 @@ def main():
     parser = argument_parser()
     parser.add_argument("filename", type=str, help="Recording filename (or glob)")
     options = parser.parse_args()
+    outputs = 0
     for filename in glob.glob(options.filename):
         out_dir = os.path.dirname(filename)
         if out_dir == "":
@@ -48,3 +49,5 @@ def main():
         tb.start()
         tb.wait()
         tb.stop()
+        outputs += 1
+    logging.info("%u filenames processed from %s", outputs, options.filename)
