@@ -2135,13 +2135,13 @@ test = ["asv", "gmpy2", "hypothesis", "mpmath", "pooch", "pytest", "pytest-cov",
 
 [[package]]
 name = "sigmf"
-version = "1.1.5"
-description = "Python module for interacting with SigMF recordings."
+version = "1.2.0"
+description = "Easily interact with Signal Metadata Format (SigMF) recordings."
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "SigMF-1.1.5-py3-none-any.whl", hash = "sha256:121c3fc26b20c4ea3edfebbb43f330c9cbfa775393c2007152ba9ecef9348a70"},
-    {file = "SigMF-1.1.5.tar.gz", hash = "sha256:061881335bc486ca050dfc944603d4d02e39539ba0c42ce9815cf7a9ebbd96e9"},
+    {file = "SigMF-1.2.0-py3-none-any.whl", hash = "sha256:035777517ab4c4254bd14704980190308fb0fd7ee8c40ed3e03f20ea27a79b4d"},
+    {file = "SigMF-1.2.0.tar.gz", hash = "sha256:d172e938afaa6c2b1a29353036b079ad729b67c0cb2347b0353f87c228373e87"},
 ]
 
 [package.dependencies]
@@ -2149,7 +2149,8 @@ jsonschema = "*"
 numpy = "*"
 
 [package.extras]
-gui = ["pysimplegui (==4.0.0)"]
+apps = ["PySimpleGUI (<5.0.0)", "scipy"]
+test = ["hypothesis", "pylint", "pytest", "pytest-cov"]
 
 [[package]]
 name = "six"
@@ -2404,4 +2405,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "b30c8c4a58659f4997d40880daa94f247afb18e7223d9e9530b72ea8faac46c7"
+content-hash = "12487463b7889bc4fca5d6527bf6318a029236e45a9168b0f3c7792e8ed6ef3b"
