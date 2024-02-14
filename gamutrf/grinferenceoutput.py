@@ -131,7 +131,10 @@ class inferenceoutput(gr.sync_block):
                 external_gps_server_port=external_gps_server_port,
             )
         while self.running:
-            item = self.q.get()
+            try:
+                item = self.q.get(block=True, timeout=1)
+            except queue.Empty:
+                continue
             logging.info("inference output %s", item)
             if zmq_pub is not None:
                 zmq_pub.send_string(json.dumps(item) + DELIM, flags=zmq.NOBLOCK)

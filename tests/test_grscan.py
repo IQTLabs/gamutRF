@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import logging
 import glob
 import os
 import subprocess
@@ -95,11 +96,23 @@ class FakeTb:
 
 class GrscanTestCase(unittest.TestCase):
     def test_fake_uhd(self):
-        get_source("ettus", 1e3, 10, 1024, 1024, uhd_lib=FakeUHD())
+        get_source(
+            sdr="ettus",
+            samp_rate=1e3,
+            gain=10,
+            nfft=1024,
+            tune_step_fft=1024,
+            uhd_lib=FakeUHD(),
+        )
 
     def test_fake_soapy(self):
         sources, _, workaround = get_source(
-            "SoapyAIRT", 1e3, 10, 1024, 1024, soapy_lib=FakeSoapy()
+            sdr="SoapyAIRT",
+            samp_rate=1e3,
+            gain=10,
+            nfft=1024,
+            tune_step_fft=1024,
+            soapy_lib=FakeSoapy(),
         )
         tb = FakeTb(sources, workaround, 100e6)
         tb.start()
@@ -125,7 +138,7 @@ class GrscanTestCase(unittest.TestCase):
                         "dd",
                         "if=/dev/urandom",
                         f"of={sdr_file}",
-                        f"bs={samp_rate}",
+                        f"bs={samp_rate*8}",
                         "count=10",
                     ]
                 )
@@ -135,6 +148,7 @@ class GrscanTestCase(unittest.TestCase):
                 freq_end=freq_end,
                 sdr=sdr,
                 samp_rate=samp_rate,
+                tune_step_fft=512,
                 write_samples=write_samples,
                 sample_dir=tempdir,
                 iqtlabs=iqtlabs,
@@ -152,8 +166,8 @@ class GrscanTestCase(unittest.TestCase):
             del tb
             if not write_samples:
                 return
-            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*zst")])
-            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*sigmf-meta")])
+            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*zst")], sdr)
+            self.assertTrue([x for x in glob.glob(f"{tempdir}/*/*sigmf-meta")], sdr)
 
     def test_grscan_smoke(self):
         for pretune in (True, False):
@@ -164,4 +178,5 @@ class GrscanTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":  # pragma: no cover
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
     unittest.main()
