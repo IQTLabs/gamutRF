@@ -73,7 +73,9 @@ class MQTTReporter:
             if heading_result is None:
                 logging.error("could not update external heading")
             else:
-                self.heading = float(json.loads(heading_result.text)["heading"])
+                heading_json = json.loads(heading_result.text)
+                if "heading" in heading_json:
+                    self.heading = float(heading_json["heading"])
         else:
             heading_result = http_get(f"http://{self.gps_server}:8000/v1/heading")
             if heading_result is None:
@@ -103,20 +105,22 @@ class MQTTReporter:
             if external_gps_msg is None:
                 logging.error("could not update with external GPS")
             else:
+                self.get_heading()
                 self.external_gps_msg = json.loads(external_gps_msg.text)
-                publish_args.update(
-                    {
-                        "position": (
-                            self.external_gps_msg["latitude"],
-                            self.external_gps_msg["longitude"],
-                        ),
-                        "altitude": self.external_gps_msg["altitude"],
-                        "gps_time": self.external_gps_msg["time_usec"],
-                        "map_url": None,
-                        "heading": self.heading,
-                        "gps": "fix",
-                    }
-                )
+                if "error" not in self.external_gps_msg:
+                    publish_args.update(
+                        {
+                            "position": (
+                                self.external_gps_msg["latitude"],
+                                self.external_gps_msg["longitude"],
+                            ),
+                            "altitude": self.external_gps_msg["altitude"],
+                            "gps_time": self.external_gps_msg["time_usec"],
+                            "map_url": None,
+                            "heading": self.heading,
+                            "gps": "fix",
+                        }
+                    )
 
         # Use internal GPIO GPS
         else:
