@@ -418,6 +418,9 @@ class grscan(gr.top_block):
             fft_block = self.iqtlabs.vkfft(fft_batch_size, nfft, True)
             fft_batch_size = 1
         else:
+            logging.warning(
+                "using software FFT - may not be deterministic, even with cached wisdon"
+            )
             fft_block = fft.fft_vcc(nfft, True, [], True, 1)
             fft_batch_size = 1
         fft_block.set_thread_priority(99)

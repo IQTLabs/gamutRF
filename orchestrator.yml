@@ -57,6 +57,9 @@ services:
         condition: service_healthy
     volumes:
       - '${VOL_PREFIX}:/logs'
+    # cause FFT wisdom to be cached.
+    environment:
+      - 'HOME=/logs'
     command:
       - gamutrf-scan
       - --logaddr=0.0.0.0
