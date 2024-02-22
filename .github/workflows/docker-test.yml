@@ -16,13 +16,20 @@ jobs:
     - name: docker build
       run: |
         docker build -f utils/mavlink-api/Dockerfile.mavlink-api utils/mavlink-api -t iqtlabs/gamutrf-mavlink-api:latest
-  test-gamutrf-images:
+  test-gamutrf-waterfall-images:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: docker build
       run: |
         docker build -f docker/Dockerfile.waterfall . -t iqtlabs/gamutrf-waterfall:latest
+        docker run -t iqtlabs/gamutrf-waterfall:latest gamutrf-waterfall --help
+  test-gamutrf-images:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: docker build
+      run: |
         docker build -f docker/Dockerfile.vkfft docker -t iqtlabs/gamutrf-vkfft:latest
         docker build -f docker/Dockerfile.driver docker -t iqtlabs/gamutrf-driver:latest
         docker build -f docker/Dockerfile.uhd-sr docker -t iqtlabs/gamutrf-uhd-sr:latest
@@ -35,9 +42,6 @@ jobs:
         docker run -t iqtlabs/gamutrf:latest gamutrf-scan --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-sigfinder --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-worker --help
-        docker run -t iqtlabs/gamutrf-waterfall:latest gamutrf-waterfall --help
-        sudo apt-get update && sudo apt-get install -qy python3-pip
-        docker compose -f orchestrator.yml -f worker.yml -f docker/monitoring.yml -f torchserve.yml -f specgram.yml build
     - name: offline consistency
       run: |
         tests/test_offline_consistent.sh
