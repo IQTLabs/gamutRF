@@ -43,7 +43,7 @@ pdbpp = "^0.10.3"
 pylint = "3.1.0"
 pytest = "8.0.2"
 pytest-cov = "4.1.0"
-pytype = "2024.2.13"
+pytype = "2024.2.27"
 
 [tool.poetry.scripts]
 gamutrf-compress_dirs = 'gamutrf.__main__:compress_dirs'
