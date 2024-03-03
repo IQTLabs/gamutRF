@@ -44,4 +44,5 @@ jobs:
         docker run -t iqtlabs/gamutrf:latest gamutrf-worker --help
     - name: offline consistency
       run: |
+        sudo apt-get -yq update && sudo apt-get -yq install python3-numpy
         tests/test_offline_consistent.sh
