@@ -6,7 +6,8 @@ TMPDIR=/tmp
 TESTFILE=gamutrf_recording_ettus__gain40_1_10000000Hz_1024000sps.s16
 rm -rf "$TMPDIR/input"
 mkdir "$TMPDIR/input"
-dd if=/dev/urandom of="$TMPDIR/input/$TESTFILE" bs=4096000 count=10
+export FULLTMP=$TMPDIR/input/$TESTFILE
+python -c "import numpy ; numpy.random.uniform(-16384,16383,(20480000,)).astype(numpy.int16).tofile(\"$FULLTMP\")"
 
 rm -rf "$TMPDIR/ref"
 mkdir "$TMPDIR/ref"
