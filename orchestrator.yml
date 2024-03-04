@@ -67,6 +67,7 @@ services:
       - --igain=40
       - '--freq-start=${FREQ_START}'
       - '--freq-end=${FREQ_END}'
+      # - --tuning_range=905e6-930e6,2.2e9-2.6e9,5.1e9-5.9e9
       - --samp-rate=20.48e6
       - --nfft=1024
       - --tune-dwell-ms=0
