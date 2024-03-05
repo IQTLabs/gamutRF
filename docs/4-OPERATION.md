@@ -11,9 +11,9 @@ This section details the operation of a GamutRF system and how to configure the 
 
 ## SDR/scanner/sigfinder command line options
 
-While there are other options, these options primarily influence gamutRF's scanner functionality.
+While there are other options, these options primarily influence gamutRF's scanner functionality. These CLI args are generally changes in the docker compose files, but can be used in a standard terminal as well if GamutRF is installed.
 
-### scanner
+### gamutrf-scan
 
 | Option | Description |
 | -- | -- |
@@ -55,15 +55,67 @@ Use Cases:
 - [Scan across a non-linear range with model](#scan-across-a-non-linear-range-with-model)
 - [Scan across freq with model feeding to Birdseye](#scan-across-freq-with-model-feeding-to-birdseye)
 
+The main components are located in 
+- `orchestrator.yml`: main GamutRF SDR orchestration and message passing
+- `torchserve*.yml`: ML inference server (`torchserve.yml` for CPU inference or `torchserve-cuda.yml` for GPU inference)
+- `utils/mavlink-api/mavlink-api.yml`: Interface to MAVLINK based GPS unit (for Birdseye only)
+- `worker.yml`: when orchestrating multiple units in orchestrator-worker configuration
+
+After linking the relevant docker-compose file(s), you can call the needed services or use all services by not specifying individual containers.
+
+The `VOL_PREFIX` is the location all output files will be saved. If needed, run `uhd_find_devices` to check if SDR can be found.
+
 ### Scan a single frequency
+```bash
+VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=0 docker compose -f orchestrator.yml up mqtt gamutrf waterfall -d
+```
 ### Scan across a frequency range
+```bash
+VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=5.8e9 docker compose -f orchestrator.yml up mqtt gamutrf waterfall -d
+```
 ### Scan across a non-linear range
+Uncomment `--tuning_range` in gamutrf service in `orchestrator.yml` and adjust range as needed. `tuning_range` will override `freq_start` and `freq_end`
+```bash
+VOL_PREFIX=/flash/gamutrf docker compose -f orchestrator.yml up mqtt gamutrf waterfall -d
+```
+
 ### Deploy signal detector
+```bash
+VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=5.8e9 docker compose -f orchestrator.yml up mqtt gamutrf waterfall sigfinder -d
+```
+
 ### Deploy Birdseye
+```bash
+VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=0 docker compose -f orchestrator.yml -f ../Birdseye/geolocate.yml up mqtt gamutrf waterfall geolocate -d
+```
+
 ### Scan a single frequency with model
+Ensure `torchserve*.yml` is configured with model and placed in the correct `$VOL_PREFIX/model_store` directory
+
+```bash
+VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=0 docker compose -f orchestrator.yml -f torchserve-cuda.yml up mqtt gamutrf waterfall torchserve -d
+```
+
 ### Scan across a frequency range with model
+Ensure `torchserve*.yml` is configured with model and placed in the correct `$VOL_PREFIX/model_store` directory
+
+```bash
+VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=5.8e9 docker compose -f orchestrator.yml -f torchserve-cuda.yml up mqtt gamutrf waterfall torchserve -d
+```
+
 ### Scan across a non-linear range with model
+Ensure `torchserve*.yml` is configured with model and placed in the correct `$VOL_PREFIX/model_store` directory
+
+Uncomment `--tuning_range` in gamutrf service in `orchestrator.yml` and adjust range as needed. `tuning_range` will override `freq_start` and `freq_end`
+
+```bash
+VOL_PREFIX=/flash/gamutrf docker compose -f orchestrator.yml -f torchserve-cuda.yml up mqtt gamutrf waterfall torchserve -d
+```
+
 ### Scan across freq with model feeding to Birdseye
+```bash
+VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=0 docker compose -f orchestrator.yml -f torchserve-cuda.yml -f ../Birdseye/geolocate.yml up mqtt gamutrf waterfall torchserve geolocate -d
+```
 
 ## Running multiple radios on the same machine
 

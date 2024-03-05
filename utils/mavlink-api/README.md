@@ -34,5 +34,5 @@ To run with gamutRF add the `-f utils/mavlink-api/docker-compose.yml` and includ
 
 Ex:
 ```bash
-docker compose -f orchestrator.yml -f torchserve-cuda.yml -f utils/mavlink-api/mavlink-api.yaml -f geolocate.yml down mqtt mavlink-api-controller mavlink-api-drone geolocate mqtt-publisher
+docker compose -f orchestrator.yml -f torchserve-cuda.yml -f utils/mavlink-api/mavlink-api.yml -f geolocate.yml down mqtt mavlink-api-controller mavlink-api-drone geolocate mqtt-publisher
 ```
