@@ -81,7 +81,7 @@ VOL_PREFIX=/flash/gamutrf docker compose -f orchestrator.yml up mqtt gamutrf wat
 
 ### Deploy signal detector
 ```bash
-VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=5.8e9 docker compose -f orchestrator.yml up mqtt gamutrf waterfall sigfinder -d
+VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=5.8e9 docker compose -f orchestrator.yml -f sigfinder.yml up mqtt gamutrf waterfall sigfinder -d
 ```
 
 ### Deploy Birdseye
