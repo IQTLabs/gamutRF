@@ -1,9 +1,13 @@
+---
 version: "3.3"
 networks:
   gamutrf:
     driver: bridge
     driver_opts:
       com.docker.network.driver.mtu: 9000
+  default:
+    external: true
+    name: none
 services:
   compass:
     restart: always
@@ -104,29 +108,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 3
-  sigfinder:
-    restart: always
-    image: iqtlabs/gamutrf:latest
-    shm_size: 128m
-    privileged: true
-    networks:
-      - gamutrf
-    ports:
-      - '80:80'
-      - '9002:9000'
-    volumes:
-      - '${VOL_PREFIX}:/logs'
-    command:
-      - gamutrf-sigfinder
-      - --scanners=gamutrf:10000
-      - --log=/logs/scan.log
-      - --detection_type=narrowband
-      - --record_secs=1
-      - --max_recorder_signals=5
-      - --db_rolling_factor=0
-    environment:
-      - "PEAK_TRIGGER=0"
-      - "PIN_TRIGGER=17"
   waterfall:
     restart: always
     image: iqtlabs/gamutrf-waterfall:latest
@@ -149,14 +130,3 @@ services:
       - --height=6
       - --min_freq=0
       - --max_freq=0
-  watchtower:
-    image: containrrr/watchtower:latest
-    restart: always
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-    environment:
-      - "WATCHTOWER_POLL_INTERVAL=3600"
-      - "WATCHTOWER_CLEANUP=true"
-      - "WATCHTOWER_INCLUDE_RESTARTING=true"
-      - "WATCHTOWER_INCLUDE_STOPPED=true"
-      - "WATCHTOWER_REVIVE_STOPPED=true"

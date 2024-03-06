@@ -39,6 +39,7 @@ jobs:
             sox \
             uhd-host \
             wget \
+            yamllint \
           && grep -h 'git clone' docker/*|grep -v pytorch|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
       - name: install gnuradio
         run: |
@@ -57,6 +58,9 @@ jobs:
           poetry install --no-interaction -C utils/mavlink-api && \
           poetry install --no-interaction && \
           sudo dpkg -r --force-depends python3-numpy
+      - name: Code Quality - yamllint
+        run: |
+          yamllint -s *yml
       - name: Code Quality - Black
         run: |
           poetry run black augment --check
