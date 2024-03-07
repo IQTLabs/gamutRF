@@ -234,7 +234,7 @@ def argument_parser():
         "--scanners",
         default="127.0.0.1:8001",
         type=str,
-        help="Scanner endpoints to use.",
+        help="Scanner FFT endpoints to use.",
     )
     parser.add_argument(
         "--port",
@@ -328,6 +328,7 @@ def reset_fig(
     state.fig.clf()
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.15)
+    plt.subplots_adjust(left=0.20)
     state.ax_psd = state.fig.add_subplot(3, 1, 1)
     state.ax = state.fig.add_subplot(3, 1, (2, 3))
     state.psd_title = state.ax_psd.text(
@@ -342,22 +343,24 @@ def reset_fig(
 
     reset_mesh_psd(config, state)
 
-    def ax_psd_plot(linestyle=":", **kwargs):
+    def ax_psd_plot(linestyle="--", **kwargs):
         return state.ax_psd.plot(
             state.X[0],
             default_data,
-            markevery=config.marker_distance,
+            markevery=int(len(state.X[0]) * config.marker_distance),
             linestyle=linestyle,
+            linewidth=0.5,
             **kwargs,
         )
 
-    (state.peak_lns,) = ax_psd_plot(
-        color="white",
-        marker="^",
-        markersize=12,
-        linestyle="none",
-        fillstyle="full",
-    )
+    if state.peak_finder:
+        (state.peak_lns,) = ax_psd_plot(
+            color="white",
+            marker="^",
+            markersize=12,
+            linestyle="none",
+            fillstyle="full",
+        )
     (state.max_psd_ln,) = ax_psd_plot(
         color="red",
         marker=",",
@@ -371,15 +374,15 @@ def reset_fig(
     (state.mean_psd_ln,) = ax_psd_plot(
         color="cyan",
         marker="^",
-        markersize=8,
-        fillstyle="none",
+        markersize=6,
+        fillstyle="full",
         label="mean",
     )
     (state.current_psd_ln,) = ax_psd_plot(
-        color="red",
+        color="white",
         marker="o",
-        markersize=8,
-        fillstyle="none",
+        markersize=6,
+        fillstyle="full",
         label="current",
     )
     state.ax_psd.legend(loc="center left", bbox_to_anchor=(1, 0.5))
@@ -463,8 +466,8 @@ def init_fig(
     state.minor_tick_separator = AutoMinorLocator()
     state.major_tick_separator = MultipleLocator(config.freq_range / config.n_ticks)
 
-    plt.rcParams["savefig.facecolor"] = "#2A3459"
-    plt.rcParams["figure.facecolor"] = "#2A3459"
+    plt.rcParams["savefig.facecolor"] = "#1e1e1e"  # "#2A3459"
+    plt.rcParams["figure.facecolor"] = "#1e1e1e"  # "#2A3459"
     for param in (
         "text.color",
         "axes.labelcolor",
@@ -472,7 +475,7 @@ def init_fig(
         "ytick.color",
         "axes.facecolor",
     ):
-        plt.rcParams[param] = "#d2d5dd"
+        plt.rcParams[param] = "#cdcdcd"  # "#d2d5dd"
 
     state.fig = plt.figure(figsize=(config.width, config.height), dpi=100)
     if not config.batch:
@@ -500,8 +503,9 @@ def draw_peaks(
             properties,
         )
 
-    state.peak_lns.set_xdata(state.psd_x_edges[peaks])
-    state.peak_lns.set_ydata(properties["width_heights"])
+    if state.peak_finder:
+        state.peak_lns.set_xdata(state.psd_x_edges[peaks])
+        state.peak_lns.set_ydata(properties["width_heights"])
 
     for child in state.ax_psd.get_children():
         if isinstance(child, LineCollection):
@@ -654,6 +658,10 @@ def update_fig(config, state, results):
         state.db_min = np.nanmin(state.db_data)
         state.db_max = np.nanmax(state.db_data)
 
+        state.db_max += 0.10 * abs(state.db_max)
+        if state.db_max - state.db_min < 20:
+            state.db_max = state.db_min + 20
+
         data, _xedge, _yedge = np.histogram2d(
             state.freq_data[~np.isnan(state.freq_data)].flatten(),
             state.db_data[~np.isnan(state.db_data)].flatten(),
@@ -697,6 +705,13 @@ def update_fig(config, state, results):
             ln.set_ydata(ln_func(state.db_data, axis=0))
         state.ax_psd.draw_artist(state.mesh_psd)
 
+        lns_to_draw = [
+            state.min_psd_ln,
+            state.max_psd_ln,
+            state.mean_psd_ln,
+            state.current_psd_ln,
+        ]
+
         if state.peak_finder:
             draw_peaks(
                 config,
@@ -704,14 +719,9 @@ def update_fig(config, state, results):
                 scan_time,
                 scan_configs,
             )
+            lns_to_draw.append(state.peak_lns)
 
-        for ln in (
-            state.peak_lns,
-            state.min_psd_ln,
-            state.max_psd_ln,
-            state.mean_psd_ln,
-            state.current_psd_ln,
-        ):
+        for ln in lns_to_draw:
             state.ax_psd.draw_artist(ln)
 
         reset_mesh(state, state.cmap(db_norm))
