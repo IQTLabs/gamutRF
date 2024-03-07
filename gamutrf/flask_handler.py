@@ -1,4 +1,5 @@
 import copy
+import json
 import threading
 from flask import Flask, request
 
@@ -11,6 +12,7 @@ class FlaskHandler:
         self.reconfigures = 0
         self.app = Flask(__name__)
         self.app.add_url_rule("/reconf", "reconf", self.reconf)
+        self.app.add_url_rule("/getconf", "getconf", self.getconf)
         self.request = request
         self.thread = threading.Thread(
             target=self.app.run,
@@ -20,6 +22,18 @@ class FlaskHandler:
 
     def start(self):
         self.thread.start()
+
+    def getconf(self):
+        return (
+            json.dumps(
+                {
+                    k: v
+                    for k, v in vars(self.options).items()
+                    if k not in self.banned_args
+                }
+            ),
+            200,
+        )
 
     def reconf(self):
         new_options = copy.deepcopy(self.options)
