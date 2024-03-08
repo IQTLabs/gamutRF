@@ -122,6 +122,7 @@ services:
       - '${VOL_PREFIX}:/logs'
     command:
       - gamutrf-waterfall
+      - --api_endpoint=gamutrf:9001
       - --scanners=gamutrf:10000
       - --inference_server=gamutrf
       - --inference_port=10001

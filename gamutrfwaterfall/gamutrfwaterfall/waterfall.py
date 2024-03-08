@@ -314,7 +314,7 @@ def argument_parser():
     )
     parser.add_argument(
         "--api_endpoint",
-        default="gamutrf:9001",
+        default="127.0.0.1:9001",
         type=str,
         help="Scanner API endpoints to use.",
     )
