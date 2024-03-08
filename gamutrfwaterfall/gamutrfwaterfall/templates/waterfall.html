@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block body %}
+    <div class="content_container">
+	<img id="waterfall" src="" />
+	<div class="scanner_args_form">
+	    <form action = "{{ url_for('config_form') }}" method = "post">
+		<p>Freq start:</p>
+		<p><input type="number" step="1" pattern="\d+" name="freq_start" value="{{ config_vars['freq_start']|int }}"/></p>
+		<p>Freq end:</p>
+		<p><input type="number" step="1" pattern="\d+" name="freq_end" value="{{ config_vars['freq_end']|int }}"/></p>
+		<p>Gain:</p>
+		<p><input type="number" step="1" pattern="\d+" name="igain" value="{{ config_vars['igain']|int }}"/></p>
+		<p>Tune overlap:</p>
+		<p><input type = "text" name="tuneoverlap" value="{{ config_vars['tuneoverlap'] }}"/></p>
+		<p>Tune step (# of FFTs):</p>
+		<p><input type="number" step="1" pattern="\d+" name="tune_step_fft" value="{{ config_vars['tune_step_fft']|int }}"/></p>
+		<p>Sweep seconds:</p>
+		<p><input type="number" step="1" pattern="\d+" name="sweep_sec" value="{{ config_vars['sweep_sec']|int }}"/></p>
+
+		<p><button name="reset" type="submit" value="reset">Reset</button></p>
+	    </form>
+	</div>
+    </div>
+{% endblock body %}
+{% block script %}
+    <script>
+	document.getElementById("waterfall_link").className += " active";
+	$(document).ready(function(){
+	    setInterval(refreshFunction, 1000);
+	});
+
+	function refreshFunction(){
+
+	    d = new Date();
+	    $("#waterfall").attr("src", "{{ url_for('serve_waterfall_img') }}?"+d.getTime());
+
+	}
+    </script>
+{% endblock script %}

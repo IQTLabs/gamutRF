@@ -1,0 +1,40 @@
+<html>
+    <head>
+	{% block head %}
+	<title>{% block title %}GamutRF{% endblock title %}</title>
+	<link rel="stylesheet" href="/static/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="/static/styles/gamutrf.css">
+	<script src="/static/jquery.min.js"></script>
+	{% endblock head %}
+    </head>
+    <body>
+	<div class="container">
+	    <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+	      <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none ms-2">
+		<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="white" class="bi bi-broadcast-pin me-2" viewBox="0 0 16 16">
+		    <path d="M3.05 3.05a7 7 0 0 0 0 9.9.5.5 0 0 1-.707.707 8 8 0 0 1 0-11.314.5.5 0 0 1 .707.707m2.122 2.122a4 4 0 0 0 0 5.656.5.5 0 1 1-.708.708 5 5 0 0 1 0-7.072.5.5 0 0 1 .708.708m5.656-.708a.5.5 0 0 1 .708 0 5 5 0 0 1 0 7.072.5.5 0 1 1-.708-.708 4 4 0 0 0 0-5.656.5.5 0 0 1 0-.708m2.122-2.12a.5.5 0 0 1 .707 0 8 8 0 0 1 0 11.313.5.5 0 0 1-.707-.707 7 7 0 0 0 0-9.9.5.5 0 0 1 0-.707zM6 8a2 2 0 1 1 2.5 1.937V15.5a.5.5 0 0 1-1 0V9.937A2 2 0 0 1 6 8"/>
+		</svg>
+		<span class="fs-4 logo_name">GamutRF</span>
+	      </a>
+
+	      <ul class="nav nav-pills me-2">
+		<li class="nav-item"><a id="waterfall_link" href="{{ url_for('serve_waterfall_page') }}" class="nav-link" aria-current="page">Waterfall</a></li>
+		<li class="nav-item"><a id="predictions_link" href="{{ url_for('serve_predictions_page') }}" class="nav-link">Predictions</a></li>
+	      </ul>
+	     </header>
+	</div>
+	<!-- <div class="nav_bar">
+	    <button id="waterfall_button" class="tablinks" onclick="location.href='{{ url_for('serve_waterfall_page') }}';">Waterfall</button>
+	    <button id="predictions_button" class="tablinks" onclick="location.href='{{ url_for('serve_predictions_page') }}';">Predictions</button>
+	</div> -->
+	{% block body %}
+	{% endblock body %}
+	<div id="footer">
+	    {% block footer %}
+	    <img class="mx-auto d-block" width="5%" src="{{ url_for('static', filename='images/iqt_white_logo.png') }}" />
+	    {% endblock %}
+	</div>
+	{% block script %}
+	{% endblock script %}
+    </body>
+</html>

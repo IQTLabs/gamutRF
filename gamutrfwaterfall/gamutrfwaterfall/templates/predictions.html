@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block body %}
+    <div class="content_container d-flex align-items-center justify-content-center">
+	<div id="predictions">
+	</div>
+    </div>
+{% endblock body %}
+{% block script %}
+    <script>
+	document.getElementById("predictions_link").className += " active";
+	$(document).ready(function(){
+	    setInterval(refreshFunction, 3000);
+	});
+
+	function refreshFunction(){
+
+	    d = new Date();
+	    $("#predictions").load("{{ url_for('serve_predictions_content') }}");
+
+	}
+    </script>
+{% endblock script %}
