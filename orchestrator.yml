@@ -39,6 +39,7 @@ services:
       - '9001:9001'
       - '10000:10000'
       - '10001:10001'
+      - '10002:10002'
     cap_add:
       - SYS_NICE
       - SYS_RAWIO
@@ -66,6 +67,8 @@ services:
       - 'HOME=/logs'
     command:
       - gamutrf-scan
+      - --fgaas_addr=0.0.0.0
+      - --fgaas_port=10002
       - --logaddr=0.0.0.0
       - --logport=10000
       - --igain=40
