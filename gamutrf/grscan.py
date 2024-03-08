@@ -40,6 +40,8 @@ class grscan(gr.top_block):
         external_gps_server_port=8888,
         fft_batch_size=256,
         fft_processor_affinity=0,
+        fgaas_addr="0.0.0.0",
+        fgaas_port=10002,
         freq_end=1e9,
         freq_start=100e6,
         gps_server="",
@@ -50,14 +52,14 @@ class grscan(gr.top_block):
         inference_model_name="",
         inference_model_server="",
         inference_output_dir="",
-        inference_port=8002,
+        inference_port=10001,
         inference_text_color="",
         iq_inference_model_name="",
         iq_inference_model_server="",
         iq_power_inference=False,
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
-        logport=8001,
+        logport=10000,
         low_power_hold_down=False,
         mqtt_server="",
         n_image=0,
@@ -229,11 +231,24 @@ class grscan(gr.top_block):
         )
         self.fft_blocks.append(retune_fft)
         fft_zmq_addr = f"tcp://{logaddr}:{logport}"
-        inference_zmq_addr = f"tcp://{inference_addr}:{inference_port}"
         logging.info("serving FFT on %s", fft_zmq_addr)
         self.fft_blocks.append(
             (zeromq.pub_sink(1, 1, fft_zmq_addr, 100, False, 65536, ""))
         )
+
+        if fgaas_port:
+            fgaas_zmq_addr = f"tcp://{fgaas_addr}:{fgaas_port}"
+            logging.info("serving I/Q samples and tags on %s", fgaas_zmq_addr)
+            fgass_zmq_block = zeromq.pub_sink(
+                gr.sizeof_gr_complex,
+                fft_batch_size * nfft,
+                fgaas_zmq_addr,
+                100,
+                True,
+                65536,
+                "",
+            )
+            self.connect((self.retune_pre_fft, 0), (fgass_zmq_block, 0))
 
         self.inference_blocks = []
         self.inference_output_block = None
@@ -295,6 +310,7 @@ class grscan(gr.top_block):
         # TODO: provide new block that receives JSON-over-PMT and outputs to MQTT/zmq.
         retune_fft_output_block = None
         if self.inference_blocks:
+            inference_zmq_addr = f"tcp://{inference_addr}:{inference_port}"
             self.inference_output_block = inferenceoutput(
                 "inferencemqtt",
                 inference_zmq_addr,

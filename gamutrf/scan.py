@@ -138,7 +138,7 @@ def argument_parser():
         "--logport",
         dest="logport",
         type=int,
-        default=8001,
+        default=10000,
         help="Log FFT results to this port",
     )
     parser.add_argument(
@@ -152,8 +152,22 @@ def argument_parser():
         "--inference_port",
         dest="inference_port",
         type=int,
-        default=8002,
+        default=10001,
         help="Log inference results to this port",
+    )
+    parser.add_argument(
+        "--fgaas_addr",
+        dest="fgaas_addr",
+        type=str,
+        default="0.0.0.0",  # nosec
+        help="Log scanner I/Q stream and tags to this address",
+    )
+    parser.add_argument(
+        "--fgaas_port",
+        dest="fgaas_port",
+        type=int,
+        default=10002,
+        help="If > 0, log scanner I/Q stream and tags to this port",
     )
     parser.add_argument(
         "--inference_text_color",
