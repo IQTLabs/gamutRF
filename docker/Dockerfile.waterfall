@@ -3,6 +3,12 @@ FROM ubuntu:22.04 as installer
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    apt install -y ca-certificates curl gnupg
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+RUN apt-get update && apt-get install --no-install-recommends -y -q nodejs
 RUN apt-get update && apt-get install --no-install-recommends -y -q \
     ca-certificates \
     curl \
@@ -15,6 +21,13 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     python3-pip && \
     curl -sSL https://install.python-poetry.org | python3 - --version 1.7.1 && \
     poetry config virtualenvs.create false
+WORKDIR /root
+RUN git clone https://github.com/twbs/bootstrap
+RUN git clone https://github.com/jquery/jquery
+WORKDIR /root/bootstrap
+RUN npm install bootstrap@v5.3.3
+WORKDIR /root/jquery
+RUN npm install jquery@3.7.1
 WORKDIR /gamutrflib
 COPY gamutrflib /gamutrflib/
 RUN poetry install --no-interaction --no-ansi --no-dev
@@ -36,4 +49,6 @@ COPY --from=installer /root/.local /root/.local
 COPY --from=installer /usr/local /usr/local
 COPY --from=installer /gamutrflib /gamutrflib
 COPY --from=installer /gamutrfwaterfall /gamutrfwaterfall
+COPY --from=installer /root/bootstrap/dist/css/bootstrap.min.css /gamutrfwaterfall/gamutrfwaterfall/static
+COPY --from=installer /root/jquery/node_modules/jquery/dist/jquery.min.js /gamutrfwaterfall/gamutrfwaterfall/static
 CMD ["gamutrf-waterfall", "--help"]

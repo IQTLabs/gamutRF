@@ -1,0 +1,56 @@
+#waterfall {
+    margin-top: -20px;
+}
+
+.content_container {
+    display: flex;  /*sets form and image next to each other*/
+    /*border-radius: 2%;
+    padding: 5%;*/
+}
+
+.scanner_args_form {
+    padding: 10px;
+    margin: 10px;
+}
+
+.logo_name {
+    color: white;
+}
+
+body {
+    background: #1e1e1e;
+    color: #cdcdcd;
+}
+
+/* Style the tab */
+.nav_bar {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+  /* Style the buttons inside the tab */
+.nav_bar button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.nav_bar button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.nav_bar button.active {
+    background-color: #ccc;
+}
+
+/* .nav-link.active {
+  --bs-nav-pills-link-active-bg: #140047;
+} */

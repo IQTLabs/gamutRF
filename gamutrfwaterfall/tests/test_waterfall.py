@@ -96,6 +96,9 @@ class UtilsTestCase(unittest.TestCase):
                 5,  # args.refresh,
                 True,  # args.batch
                 zmqr,
+                None,  # api_endpoint
+                None,  # config_vars
+                None,  # config_vars_path
             )
             self.assertTrue(os.path.exists(savefig))
             for dump_match in ("*json", "*csv", "waterfall*png"):

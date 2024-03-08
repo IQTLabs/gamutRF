@@ -141,3 +141,4 @@ tests/gamutrf_test_dir/*.tar*
 *.DS_Store
 
 \#*
+*.swp
