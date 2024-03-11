@@ -1,10 +1,9 @@
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04 as installer
+ARG POETRY_CACHE
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-# TODO: https://github.com/python-poetry/poetry/issues/3591
-# Install pandas via pip to get wheel. Disabling the new installer/configuring a wheel source does not work.
 RUN apt-get update && apt-get install --no-install-recommends -y -q \
     ca-certificates \
     curl \
@@ -21,14 +20,19 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
+COPY bin/pipcacheconfig.sh /root/pipcacheconfig.sh
 COPY gamutrflib /gamutrflib/
 WORKDIR /gamutrflib
+RUN if [ "${POETRY_CACHE}" != "" ] ; then /root/pipcacheconfig.sh echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
 RUN poetry install --no-interaction --no-ansi --no-dev
 WORKDIR /gamutrf
 RUN python3 -c "from gamutrflib.zmqbucket import *"
 COPY poetry.lock pyproject.toml README.md /gamutrf/
-RUN poetry run pip install --no-cache-dir pandas=="$(grep pandas pyproject.toml | grep -Eo '[0-9\.]+')"
 # dependency install is cached for faster rebuild, if only gamutrf source changed.
+RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
+# TODO: handle caching
+RUN for i in bjoern falcon-cors gpsd-py3 RPi.GPIO pycairo ; do poetry run pip install --no-cache-dir "$i"=="$(grep $i pyproject.toml | grep -Eo '\"[0-9\.]+' | sed 's/\"//g')" || exit 1 ; done
+RUN if [ "$(arch)" == "aarch64" ] ; then poetry run pip install --no-cache-dir RPi.GPIO=="$(grep RPi.GPIO pyproject.toml | grep -Eo '\"[0-9\.]+' | sed 's/\"//g')" ; fi
 RUN poetry install --no-interaction --no-ansi --no-dev --no-root
 COPY gamutrf gamutrf/
 COPY bin bin/
@@ -37,6 +41,7 @@ RUN poetry install --no-interaction --no-ansi --no-dev
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04
+ARG POETRY_CACHE
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
