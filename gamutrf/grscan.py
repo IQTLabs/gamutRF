@@ -359,7 +359,7 @@ class grscan(gr.top_block):
 
     def get_db_blocks(self, nfft, samp_rate, scaling):
         if scaling == "density":
-            scale = 1.0 / (samp_rate * sum(self.get_window(nfft)) ** 2)
+            scale = 1.0 / (samp_rate * sum((self.get_window(nfft) ** 2)))
         elif scaling == "spectrum":
             scale = 1.0 / (sum(self.get_window(nfft)) ** 2)
         else:
