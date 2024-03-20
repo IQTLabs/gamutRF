@@ -22,4 +22,5 @@ if [[ $PWD != *"gamutRF"* ]]; then
     git clone https://github.com/IQTLabs/gamutRF
     git clone https://github.com/IQTLabs/BirdsEye
 fi
+
 sudo mkdir -p /flash/gamutrf
