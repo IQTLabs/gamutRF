@@ -63,7 +63,7 @@ The main components are located in
 
 After linking the relevant docker-compose file(s), you can call the needed services or use all services by not specifying individual containers.
 
-The `VOL_PREFIX` is the location all output files will be saved. If needed, run `uhd_find_devices` to check if SDR can be found.
+The `VOL_PREFIX` is the location all output files will be saved. Check and/or comment out the `deploy` and `depends_on` sections of `gamutrf` in `orchestrator.yml` if you are using a non-x86 architecture or not using torchserve respectively. If needed, run `uhd_find_devices` to check if SDR can be found.
 
 ### Scan a single frequency
 ```bash
@@ -120,6 +120,40 @@ VOL_PREFIX=/flash/gamutrf FREQ_START=2.4e9 FREQ_END=0 docker compose -f orchestr
 ## Running multiple radios on the same machine
 
 gamutRF supports the use of multiple radios on the same machine, whether for scanning or recording. When using multiple Ettus SDRs, assign a specific radio to a specific container by specifying the ```serial``` UHD driver argument. To list all connected Ettus radios, run ```uhd_find_devices```. Then add the ```--sdrargs``` argument to the specific container. For example, ```--sdrargs num_recv_frames=960,recv_frame_size=16360,type=b200,serial=12345678```.
+
+To use multiple radios in docker compose: in `orchestrator.yml` create a gamutrf container (gamutrf1, gamutrf2, etc.) for each radio. Each container should contain the `sdrargs` with the appropriate serial and incremented port values as seen below.
+```bash
+gamutrf1:
+...
+    command:
+      - gamutrf-scan
+      - --sdrargs=num_recv_frames=500,recv_frame_size=16360,type=b200,serial=XXXXXXX
+      - --logport=10000
+      - --inference_port=10001
+    ...
+    ports:
+      - '9001:9001'
+      - '10000:10000'
+      - '10001:10001'
+    ...
+gamutrf2:
+...
+    command:
+      - gamutrf-scan
+      - --sdrargs=num_recv_frames=500,recv_frame_size=16360,type=b200,serial=XXXXXXX
+      - --logport=11000
+      - --inference_port=11001
+    ...
+    ports:
+      - '9004:9001'
+      - '11000:11000'
+      - '11001:11001'
+    ...
+waterfall:
+    command:
+      - gamutrf-waterfall
+      - --scanners=gamutrf1:10000,gamutrf2:11000
+```
 
 gamutRF also supports the KrakenSDR (which presents as five librtlsdr radios). You can run a scanner container for each radio, by adding a serial number - for example, ```--sdr=rtlsdr,serial=1000```. Use ```SoapySDRUtil --find``` to check the radios are correctly connected.
 
