@@ -63,7 +63,7 @@ The main components are located in
 
 After linking the relevant docker-compose file(s), you can call the needed services or use all services by not specifying individual containers.
 
-The `VOL_PREFIX` is the location all output files will be saved. Check and/or comment out the `deploy` and `depends_on` sections of `gamutrf` in `orchestrator.yml` if you are using a non-x86 architecture or not using torchserve respectively. If needed, run `uhd_find_devices` to check if SDR can be found.
+Notes: The `VOL_PREFIX` is the location all output files will be saved. Check and/or comment out the `deploy` and `depends_on` sections of `gamutrf` in `orchestrator.yml` if you are using a non-x86 architecture or not using torchserve respectively. If needed, run `uhd_find_devices` to check if SDR can be found. It is recommended to include `-f docker/freespacer.yml` and `freespacer` to avoid filling up your disk. 
 
 ### Scan a single frequency
 ```bash
