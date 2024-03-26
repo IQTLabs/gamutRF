@@ -57,7 +57,7 @@ VOL_PREFIX=/flash/gamutrf/ FREQ_START=70e6 FREQ_END=6e9 docker compose -f orches
 ```
 If successful, you should see the containers running with `docker ps`.
 
-5. Navigate to localhost:9003 to see GUI.
+6. Navigate to localhost:9003 to see GUI.
 
 ### Advanced Installation
 
