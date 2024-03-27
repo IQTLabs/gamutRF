@@ -9,7 +9,7 @@ echo "Pulling latest docker images..."
 docker rmi $(docker images | grep 'iqtlabs')
 docker compose -f orchestrator.yml -f torchserve.yml -f torchserve-cuda.yml -f torchserve.yml pull
 
-if [ -d ~/BirdsEye ]; do
+if [ -d ~/BirdsEye ]; then
     cd ~/Birdseye
     git pull
     docker compose -f geolocate.yml pull

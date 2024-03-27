@@ -35,7 +35,7 @@ else
 fi
 
 #Check GamutRF containters
-if docker images | grep 'iqtlabs/gamutRF'; then
+if docker images | grep 'iqtlabs/gamutrf' >&/dev/null; then
     echo "GamutRF containers install...PASS"
 else
     echo "WARNING: GamutRF containers install...FAIL"
