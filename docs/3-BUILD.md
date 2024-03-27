@@ -23,6 +23,46 @@ These instructions are for 2 different machines:
 
 ## Orchestrator
 
+### Quick Installation
+
+If you installing on x86 or Arm without need for GPIO or GPS.
+
+1. Either clone the repo or copy the `gamutRF/bin/install-deps.sh` install script.
+```bash
+git clone https://github.com/IQTLabs/gamutRF 
+```
+
+2. Run install script
+```bash
+cd gamutRF
+chmod +x bin/install-deps.sh
+./bin/install-deps.sh
+```
+
+3. Pull/Update GamutRF containers
+```bash
+chmod +x bin/update.sh
+./bin/update.sh
+```
+
+4. Check install was completed
+```bash
+chmod +x bin/check-install.sh
+./bin/check-install.sh
+```
+
+5. Start the Orchestrator containers
+```bash
+VOL_PREFIX=/flash/gamutrf/ FREQ_START=70e6 FREQ_END=6e9 docker compose -f orchestrator.yml -f torchserve.yml up mqtt gamutrf waterfall -d
+```
+If successful, you should see the containers running with `docker ps`.
+
+6. Navigate to localhost:9003 to see GUI.
+
+### Advanced Installation
+
+If you are installing on a Raspberry Pi, need access to GPIO, or you will need a few additional steps for installation.
+
 1. Install Raspberry Pi4 to 7" Touchscreen
 
 2. Install GPS module to the 7" Touchscreen 40-pin header
