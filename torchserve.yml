@@ -5,7 +5,7 @@ networks:
 services:
   torchserve:
     restart: always
-    image: iqtlabs/torchserve:v0.0.6
+    image: iqtlabs/torchserve:v0.0.7
     healthcheck:
       start_period: 120s
     networks:
