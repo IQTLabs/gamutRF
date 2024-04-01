@@ -4,12 +4,15 @@ ARG POETRY_CACHE
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+WORKDIR /root
+COPY renovate.json /root/
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install --no-install-recommends -y -q \
     ca-certificates \
     curl \
     gcc \
     git \
+    jq \
     libcairo2-dev \
     libev-dev \
     python3 \
@@ -17,7 +20,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     python3-pip \
     unzip \
     wget && \
-    curl -sSL https://install.python-poetry.org | python3 - --version 1.7.1 && \
+    curl -sSL https://install.python-poetry.org | python3 - --version "$(jq -r .constraints.poetry /root/renovate.json)" && \
     poetry config virtualenvs.create false
 WORKDIR /root
 RUN wget -Ojquery.min.js https://code.jquery.com/jquery-3.7.1.min.js
