@@ -4,6 +4,8 @@ ARG POETRY_CACHE
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+WORKDIR /root
+COPY renovate.json /root/
 RUN apt-get update && apt-get install --no-install-recommends -y -q \
     ca-certificates \
     curl \
@@ -11,12 +13,13 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     git \
     libcairo2-dev \
     libev-dev \
+    jq \
     python3 \
     python3-dev \
     python3-pip \
     python3-pyqt5 \
     python3-pyqt5.sip && \
-    curl -sSL https://install.python-poetry.org | python3 - --version 1.7.1 && \
+    curl -sSL https://install.python-poetry.org | python3 - --version "$(jq -r .constraints.poetry /root/renovate.json)" && \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
