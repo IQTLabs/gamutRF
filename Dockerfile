@@ -27,7 +27,7 @@ COPY bin/pipcacheconfig.sh /root/pipcacheconfig.sh
 COPY gamutrflib /gamutrflib/
 WORKDIR /gamutrflib
 RUN if [ "${POETRY_CACHE}" != "" ] ; then /root/pipcacheconfig.sh echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
-RUN poetry install --no-interaction --no-ansi --no-dev
+RUN poetry install --no-interaction --no-ansi --without dev
 WORKDIR /gamutrf
 RUN python3 -c "from gamutrflib.zmqbucket import *"
 COPY poetry.lock pyproject.toml README.md /gamutrf/
@@ -36,11 +36,11 @@ RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; p
 # TODO: handle caching
 RUN for i in bjoern falcon-cors gpsd-py3 RPi.GPIO pycairo ; do poetry run pip install --no-cache-dir "$i"=="$(grep $i pyproject.toml | grep -Eo '\"[0-9\.]+' | sed 's/\"//g')" || exit 1 ; done
 RUN if [ "$(arch)" == "aarch64" ] ; then poetry run pip install --no-cache-dir RPi.GPIO=="$(grep RPi.GPIO pyproject.toml | grep -Eo '\"[0-9\.]+' | sed 's/\"//g')" ; fi
-RUN poetry install --no-interaction --no-ansi --no-dev --no-root
+RUN poetry install --no-interaction --no-ansi --without dev --no-root
 COPY gamutrf gamutrf/
 COPY bin bin/
 COPY templates templates/
-RUN poetry install --no-interaction --no-ansi --no-dev
+RUN poetry install --no-interaction --no-ansi --without dev
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
 FROM ubuntu:22.04
@@ -92,7 +92,7 @@ COPY --from=installer /gamutrflib /gamutrflib
 COPY --from=installer /root/.local /root/.local
 RUN ldconfig -v
 WORKDIR /gamutrflib
-RUN poetry install --no-interaction --no-ansi --no-dev
+RUN poetry install --no-interaction --no-ansi
 WORKDIR /gamutrf
 RUN python3 -c "from gamutrflib.zmqbucket import *"
 RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
