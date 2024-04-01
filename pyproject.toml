@@ -51,7 +51,6 @@ gamutrf-offline= 'gamutrf.__main__:offline'
 gamutrf-scan = 'gamutrf.__main__:scan'
 gamutrf-sigfinder = 'gamutrf.__main__:sigfinder'
 gamutrf-specgram = 'gamutrf.__main__:specgram'
-gamutrf-waterfall = 'gamutrf.__main__:waterfall'
 gamutrf-worker = 'gamutrf.__main__:worker'
 
 [tool.poetry.urls]

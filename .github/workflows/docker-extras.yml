@@ -34,11 +34,20 @@ jobs:
     - name: Build and push platforms
       uses: docker/build-push-action@v5
       with:
-        context: utils/mavlink-api
+        context: .
         file: utils/mavlink-api/Dockerfile.mavlink-api
         platforms: linux/amd64
         push: true
         tags: iqtlabs/gamutrf-mavlink-api:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+    - name: Build and push platforms
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: utils/mavlink-api/Dockerfile.mqtt-publisher
+        platforms: linux/amd64
+        push: true
+        tags: iqtlabs/gamutrf-mavlink-mqtt-publisher:${{ steps.change_version.outputs.VERSION }}
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
   buildx-airspyfm:
     runs-on: ubuntu-latest
