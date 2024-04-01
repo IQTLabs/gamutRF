@@ -16,7 +16,9 @@ jobs:
     - name: docker build
       run: |
         docker build -f utils/mavlink-api/Dockerfile.mavlink-api . -t iqtlabs/gamutrf-mavlink-api:latest && \
-        docker build -f utils/mavlink-api/Dockerfile.mqtt-publisher . -t iqtlabs/gamutrf-mavlink-mqtt-publisher:latest
+        docker run -t iqtlabs/gamutrf-mavlink-api --help && \
+        docker build -f utils/mavlink-api/Dockerfile.mqtt-publisher . -t iqtlabs/gamutrf-mavlink-mqtt-publisher:latest && \
+        docker run -t iqtlabs/gamutrf-mavlink-mqtt-publisher --help
   test-gamutrf-waterfall-images:
     runs-on: ubuntu-latest
     steps:
