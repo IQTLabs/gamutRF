@@ -49,17 +49,12 @@ LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND noninteractive
 ENV UHD_IMAGES_DIR /usr/share/uhd/images
 ENV PATH="${PATH}:/root/.local/bin"
+WORKDIR /root
+COPY bin/install-nv.sh /root
 RUN mkdir -p /data/gamutrf
 # install nvidia's vulkan support if x86.
 # hadolint ignore=DL3008
-RUN if [ "$(arch)" = "x86_64" ] ; then \
-        apt-get update && \
-        apt-get install -y --no-install-recommends ca-certificates dirmngr gpg-agent gpg wget && \
-        apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/3bf863cc.pub" && \
-        echo "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$(arch)/ /" | tee /etc/apt/sources.list.d/nvidia.list && \
-        apt-get update && \
-        apt-get install -y --no-install-recommends libnvidia-gl-550 ; \
-    fi && \
+RUN if [ "$(arch)" = "x86_64" ] ; then /root/install-nv.sh ; fi && \
     apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         libblas3 \
