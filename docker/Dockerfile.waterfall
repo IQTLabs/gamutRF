@@ -31,13 +31,13 @@ RUN wget -Obootstrap.zip https://github.com/twbs/bootstrap/releases/download/v5.
 WORKDIR /gamutrflib
 COPY gamutrflib /gamutrflib/
 RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
-RUN poetry install --no-interaction --no-ansi --no-dev
+RUN poetry install --no-interaction --no-ansi
 WORKDIR /gamutrfwaterfall
 COPY gamutrfwaterfall /gamutrfwaterfall/
 # TODO: handle caching for pycairo
 RUN poetry run pip install --no-cache-dir pycairo=="$(grep pycairo pyproject.toml | grep -Eo '[0-9\.]+')"
 RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
-RUN poetry install --no-interaction --no-ansi --without dev
+RUN poetry install --no-interaction --no-ansi
 
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND noninteractive
