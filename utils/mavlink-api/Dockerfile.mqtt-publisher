@@ -6,7 +6,7 @@ ENV PYTHONPATH=${PYTHONPATH}:${PWD}
 RUN apt-get update -yq && apt-get install -yq jq && apt-get clean
 
 COPY renovate.json .
-RUN pip3 install "$(jq -r .constraints.poetry renovate.json)"
+RUN pip3 install poetry=="$(jq -r .constraints.poetry renovate.json)"
 COPY utils/mavlink-api/pyproject.toml .
 RUN poetry config virtualenvs.create false
 RUN poetry install --no-dev
