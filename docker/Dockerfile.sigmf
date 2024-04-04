@@ -1,0 +1,16 @@
+FROM ubuntu:22.04 as sigmf-builder
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git
+WORKDIR /root
+RUN git clone https://github.com/google/flatbuffers -b v23.5.26
+RUN git clone https://github.com/nlohmann/json -b v3.11.2
+RUN git clone https://github.com/deepsig/libsigmf -b v1.0.2
+WORKDIR /root/flatbuffers/build
+RUN cmake .. && make -j "$(nproc)" && make install
+WORKDIR /root/json/build
+RUN cmake .. && make -j "$(nproc)" && make install
+WORKDIR /root/libsigmf/build
+RUN cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON .. && make -j "$(nproc)" && make install
+
+FROM ubuntu:22.04
+COPY --from=sigmf-builder /usr/local /usr/local
