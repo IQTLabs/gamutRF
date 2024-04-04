@@ -40,7 +40,7 @@ jobs:
             uhd-host \
             wget \
             yamllint \
-          && grep -h 'git clone' docker/*|grep -v pytorch|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
+          && grep -h 'git clone https' docker/*|grep -v pytorch|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
       - name: install gnuradio
         run: |
           sudo add-apt-repository ppa:gnuradio/gnuradio-releases && sudo apt-get update && \

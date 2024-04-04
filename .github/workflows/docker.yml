@@ -40,6 +40,15 @@ jobs:
         push: true
         tags: iqtlabs/gamutrf-vkfft:${{ steps.change_version.outputs.VERSION }}
       if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
+    - name: Build and push platforms sigmf
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: docker/Dockerfile.sigmf
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: iqtlabs/gamutrf-sigmf:${{ steps.change_version.outputs.VERSION }}
+      if: github.repository == 'iqtlabs/gamutrf' && github.event_name == 'push'
     - name: Build and push platforms driver
       uses: docker/build-push-action@v5
       with:
