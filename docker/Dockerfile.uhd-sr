@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libvulkan-dev \
   sudo
 WORKDIR /root
-RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.9
+RUN git clone https://github.com/iqtlabs/uhd_sample_recorder -b v1.0.11
 WORKDIR /root/uhd_sample_recorder
 RUN ./bin/install-deps.sh && rm -rf VkFFT
-COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/uhd_sample_recorder
-WORKDIR /root/uhd_sample_recorder/build
-RUN CMAKE_BUILD_TYPE=Release cmake ../lib && make -j $(nproc) && cp uhd_sample_recorder /usr/local/bin
+COPY --from=iqtlabs/gamutrf-vkfft:latest /root/VkFFT /root/uhd_sample_recorder/VkFFT
+RUN sed -i '/VkFFT/d' ./bin/build.sh && ./bin/build.sh && cp build/uhd_sample_recorder /usr/local/bin
+
 FROM ubuntu:22.04
 COPY --from=uhd_sample_recorder-builder /usr/local /usr/local
