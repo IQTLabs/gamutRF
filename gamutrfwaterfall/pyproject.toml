@@ -9,7 +9,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-Flask = "3.0.2"
+Flask = "3.0.3"
 cairocffi = "1.6.1"
 matplotlib = "3.8.4"
 numpy = "1.26.4"
