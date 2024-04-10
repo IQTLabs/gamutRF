@@ -304,6 +304,7 @@ class grscan(gr.top_block):
                 confidence=inference_min_confidence,
                 n_inference=n_inference,
                 samp_rate=int(samp_rate),
+                power_inference=iq_power_inference,
             )
             self.inference_blocks.append(self.iq_inference_block)
 
