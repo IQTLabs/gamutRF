@@ -54,6 +54,7 @@ class grscan(gr.top_block):
         inference_output_dir="",
         inference_port=10001,
         inference_text_color="",
+        iq_inference_len=1024,
         iq_inference_model_name="",
         iq_inference_model_server="",
         iq_power_inference=False,
@@ -297,6 +298,7 @@ class grscan(gr.top_block):
             self.iq_inference_block = iqtlabs.iq_inference(
                 tag="rx_freq",
                 vlen=nfft,
+                n_vlen=int(iq_inference_len / nfft),
                 sample_buffer=tune_step_fft,
                 min_peak_points=inference_min_db,
                 model_server=iq_inference_model_server,

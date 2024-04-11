@@ -288,6 +288,13 @@ def argument_parser():
         help="torchserve model server inference API address (e.g. localhost:1234)",
     )
     parser.add_argument(
+        "--iq_inference_len",
+        dest="iq_inference_len",
+        type=int,
+        default=4096,
+        help="number of samples to send for I/Q inference",
+    )
+    parser.add_argument(
         "--iq_inference_model_name",
         dest="iq_inference_model_name",
         type=str,
@@ -483,6 +490,9 @@ def argument_parser():
 def check_options(options):
     if options.samp_rate % options.nfft:
         print("NFFT should be a factor of sample rate")
+
+    if options.iq_inference_len % options.nfft:
+        return "NFFT should be a factor of I/Q inference length"
 
     if options.freq_end:
         if options.freq_start > options.freq_end:
