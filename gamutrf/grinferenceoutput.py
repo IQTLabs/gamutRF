@@ -34,9 +34,11 @@ class jsonmixer:
         items = []
         n = 0
         for i, input_item in enumerate(input_items):
-            raw_input_item = input_item.tobytes().decode("utf8")
-            n += len(raw_input_item)
-            self.json_buffer[i] += raw_input_item
+            raw_input_item = input_item.tobytes().decode("utf8").split("\x00")[0]
+            if len(raw_input_item):
+                self.json_buffer[i] += raw_input_item
+                n += len(raw_input_item)
+        for i in self.json_buffer:
             while True:
                 delim_pos = self.json_buffer[i].find(DELIM)
                 if delim_pos == -1:
@@ -47,11 +49,11 @@ class jsonmixer:
                     item = json.loads(raw_item)
                     items.append(item)
                 except json.JSONDecodeError as e:
-                    logging.error("cannot decode %s: %s", raw_item, e)
+                    logging.error("cannot decode %s from source %u: %s", raw_item, i, e)
         return (n, items)
 
 
-class inferenceoutput(gr.sync_block):
+class inferenceoutput(gr.basic_block):
     def __init__(
         self,
         name,
@@ -85,7 +87,7 @@ class inferenceoutput(gr.sync_block):
             ),
         )
         self.reporter_thread.start()
-        gr.sync_block.__init__(
+        gr.basic_block.__init__(
             self,
             name="inferenceoutput",
             in_sig=([np.ubyte] * inputs),
@@ -143,8 +145,8 @@ class inferenceoutput(gr.sync_block):
                 mqtt_reporter.log(log_path, "inference", start_time, item)
             self.q.task_done()
 
-    def work(self, input_items, output_items):
-        n, items = self.mixer.mix(input_items)
+    def general_work(self, input_items, output_items):
+        _n, items = self.mixer.mix(input_items)
         for item in items:
             self.q.put(item)
-        return n
+        return 0
