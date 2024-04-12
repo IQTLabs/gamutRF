@@ -124,7 +124,7 @@ def argument_parser():
         "--nfft",
         dest="nfft",
         type=int,
-        default=2048,
+        default=1024,
         help="FFTI size [default=%(default)r]",
     )
     parser.add_argument(
@@ -291,7 +291,7 @@ def argument_parser():
         "--iq_inference_len",
         dest="iq_inference_len",
         type=int,
-        default=4096,
+        default=1024,
         help="number of samples to send for I/Q inference",
     )
     parser.add_argument(
