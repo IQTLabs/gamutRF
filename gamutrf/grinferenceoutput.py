@@ -32,12 +32,12 @@ class jsonmixer:
 
     def mix(self, input_items):
         items = []
-        n = 0
+        ns = {}
         for i, input_item in enumerate(input_items):
             raw_input_item = input_item.tobytes().decode("utf8").split("\x00")[0]
+            ns[i] = len(raw_input_item)
             if len(raw_input_item):
                 self.json_buffer[i] += raw_input_item
-                n += len(raw_input_item)
         for i in self.json_buffer:
             while True:
                 delim_pos = self.json_buffer[i].find(DELIM)
@@ -50,7 +50,7 @@ class jsonmixer:
                     items.append(item)
                 except json.JSONDecodeError as e:
                     logging.error("cannot decode %s from source %u: %s", raw_item, i, e)
-        return (n, items)
+        return (ns, items)
 
 
 class inferenceoutput(gr.basic_block):
@@ -146,7 +146,9 @@ class inferenceoutput(gr.basic_block):
             self.q.task_done()
 
     def general_work(self, input_items, output_items):
-        _n, items = self.mixer.mix(input_items)
+        ns, items = self.mixer.mix(input_items)
+        for i, n in ns.items():
+            self.consume(i, n)
         for item in items:
             self.q.put(item)
         return 0
