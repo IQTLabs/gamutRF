@@ -124,7 +124,7 @@ def argument_parser():
         "--nfft",
         dest="nfft",
         type=int,
-        default=2048,
+        default=1024,
         help="FFTI size [default=%(default)r]",
     )
     parser.add_argument(
