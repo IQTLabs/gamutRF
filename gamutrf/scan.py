@@ -288,6 +288,20 @@ def argument_parser():
         help="torchserve model server inference API address (e.g. localhost:1234)",
     )
     parser.add_argument(
+        "--iq_inference_squelch_db",
+        dest="iq_inference_squelch_db",
+        type=float,
+        default=None,
+        help="if not None, preface I/Q inference with power squelch dB threshold",
+    )
+    parser.add_argument(
+        "--iq_inference_squelch_alpha",
+        dest="iq_inference_squelch_alpha",
+        type=float,
+        default=1e-4,
+        help="I/Q inference power squelch alpha",
+    )
+    parser.add_argument(
         "--iq_inference_len",
         dest="iq_inference_len",
         type=int,
