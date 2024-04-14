@@ -6,6 +6,7 @@ from pathlib import Path
 import webcolors
 
 try:
+    from gnuradio import analog  # pytype: disable=import-error
     from gnuradio import filter as grfilter  # pytype: disable=import-error
     from gnuradio import blocks  # pytype: disable=import-error
     from gnuradio import fft  # pytype: disable=import-error
@@ -57,6 +58,8 @@ class grscan(gr.top_block):
         iq_inference_len=1024,
         iq_inference_model_name="",
         iq_inference_model_server="",
+        iq_inference_squelch_db=None,
+        iq_inference_squelch_alpha=1e-4,
         iq_power_inference=False,
         iqtlabs=None,
         logaddr="0.0.0.0",  # nosec
@@ -328,7 +331,27 @@ class grscan(gr.top_block):
                 len(self.inference_blocks),
             )
             if self.iq_inference_block:
-                self.connect((self.retune_pre_fft, 0), (self.iq_inference_block, 0))
+                if iq_inference_squelch_db is not None:
+                    squelch_blocks = [
+                        blocks.vector_to_stream(
+                            gr.sizeof_gr_complex,
+                            fft_batch_size * nfft,
+                        ),
+                        analog.pwr_squelch_cc(
+                            iq_inference_squelch_db,
+                            iq_inference_squelch_alpha,
+                            0,
+                            False,
+                        ),
+                        blocks.stream_to_vector(
+                            gr.sizeof_gr_complex,
+                            fft_batch_size * nfft,
+                        ),
+                        self.iq_inference_block,
+                    ]
+                    self.connect_blocks(self.retune_pre_fft, squelch_blocks)
+                else:
+                    self.connect((self.retune_pre_fft, 0), (self.iq_inference_block, 0))
                 self.connect((self.last_db_block, 0), (self.iq_inference_block, 1))
             if self.image_inference_block:
                 if stare:
