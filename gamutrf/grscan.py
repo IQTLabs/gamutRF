@@ -332,13 +332,24 @@ class grscan(gr.top_block):
             )
             if self.iq_inference_block:
                 if iq_inference_squelch_db is not None:
-                    analog_pwr_squelch_xx_0 = analog.pwr_squelch_cc(
-                        iq_inference_squelch_db, iq_inference_squelch_alpha, 0, False
-                    )
-                    self.connect((self.retune_pre_fft, 0), (analog_pwr_squelch_xx_0, 0))
-                    self.connect(
-                        (analog_pwr_squelch_xx_0, 0), (self.iq_inference_block, 0)
-                    )
+                    squelch_blocks = [
+                        blocks.vector_to_stream(
+                            gr.sizeof_gr_complex,
+                            fft_batch_size * nfft,
+                        ),
+                        analog.pwr_squelch_cc(
+                            iq_inference_squelch_db,
+                            iq_inference_squelch_alpha,
+                            0,
+                            False,
+                        ),
+                        blocks.stream_to_vector(
+                            gr.sizeof_gr_complex,
+                            fft_batch_size * nfft,
+                        ),
+                        self.iq_inference_block,
+                    ]
+                    self.connect_blocks(self.retune_pre_fft, squelch_blocks)
                 else:
                     self.connect((self.retune_pre_fft, 0), (self.iq_inference_block, 0))
                 self.connect((self.last_db_block, 0), (self.iq_inference_block, 1))
