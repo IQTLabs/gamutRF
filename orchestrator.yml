@@ -104,7 +104,7 @@ services:
       - --inference_output_dir=/logs/inference
       - --inference_model_server=torchserve:8080
       # - --iq_inference_model_server=torchserve:8080
-      # - --iq_inference_model_name=mini2_snr
+      # - --iq_inference_model_name=torchsig_model
       - --pretune
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]

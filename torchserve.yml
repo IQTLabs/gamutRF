@@ -17,4 +17,5 @@ services:
       - '${VOL_PREFIX}/model_store:/model_store'
       - '/root/.cache/pip:/root/.cache/pip'
     command:
+      # --models torchsig_model=torchsig_model.mar
       - --models mini2_snr=mini2_snr.mar
