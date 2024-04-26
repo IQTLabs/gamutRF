@@ -186,14 +186,7 @@ class grscan(gr.top_block):
         if write_samples:
             fft_dir = sample_dir
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
-            self.samples_blocks.extend(
-                [
-                    # blocks.vector_to_stream(
-                    #    gr.sizeof_gr_complex, fft_batch_size * nfft
-                    # ),
-                    # blocks.complex_to_interleaved_short(False, 32767),
-                    # blocks.stream_to_vector(gr.sizeof_short, nfft * 2),
-                    self.iqtlabs.write_freq_samples(
+            self.write_freq_samples_block = self.iqtlabs.write_freq_samples(
                         "rx_freq",
                         gr.sizeof_gr_complex,
                         "_".join(("cf32", endianstr())),
@@ -206,7 +199,16 @@ class grscan(gr.top_block):
                         rotate_secs,
                         igain,
                         sigmf,
-                    ),
+                        False  # Don't use ZST
+                    )
+            self.samples_blocks.extend(
+                [
+                    # blocks.vector_to_stream(
+                    #    gr.sizeof_gr_complex, fft_batch_size * nfft
+                    # ),
+                    # blocks.complex_to_interleaved_short(False, 32767),
+                    # blocks.stream_to_vector(gr.sizeof_short, nfft * 2),
+                    self.write_freq_samples_block,
                 ]
             )
         retune_fft = self.iqtlabs.retune_fft(
@@ -353,6 +355,7 @@ class grscan(gr.top_block):
                 else:
                     self.connect((self.retune_pre_fft, 0), (self.iq_inference_block, 0))
                 self.connect((self.last_db_block, 0), (self.iq_inference_block, 1))
+                
             if self.image_inference_block:
                 if stare:
                     self.connect(
@@ -362,6 +365,10 @@ class grscan(gr.top_block):
                     retune_fft_output_block = self.image_inference_block
             for i, block in enumerate(self.inference_blocks):
                 self.connect((block, 0), (self.inference_output_block, i))
+
+            # If we are writing samples and performing inference, connection the messages ports for annotations can be added to SigMF
+            if write_samples:
+                self.msg_connect(self.inference_output_block, "annotation", self.write_freq_samples_block, "annotation")
 
         if not retune_fft_output_block:
             retune_fft_output_block = blocks.null_sink(gr.sizeof_float * nfft)

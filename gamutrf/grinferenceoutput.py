@@ -7,6 +7,7 @@ import sys
 import threading
 import time
 import numpy as np
+import pmt
 import zmq
 
 try:
@@ -93,6 +94,7 @@ class inferenceoutput(gr.basic_block):
             in_sig=([np.ubyte] * inputs),
             out_sig=None,
         )
+        self.message_port_register_out(pmt.intern('annotation'))
 
     def stop(self):
         self.running = False
@@ -137,7 +139,8 @@ class inferenceoutput(gr.basic_block):
                 item = self.q.get(block=True, timeout=1)
             except queue.Empty:
                 continue
-            logging.info("inference output %s", item)
+            logging.info("inference output %s", str(item))
+            self.message_port_pub(pmt.intern('annotation'), pmt.intern(str(item)))
             if zmq_pub is not None:
                 zmq_pub.send_string(json.dumps(item) + DELIM, flags=zmq.NOBLOCK)
             if mqtt_reporter is not None:

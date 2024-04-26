@@ -9,20 +9,20 @@ networks:
     external: true
     name: none
 services:
-  compass:
-    restart: always
-    image: iqtlabs/pibackbone-compass:v0.4.5
-    networks:
-      - gamutrf
-    devices:
-      - "/dev/i2c-1:/dev/i2c-1"
-    ports:
-      - '8000:8000'
-    command:
-      # Set correct compass settings for your compass and location
-      - --compass=qmc5883l
-      - --calibration=0
-      - --declination=0
+  # compass:
+  #   restart: always
+  #   image: iqtlabs/pibackbone-compass:v0.4.5
+  #   networks:
+  #     - gamutrf
+  #   devices:
+  #     - "/dev/i2c-1:/dev/i2c-1"
+  #   ports:
+  #     - '8000:8000'
+  #   command:
+  #     # Set correct compass settings for your compass and location
+  #     - --compass=qmc5883l
+  #     - --calibration=0
+  #     - --declination=0
   mqtt:
     restart: always
     image: iqtlabs/edgetech-mqtt-dev:latest
@@ -48,13 +48,13 @@ services:
       - /dev/dri/renderD128:/dev/dri/renderD128
     # nvidia container toolkit etc must be installed.
     # Comment out "deploy" if on non-x86 platform (e.g. Pi4)
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
     # if torchserve is not being used, comment out the
     # dependency.
     depends_on:
@@ -93,7 +93,7 @@ services:
       - --inference_text_color=black
       # can be multiple, separate with comma
       - --inference_model_name=mini2_snr
-      - --n_inference=7
+      - --n_inference=50
       - --n_image=7
       - --no-vkfft
       - --rotate_secs=60
@@ -101,11 +101,13 @@ services:
       - --tune-jitter-hz=0
       # - --external_gps_server=1.2.3.4
       # - --external_gps_server_port=8888
-      - --inference_output_dir=/logs/inference
-      - --inference_model_server=torchserve:8080
-      # - --iq_inference_model_server=torchserve:8080
-      # - --iq_inference_model_name=torchsig_model
+      # - --inference_output_dir=/logs/inference
+      # - --inference_model_server=torchserve:8080
+      - --iq_inference_model_server=torchserve:8080
+      - --iq_inference_model_name=torchsig_model
       - --pretune
+      - --write_samples=1
+      - --sample_dir=/logs/samples
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
