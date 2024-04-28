@@ -10,7 +10,7 @@ packages = [
 
 [tool.poetry.dependencies]
 Flask = "3.0.3"
-cairocffi = "1.6.1"
+cairocffi = "1.7.0"
 matplotlib = "3.8.4"
 numpy = "1.26.4"
 pandas = "2.2.2"
