@@ -89,7 +89,7 @@ services:
       - --inference_addr=0.0.0.0
       - --inference_port=10001
       - --inference_min_confidence=0.25
-      - --inference_min_db=-1e9
+      #- --inference_min_db=-1e9
       - --inference_text_color=black
       # can be multiple, separate with comma
       - --inference_model_name=mini2_snr
@@ -113,26 +113,26 @@ services:
       interval: 10s
       timeout: 10s
       retries: 3
-  waterfall:
-    restart: always
-    image: iqtlabs/gamutrf-waterfall:latest
-    networks:
-      - gamutrf
-    ports:
-      - '9003:9003'
-    volumes:
-      - '${VOL_PREFIX}:/logs'
-    command:
-      - gamutrf-waterfall
-      - --api_endpoint=gamutrf:9001
-      - --scanners=gamutrf:10000
-      - --inference_server=gamutrf
-      - --inference_port=10001
-      - --save_path=/logs/waterfall
-      - --port=9003
-      - --detection_type=narrowband
-      - --n_detect=1
-      - --width=12
-      - --height=6
-      - --min_freq=0
-      - --max_freq=0
+  # waterfall:
+  #   restart: always
+  #   image: iqtlabs/gamutrf-waterfall:latest
+  #   networks:
+  #     - gamutrf
+  #   ports:
+  #     - '9003:9003'
+  #   volumes:
+  #     - '${VOL_PREFIX}:/logs'
+  #   command:
+  #     - gamutrf-waterfall
+  #     - --api_endpoint=gamutrf:9001
+  #     - --scanners=gamutrf:10000
+  #     - --inference_server=gamutrf
+  #     - --inference_port=10001
+  #     - --save_path=/logs/waterfall
+  #     - --port=9003
+  #     - --detection_type=narrowband
+  #     - --n_detect=1
+  #     - --width=12
+  #     - --height=6
+  #     - --min_freq=0
+  #     - --max_freq=0

@@ -199,7 +199,7 @@ class grscan(gr.top_block):
                         rotate_secs,
                         igain,
                         sigmf,
-                        False  # Don't use ZST
+                        True  # Don't use ZST (or use it)
                     )
             self.samples_blocks.extend(
                 [
