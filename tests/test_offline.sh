@@ -20,6 +20,7 @@ run_offline()
 
 run_offline ref
 
+# the throttle block may not emit all the input samples, so compare just the output
 sudo zstd -d $TMPDIR/samples/samples*zst
 OUTSIZE=$(stat -c%s $TMPDIR/samples/samples*raw)
 echo truncating to $OUTSIZE
