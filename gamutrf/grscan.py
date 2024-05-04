@@ -206,6 +206,8 @@ class grscan(gr.top_block):
                         rotate_secs,
                         igain,
                         sigmf,
+                        zstd=True,
+                        rotate=(stare == False),
                     ),
                 ]
             )

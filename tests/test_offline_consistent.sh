@@ -15,7 +15,7 @@ mkdir "$TMPDIR/ref"
 run_offline()
 {
     dir=$1
-    docker run -v "$TMPDIR:/gamutrf/data" -e LP_NATIVE_VECTOR_WIDTH=128 -t iqtlabs/gamutrf gamutrf-offline --tune-step-fft=512 --db_clamp_floor=-150 --nfft=1024 --rotate_secs=0 --inference_output_dir=/gamutrf/data/"$dir" /gamutrf/data/input/$TESTFILE
+    docker run -v "$TMPDIR:/gamutrf/data" -e LP_NATIVE_VECTOR_WIDTH=128 -t iqtlabs/gamutrf gamutrf-offline --tune-step-fft=512 --db_clamp_floor=-150 --nfft=1024 --rotate_secs=0 --inference_output_dir=/gamutrf/data/"$dir" --sample_dir="$TMPDIR/samples" --write_samples=1000000000 /gamutrf/data/input/$TESTFILE
 }
 
 run_offline ref
