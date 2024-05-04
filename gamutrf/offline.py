@@ -43,6 +43,7 @@ def main():
                 "sdr": "file:" + filename,
                 "pretune": True,
                 "fft_batch_size": 1,
+                "low_power_hold_down": False,
             }
         )
         tb = grscan(**scan_args)

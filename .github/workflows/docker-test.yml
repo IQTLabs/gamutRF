@@ -47,4 +47,5 @@ jobs:
       # VkFFT is more consistent, but still not perfectly consistent.
       run: |
         sudo apt-get -yq update && sudo apt-get -yq install python3-numpy
+        tests/test_offline.sh
         tests/test_offline_consistent.sh || true
