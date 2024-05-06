@@ -183,6 +183,7 @@ class grscan(gr.top_block):
         self.last_db_block = self.fft_blocks[-1]
         fft_dir = ""
         self.samples_blocks = []
+        self.write_samples_block = None
         if write_samples:
             fft_dir = sample_dir
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
@@ -211,6 +212,8 @@ class grscan(gr.top_block):
                     ),
                 ]
             )
+            self.write_samples_block = self.samples_blocks[-1]
+
         retune_fft = self.iqtlabs.retune_fft(
             tag="rx_freq",
             nfft=nfft,
@@ -314,6 +317,11 @@ class grscan(gr.top_block):
                 power_inference=iq_power_inference,
             )
             self.inference_blocks.append(self.iq_inference_block)
+            if self.write_samples_block:
+                self.msg_connect(
+                    (self.iq_inference_block, "inference"),
+                    (self.write_samples_block, "inference"),
+                )
 
         # TODO: provide new block that receives JSON-over-PMT and outputs to MQTT/zmq.
         retune_fft_output_block = None
