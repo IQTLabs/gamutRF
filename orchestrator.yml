@@ -102,13 +102,13 @@ services:
       - --inference_text_color=black
       - --n_inference=7
       - --n_image=7
-      #- --inference_model_server=torchserve:8080
-      #- --inference_model_name=mini2_snr
+      # - --inference_model_server=torchserve:8080
+      # - --inference_model_name=mini2_snr
       - --iq_inference_squelch_db=-50
       - --iq_inference_model_server=torchserve:8080
       - --iq_inference_model_name=torchsig_model
-      #- --write_samples=1000000000
-      #- --sample_dir=/logs/samples
+      # - --write_samples=1000000000
+      # - --sample_dir=/logs/samples
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
