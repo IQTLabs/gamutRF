@@ -26,5 +26,4 @@ services:
     command:
       # can be multiple models
       # e.g. mini2_snr=mini2_snr.mar,another_mini2_snr=another_mini2_snr.mar
-      # --models torchsig_model=torchsig_model.mar
-      - --models mini2_snr=mini2_snr.mar
+      - --models torchsig_model=torchsig_model.mar
