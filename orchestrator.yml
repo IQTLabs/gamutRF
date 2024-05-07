@@ -86,26 +86,29 @@ services:
       - --peak_fft_range=50
       - --use_external_gps
       - --use_external_heading
+      - --no-vkfft
+      - --rotate_secs=60
+      - --colormap=20
+      - --tune-jitter-hz=0
+      - --pretune
+      # - --external_gps_server=1.2.3.4
+      # - --external_gps_server_port=8888
+      - --inference_text_color=black
+      - --inference_output_dir=/logs/inference
       - --inference_addr=0.0.0.0
       - --inference_port=10001
       - --inference_min_confidence=0.25
       - --inference_min_db=-1e9
       - --inference_text_color=black
-      # can be multiple, separate with comma
-      - --inference_model_name=mini2_snr
       - --n_inference=7
       - --n_image=7
-      - --no-vkfft
-      - --rotate_secs=60
-      - --colormap=20
-      - --tune-jitter-hz=0
-      # - --external_gps_server=1.2.3.4
-      # - --external_gps_server_port=8888
-      - --inference_output_dir=/logs/inference
-      - --inference_model_server=torchserve:8080
-      # - --iq_inference_model_server=torchserve:8080
-      # - --iq_inference_model_name=torchsig_model
-      - --pretune
+      #- --inference_model_server=torchserve:8080
+      #- --inference_model_name=mini2_snr
+      - --iq_inference_squelch_db=-50
+      - --iq_inference_model_server=torchserve:8080
+      - --iq_inference_model_name=torchsig_model
+      #- --write_samples=1000000000
+      #- --sample_dir=/logs/samples
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
