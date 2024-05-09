@@ -288,6 +288,13 @@ def argument_parser():
         help="torchserve model server inference API address (e.g. localhost:1234)",
     )
     parser.add_argument(
+        "--iq_inference_background",
+        dest="iq_inference_background",
+        type=bool,
+        default=True,
+        help="if True do I/Q inference in the background",
+    )
+    parser.add_argument(
         "--iq_inference_squelch_db",
         dest="iq_inference_squelch_db",
         type=float,

@@ -44,6 +44,7 @@ def main():
                 "pretune": True,
                 "fft_batch_size": 1,
                 "low_power_hold_down": False,
+                "iq_inference_background": False,
             }
         )
         tb = grscan(**scan_args)
