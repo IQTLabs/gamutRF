@@ -169,7 +169,7 @@ def get_source(
         freq_divisor = 1e9
         cmd_port = "cmd"
         sources = [
-            iqtlabs.tuneable_test_source(freq_divisor),
+            iqtlabs.tuneable_test_source(0, freq_divisor),
             get_throttle(samp_rate, nfft),
         ]
     elif sdr == "ettus":
