@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as torchsig-builder
+FROM ubuntu:24.04 as torchsig-builder
 WORKDIR /root
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git python3-pip python3-dev && pip install -U pip
