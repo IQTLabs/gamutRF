@@ -69,6 +69,7 @@ class file_source_tagger(gr.basic_block):
             int(self.n_samples / self.tagged_interval) * self.tagged_interval
         )
         logging.info("opened %s with %u samples", input_file, self.n_samples)
+        self.work_guard = None
 
     def complete(self):
         return self.i >= self.n_samples
@@ -115,8 +116,18 @@ class file_source_tagger(gr.basic_block):
 
     def general_work(self, input_items, output_items):
         if self.complete():
+            # gnuradio will drop all undelivered messages to blocks when our source
+            # returns done. cause gnuradio to repeatedly call us when we're done, to
+            # give other blocks an opportunity to process undelivered messages.
+            if self.work_guard is None:
+                self.work_guard = time.time()
+                logging.info("file ended, waiting for other blocks to finish")
+                return 0
+            if time.time() - self.work_guard < 3:
+                return 0
             logging.info("complete")
             return -1
+
         n = min(self.nfft, len(output_items[0]))
         samples = self.samples[self.i : self.i + n]
         c = len(samples)
