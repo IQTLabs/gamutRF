@@ -92,6 +92,7 @@ class grscan(gr.top_block):
         use_external_heading=False,
         vkfft=False,
         wavelearner=None,
+        write_fft_points=False,
         write_samples=0,
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
@@ -186,7 +187,8 @@ class grscan(gr.top_block):
         self.samples_blocks = []
         self.write_samples_block = None
         if write_samples:
-            fft_dir = sample_dir
+            if write_fft_points:
+                fft_dir = sample_dir
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
             self.samples_blocks.extend(
                 [
