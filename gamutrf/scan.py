@@ -118,7 +118,14 @@ def argument_parser():
         dest="write_samples",
         default=0,
         type=int,
-        help="if > 0, write FFT/raw samples to --sample_dir",
+        help="if > 0, write FFT points/raw samples to --sample_dir",
+    )
+    parser.add_argument(
+        "--write_fft_points",
+        dest="write_fft_points",
+        default=False,
+        action=BooleanOptionalAction,
+        help="Write FFT points to --sample_dir if write_samples > 0",
     )
     parser.add_argument(
         "--nfft",
