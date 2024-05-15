@@ -319,6 +319,7 @@ class grscan(gr.top_block):
                 samp_rate=int(samp_rate),
                 power_inference=iq_power_inference,
                 background=iq_inference_background,
+                batch=0,  # TODO: not used yet.
             )
             self.inference_blocks.append(self.iq_inference_block)
             if self.write_samples_block:
@@ -342,7 +343,6 @@ class grscan(gr.top_block):
                 external_gps_server,
                 external_gps_server_port,
                 inference_output_dir,
-                len(self.inference_blocks),
             )
             if self.iq_inference_block:
                 if iq_inference_squelch_db is not None:
@@ -374,8 +374,8 @@ class grscan(gr.top_block):
                     )
                 else:
                     retune_fft_output_block = self.image_inference_block
-            for i, block in enumerate(self.inference_blocks):
-                self.connect((block, 0), (self.inference_output_block, i))
+            for block in self.inference_blocks:
+                self.msg_connect((block, "inference"), (self.inference_output_block, "inference"))
 
         if not retune_fft_output_block:
             retune_fft_output_block = blocks.null_sink(gr.sizeof_float * nfft)

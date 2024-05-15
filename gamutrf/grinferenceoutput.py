@@ -6,7 +6,7 @@ import queue
 import sys
 import threading
 import time
-import numpy as np
+import pmt
 import zmq
 
 try:
@@ -23,36 +23,6 @@ except ModuleNotFoundError as err:  # pragma: no cover
 DELIM = "\n\n"
 
 
-class jsonmixer:
-    def __init__(self, inputs):
-        self.inputs = inputs
-        self.json_buffer = {}
-        for i in range(self.inputs):
-            self.json_buffer[i] = ""
-
-    def mix(self, input_items):
-        items = []
-        ns = {}
-        for i, input_item in enumerate(input_items):
-            raw_input_item = input_item.tobytes().decode("utf8").split("\x00")[0]
-            ns[i] = len(raw_input_item)
-            if len(raw_input_item):
-                self.json_buffer[i] += raw_input_item
-        for i in self.json_buffer:
-            while True:
-                delim_pos = self.json_buffer[i].find(DELIM)
-                if delim_pos == -1:
-                    break
-                raw_item = self.json_buffer[i][:delim_pos]
-                self.json_buffer[i] = self.json_buffer[i][delim_pos + len(DELIM) :]
-                try:
-                    item = json.loads(raw_item)
-                    items.append(item)
-                except json.JSONDecodeError as e:
-                    logging.error("cannot decode %s from source %u: %s", raw_item, i, e)
-        return (ns, items)
-
-
 class inferenceoutput(gr.basic_block):
     def __init__(
         self,
@@ -66,13 +36,11 @@ class inferenceoutput(gr.basic_block):
         external_gps_server,
         external_gps_server_port,
         log_path,
-        inputs,
     ):
-        self.mixer = jsonmixer(inputs)
         self.q = queue.Queue()
         self.running = True
         self.reporter_thread = threading.Thread(
-            target=self.reporter_thread,
+            target=self.run_reporter_thread,
             args=(
                 name,
                 zmq_addr,
@@ -90,15 +58,20 @@ class inferenceoutput(gr.basic_block):
         gr.basic_block.__init__(
             self,
             name="inferenceoutput",
-            in_sig=([np.ubyte] * inputs),
+            in_sig=None,
             out_sig=None,
         )
+        self.message_port_register_in(pmt.intern("inference"))
+        self.set_msg_handler(pmt.intern("inference"), self.receive_pdu)
+
+    def receive_pdu(self, pdu):
+        self.q.put((bytes(pmt.to_python(pmt.cdr(pdu)))))
 
     def stop(self):
         self.running = False
         self.reporter_thread.join()
 
-    def reporter_thread(
+    def run_reporter_thread(
         self,
         name,
         zmq_addr,
@@ -144,11 +117,3 @@ class inferenceoutput(gr.basic_block):
                 mqtt_reporter.publish("gamutrf/inference", item)
                 mqtt_reporter.log(log_path, "inference", start_time, item)
             self.q.task_done()
-
-    def general_work(self, input_items, output_items):
-        ns, items = self.mixer.mix(input_items)
-        for i, n in ns.items():
-            self.consume(i, n)
-        for item in items:
-            self.q.put(item)
-        return 0
