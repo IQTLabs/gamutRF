@@ -375,7 +375,9 @@ class grscan(gr.top_block):
                 else:
                     retune_fft_output_block = self.image_inference_block
             for block in self.inference_blocks:
-                self.msg_connect((block, "inference"), (self.inference_output_block, "inference"))
+                self.msg_connect(
+                    (block, "inference"), (self.inference_output_block, "inference")
+                )
 
         if not retune_fft_output_block:
             retune_fft_output_block = blocks.null_sink(gr.sizeof_float * nfft)
