@@ -39,6 +39,7 @@ class inferenceoutput(gr.basic_block):
     ):
         self.q = queue.Queue()
         self.running = True
+        self.serialno = 0
         self.reporter_thread = threading.Thread(
             target=self.run_reporter_thread,
             args=(
@@ -65,7 +66,7 @@ class inferenceoutput(gr.basic_block):
         self.set_msg_handler(pmt.intern("inference"), self.receive_pdu)
 
     def receive_pdu(self, pdu):
-        self.q.put((bytes(pmt.to_python(pmt.cdr(pdu)))))
+        self.q.put(json.loads(bytes(pmt.to_python(pmt.cdr(pdu))).decode("utf8")))
 
     def stop(self):
         self.running = False
@@ -110,7 +111,8 @@ class inferenceoutput(gr.basic_block):
                 item = self.q.get(block=True, timeout=1)
             except queue.Empty:
                 continue
-            logging.info("inference output %s", item)
+            logging.info("inference output %u: %s", self.serialno, item)
+            self.serialno += 1
             if zmq_pub is not None:
                 zmq_pub.send_string(json.dumps(item) + DELIM, flags=zmq.NOBLOCK)
             if mqtt_reporter is not None:
