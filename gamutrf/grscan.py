@@ -211,7 +211,7 @@ class grscan(gr.top_block):
                         igain,
                         sigmf,
                         zstd=True,
-                        rotate=(stare == False),
+                        rotate=False,
                     ),
                 ]
             )
