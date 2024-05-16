@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os
+import glob
 import logging
 import sys
 from pathlib import Path
+import pbr.version
 import webcolors
 
 try:
@@ -123,6 +126,12 @@ class grscan(gr.top_block):
         ##################################################
         # Blocks
         ##################################################
+        if iqtlabs is not None:
+            griqtlabs_path = os.path.realpath(
+                glob.glob("/usr/local/**/libgnuradio-iqtlabs.so", recursive=True)[0]
+            )
+            pbr_version = pbr.version.VersionInfo("gamutrf").version_string()
+            logging.info(f"gamutrf {pbr_version} with gr-iqtlabs {griqtlabs_path}")
 
         logging.info(f"will scan from {freq_start} to {freq_end}")
         freq_range = freq_end - freq_start
