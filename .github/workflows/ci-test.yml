@@ -14,6 +14,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      - name: Update requests for poetry
+        run: |
+          sudo pip3 install -U requests
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
