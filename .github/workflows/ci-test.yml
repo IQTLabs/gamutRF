@@ -15,14 +15,12 @@ jobs:
         with:
           python-version: '3.10'
       - name: Update requests for poetry
-        run: |
-          sudo pip3 install -U requests
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           virtualenvs-create: false
           virtualenvs-in-project: false
-          version: 1.7.1
+          version: 1.8.1
       - name: Get dependencies
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends \
