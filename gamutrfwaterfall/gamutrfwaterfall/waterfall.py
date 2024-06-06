@@ -47,7 +47,7 @@ CONFIG_VARS = {
 }
 
 
-def waterfall(
+def serve_waterfall(
     min_freq,
     max_freq,
     plot_snr,
@@ -458,7 +458,7 @@ def main():
             scanners=parse_scanners(args.scanners),
         )
 
-        waterfall(
+        serve_waterfall(
             args.min_freq,
             args.max_freq,
             args.plot_snr,
