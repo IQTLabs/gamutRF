@@ -9,7 +9,7 @@ import time
 import unittest
 import pandas as pd
 from gamutrfwaterfall.argparser import argument_parser
-from gamutrfwaterfall import serve_waterfall
+from gamutrfwaterfall.waterfall import serve_waterfall
 from gamutrflib.peak_finder import get_peak_finder
 
 
