@@ -4,8 +4,6 @@ import signal
 import tempfile
 import time
 import warnings
-import matplotlib
-from matplotlib import style as matplotlibstyle
 
 from gamutrflib.peak_finder import get_peak_finder
 from gamutrflib.zmqbucket import ZmqReceiver, parse_scanners, frame_resample
@@ -16,11 +14,8 @@ from gamutrfwaterfall.flask_handler import (
     write_scanner_args,
 )
 from gamutrfwaterfall.waterfall_plot import (
-    reset_fig,
-    init_fig,
-    update_fig,
     make_config,
-    WaterfallState,
+    WaterfallPlot,
 )
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
@@ -61,8 +56,6 @@ def serve_waterfall(
     config_vars,
     config_vars_path,
 ):
-    matplotlibstyle.use("fast")
-
     global need_reset_fig
     need_reset_fig = True
     global running
@@ -124,9 +117,7 @@ def serve_waterfall(
                 config.fft_len,
                 config.freq_resolution,
             )
-
-            state = WaterfallState(config, base_save_path, peak_finder)
-            matplotlib.use(config.engine)
+            plot = WaterfallPlot(config, base_save_path, peak_finder)
             results = [
                 (scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))
             ]
@@ -138,11 +129,11 @@ def serve_waterfall(
             need_reconfig = False
             need_init = True
         if need_init:
-            init_fig(config, state, onresize)
+            plot.init_fig(onresize)
             need_init = False
             need_reset_fig = True
         if need_reset_fig:
-            reset_fig(config, state)
+            plot.reset_fig()
             need_reset_fig = False
         last_gap = time.time()
         while True:
@@ -191,8 +182,8 @@ def serve_waterfall(
         if need_reconfig:
             continue
         if results:
-            update_fig(config, state, results)
-            if config.batch and state.counter % config.reclose_interval == 0:
+            plot.update_fig(results)
+            if plot.need_init():
                 need_init = True
             results = []
         else:

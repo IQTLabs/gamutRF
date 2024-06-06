@@ -5,17 +5,14 @@ import logging
 import os
 import shutil
 import time
-import warnings
 from pathlib import Path
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib
+from matplotlib import style
 from matplotlib.collections import LineCollection
+import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
-
-warnings.filterwarnings(action="ignore", message="Mean of empty slice")
-warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
-warnings.filterwarnings(action="ignore", message="Degrees of freedom <= 0 for slice.")
 
 
 def safe_savefig(path):
@@ -798,3 +795,25 @@ def make_config(
         save_time,
     )
     return config
+
+
+class WaterfallPlot:
+    def __init__(self, config, base_save_path, peak_finder):
+        self.config = config
+        self.state = WaterfallState(config, base_save_path, peak_finder)
+        matplotlib.use(self.config.engine)
+        style.use("fast")
+
+    def update_fig(self, results):
+        update_fig(self.config, self.state, results)
+
+    def reset_fig(self):
+        reset_fig(self.config, self.state)
+
+    def init_fig(self, onresize):
+        init_fig(self.config, self.state, onresize)
+
+    def need_init(self):
+        return (
+            self.config.batch and self.state.counter % self.config.reclose_interval == 0
+        )
