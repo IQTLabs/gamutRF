@@ -22,8 +22,8 @@ from matplotlib import style as matplotlibstyle
 
 from gamutrflib.peak_finder import get_peak_finder
 from gamutrflib.zmqbucket import ZmqReceiver, parse_scanners, frame_resample
-from argparser import argument_parser
-from waterfall_plot import reset_fig, init_fig, update_fig, make_config, WaterfallState
+from gamutrfwaterfall.argparser import argument_parser
+from gamutrfwaterfall.waterfall_plot import reset_fig, init_fig, update_fig, make_config, WaterfallState
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
 warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
