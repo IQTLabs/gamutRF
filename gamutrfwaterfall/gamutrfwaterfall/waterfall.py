@@ -15,7 +15,7 @@ from gamutrfwaterfall.flask_handler import (
 )
 from gamutrfwaterfall.waterfall_plot import (
     make_config,
-    WaterfallPlot,
+    WaterfallPlotManager,
 )
 
 warnings.filterwarnings(action="ignore", message="Mean of empty slice")
@@ -90,7 +90,7 @@ def serve_waterfall(
     if not scan_configs:
         return
 
-    plot = None
+    plot_manager = WaterfallPlotManager(base_save_path, peak_finder)
 
     while zmqr.healthy() and running:
         if need_reconfig:
@@ -119,7 +119,8 @@ def serve_waterfall(
                 config.fft_len,
                 config.freq_resolution,
             )
-            plot = WaterfallPlot(config, base_save_path, peak_finder, 1)
+            plot_manager.close()
+            plot_manager.add_plot(config, 1)
             results = [
                 (scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))
             ]
@@ -131,11 +132,11 @@ def serve_waterfall(
             need_reconfig = False
             need_init = True
         if need_init:
-            plot.init_fig(onresize)
+            plot_manager.init_fig(onresize)
             need_init = False
             need_reset_fig = True
         if need_reset_fig:
-            plot.reset_fig()
+            plot_manager.reset_fig()
             need_reset_fig = False
         last_gap = time.time()
         while True:
@@ -167,7 +168,7 @@ def serve_waterfall(
                 rotate_secs,
                 save_time,
             )
-            if last_config != config:
+            if plot_manager.config_changed(last_config):
                 logging.info("scanner config change detected")
                 results = []
                 need_reconfig = True
@@ -184,9 +185,8 @@ def serve_waterfall(
         if need_reconfig:
             continue
         if results:
-            plot.update_fig(results)
-            if plot.need_init():
-                need_init = True
+            plot_manager.update_fig(results)
+            need_init = plot_manager.need_init()
             results = []
         else:
             time.sleep(0.1)
