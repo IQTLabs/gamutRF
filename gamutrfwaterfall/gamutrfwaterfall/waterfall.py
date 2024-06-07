@@ -119,9 +119,7 @@ def serve_waterfall(
                 config.fft_len,
                 config.freq_resolution,
             )
-            if plot is not None:
-                plot.close()
-            plot = WaterfallPlot(config, base_save_path, peak_finder)
+            plot = WaterfallPlot(config, base_save_path, peak_finder, 1)
             results = [
                 (scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))
             ]
@@ -133,7 +131,6 @@ def serve_waterfall(
             need_reconfig = False
             need_init = True
         if need_init:
-            plot.close()
             plot.init_fig(onresize)
             need_init = False
             need_reset_fig = True

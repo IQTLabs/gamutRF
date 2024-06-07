@@ -165,8 +165,9 @@ def make_config(
 
 
 class WaterfallPlot:
-    def __init__(self, config, base_save_path, peak_finder):
+    def __init__(self, config, base_save_path, peak_finder, num):
         self.config = config
+        self.num = num
         X, Y = self.meshgrid(1, config.waterfall_height, config.waterfall_height)
         self.state = WaterfallState(base_save_path, peak_finder, X, Y)
         matplotlib.use(self.config.engine)
@@ -186,11 +187,6 @@ class WaterfallPlot:
         return (
             self.config.batch and self.state.counter % self.config.reclose_interval == 0
         )
-
-    def close(self):
-        if self.state.fig:
-            plt.close(self.state.fig)
-            self.state.fig = None
 
     def init_fig(self, onresize):
         logging.info("initializing figure")
@@ -214,7 +210,7 @@ class WaterfallPlot:
             plt.rcParams[param] = "#cdcdcd"  # "#d2d5dd"
 
         self.state.fig = plt.figure(
-            figsize=(self.config.width, self.config.height), dpi=100
+            num=self.num, clear=True, figsize=(self.config.width, self.config.height), dpi=100
         )
         if not self.config.batch:
             self.state.fig.canvas.mpl_connect("resize_event", onresize)
