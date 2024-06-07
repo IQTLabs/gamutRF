@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git python3-pip python3-dev && pip install -U pip
 # Cause torch CPU only to be installed, no cuda dependencies
 RUN pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
-RUN git clone https://github.com/TorchDSP/torchsig -b v0.4.1
+RUN git clone https://github.com/TorchDSP/torchsig -b v0.5.1
 WORKDIR /root/torchsig
 # Remove dependencies that transforms don't need.
 RUN sed -i -E "s/torch==[0-9\.]+/torch/g" pyproject.toml
