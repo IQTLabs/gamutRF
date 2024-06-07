@@ -859,6 +859,10 @@ class WaterfallPlotManager:
         for plot in self.plots:
             plot.reset_fig()
 
+    def init_fig(self, onresize):
+        for plot in self.plots:
+            plot.init_fig(onresize)
+
     def need_init(self):
         if self.plots:
             return self.plots[0].need_init()
