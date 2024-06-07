@@ -165,11 +165,11 @@ def make_config(
 
 
 class WaterfallPlot:
-    def __init__(self, config, base_save_path, peak_finder, num):
+    def __init__(self, peak_finder, config, num):
         self.config = config
         self.num = num
         X, Y = self.meshgrid(1, config.waterfall_height, config.waterfall_height)
-        self.state = WaterfallState(base_save_path, peak_finder, X, Y)
+        self.state = WaterfallState(config.base_save_path, peak_finder, X, Y)
         matplotlib.use(self.config.engine)
         style.use("fast")
 
@@ -217,6 +217,11 @@ class WaterfallPlot:
         )
         if not self.config.batch:
             self.state.fig.canvas.mpl_connect("resize_event", onresize)
+
+    def close(self):
+        if self.state.fig:
+            plt.close(self.state.fig)
+            self.state.fig = None
 
     def reset_mesh_psd(self, data=None):
         if self.state.mesh_psd:
@@ -821,3 +826,41 @@ class WaterfallPlot:
         os.rename(tmp_path, path)
         logging.debug("wrote %s", path)
         return path
+
+
+class WaterfallPlotManager:
+    def __init__(self, peak_finder):
+        self.plots = []
+        self.config = None
+        self.peak_finder = peak_finder
+
+    def config_changed(self, config):
+        return self.config != config
+
+    def add_plot(self, config, num):
+        if not self.plots:
+            self.config = config
+        self.plots.append(WaterfallPlot(self.peak_finder, config, num))
+
+    def close(self):
+        for plot in self.plots:
+            plot.close()
+        self.plots = []
+        self.config = None
+
+    def update_fig(self, results):
+        for plot in self.plots:
+            plot.update_fig(results)
+
+    def reset_fig(self):
+        for plot in self.plots:
+            plot.reset_fig()
+
+    def init_fig(self, onresize):
+        for plot in self.plots:
+            plot.init_fig(onresize)
+
+    def need_init(self):
+        if self.plots:
+            return self.plots[0].need_init()
+        return False
