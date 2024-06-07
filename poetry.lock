@@ -2208,13 +2208,13 @@ test = ["array-api-strict", "asv", "gmpy2", "hypothesis (>=6.30)", "mpmath", "po
 
 [[package]]
 name = "sigmf"
-version = "1.2.1"
+version = "1.2.2"
 description = "Easily interact with Signal Metadata Format (SigMF) recordings."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "SigMF-1.2.1-py3-none-any.whl", hash = "sha256:79bb1238e187f4a6484a7e0f223bd16d4bc6a365828f7c032731e1af93e984f1"},
-    {file = "sigmf-1.2.1.tar.gz", hash = "sha256:1e5c422febfaad438e62c197b1d528498a08bf82cc5fd6a762924ec70c748a59"},
+    {file = "SigMF-1.2.2-py3-none-any.whl", hash = "sha256:6cd5470d1294b34f4ad4d0f0502330f5712aa8629f912b913500c67ed1e0d7d4"},
+    {file = "sigmf-1.2.2.tar.gz", hash = "sha256:9d2eeea6e3c69f90ad83c05e8faa7f5caabd24ce79e809e75ff5cc62d6765d5f"},
 ]
 
 [package.dependencies]
@@ -2222,7 +2222,7 @@ jsonschema = "*"
 numpy = "*"
 
 [package.extras]
-apps = ["PySimpleGUI (<5.0.0)", "scipy"]
+apps = ["PySimpleGUI", "scipy"]
 test = ["hypothesis", "pylint", "pytest", "pytest-cov"]
 
 [[package]]
@@ -2464,4 +2464,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "8e9ad4df2daf15890b1ff09c48e66c684b46ae57822e5f4d4e9c12ef522482b8"
+content-hash = "76578300356315b7733eaa5a774e2ded4def321688305de9b63ec33f897df921"
