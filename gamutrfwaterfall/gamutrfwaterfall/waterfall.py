@@ -120,7 +120,7 @@ def serve_waterfall(
                 config.freq_resolution,
             )
             plot_manager.close()
-            plot_manager.add_plot(config, 1)
+            plot_manager.add_plot(config, 0)
             results = [
                 (scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))
             ]
