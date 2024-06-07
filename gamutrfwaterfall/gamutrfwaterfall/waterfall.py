@@ -90,6 +90,8 @@ def serve_waterfall(
     if not scan_configs:
         return
 
+    plot = None
+
     while zmqr.healthy() and running:
         if need_reconfig:
             config = make_config(
@@ -117,7 +119,7 @@ def serve_waterfall(
                 config.fft_len,
                 config.freq_resolution,
             )
-            plot = WaterfallPlot(config, base_save_path, peak_finder)
+            plot = WaterfallPlot(config, base_save_path, peak_finder, 1)
             results = [
                 (scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))
             ]
