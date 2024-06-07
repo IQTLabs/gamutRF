@@ -193,7 +193,7 @@ class SDRRecorder:
                     if not os.path.exists(sigmf_file):
                         meta = sigmf.SigMFFile(
                             skip_checksum=True,  # expensive for large files
-                            data_file=sample_file,
+                            # data_file=sample_file, # don't set for ZST, confuses sigmf
                             global_info={
                                 sigmf.SigMFFile.DATATYPE_KEY: "_".join(
                                     ("c" + SAMPLE_TYPE, endianstr())
