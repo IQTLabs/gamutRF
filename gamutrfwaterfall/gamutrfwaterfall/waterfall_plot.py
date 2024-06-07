@@ -13,6 +13,7 @@ from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
+from gamutrflib.zmqbucket import frame_resample
 
 
 class WaterfallConfig:
@@ -237,7 +238,6 @@ class WaterfallPlot:
 
         if data is None:
             data = np.zeros(X[:-1, :-1].shape)
-
         self.state.mesh_psd = self.state.ax_psd.pcolormesh(X, Y, data, shading="flat")
 
     def reset_mesh(self, data):
@@ -390,8 +390,18 @@ class WaterfallPlot:
             logging.info("processing backlog of %u results", len(results))
 
         scan_duration = 0
+        row_time = None
 
-        for scan_configs, scan_df in results:
+        for scan_configs, orig_scan_df in results:
+            scan_df = frame_resample(
+                orig_scan_df.copy(), self.config.freq_resolution * 1e6
+            )
+            scan_df = scan_df[
+                (scan_df.freq >= self.config.min_freq)
+                & (scan_df.freq <= self.config.max_freq)
+            ]
+            if scan_df.empty:
+                continue
             tune_step_hz = min(
                 scan_config["tune_step_hz"] for scan_config in scan_configs
             )
@@ -443,7 +453,7 @@ class WaterfallPlot:
 
             self.state.counter += 1
 
-        if self.state.counter % self.config.draw_rate == 0:
+        if row_time is not None and self.state.counter % self.config.draw_rate == 0:
             now = time.time()
             since_last_plot = 0
             if self.state.last_plot:

@@ -157,7 +157,7 @@ class FlaskHandler:
 
     def serve(self, path):
         if path:
-            full_path = os.path.realpath(os.path.join("/", path))
+            full_path = os.path.realpath(os.path.join(self.tempdir, path))
             if os.path.exists(full_path):
                 return send_file(full_path, mimetype="image/png")
             return "%s: not found" % full_path, 404

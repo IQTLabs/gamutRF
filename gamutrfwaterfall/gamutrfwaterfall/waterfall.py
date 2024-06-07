@@ -6,7 +6,7 @@ import time
 import warnings
 
 from gamutrflib.peak_finder import get_peak_finder
-from gamutrflib.zmqbucket import ZmqReceiver, parse_scanners, frame_resample
+from gamutrflib.zmqbucket import ZmqReceiver, parse_scanners
 from gamutrfwaterfall.argparser import argument_parser
 from gamutrfwaterfall.flask_handler import (
     FlaskHandler,
@@ -119,11 +119,41 @@ def serve_waterfall(
                 config.fft_len,
                 config.freq_resolution,
             )
+            tuning_ranges = []
+            for scan_config in scan_configs:
+                for tuning_range in scan_config["tuning_ranges"].split(","):
+                    tuning_ranges.append([int(i) for i in tuning_range.split("-")])
             plot_manager.close()
             plot_manager.add_plot(config, 0)
-            results = [
-                (scan_configs, frame_resample(scan_df, config.freq_resolution * 1e6))
-            ]
+            if len(tuning_ranges) > 1:
+                for i, tuning_range in enumerate(tuning_ranges, start=1):
+                    plot_savefig_path = os.path.join(
+                        os.path.dirname(savefig_path),
+                        "-".join((str(i), os.path.basename(savefig_path))),
+                    )
+                    logging.info(
+                        f"tuning range {tuning_range[0]}-{tuning_range[1]} writing to {plot_savefig_path}"
+                    )
+                    plot_config = make_config(
+                        scan_configs,
+                        tuning_range[0],
+                        tuning_range[1],
+                        engine,
+                        plot_snr,
+                        plot_savefig_path,
+                        top_n,
+                        base_save_path,
+                        width,
+                        height,
+                        waterfall_height,
+                        waterfall_width,
+                        batch,
+                        rotate_secs,
+                        save_time,
+                    )
+                    plot_manager.add_plot(plot_config, i)
+
+            results = [(scan_configs, scan_df)]
 
             if config_vars_path:
                 get_scanner_args(api_endpoint, config_vars)
@@ -143,9 +173,7 @@ def serve_waterfall(
             gap_time = time.time() - last_gap
             if results and gap_time > refresh / 2:
                 break
-            scan_configs, scan_df = zmqr.read_buff(
-                scan_fres=config.freq_resolution * 1e6
-            )
+            scan_configs, scan_df = zmqr.read_buff()
             if scan_df is None:
                 if batch and gap_time < refresh / 2:
                     time.sleep(0.1)
@@ -173,14 +201,6 @@ def serve_waterfall(
                 results = []
                 need_reconfig = True
                 break
-            scan_df = scan_df[
-                (scan_df.freq >= config.min_freq) & (scan_df.freq <= config.max_freq)
-            ]
-            if scan_df.empty:
-                logging.info(
-                    f"Scan is outside specified frequency range ({config.min_freq} to {config.max_freq})."
-                )
-                continue
             results.append((scan_configs, scan_df))
         if need_reconfig:
             continue
