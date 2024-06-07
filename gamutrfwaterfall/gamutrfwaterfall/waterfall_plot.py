@@ -15,200 +15,6 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from scipy.ndimage import gaussian_filter
 
 
-def safe_savefig(path):
-    basename = os.path.basename(path)
-    dirname = os.path.dirname(path)
-    tmp_path = os.path.join(dirname, "." + basename)
-    plt.savefig(tmp_path)
-    os.rename(tmp_path, path)
-    logging.debug("wrote %s", path)
-    return path
-
-
-def draw_title(
-    ax,
-    title,
-    scan_duration,
-    tune_step_hz,
-    tune_step_fft,
-    tune_rate_hz,
-    tune_dwell_ms,
-    sample_rate,
-    freq_resolution,
-):
-    title_text = {
-        "Time": str(datetime.datetime.now().isoformat()),
-        "Scan time": "%.2fs" % scan_duration,
-        "Step FFTs": "%u" % tune_step_fft,
-        "Step size": "%.2fMHz" % (tune_step_hz / 1e6),
-        "Sample rate": "%.2fMsps" % (sample_rate / 1e6),
-        "Resolution": "%.2fMHz" % freq_resolution,
-        "Tune rate": "%.2fHz" % tune_rate_hz,
-        "Tune dwell time": "%.2fms" % tune_dwell_ms,
-    }
-    title.set_fontsize(8)
-    title.set_text(str(title_text))
-    ax.draw_artist(title)
-
-
-def filter_peaks(peaks, properties):
-    for i in range(len(peaks) - 1, -1, -1):  # start from end of list
-        for j in range(len(peaks)):
-            if i == j:
-                continue
-            if (properties["left_ips"][i] > properties["left_ips"][j]) and (
-                properties["right_ips"][i] < properties["right_ips"][j]
-            ):
-                peaks = np.delete(peaks, i)
-                for k in properties:
-                    properties[k] = np.delete(properties[k], i)
-
-                break
-                # properties["left_ips"] = np.delete(properties["left_ips"], i)
-                # properties["right_ips"] = np.delete(properties["right_ips"], i)
-                # properties["width_heights"] = np.delete(properties["width_heights"], i)
-    return peaks, properties
-
-
-def save_detections(
-    config,
-    state,
-    scan_time,
-    scan_configs,
-    peaks,
-    properties,
-):
-    detection_save_dir = Path(state.save_path, "detections")
-
-    detection_config_save_path = str(
-        Path(
-            detection_save_dir,
-            f"detections_scan_config_{scan_time}.json",
-        )
-    )
-    detection_save_path = str(
-        Path(
-            detection_save_dir,
-            f"detections_{scan_time}.csv",
-        )
-    )
-
-    if not os.path.exists(detection_save_dir):
-        Path(detection_save_dir).mkdir(parents=True, exist_ok=True)
-
-    if state.previous_scan_config is None or state.previous_scan_config != scan_configs:
-        state.previous_scan_config = scan_configs
-        with open(detection_config_save_path, "w", encoding="utf8") as f:
-            json.dump(
-                {
-                    "timestamp": scan_time,
-                    "min_freq": config.min_freq,
-                    "max_freq": config.max_freq,
-                    "scan_configs": scan_configs,
-                },
-                f,
-                indent=4,
-            )
-
-    if not os.path.exists(detection_save_path):
-        with open(detection_save_path, "w", encoding="utf8") as detection_csv:
-            writer = csv.writer(detection_csv)
-            writer.writerow(
-                [
-                    "timestamp",
-                    "start_freq",
-                    "end_freq",
-                    "dB",
-                    "type",
-                ]
-            )
-
-    with open(detection_save_path, "a", encoding="utf8") as detection_csv:
-        writer = csv.writer(detection_csv)
-        for i in range(len(peaks)):
-            writer.writerow(
-                [
-                    scan_time,  # timestamp
-                    state.psd_x_edges[
-                        properties["left_ips"][i].astype(int)
-                    ],  # start_freq
-                    state.psd_x_edges[
-                        properties["right_ips"][i].astype(int)
-                    ],  # end_freq
-                    properties["peak_heights"][i],  # dB
-                    state.peak_finder.name,  # type
-                ]
-            )
-
-
-def save_waterfall(
-    state,
-    save_time,
-    scan_time,
-    fig_path=None,
-):
-    now = datetime.datetime.now()
-    if state.last_save_time is None:
-        state.last_save_time = now
-
-    if now - state.last_save_time > datetime.timedelta(minutes=save_time):
-        waterfall_save_dir = Path(state.save_path, "waterfall")
-        if not os.path.exists(waterfall_save_dir):
-            Path(waterfall_save_dir).mkdir(parents=True, exist_ok=True)
-
-        waterfall_save_path = str(
-            Path(waterfall_save_dir, f"waterfall_{scan_time}.png")
-        )
-        if fig_path:
-            shutil.copyfile(fig_path, waterfall_save_path)
-        else:
-            safe_savefig(waterfall_save_path)
-
-        save_scan_configs = {
-            "start_scan_timestamp": state.scan_times[0],
-            "start_scan_config": state.scan_config_history[state.scan_times[0]],
-            "end_scan_timestamp": state.scan_times[-1],
-            "end_scan_config": state.scan_config_history[state.scan_times[-1]],
-        }
-        config_save_path = str(Path(waterfall_save_dir, f"config_{scan_time}.json"))
-        with open(config_save_path, "w", encoding="utf8") as f:
-            json.dump(save_scan_configs, f, indent=4)
-
-        state.last_save_time = now
-        logging.info(f"Saving {waterfall_save_path}")
-
-
-def reset_mesh_psd(config, state, data=None):
-    if state.mesh_psd:
-        state.mesh_psd.remove()
-
-    X, Y = meshgrid(config, state.db_min, state.db_max, config.psd_db_resolution)
-    state.psd_x_edges = X[0]
-    state.psd_y_edges = Y[:, 0]
-
-    if data is None:
-        data = np.zeros(X[:-1, :-1].shape)
-
-    state.mesh_psd = state.ax_psd.pcolormesh(X, Y, data, shading="flat")
-
-
-def reset_mesh(state, data):
-    if state.mesh:
-        state.mesh.remove()
-    state.mesh = state.ax.pcolormesh(state.X, state.Y, data, shading="nearest")
-
-
-def meshgrid(config, start, stop, num):
-    return np.meshgrid(
-        np.linspace(
-            config.min_freq,
-            config.max_freq,
-            config.waterfall_width,
-        ),
-        np.linspace(start, stop, num),
-    )
-
-
 class WaterfallConfig:
     def __init__(
         self,
@@ -268,7 +74,9 @@ class WaterfallConfig:
 
 
 class WaterfallState:
-    def __init__(self, config, save_path, peak_finder):
+    def __init__(self, save_path, peak_finder, X, Y):
+        self.X = X
+        self.Y = Y
         self.db_min = -220
         self.db_max = -150
         self.detection_text = []
@@ -302,14 +110,13 @@ class WaterfallState:
         self.mesh_psd = None
         self.peak_finder = peak_finder
         self.last_plot = 0
-        self.X, self.Y = meshgrid(
-            config, 1, config.waterfall_height, config.waterfall_height
-        )
         self.freq_bins = self.X[0]
         self.db_data = np.empty(self.X.shape)
         self.db_data.fill(np.nan)
         self.freq_data = np.empty(self.X.shape)
         self.freq_data.fill(np.nan)
+        self.sm = None
+        self.peak_lns = None
 
 
 def make_config(
@@ -360,18 +167,33 @@ def make_config(
 class WaterfallPlot:
     def __init__(self, config, base_save_path, peak_finder):
         self.config = config
-        self.state = WaterfallState(config, base_save_path, peak_finder)
+        X, Y = self.meshgrid(1, config.waterfall_height, config.waterfall_height)
+        self.state = WaterfallState(base_save_path, peak_finder, X, Y)
         matplotlib.use(self.config.engine)
         style.use("fast")
+
+    def meshgrid(self, start, stop, num):
+        return np.meshgrid(
+            np.linspace(
+                self.config.min_freq,
+                self.config.max_freq,
+                self.config.waterfall_width,
+            ),
+            np.linspace(start, stop, num),
+        )
 
     def need_init(self):
         return (
             self.config.batch and self.state.counter % self.config.reclose_interval == 0
         )
 
+    def close(self):
+        if self.state.fig:
+            plt.close(self.state.fig)
+            self.state.fig = None
+
     def init_fig(self, onresize):
         logging.info("initializing figure")
-        plt.close("all")
 
         self.state.cmap = plt.get_cmap("viridis")
         self.state.cmap_psd = plt.get_cmap("turbo")
@@ -397,13 +219,37 @@ class WaterfallPlot:
         if not self.config.batch:
             self.state.fig.canvas.mpl_connect("resize_event", onresize)
 
+    def reset_mesh_psd(self, data=None):
+        if self.state.mesh_psd:
+            self.state.mesh_psd.remove()
+
+        X, Y = self.meshgrid(
+            self.state.db_min,
+            self.state.db_max,
+            self.config.psd_db_resolution,
+        )
+        self.state.psd_x_edges = X[0]
+        self.state.psd_y_edges = Y[:, 0]
+
+        if data is None:
+            data = np.zeros(X[:-1, :-1].shape)
+
+        self.state.mesh_psd = self.state.ax_psd.pcolormesh(X, Y, data, shading="flat")
+
+    def reset_mesh(self, data):
+        if self.state.mesh:
+            self.state.mesh.remove()
+        self.state.mesh = self.state.ax.pcolormesh(
+            self.state.X, self.state.Y, data, shading="nearest"
+        )
+
     def reset_fig(self):
         logging.info("resetting figure")
 
         self.state.fig.clf()
-        plt.tight_layout()
-        plt.subplots_adjust(hspace=0.15)
-        plt.subplots_adjust(left=0.20)
+        self.state.fig.tight_layout()
+        self.state.fig.subplots_adjust(hspace=0.15)
+        self.state.fig.subplots_adjust(left=0.20)
         self.state.ax_psd = self.state.fig.add_subplot(3, 1, 1)
         self.state.ax = self.state.fig.add_subplot(3, 1, (2, 3))
         self.state.psd_title = self.state.ax_psd.text(
@@ -416,7 +262,7 @@ class WaterfallPlot:
         )
         default_data = self.state.db_min * np.ones(self.state.freq_data.shape[1])
 
-        reset_mesh_psd(self.config, self.state)
+        self.reset_mesh_psd()
 
         def ax_psd_plot(linestyle="--", **kwargs):
             return self.state.ax_psd.plot(
@@ -464,7 +310,7 @@ class WaterfallPlot:
         self.state.ax_psd.set_ylabel("dB")
 
         # SPECTROGRAM
-        reset_mesh(self.state, self.state.db_data)
+        self.reset_mesh(self.state.db_data)
         self.state.top_n_lns = []
         for _ in range(self.config.top_n):
             (ln,) = self.state.ax.plot(
@@ -514,13 +360,13 @@ class WaterfallPlot:
         self.state.fig.canvas.blit(self.state.ax.bbox)
 
         if not self.config.batch:
-            plt.show(block=False)
+            self.state.fig.show(block=False)
             self.state.fig.canvas.flush_events()
             self.state.background = self.state.fig.canvas.copy_from_bbox(
                 self.state.fig.bbox
             )
             if self.config.savefig_path:
-                safe_savefig(self.config.savefig_path)
+                self.safe_savefig(self.config.savefig_path)
 
     def update_fig(self, results):
         if not self.state.fig or not self.state.ax:
@@ -647,7 +493,7 @@ class WaterfallPlot:
 
             self.state.fig.canvas.blit(self.state.ax.yaxis.axes.figure.bbox)
 
-            reset_mesh_psd(self.config, self.state, data=self.state.cmap_psd(data.T))
+            self.reset_mesh_psd(data=self.state.cmap_psd(data.T))
 
             self.state.ax_psd.set_ylim(self.state.db_min, self.state.db_max)
             self.state.current_psd_ln.set_ydata(self.state.db_data[-1])
@@ -676,10 +522,10 @@ class WaterfallPlot:
             for ln in lns_to_draw:
                 self.state.ax_psd.draw_artist(ln)
 
-            reset_mesh(self.state, self.state.cmap(db_norm))
+            self.reset_mesh(self.state.cmap(db_norm))
             self.state.ax.draw_artist(self.state.mesh)
 
-            draw_title(
+            self.draw_title(
                 self.state.ax_psd,
                 self.state.psd_title,
                 scan_duration,
@@ -711,11 +557,10 @@ class WaterfallPlot:
             self.state.fig.canvas.flush_events()
             fig_path = None
             if self.config.savefig_path:
-                fig_path = safe_savefig(self.config.savefig_path)
+                fig_path = self.safe_savefig(self.config.savefig_path)
 
             if self.state.save_path:
-                save_waterfall(
-                    self.state,
+                self.save_waterfall(
                     self.config.save_time,
                     scan_time,
                     fig_path=fig_path,
@@ -723,14 +568,12 @@ class WaterfallPlot:
 
     def draw_peaks(self, scan_time, scan_configs):
         peaks, properties = self.state.peak_finder.find_peaks(self.state.db_data[-1])
-        peaks, properties = filter_peaks(peaks, properties)
+        peaks, properties = self.filter_peaks(peaks, properties)
         left_ips = properties["left_ips"].astype(int)
         right_ips = properties["right_ips"].astype(int)
 
         if self.state.save_path:
-            save_detections(
-                self.config,
-                self.state,
+            self.save_detections(
                 scan_time,
                 scan_configs,
                 peaks,
@@ -814,3 +657,168 @@ class WaterfallPlot:
                 ):
                     self.state.detection_text.append(txt)
                     self.state.ax_psd.draw_artist(txt)
+
+    def draw_title(
+        self,
+        ax,
+        title,
+        scan_duration,
+        tune_step_hz,
+        tune_step_fft,
+        tune_rate_hz,
+        tune_dwell_ms,
+        sample_rate,
+        freq_resolution,
+    ):
+        title_text = {
+            "Time": str(datetime.datetime.now().isoformat()),
+            "Scan time": "%.2fs" % scan_duration,
+            "Step FFTs": "%u" % tune_step_fft,
+            "Step size": "%.2fMHz" % (tune_step_hz / 1e6),
+            "Sample rate": "%.2fMsps" % (sample_rate / 1e6),
+            "Resolution": "%.2fMHz" % freq_resolution,
+            "Tune rate": "%.2fHz" % tune_rate_hz,
+            "Tune dwell time": "%.2fms" % tune_dwell_ms,
+        }
+        title.set_fontsize(8)
+        title.set_text(str(title_text))
+        ax.draw_artist(title)
+
+    def filter_peaks(self, peaks, properties):
+        for i in range(len(peaks) - 1, -1, -1):  # start from end of list
+            for j in range(len(peaks)):
+                if i == j:
+                    continue
+                if (properties["left_ips"][i] > properties["left_ips"][j]) and (
+                    properties["right_ips"][i] < properties["right_ips"][j]
+                ):
+                    peaks = np.delete(peaks, i)
+                    for k in properties:
+                        properties[k] = np.delete(properties[k], i)
+
+                    break
+                    # properties["left_ips"] = np.delete(properties["left_ips"], i)
+                    # properties["right_ips"] = np.delete(properties["right_ips"], i)
+                    # properties["width_heights"] = np.delete(properties["width_heights"], i)
+        return peaks, properties
+
+    def save_detections(
+        self,
+        scan_time,
+        scan_configs,
+        peaks,
+        properties,
+    ):
+        detection_save_dir = Path(self.state.save_path, "detections")
+
+        detection_config_save_path = str(
+            Path(
+                detection_save_dir,
+                f"detections_scan_config_{scan_time}.json",
+            )
+        )
+        detection_save_path = str(
+            Path(
+                detection_save_dir,
+                f"detections_{scan_time}.csv",
+            )
+        )
+
+        if not os.path.exists(detection_save_dir):
+            Path(detection_save_dir).mkdir(parents=True, exist_ok=True)
+
+        if (
+            self.state.previous_scan_config is None
+            or self.state.previous_scan_config != scan_configs
+        ):
+            self.state.previous_scan_config = scan_configs
+            with open(detection_config_save_path, "w", encoding="utf8") as f:
+                json.dump(
+                    {
+                        "timestamp": scan_time,
+                        "min_freq": self.config.min_freq,
+                        "max_freq": self.config.max_freq,
+                        "scan_configs": scan_configs,
+                    },
+                    f,
+                    indent=4,
+                )
+
+        if not os.path.exists(detection_save_path):
+            with open(detection_save_path, "w", encoding="utf8") as detection_csv:
+                writer = csv.writer(detection_csv)
+                writer.writerow(
+                    [
+                        "timestamp",
+                        "start_freq",
+                        "end_freq",
+                        "dB",
+                        "type",
+                    ]
+                )
+
+        with open(detection_save_path, "a", encoding="utf8") as detection_csv:
+            writer = csv.writer(detection_csv)
+            for i in range(len(peaks)):
+                writer.writerow(
+                    [
+                        scan_time,  # timestamp
+                        self.state.psd_x_edges[
+                            properties["left_ips"][i].astype(int)
+                        ],  # start_freq
+                        self.state.psd_x_edges[
+                            properties["right_ips"][i].astype(int)
+                        ],  # end_freq
+                        properties["peak_heights"][i],  # dB
+                        self.state.peak_finder.name,  # type
+                    ]
+                )
+
+    def save_waterfall(
+        self,
+        save_time,
+        scan_time,
+        fig_path=None,
+    ):
+        now = datetime.datetime.now()
+        if self.state.last_save_time is None:
+            self.state.last_save_time = now
+
+        if now - self.state.last_save_time > datetime.timedelta(minutes=save_time):
+            waterfall_save_dir = Path(self.state.save_path, "waterfall")
+            if not os.path.exists(waterfall_save_dir):
+                Path(waterfall_save_dir).mkdir(parents=True, exist_ok=True)
+
+            waterfall_save_path = str(
+                Path(waterfall_save_dir, f"waterfall_{scan_time}.png")
+            )
+            if fig_path:
+                shutil.copyfile(fig_path, waterfall_save_path)
+            else:
+                self.safe_savefig(waterfall_save_path)
+
+            save_scan_configs = {
+                "start_scan_timestamp": self.state.scan_times[0],
+                "start_scan_config": self.state.scan_config_history[
+                    self.state.scan_times[0]
+                ],
+                "end_scan_timestamp": self.state.scan_times[-1],
+                "end_scan_config": self.state.scan_config_history[
+                    self.state.scan_times[-1]
+                ],
+            }
+            config_save_path = str(Path(waterfall_save_dir, f"config_{scan_time}.json"))
+            with open(config_save_path, "w", encoding="utf8") as f:
+                json.dump(save_scan_configs, f, indent=4)
+
+            self.state.last_save_time = now
+            logging.info(f"Saving {waterfall_save_path}")
+
+    def safe_savefig(self, path):
+        basename = os.path.basename(path)
+        dirname = os.path.dirname(path)
+        tmp_path = os.path.join(dirname, "." + basename)
+        self.state.fig.savefig(tmp_path)
+        os.rename(tmp_path, path)
+        logging.debug("wrote %s", path)
+        return path
