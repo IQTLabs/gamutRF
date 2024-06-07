@@ -210,7 +210,10 @@ class WaterfallPlot:
             plt.rcParams[param] = "#cdcdcd"  # "#d2d5dd"
 
         self.state.fig = plt.figure(
-            num=self.num, clear=True, figsize=(self.config.width, self.config.height), dpi=100
+            num=self.num,
+            clear=True,
+            figsize=(self.config.width, self.config.height),
+            dpi=100,
         )
         if not self.config.batch:
             self.state.fig.canvas.mpl_connect("resize_event", onresize)
