@@ -90,7 +90,7 @@ def serve_waterfall(
     if not scan_configs:
         return
 
-    plot_manager = WaterfallPlotManager(base_save_path, peak_finder)
+    plot_manager = WaterfallPlotManager(peak_finder)
 
     while zmqr.healthy() and running:
         if need_reconfig:

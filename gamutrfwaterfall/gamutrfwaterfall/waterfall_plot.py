@@ -165,11 +165,11 @@ def make_config(
 
 
 class WaterfallPlot:
-    def __init__(self, base_save_path, peak_finder, config, num):
+    def __init__(self, peak_finder, config, num):
         self.config = config
         self.num = num
         X, Y = self.meshgrid(1, config.waterfall_height, config.waterfall_height)
-        self.state = WaterfallState(base_save_path, peak_finder, X, Y)
+        self.state = WaterfallState(config.base_save_path, peak_finder, X, Y)
         matplotlib.use(self.config.engine)
         style.use("fast")
 
@@ -829,10 +829,9 @@ class WaterfallPlot:
 
 
 class WaterfallPlotManager:
-    def __init__(self, base_save_path, peak_finder):
+    def __init__(self, peak_finder):
         self.plots = []
         self.config = None
-        self.base_save_path = base_save_path
         self.peak_finder = peak_finder
 
     def config_changed(self, config):
@@ -841,9 +840,7 @@ class WaterfallPlotManager:
     def add_plot(self, config, num):
         if not self.plots:
             self.config = config
-        self.plots.append(
-            WaterfallPlot(self.base_save_path, self.peak_finder, config, num)
-        )
+        self.plots.append(WaterfallPlot(self.peak_finder, config, num))
 
     def close(self):
         for plot in self.plots:
