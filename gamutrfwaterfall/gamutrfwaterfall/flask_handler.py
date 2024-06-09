@@ -155,16 +155,18 @@ class FlaskHandler:
                 )
             time.sleep(0.1)
 
-    def serve(self, path):
-        if path:
-            full_path = os.path.realpath(os.path.join(self.tempdir, path))
-            if os.path.exists(full_path):
-                return send_file(full_path, mimetype="image/png")
-            return "%s: not found" % full_path, 404
-        if os.path.exists(self.savefig_path):
+    def serve_png(self, png_file):
+        full_path = os.path.realpath(os.path.join(self.tempdir, png_file))
+        if os.path.exists(full_path):
+            return send_file(full_path, mimetype="image/png")
+        return "%s: not found" % full_path, 404
+
+    def serve_meta(self, png_file):
+        full_path = os.path.realpath(os.path.join(self.tempdir, png_file))
+        if os.path.exists(full_path):
             return (
                 '<html><head><meta http-equiv="refresh" content="%u"></head><body><img src="%s"></img></body></html>'
-                % (self.refresh, self.savefig_file),
+                % (self.refresh, png_file),
                 200,
             )
         return (
@@ -172,6 +174,21 @@ class FlaskHandler:
             % self.refresh,
             200,
         )
+
+    def serve(self, path):
+        if path.endswith(".png"):
+            return self.serve_png(os.path.basename(path))
+
+        try:
+            waterfall_n = int(path)
+            if waterfall_n:
+                return self.serve_meta(f"{waterfall_n}-waterfall.png")
+        except ValueError:
+            pass
+
+        if not path:
+            return self.serve_meta(os.path.basename(self.savefig_path))
+        return "%s: not found" % path
 
     def serve_predictions_content(self):
         return send_from_directory(self.tempdir, self.predictions_file)
