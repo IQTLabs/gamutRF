@@ -5,7 +5,7 @@ networks:
 services:
   torchserve:
     restart: always
-    image: iqtlabs/torchserve:v0.0.7
+    image: iqtlabs/torchserve:v0.0.8
     healthcheck:
       start_period: 120s
     networks:
@@ -18,4 +18,6 @@ services:
       - '/root/.cache/pip:/root/.cache/pip'
     command:
       # --models torchsig_model=torchsig_model.mar
+      # As of torchserve v11, you will need to add setuptools==69.5.1 to your requirements.txt when generating a MAR file
+      # https://github.com/pytorch/serve/issues/3176
       - --models mini2_snr=mini2_snr.mar
