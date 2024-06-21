@@ -5,7 +5,7 @@ networks:
 services:
   torchserve:
     restart: always
-    image: iqtlabs/cuda-torchserve:v0.0.7
+    image: iqtlabs/cuda-torchserve:v0.0.8
     healthcheck:
       start_period: 120s
     networks:
@@ -26,4 +26,6 @@ services:
     command:
       # can be multiple models
       # e.g. mini2_snr=mini2_snr.mar,another_mini2_snr=another_mini2_snr.mar
+      # As of torchserve v11, you will need to add setuptools==69.5.1 to your requirements.txt when generating a MAR file
+      # https://github.com/pytorch/serve/issues/3176
       - --models torchsig_model=torchsig_model.mar
