@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import logging
 import sys
 import pmt
 import zmq
@@ -16,6 +17,9 @@ except ModuleNotFoundError as err:  # pragma: no cover
 DELIM = "\n"
 
 
+# It would be ideal to just use gnuradio's https://github.com/gnuradio/gnuradio/blob/main/gr-zeromq/lib/pub_msg_sink_impl.cc
+# block. Unfortunately, this block calls pmt::serialize(), but we just want to send simple json strings. That means
+# a receiver client would need to run pmt::deserialize() which requires an installation of gnuradio.
 class pduzmq(gr.basic_block):
     def __init__(
         self,
@@ -40,4 +44,7 @@ class pduzmq(gr.basic_block):
 
     def receive_pdu(self, pdu):
         item = pmt.to_python(pmt.cdr(pdu)).tobytes().decode("utf8").strip()
-        self.zmq_pub.send_string(item + DELIM, flags=zmq.NOBLOCK)
+        try:
+            self.zmq_pub.send_string(item + DELIM, flags=zmq.NOBLOCK)
+        except zmq.ZMQError as e:
+            logging.error(str(e))
