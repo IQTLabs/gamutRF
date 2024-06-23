@@ -25,6 +25,7 @@ except ModuleNotFoundError as err:  # pragma: no cover
 
 from gamutrf.grsource import get_source
 from gamutrf.grinferenceoutput import inferenceoutput
+from gamutrf.grpduzmq import pduzmq
 from gamutrf.utils import endianstr
 
 
@@ -252,10 +253,8 @@ class grscan(gr.top_block):
         )
         self.fft_blocks.append(retune_fft)
         fft_zmq_addr = f"tcp://{logaddr}:{logport}"
+        self.pduzmq_block = pduzmq(fft_zmq_addr)
         logging.info("serving FFT on %s", fft_zmq_addr)
-        self.fft_blocks.append(
-            (zeromq.pub_sink(1, 1, fft_zmq_addr, 100, False, 65536, ""))
-        )
 
         if fgaas_port:
             fgaas_zmq_addr = f"tcp://{fgaas_addr}:{fgaas_port}"
@@ -390,13 +389,14 @@ class grscan(gr.top_block):
 
         if not retune_fft_output_block:
             retune_fft_output_block = blocks.null_sink(gr.sizeof_float * nfft)
-        self.connect((retune_fft, 1), (retune_fft_output_block, 0))
+        self.connect((retune_fft, 0), (retune_fft_output_block, 0))
 
         if pretune:
             self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
             self.msg_connect((self.retune_pre_fft, "tune"), (retune_fft, "cmd"))
         else:
             self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
+        self.msg_connect((retune_fft, "json"), (self.pduzmq_block, "json"))
         self.connect_blocks(self.sources[0], self.sources[1:])
 
         self.connect_blocks(self.sources[-1], self.fft_blocks)
