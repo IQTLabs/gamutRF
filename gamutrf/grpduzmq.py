@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import json
 import sys
-import time
 import pmt
 import zmq
 
