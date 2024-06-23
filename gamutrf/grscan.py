@@ -253,7 +253,7 @@ class grscan(gr.top_block):
         )
         self.fft_blocks.append(retune_fft)
         fft_zmq_addr = f"tcp://{logaddr}:{logport}"
-        pduzmq_block = pduzmq(fft_zmq_addr)
+        self.pduzmq_block = pduzmq(fft_zmq_addr)
         logging.info("serving FFT on %s", fft_zmq_addr)
 
         if fgaas_port:
@@ -396,7 +396,7 @@ class grscan(gr.top_block):
             self.msg_connect((self.retune_pre_fft, "tune"), (retune_fft, "cmd"))
         else:
             self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
-        self.msg_connect((retune_fft, "json"), (pduzmq_block, "json"))
+        self.msg_connect((retune_fft, "json"), (self.pduzmq_block, "json"))
         self.connect_blocks(self.sources[0], self.sources[1:])
 
         self.connect_blocks(self.sources[-1], self.fft_blocks)
