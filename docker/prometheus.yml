@@ -6,6 +6,3 @@ scrape_configs:
   - job_name: 'gamutrf'
     static_configs:
       - targets: ['gamutrf:9000']
-  - job_name: 'sigfinder'
-    static_configs:
-      - targets: ['sigfinder:9000']

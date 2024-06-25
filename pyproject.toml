@@ -50,7 +50,6 @@ pytype = "2024.4.11"
 gamutrf-compress_dirs = 'gamutrf.__main__:compress_dirs'
 gamutrf-offline= 'gamutrf.__main__:offline'
 gamutrf-scan = 'gamutrf.__main__:scan'
-gamutrf-sigfinder = 'gamutrf.__main__:sigfinder'
 gamutrf-specgram = 'gamutrf.__main__:specgram'
 gamutrf-waterfall = 'gamutrf.__main__:waterfall'
 gamutrf-worker = 'gamutrf.__main__:worker'
