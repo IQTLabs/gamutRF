@@ -41,7 +41,6 @@ jobs:
         docker run -t iqtlabs/gamutrf:latest gamutrf-compress_dirs --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-offline --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-scan --help
-        docker run -t iqtlabs/gamutrf:latest gamutrf-sigfinder --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-worker --help
     - name: offline consistency
       # VkFFT is more consistent, but still not perfectly consistent.
