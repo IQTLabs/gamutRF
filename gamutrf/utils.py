@@ -34,11 +34,6 @@ SAMPLE_DTYPES = {
     "f32": ("<u4", "unsigned-integer"),
     "raw": ("<f4", "float"),
 }
-WIDTH = 11
-HEIGHT = 8
-DPI = 75
-MPL_BACKEND = "cairo"
-DS_PIXELS = 256
 SAMP_RATE = 8.192e6
 MIN_FREQ = 2.3e9
 MAX_FREQ = 2.6e9

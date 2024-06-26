@@ -28,7 +28,6 @@ services:
       - 'WORKER_NAME=${WORKER_NAME}'
       - 'ORCHESTRATOR=${ORCHESTRATOR}'
       - 'ANTENNA=${ANTENNA}'
-      - 'NFFT=256'
     command:
       - nice
       - '-n'
