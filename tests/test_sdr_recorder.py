@@ -20,13 +20,6 @@ class SDRRecorderTestCase(unittest.TestCase):
     def test_sdr_recorder(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             sdr_recorder = self.get_file_recorder(tmpdir)
-            sample_file = os.path.join(tmpdir, "test_file.zst")
-            fft_file = os.path.join(tmpdir, "fft_test_file.zst")
-            with open(fft_file, "wb") as f:
-                f.write(b"\x00" * 4 * 2048 * 10)
-            sdr_recorder.fft_spectrogram(sample_file, fft_file, 2048, 1e6, 1e6, 2048)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            sdr_recorder = self.get_file_recorder(tmpdir)
             record_status, sample_file = sdr_recorder.run_recording(
                 tmpdir,
                 self.SAMPLES,

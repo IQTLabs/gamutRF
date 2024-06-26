@@ -9,8 +9,6 @@ from urllib.parse import urlparse
 
 import sigmf
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
 
 from gamutrf.sigwindows import freq_excluded
 from gamutrf.sigwindows import parse_freq_excluded
@@ -26,12 +24,10 @@ from gamutrf.utils import (
 )
 
 IMSHOW_INTERPOLATION = os.getenv("IMSHOW_INTERPOLATION", "bilinear")
-NFFT = int(os.getenv("NFFT", "0"))
 NFFT_OVERLAP = 512
 SAMPLE_TYPE = "i16"
 MIN_SAMPLE_RATE = int(1e6)
 MAX_SAMPLE_RATE = int(30 * 1e6)
-FFT_FILE = "/dev/shm/fft.dat"  # nosec
 
 
 class SDRRecorder:
@@ -89,71 +85,6 @@ class SDRRecorder:
             os.rename(dotfile, sample_file)
         return record_status
 
-    @staticmethod
-    def fft_spectrogram(
-        sample_file, fft_file, sample_count, sample_rate, center_freq, nfft
-    ):
-        def matplotlib_gc(fig, im):
-            im.remove()
-            fig.clear()
-            plt.close()
-            plt.cla()
-            plt.clf()
-
-        def get_fig(width, height):
-            fig = plt.figure()
-            fig.set_size_inches(width, height)
-            axes = fig.add_subplot(111)
-            return (fig, axes)
-
-        def imshow(axes, i, extent):
-            return axes.imshow(
-                i,
-                cmap="turbo",
-                origin="lower",
-                extent=extent,
-                aspect="auto",
-                interpolation=IMSHOW_INTERPOLATION,
-            )
-
-        def plot_fft(i, sample_file, extent):
-            png_file = sample_file.replace(".zst", ".png")
-            logging.info("generating spectrogram: %s", png_file)
-            fig, axes = get_fig(WIDTH, HEIGHT)
-            axes.set_xlabel("time (s)")
-            axes.set_ylabel("freq (MHz)")
-            axes.axis("auto")
-            axes.minorticks_on()
-            im = imshow(axes, i, extent)
-            plt.colorbar(im, ax=axes)
-            plt.sci(im)
-            plt.savefig(png_file, dpi=DPI)
-            matplotlib_gc(fig, im)
-
-        def plot_ds_fft(i, sample_file, extent):
-            ds_png_file = sample_file.replace(".zst", ".ds.png")
-            logging.info("generating downsampled spectrogram: %s", ds_png_file)
-            fig, axes = get_fig(DS_PIXELS / DPI, DS_PIXELS / DPI)
-            axes.set_axis_off()
-            axes.get_xaxis().set_visible(False)
-            axes.get_yaxis().set_visible(False)
-            im = imshow(axes, i, extent)
-            plt.sci(im)
-            plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-            plt.savefig(ds_png_file, dpi=DPI)
-            matplotlib_gc(fig, im)
-
-        if os.path.exists(fft_file):
-            matplotlib.use(MPL_BACKEND)
-            i = np.memmap(fft_file, dtype=np.float32, mode="r+")
-            i = np.roll(i.reshape(-1, nfft).swapaxes(0, 1), int(nfft / 2), 0)
-            fc = center_freq / 1e6
-            fo = sample_rate / 1e6 / 2
-            extent = (0, sample_count / sample_rate, fc - fo, fc + fo)
-            plot_fft(i, sample_file, extent)
-            plot_ds_fft(i, sample_file, extent)
-            os.remove(fft_file)
-
     def run_recording(
         self,
         path,
@@ -182,11 +113,6 @@ class SDRRecorder:
             record_status = self.write_recording(
                 sample_file, sample_rate, sample_count, center_freq, gain, agc, rxb
             )
-            if NFFT:
-                self.fft_spectrogram(
-                    sample_file, FFT_FILE, sample_count, sample_rate, center_freq, NFFT
-                )
-
             if sigmf_:
                 sigmf_file = sample_file + ".sigmf-meta"
                 if os.path.exists(sample_file):
@@ -277,14 +203,6 @@ class EttusRecorder(SDRRecorder):
             "duration": duration,
             "freq": center_freq,
         }
-        if NFFT:
-            json_args.update(
-                {
-                    "nfft": NFFT,
-                    "nfft_overlap": NFFT_OVERLAP,
-                    "fft_file": FFT_FILE,
-                }
-            )
         return (args, json_args)
 
     def write_recording(
