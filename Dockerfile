@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     libev-dev \
     jq \
     python3 \
+    python3-pyqt5 \
+    python3-pyqt5.sip \
     python3-dev \
     python3-pip && \
     curl -sSL https://install.python-poetry.org | python3 - --version "$(jq -r .constraints.poetry /root/renovate.json)" && \
@@ -65,6 +67,8 @@ RUN if [ "$(arch)" = "x86_64" ] ; then /root/install-nv.sh ; fi && \
         libopencv-core4.5d \
         libopencv-imgcodecs4.5d \
         libopencv-imgproc4.5d \
+        python3-pyqt5 \
+        python3-pyqt5.sip \
         librtlsdr0 \
         libspdlog1 \
         libuhd4.1.0 \
