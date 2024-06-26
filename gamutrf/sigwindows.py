@@ -38,17 +38,3 @@ def freq_excluded(freq, freq_exclusions):
         if freq >= freq_min:
             return True
     return False
-
-
-def calc_db(df, rolling_factor=ROLLING_FACTOR):
-    df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    meandb = df["db"].mean()
-    if rolling_factor:
-        df["db"] = df["db"].rolling(rolling_factor).mean().fillna(meandb)
-    return df
-
-
-def get_center(signal_mhz, freq_start_mhz, bin_mhz, record_bw):
-    return int(
-        int((signal_mhz - freq_start_mhz) / record_bw) * bin_mhz + freq_start_mhz
-    )
