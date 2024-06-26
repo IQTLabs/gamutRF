@@ -8,7 +8,6 @@ import time
 from urllib.parse import urlparse
 
 import sigmf
-import numpy as np
 
 from gamutrf.sigwindows import freq_excluded
 from gamutrf.sigwindows import parse_freq_excluded

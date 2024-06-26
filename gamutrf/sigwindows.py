@@ -1,7 +1,4 @@
 #!/usr/bin/python3
-import random
-from collections import Counter
-from collections import defaultdict
 
 import numpy as np
 from gamutrf.utils import SCAN_FRES, SCAN_FROLL

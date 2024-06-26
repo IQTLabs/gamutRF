@@ -2,7 +2,6 @@
 import glob
 import os
 import logging
-import time
 
 from gnuradio import iqtlabs
 from gamutrf.scan import argument_parser, DYNAMIC_EXCLUDE_OPTIONS

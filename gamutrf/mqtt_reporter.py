@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import socket
-import time
 
 import gpsd
 import paho.mqtt.client as mqtt
