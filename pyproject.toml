@@ -29,7 +29,6 @@ python = ">=3.9,<3.13"
 pyzmq = "26.0.3"
 requests = "2.32.3"
 schedule = "1.2.2"
-scipy = "1.13.1"
 sigmf = "1.2.2"
 sysrsync = "1.1.1"
 webcolors = "24.6.0"
@@ -50,7 +49,6 @@ pytype = "2024.4.11"
 gamutrf-compress_dirs = 'gamutrf.__main__:compress_dirs'
 gamutrf-offline= 'gamutrf.__main__:offline'
 gamutrf-scan = 'gamutrf.__main__:scan'
-gamutrf-specgram = 'gamutrf.__main__:specgram'
 gamutrf-waterfall = 'gamutrf.__main__:waterfall'
 gamutrf-worker = 'gamutrf.__main__:worker'
 
