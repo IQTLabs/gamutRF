@@ -15,11 +15,6 @@ from gamutrf.sigwindows import parse_freq_excluded
 from gamutrf.utils import (
     ETTUS_ANT,
     ETTUS_ARGS,
-    MPL_BACKEND,
-    WIDTH,
-    HEIGHT,
-    DPI,
-    DS_PIXELS,
     endianstr,
 )
 
