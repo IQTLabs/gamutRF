@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     jq \
     python3 \
     python3-dev \
-    python3-pip \
+    python3-pip && \
     curl -sSL https://install.python-poetry.org | python3 - --version "$(jq -r .constraints.poetry /root/renovate.json)" && \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip
