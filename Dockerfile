@@ -22,13 +22,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
-COPY bin/pipcacheconfig.sh /root/pipcacheconfig.sh
-COPY gamutrflib /gamutrflib/
-WORKDIR /gamutrflib
-RUN if [ "${POETRY_CACHE}" != "" ] ; then /root/pipcacheconfig.sh echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
-RUN poetry install --no-interaction --no-ansi --no-dev
 WORKDIR /gamutrf
-RUN python3 -c "from gamutrflib.zmqbucket import *"
 COPY poetry.lock pyproject.toml README.md /gamutrf/
 # dependency install is cached for faster rebuild, if only gamutrf source changed.
 RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
@@ -85,13 +79,9 @@ RUN if [ "$(arch)" = "x86_64" ] ; then /root/install-nv.sh ; fi && \
 COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/share/uhd/images /usr/share/uhd/images
 COPY --from=installer /usr/local /usr/local
 COPY --from=installer /gamutrf /gamutrf
-COPY --from=installer /gamutrflib /gamutrflib
 COPY --from=installer /root/.local /root/.local
 RUN ldconfig -v
-WORKDIR /gamutrflib
-RUN poetry install --no-interaction --no-ansi --no-dev
 WORKDIR /gamutrf
-RUN python3 -c "from gamutrflib.zmqbucket import *"
 RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
 RUN ldd /usr/local/bin/uhd_sample_recorder
 # nosemgrep:github.workflows.config.missing-user
