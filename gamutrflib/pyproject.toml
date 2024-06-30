@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gamutrflib"
-version = "0.5.40"
+version = "0.5.60"
 description = "gamutrf non-gnuradio common code"
 authors = ["cglewis <clewis@iqt.org>"]
 license = "Apache-2.0"
@@ -9,10 +9,10 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-numpy = "1.26.4"
-scipy = "1.13.1"
+numpy = "2.0.0"
+scipy = "1.14.0"
 pandas = "2.2.2"
-python = ">=3.9,<3.13"
+python = ">=3.10,<3.13"
 pyzmq = "26.0.3"
 zstandard = "0.22.0"
 

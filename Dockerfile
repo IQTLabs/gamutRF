@@ -22,13 +22,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     poetry config virtualenvs.create false && \
     python3 -m pip install --no-cache-dir --upgrade pip
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
-COPY bin/pipcacheconfig.sh /root/pipcacheconfig.sh
-COPY gamutrflib /gamutrflib/
-WORKDIR /gamutrflib
-RUN if [ "${POETRY_CACHE}" != "" ] ; then /root/pipcacheconfig.sh echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
-RUN poetry install --no-interaction --no-ansi --no-dev
-WORKDIR /gamutrf
-RUN python3 -c "from gamutrflib.zmqbucket import *"
 COPY poetry.lock pyproject.toml README.md /gamutrf/
 # dependency install is cached for faster rebuild, if only gamutrf source changed.
 RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
