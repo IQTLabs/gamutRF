@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gamutrfwaterfall"
-version = "0.5.40"
+version = "0.5.60"
 description = "An orchestrated SDR scanner"
 authors = ["cglewis <clewis@iqt.org>"]
 license = "Apache-2.0"
@@ -15,9 +15,9 @@ matplotlib = "3.9.0"
 numpy = "1.26.4"
 pandas = "2.2.2"
 pycairo = "1.26.1"
-python = ">=3.9,<3.13"
+python = ">=3.10,<3.13"
 pyzmq = "26.0.3"
-scipy = "1.13.1"
+scipy = "1.14.0"
 zstandard = "0.22.0"
 requests = "2.32.3"
 
