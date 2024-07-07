@@ -1,6 +1,6 @@
-FROM ubuntu:22.04 as driver-builder
+FROM ubuntu:22.04 AS driver-builder
 COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/local /usr/local
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
   ca-certificates \

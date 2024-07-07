@@ -1,6 +1,6 @@
 FROM iqtlabs/gamutrf:latest
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 WORKDIR /gamutrf
 COPY tests tests/
