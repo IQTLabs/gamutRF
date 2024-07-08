@@ -1,5 +1,5 @@
-FROM ubuntu:22.04 AS gr-iqtlabs-builder
-COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/local /usr/local
+FROM ubuntu:24.04 AS gr-iqtlabs-builder
+COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
@@ -20,7 +20,7 @@ WORKDIR /root/gr-iqtlabs/build
 COPY --from=iqtlabs/gamutrf-sigmf:latest /usr/local /usr/local
 RUN cmake .. && make -j "$(nproc)" && make install && find /usr/local -name \*.a -delete
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libboost-filesystem1.74.0 \
@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-numpy \
     && apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
-COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/local /usr/local
+COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-driver /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-uhd-sr /usr/local /usr/local
 COPY --from=gr-iqtlabs-builder /usr/local /usr/local

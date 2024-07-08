@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 AS uhd_sample_recorder-builder
+FROM ubuntu:24.04 AS uhd_sample_recorder-builder
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
@@ -18,5 +18,5 @@ COPY --from=iqtlabs/gamutrf-sigmf:latest /usr/local /usr/local
 WORKDIR /root/uhd_sample_recorder/build
 RUN cmake ../lib && make -j $(nproc) && cp uhd_sample_recorder /usr/local/bin
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 COPY --from=uhd_sample_recorder-builder /usr/local /usr/local
