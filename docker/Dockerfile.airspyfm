@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     build-essential \
     cmake \
     git \
-    python3-mako python3-distutils portaudio19-dev libsoxr-dev libusb-1.0-0-dev libairspy-dev libsndfile1-dev librtlsdr-dev
+    python3-mako portaudio19-dev libsoxr-dev libusb-1.0-0-dev libairspy-dev libsndfile1-dev librtlsdr-dev
 WORKDIR /root
 RUN git clone https://github.com/gnuradio/volk -b v3.1.2
 RUN git clone https://github.com/airspy/airspyhf -b 1.6.8
