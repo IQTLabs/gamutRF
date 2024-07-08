@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopencv-core4.5d \
     libopencv-imgcodecs4.5d \
     libopencv-imgproc4.5d \
-    librtlsdr0 \
+    librtlsdr2 \
     libspdlog1 \
     libuhd4.1.0 \
     libunwind8 \

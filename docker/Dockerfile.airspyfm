@@ -19,7 +19,7 @@ RUN git submodule update --init
 RUN cmake .. && make && make install
 FROM ubuntu:24.04
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libportaudio2 libsoxr0 libusb-1.0-0 libairspy0 libsndfile1 librtlsdr0
+    libportaudio2 libsoxr0 libusb-1.0-0 libairspy0 libsndfile1 librtlsdr2
 COPY --from=builder /usr/local /usr/local
 RUN ldconfig
 RUN ldd /usr/local/bin/airspy-fmradion
