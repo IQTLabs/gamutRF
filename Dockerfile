@@ -1,9 +1,11 @@
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
-FROM ubuntu:22.04 AS installer
+FROM ubuntu:24.04 AS installer
 ARG POETRY_CACHE
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+WORKDIR /root/.config/pip
+COPY pip.conf pip.conf
 WORKDIR /root
 COPY renovate.json /root/
 RUN apt-get update && apt-get install --no-install-recommends -y -q \
@@ -19,8 +21,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y -q \
     python3-dev \
     python3-pip && \
     curl -sSL https://install.python-poetry.org | python3 - --version "$(jq -r .constraints.poetry /root/renovate.json)" && \
-    poetry config virtualenvs.create false && \
-    python3 -m pip install --no-cache-dir --upgrade pip
+    poetry config virtualenvs.create false
 COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 WORKDIR /gamutrf
 COPY poetry.lock pyproject.toml README.md /gamutrf/
@@ -35,12 +36,14 @@ COPY templates templates/
 RUN poetry install --no-interaction --no-ansi --no-dev
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 ARG POETRY_CACHE
 LABEL maintainer="Charlie Lewis <clewis@iqt.org>"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV UHD_IMAGES_DIR=/usr/share/uhd/images
 ENV PATH="${PATH}:/root/.local/bin"
+WORKDIR /root/.config/pip
+COPY pip.conf pip.conf
 WORKDIR /root
 COPY bin/install-nv.sh /root
 RUN mkdir -p /data/gamutrf
@@ -50,22 +53,22 @@ RUN if [ "$(arch)" = "x86_64" ] ; then /root/install-nv.sh ; fi && \
     apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         libblas3 \
-        libboost-iostreams1.74.0 \
-        libboost-program-options1.74.0 \
-        libboost-thread1.74.0 \
+        libboost-iostreams1.83.0 \
+        libboost-program-options1.83.0 \
+        libboost-thread1.83.0 \
         libev4 \
-        libfftw3-3 \
+        libfftw3-bin \
         libgl1 \
         libglib2.0-0 \
         liblapack3 \
-        libopencv-core4.5d \
-        libopencv-imgcodecs4.5d \
-        libopencv-imgproc4.5d \
+        libopencv-core406t64 \
+        libopencv-imgcodecs406t64 \
+        libopencv-imgproc406t64 \
         python3-pyqt5 \
         python3-pyqt5.sip \
-        librtlsdr0 \
-        libspdlog1 \
-        libuhd4.1.0 \
+        librtlsdr2 \
+        libspdlog1.12 \
+        libuhd4.6.0 \
         libunwind8 \
         libvulkan1 \
         libzmq5 \
@@ -76,7 +79,7 @@ RUN if [ "$(arch)" = "x86_64" ] ; then /root/install-nv.sh ; fi && \
         wget \
         zstd && \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
-COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/share/uhd/images /usr/share/uhd/images
+COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/share/uhd/images /usr/share/uhd/images
 COPY --from=installer /usr/local /usr/local
 COPY --from=installer /gamutrf /gamutrf
 COPY --from=installer /root/.local /root/.local

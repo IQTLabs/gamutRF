@@ -1,5 +1,5 @@
-FROM ubuntu:22.04 AS gr-iqtlabs-builder
-COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/local /usr/local
+FROM ubuntu:24.04 AS gr-iqtlabs-builder
+COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libspdlog-dev \
   libuhd-dev \
   libvulkan-dev \
+  pybind11-dev \
   python3-numpy
 WORKDIR /root
 RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.110
@@ -20,25 +21,25 @@ WORKDIR /root/gr-iqtlabs/build
 COPY --from=iqtlabs/gamutrf-sigmf:latest /usr/local /usr/local
 RUN cmake .. && make -j "$(nproc)" && make install && find /usr/local -name \*.a -delete
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libboost-filesystem1.74.0 \
-    libboost-iostreams1.74.0 \
-    libboost-program-options1.74.0 \
-    libboost-thread1.74.0 \
-    libopencv-core4.5d \
-    libopencv-imgcodecs4.5d \
-    libopencv-imgproc4.5d \
-    librtlsdr0 \
-    libspdlog1 \
-    libuhd4.1.0 \
+    libboost-filesystem1.83.0 \
+    libboost-iostreams1.83.0 \
+    libboost-program-options1.83.0 \
+    libboost-thread1.83.0 \
+    libopencv-core406t64 \
+    libopencv-imgcodecs406t64 \
+    libopencv-imgproc406t64 \
+    librtlsdr2 \
+    libspdlog1.12 \
+    libuhd4.6.0 \
     libunwind8 \
     libvulkan1 \
     python3 \
     python3-numpy \
     && apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
-COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/local /usr/local
+COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-driver /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-uhd-sr /usr/local /usr/local
 COPY --from=gr-iqtlabs-builder /usr/local /usr/local

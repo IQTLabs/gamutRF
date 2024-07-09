@@ -1,5 +1,5 @@
-FROM ubuntu:22.04 AS driver-builder
-COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/local /usr/local
+FROM ubuntu:24.04 AS driver-builder
+COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
@@ -37,5 +37,5 @@ WORKDIR /root/bladeRF/host/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_UDEV_RULES=ON -DENABLE_BACKEND_LIBUSB=TRUE .. && make -j "$(nproc)" && make install
 WORKDIR /root/lime-tools/build
 RUN cmake .. && make install
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 COPY --from=driver-builder /usr/local /usr/local

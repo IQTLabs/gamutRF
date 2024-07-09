@@ -1,7 +1,9 @@
-FROM ubuntu:22.04 AS torchsig-builder
-WORKDIR /root
+FROM ubuntu:24.04 AS torchsig-builder
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git python3-pip python3-dev && pip install -U pip
+WORKDIR /root/.config/pip
+COPY pip.conf pip.conf
+WORKDIR /root
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git python3-pip python3-dev
 # Cause torch CPU only to be installed, no cuda dependencies
 RUN pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
 RUN git clone https://github.com/TorchDSP/torchsig -b v0.4.1
@@ -16,7 +18,7 @@ WORKDIR /root
 ENV DEBIAN_FRONTEND=noninteractive
 # TODO: find a better way cherrypick just Torchsig itself, without Torch et al. Torchsig transforms have dependencies on
 # Torch, even though we don't need Torch for the standalone transforms we want.
-COPY --from=torchsig-builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+COPY --from=torchsig-builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
 RUN python3 -c "from torchsig.transforms import transforms"
 RUN python3 -c "from gamutrf import grscan"
 COPY augment/augment.py /root/augment.py

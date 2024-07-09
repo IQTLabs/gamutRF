@@ -1,10 +1,10 @@
-FROM ubuntu:22.04 AS builder
+FROM ubuntu:24.04 AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     apt-get -y --no-install-recommends install \
     build-essential \
     cmake \
     git \
-    python3-mako python3-distutils portaudio19-dev libsoxr-dev libusb-1.0-0-dev libairspy-dev libsndfile1-dev librtlsdr-dev
+    python3-mako portaudio19-dev libsoxr-dev libusb-1.0-0-dev libairspy-dev libsndfile1-dev librtlsdr-dev
 WORKDIR /root
 RUN git clone https://github.com/gnuradio/volk -b v3.1.2
 RUN git clone https://github.com/airspy/airspyhf -b 1.6.8
@@ -17,9 +17,9 @@ RUN cmake .. && make && make install
 WORKDIR /root/airspy-fmradion/build
 RUN git submodule update --init
 RUN cmake .. && make && make install
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libportaudio2 libsoxr0 libusb-1.0-0 libairspy0 libsndfile1 librtlsdr0
+    libportaudio2 libsoxr0 libusb-1.0-0 libairspy0 libsndfile1 librtlsdr2
 COPY --from=builder /usr/local /usr/local
 RUN ldconfig
 RUN ldd /usr/local/bin/airspy-fmradion
