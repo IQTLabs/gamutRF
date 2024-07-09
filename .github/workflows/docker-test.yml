@@ -33,7 +33,7 @@ jobs:
         docker build -f docker/Dockerfile.vkfft . -t iqtlabs/gamutrf-vkfft:latest
         docker build -f docker/Dockerfile.sigmf docker -t iqtlabs/gamutrf-sigmf:latest
         docker build -f docker/Dockerfile.driver docker -t iqtlabs/gamutrf-driver:latest
-        docker build -f docker/Dockerfile.uhd-sr docker -t iqtlabs/gamutrf-uhd-sr:latest
+        docker build -f docker/Dockerfile.uhd-sr . -t iqtlabs/gamutrf-uhd-sr:latest
         docker build -f docker/Dockerfile.base docker -t iqtlabs/gamutrf-base:latest
         docker rmi -f iqtlabs/gamutrf-vkfft:latest iqtlabs/gamutrf-driver:latest iqtlabs/gamutrf-uhd-sr:latest
         docker build -f Dockerfile . -t iqtlabs/gamutrf:latest
