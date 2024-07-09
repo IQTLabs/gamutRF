@@ -76,7 +76,7 @@ RUN if [ "$(arch)" = "x86_64" ] ; then /root/install-nv.sh ; fi && \
         wget \
         zstd && \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
-COPY --from=iqtlabs/gnuradio:3.10.9.2 /usr/share/uhd/images /usr/share/uhd/images
+COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/share/uhd/images /usr/share/uhd/images
 COPY --from=installer /usr/local /usr/local
 COPY --from=installer /gamutrf /gamutrf
 COPY --from=installer /root/.local /root/.local
