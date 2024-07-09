@@ -4,6 +4,8 @@ ARG POETRY_CACHE
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="${PATH}:/root/.local/bin"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+WORKDIR /root/.config/pip
+COPY pip.conf pip.conf
 WORKDIR /root
 COPY renovate.json /root/
 # hadolint ignore=DL3008
@@ -37,6 +39,7 @@ COPY gamutrfwaterfall /gamutrfwaterfall/
 # TODO: handle caching for pycairo
 RUN poetry run pip install --no-cache-dir pycairo=="$(grep pycairo pyproject.toml | grep -Eo '[0-9\.]+')"
 RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
+RUN apt-get purge -yq python3-packaging
 RUN poetry install --no-interaction --no-ansi --no-dev
 
 FROM ubuntu:24.04
