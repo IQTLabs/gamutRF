@@ -1,8 +1,8 @@
 FROM ubuntu:24.04 AS torchsig-builder
-WORKDIR /root
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /root/.config/pip
 COPY pip.conf pip.conf
+WORKDIR /root
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git python3-pip python3-dev
 # Cause torch CPU only to be installed, no cuda dependencies
 RUN pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
