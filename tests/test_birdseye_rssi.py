@@ -64,8 +64,7 @@ class BirdseyeRSSITestCase(unittest.TestCase):
                             return
             time.sleep(1)
 
-    # TODO(josh): disable to move to ubuntu 24, then re-enable.
-    def disabled_test_birdseye_endtoend_rssi(self):
+    def test_birdseye_endtoend_rssi(self):
         test_tag = "iqtlabs/gamutrf:latest"
         with tempfile.TemporaryDirectory() as tempdir:
             testraw = os.path.join(tempdir, "gamutrf_recording1_1000Hz_1000sps.raw")
