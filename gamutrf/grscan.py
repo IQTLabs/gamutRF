@@ -222,6 +222,7 @@ class grscan(gr.top_block):
                         sigmf,
                         zstd=True,
                         rotate=False,
+                        description=description,
                     ),
                 ]
             )
