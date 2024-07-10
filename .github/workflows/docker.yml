@@ -61,7 +61,7 @@ jobs:
     - name: Build and push platforms uhd-sr
       uses: docker/build-push-action@v6
       with:
-        context: docker
+        context: .
         file: docker/Dockerfile.uhd-sr
         platforms: linux/amd64,linux/arm64
         push: true
