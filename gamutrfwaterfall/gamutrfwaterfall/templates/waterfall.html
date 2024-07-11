@@ -16,10 +16,10 @@
                 <p><input type="number" step="1" pattern="\d+" name="tune_step_fft" value="{{ config_vars['tune_step_fft']|int }}"/></p>
                 <p>Sweep seconds:</p>
                 <p><input type="number" step="1" pattern="\d+" name="sweep_sec" value="{{ config_vars['sweep_sec']|int }}"/></p>
-        <p>Write samples:</p>
-        <p><input type="number" step="1" pattern="\d+" name="write_samples" value="{{ config_vars['write_samples']|int }}"/></p>
-        <p>SigMF description:</p>
-        <p><input type="number" step="1" pattern=".+" name="description" value="{{ config_vars['description'] }}"/></p>
+                <p>Write samples:</p>
+                <p><input type="number" step="1" pattern="\d+" name="write_samples" value="{{ config_vars['write_samples']|int }}"/></p>
+                <p>SigMF description:</p>
+                <p><input type="text" name="description" value="{{ config_vars['description'] }}"/></p>
 
                 <p><button name="reset" type="submit" value="reset">Reset</button></p>
             </form>
