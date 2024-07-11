@@ -108,7 +108,7 @@ services:
       - --iq_inference_model_server=torchserve:8080
       - --iq_inference_model_name=torchsig_model
       # - --write_samples=1000000000
-      # - --sample_dir=/logs/samples
+      - --sample_dir=/logs/samples
     healthcheck:
       test: [CMD, "/gamutrf/bin/scanhc.sh", "9000"]
       interval: 10s
