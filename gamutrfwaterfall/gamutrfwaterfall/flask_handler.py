@@ -222,7 +222,7 @@ class FlaskHandler:
         reset = request.form.get("reset", None)
         if reset == "reset":
             reconf_query_str = "&".join(
-                [f"{k}=\"{v}\"" for k, v in self.config_vars.items()]
+                [f'{k}="{v}"' for k, v in self.config_vars.items()]
             )
             logging.info(f"\n\n{reconf_query_str=}\n\n")
             try:
