@@ -101,6 +101,8 @@ class grscan(gr.top_block):
     ):
         gr.top_block.__init__(self, "scan", catch_exceptions=True)
 
+        if description:
+            description = description.strip('"')
         tune_step_hz = int(samp_rate * tuneoverlap)
         stare = False
 

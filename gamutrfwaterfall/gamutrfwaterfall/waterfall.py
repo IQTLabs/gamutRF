@@ -31,6 +31,8 @@ CONFIG_VARS = {
     "tuneoverlap": None,
     "tune_step_fft": None,
     "sweep_sec": None,
+    "write_samples": 0,
+    "description": "",
 }
 
 
