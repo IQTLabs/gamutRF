@@ -221,9 +221,13 @@ class FlaskHandler:
         write_scanner_args(self.config_vars_path, self.config_vars)
         reset = request.form.get("reset", None)
         if reset == "reset":
-            reconf_query_str = "&".join(
-                [f'{k}="{v}"' for k, v in self.config_vars.items()]
-            )
+            reconf_queries = []
+            for k, v in self.config_vars.items():
+                if k in ["description"]:
+                    reconf_queries.append(f'{k}="{v}"')
+                else:
+                    reconf_queries.append(f"{k}={v}")
+            reconf_query_str = "&".join(reconf_queries)
             logging.info(f"\n\n{reconf_query_str=}\n\n")
             try:
                 response = requests.get(
