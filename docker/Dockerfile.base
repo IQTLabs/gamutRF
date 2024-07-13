@@ -41,7 +41,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-driver /usr/local /usr/local
-COPY --from=iqtlabs/gamutrf-uhd-sr /usr/local /usr/local
 COPY --from=gr-iqtlabs-builder /usr/local /usr/local
 RUN ldconfig -v
 RUN python3 -c "from gnuradio import soapy, iqtlabs ; from gnuradio.iqtlabs import vkfft"
