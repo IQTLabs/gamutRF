@@ -52,6 +52,7 @@ class grscan(gr.top_block):
         gps_server="",
         igain=0,
         inference_addr="0.0.0.0",  # nosec
+        inference_batch=1,
         inference_min_confidence=0.5,
         inference_min_db=-200,
         inference_model_name="",
@@ -330,7 +331,7 @@ class grscan(gr.top_block):
                 samp_rate=int(samp_rate),
                 power_inference=iq_power_inference,
                 background=iq_inference_background,
-                batch=0,  # TODO: not used yet.
+                batch=inference_batch,
             )
             self.inference_blocks.append(self.iq_inference_block)
             if self.write_samples_block:
