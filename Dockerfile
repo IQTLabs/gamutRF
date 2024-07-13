@@ -85,6 +85,5 @@ COPY --from=installer /root/.local /root/.local
 RUN ldconfig -v
 WORKDIR /gamutrf
 RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
-RUN ldd /usr/local/bin/uhd_sample_recorder
 # nosemgrep:github.workflows.config.missing-user
 CMD ["gamutrf-scan", "--help"]
