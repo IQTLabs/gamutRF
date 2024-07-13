@@ -32,7 +32,6 @@ RUN for i in bjoern falcon-cors gpsd-py3 ; do poetry run pip install --no-cache-
 RUN poetry install --no-interaction --no-ansi --no-dev --no-root
 COPY gamutrf gamutrf/
 COPY bin bin/
-COPY templates templates/
 RUN poetry install --no-interaction --no-ansi --no-dev
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
