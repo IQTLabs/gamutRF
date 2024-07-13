@@ -3,7 +3,6 @@
 from gamutrf.compress_dirs import main as compress_dirs_main
 from gamutrf.offline import main as offline_main
 from gamutrf.scan import main as scan_main
-from gamutrf.worker import main as worker_main
 
 
 def compress_dirs():
@@ -19,8 +18,3 @@ def offline():
 def scan():
     """Entrypoint for scan"""
     scan_main()
-
-
-def worker():
-    """Entrypoint for worker"""
-    worker_main()

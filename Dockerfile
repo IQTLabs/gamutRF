@@ -32,7 +32,6 @@ RUN for i in bjoern falcon-cors gpsd-py3 ; do poetry run pip install --no-cache-
 RUN poetry install --no-interaction --no-ansi --no-dev --no-root
 COPY gamutrf gamutrf/
 COPY bin bin/
-COPY templates templates/
 RUN poetry install --no-interaction --no-ansi --no-dev
 
 # nosemgrep:github.workflows.config.dockerfile-source-not-pinned
@@ -86,6 +85,5 @@ COPY --from=installer /root/.local /root/.local
 RUN ldconfig -v
 WORKDIR /gamutrf
 RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
-RUN ldd /usr/local/bin/uhd_sample_recorder
 # nosemgrep:github.workflows.config.missing-user
 CMD ["gamutrf-scan", "--help"]
