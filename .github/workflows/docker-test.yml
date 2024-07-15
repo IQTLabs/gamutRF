@@ -36,7 +36,6 @@ jobs:
         docker build -f docker/Dockerfile.base docker -t iqtlabs/gamutrf-base:latest
         docker rmi -f iqtlabs/gamutrf-vkfft:latest iqtlabs/gamutrf-driver:latest
         docker build -f Dockerfile . -t iqtlabs/gamutrf:latest
-        docker build -f docker/Dockerfile.torchsig . -t iqtlabs/gamutrf-torchsig:latest
         docker run -t iqtlabs/gamutrf:latest gamutrf-compress_dirs --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-offline --help
         docker run -t iqtlabs/gamutrf:latest gamutrf-scan --help
