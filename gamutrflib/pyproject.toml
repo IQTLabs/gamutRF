@@ -14,7 +14,7 @@ scipy = "1.14.0"
 pandas = "2.2.2"
 python = ">=3.10,<3.13"
 pyzmq = "26.0.3"
-zstandard = "0.22.0"
+zstandard = "0.23.0"
 
 [tool.poetry.urls]
 homepage = "https://github.com/IQTLabs/gamutRF"
