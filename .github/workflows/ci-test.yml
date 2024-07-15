@@ -63,7 +63,6 @@ jobs:
           yamllint -s *yml
       - name: Code Quality - Black
         run: |
-          poetry run black augment --check
           poetry run black gamutrf --check
           poetry run black gamutrflib --check
           poetry run black gamutrfwaterfall --check
