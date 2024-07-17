@@ -81,11 +81,12 @@ def fft_proxy(
     tmp_buff_file = buff_file.replace(tmp_buff_file, "." + tmp_buff_file)
     if os.path.exists(tmp_buff_file):
         os.remove(tmp_buff_file)
-    context = zstandard.ZstdCompressor()
+    compress_context = zstandard.ZstdCompressor()
+    decompress_context = zstandard.ZstdDecompressor()
     shutdown = False
     while not shutdown:
         with open(tmp_buff_file, "wb") as zbf:
-            with context.stream_writer(zbf) as bf:
+            with compress_context.stream_writer(zbf) as bf:
                 while not shutdown:
                     shutdown = live_file is not None and not live_file.exists()
                     try:
@@ -93,6 +94,11 @@ def fft_proxy(
                     except zmq.error.Again:
                         time.sleep(poll_timeout)
                         continue
+                    # gamutrf might send compressed message
+                    try:
+                        sock_txt = decompress_context.decompress(sock_txt)
+                    except zstandard.ZstdError:
+                        pass
                     bf.write(sock_txt)
                     now = time.time()
                     if (
