@@ -128,7 +128,6 @@ class ZmqScanner:
         self.addr = addr
         self.port = port
         self.context = zstandard.ZstdDecompressor()
-        self.txt_buf = ""
         self.fftbuffer = None
         self.scan_configs = {}
         self.proxy_result = executor.submit(
@@ -144,28 +143,15 @@ class ZmqScanner:
     def __str__(self):
         return f"ZmqScanner on {self.addr}:{self.port}"
 
-    def read_buff_file(self):
+    def read_buff_file(self, log):
         if os.path.exists(self.buff_file):
             self.info("read %u bytes of FFT data" % os.stat(self.buff_file).st_size)
             with self.context.stream_reader(open(self.buff_file, "rb")) as bf:
-                self.txt_buf += bf.read().decode("utf8")
+                txt_buf = bf.read().decode("utf8")
+                if log:
+                    log.write(txt_buf)
+                lines = [json.loads(line) for line in txt_buf.splitlines()]
             os.remove(self.buff_file)
-            return True
-        return False
-
-    def txtbuf_to_lines(self, log):
-        lines = self.txt_buf.splitlines()
-        if len(lines) > 1:
-            if self.txt_buf.endswith("\n"):
-                if log:
-                    log.write(self.txt_buf)
-                self.txt_buf = ""
-            elif lines:
-                last_line = lines[-1]
-                if log:
-                    log.write(self.txt_buf[: -len(last_line)])
-                self.txt_buf = last_line
-                lines = lines[:-1]
             return lines
         return None
 
@@ -200,9 +186,7 @@ class ZmqScanner:
     def lines_to_df(self, lines):
         try:
             records = []
-            for line in lines:
-                line = line.strip()
-                json_record = json.loads(line)
+            for json_record in lines:
                 ts = float(json_record["ts"])
                 sweep_start = float(json_record["sweep_start"])
                 total_tune_count = int(json_record["total_tune_count"])
@@ -229,12 +213,11 @@ class ZmqScanner:
     def read_buff(self, log, discard_time):
         scan_config = None
         frame_df = None
-        if self.read_buff_file():
-            lines = self.txtbuf_to_lines(log)
-            if lines:
-                df = self.lines_to_df(lines)
-                if df is not None:
-                    scan_config, frame_df = self.read_new_frame_df(df, discard_time)
+        lines = self.read_buff_file(log)
+        if lines:
+            df = self.lines_to_df(lines)
+            if df is not None:
+                scan_config, frame_df = self.read_new_frame_df(df, discard_time)
         return scan_config, frame_df
 
 
