@@ -144,16 +144,19 @@ class ZmqScanner:
         return f"ZmqScanner on {self.addr}:{self.port}"
 
     def read_buff_file(self, log):
+        lines = None
         if os.path.exists(self.buff_file):
             self.info("read %u bytes of FFT data" % os.stat(self.buff_file).st_size)
             with self.context.stream_reader(open(self.buff_file, "rb")) as bf:
                 txt_buf = bf.read().decode("utf8")
                 if log:
                     log.write(txt_buf)
-                lines = [json.loads(line) for line in txt_buf.splitlines()]
+                try:
+                    lines = [json.loads(line) for line in txt_buf.splitlines()]
+                except json.decoder.JSONDecodeError as err:
+                    logging.info("%s: %s", err, txt_buf)
             os.remove(self.buff_file)
-            return lines
-        return None
+        return lines
 
     def read_new_frame_df(self, df, discard_time):
         frame_df = None
