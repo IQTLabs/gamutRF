@@ -152,7 +152,7 @@ class ZmqScanner:
                 if log:
                     log.write(txt_buf)
                 try:
-                    lines = [json.loads(line) for line in txt_buf.splitlines()]
+                    lines = [json.loads(line) for line in txt_buf.splitlines() if line]
                 except json.decoder.JSONDecodeError as err:
                     logging.info("%s: %s", err, txt_buf)
             os.remove(self.buff_file)
