@@ -4,6 +4,7 @@ import logging
 import sys
 import pmt
 import zmq
+import zstandard
 
 try:
     from gnuradio import gr  # pytype: disable=import-error
@@ -38,6 +39,7 @@ class pduzmq(gr.basic_block):
         self.zmq_pub.bind(zmq_addr)
         self.message_port_register_in(pmt.intern("json"))
         self.set_msg_handler(pmt.intern("json"), self.receive_pdu)
+        self.context = zstandard.ZstdCompressor()
 
     def stop(self):
         self.zmq_pub.close()
@@ -45,6 +47,8 @@ class pduzmq(gr.basic_block):
     def receive_pdu(self, pdu):
         item = pmt.to_python(pmt.cdr(pdu)).tobytes().decode("utf8").strip()
         try:
-            self.zmq_pub.send_string(item + DELIM, flags=zmq.NOBLOCK)
+            data = item + DELIM
+            data = self.context.compress(data.encode("utf8"))
+            self.zmq_pub.send(data, flags=zmq.NOBLOCK)
         except zmq.ZMQError as e:
             logging.error(str(e))
