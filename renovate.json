@@ -1,6 +1,6 @@
 {
   "constraints": {
-    "poetry": "1.8.1"
+    "poetry": "1.8.3"
   },
   "extends": [
     "config:base",
