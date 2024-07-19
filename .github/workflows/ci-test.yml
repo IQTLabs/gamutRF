@@ -57,7 +57,8 @@ jobs:
           poetry install --no-interaction -C gamutrfwaterfall && \
           poetry install --no-interaction -C utils/mavlink-api && \
           poetry install --no-interaction && \
-          sudo dpkg -r --force-depends python3-numpy
+          sudo dpkg -r --force-depends python3-numpy && \
+          sudo pip3 install -U pyserial requests
       - name: Code Quality - yamllint
         run: |
           yamllint -s *yml
@@ -75,7 +76,6 @@ jobs:
           PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
         run: |
           sudo pip3 install pytype=="$(grep -E "pytype = " pyproject.toml | grep -Eo "[0-9\.]+")" && \
-            sudo pip3 install -U pyserial && \
             pytype -k gamutrf/ && \
             pytype -k gamutrflib/ && \
             pytype -k utils/mavlink-api
