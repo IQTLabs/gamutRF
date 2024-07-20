@@ -128,7 +128,7 @@ gamutrf1:
     command:
       - gamutrf-scan
       - --sdrargs=num_recv_frames=500,recv_frame_size=16360,type=b200,serial=XXXXXXX
-      - --logport=10000
+      - --fft_zmq_port=10000
       - --inference_port=10001
     ...
     ports:
@@ -141,7 +141,7 @@ gamutrf2:
     command:
       - gamutrf-scan
       - --sdrargs=num_recv_frames=500,recv_frame_size=16360,type=b200,serial=XXXXXXX
-      - --logport=11000
+      - --fft_zmq_port=11000
       - --inference_port=11001
     ...
     ports:

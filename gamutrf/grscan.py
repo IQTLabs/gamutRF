@@ -45,8 +45,8 @@ class grscan(gr.top_block):
         external_gps_server_port=8888,
         fft_batch_size=256,
         fft_processor_affinity=0,
-        fgaas_addr="0.0.0.0",
-        fgaas_port=10002,
+        iq_zmq_addr="0.0.0.0",
+        iq_zmq_port=10002,
         freq_end=1e9,
         freq_start=100e6,
         gps_server="",
@@ -68,8 +68,8 @@ class grscan(gr.top_block):
         iq_inference_squelch_alpha=1e-4,
         iq_power_inference=False,
         iqtlabs=None,
-        logaddr="0.0.0.0",  # nosec
-        logport=10000,
+        fft_zmq_addr="0.0.0.0",  # nosec
+        fft_zmq_port=10000,
         low_power_hold_down=False,
         mqtt_server="",
         n_image=0,
@@ -256,23 +256,23 @@ class grscan(gr.top_block):
             peak_fft_range=peak_fft_range,
         )
         self.fft_blocks.append(retune_fft)
-        fft_zmq_addr = f"tcp://{logaddr}:{logport}"
-        self.pduzmq_block = pduzmq(fft_zmq_addr)
-        logging.info("serving FFT on %s", fft_zmq_addr)
+        fft_zmq_block_addr = f"tcp://{fft_zmq_addr}:{fft_zmq_port}"
+        self.pduzmq_block = pduzmq(fft_zmq_block_addr)
+        logging.info("serving FFT on %s", fft_zmq_block_addr)
 
-        if fgaas_port:
-            fgaas_zmq_addr = f"tcp://{fgaas_addr}:{fgaas_port}"
-            logging.info("serving I/Q samples and tags on %s", fgaas_zmq_addr)
-            fgass_zmq_block = zeromq.pub_sink(
+        if iq_zmq_port:
+            iq_zmq_block_addr = f"tcp://{iq_zmq_addr}:{iq_zmq_port}"
+            logging.info("serving I/Q samples and tags on %s", iq_zmq_block_addr)
+            iq_zmq_block = zeromq.pub_sink(
                 gr.sizeof_gr_complex,
                 fft_batch_size * nfft,
-                fgaas_zmq_addr,
+                iq_zmq_block_addr,
                 100,
                 True,
                 65536,
                 "",
             )
-            self.connect((self.retune_pre_fft, 0), (fgass_zmq_block, 0))
+            self.connect((self.retune_pre_fft, 0), (iq_zmq_block, 0))
 
         self.inference_blocks = []
         self.inference_output_block = None

@@ -135,18 +135,18 @@ def argument_parser():
         help="FFTI size [default=%(default)r]",
     )
     parser.add_argument(
-        "--logaddr",
-        dest="logaddr",
+        "--fft_zmq_addr",
+        dest="fft_zmq_addr",
         type=str,
         default="0.0.0.0",  # nosec
-        help="Log FFT results to this address",
+        help="Serve FFT results from this address over ZMQ",
     )
     parser.add_argument(
-        "--logport",
-        dest="logport",
+        "--fft_zmq_port",
+        dest="fft_zmq_port",
         type=int,
         default=10000,
-        help="Log FFT results to this port",
+        help="if > 0, serve FFT results to this port over ZMQ",
     )
     parser.add_argument(
         "--inference_batch",
@@ -170,18 +170,18 @@ def argument_parser():
         help="Log inference results to this port",
     )
     parser.add_argument(
-        "--fgaas_addr",
-        dest="fgaas_addr",
+        "--iq_zmq_addr",
+        dest="iq_zmq_addr",
         type=str,
         default="0.0.0.0",  # nosec
-        help="Log scanner I/Q stream and tags to this address",
+        help="Serve scanner I/Q stream and tags from this address over ZMQ",
     )
     parser.add_argument(
-        "--fgaas_port",
-        dest="fgaas_port",
+        "--iq_zmq_port",
+        dest="iq_zmq_port",
         type=int,
         default=10002,
-        help="If > 0, log scanner I/Q stream and tags to this port",
+        help="If > 0, Serve scanner I/Q stream and tags from this port over ZMQ",
     )
     parser.add_argument(
         "--inference_text_color",
