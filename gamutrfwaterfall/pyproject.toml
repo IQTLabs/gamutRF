@@ -12,7 +12,7 @@ packages = [
 Flask = "3.0.3"
 cairocffi = "1.7.1"
 matplotlib = "3.9.1"
-numpy = "2.0.0"
+numpy = "2.0.1"
 pandas = "2.2.2"
 pycairo = "1.26.1"
 python = ">=3.10,<3.13"
