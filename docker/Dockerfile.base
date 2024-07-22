@@ -13,8 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libuhd-dev \
   libvulkan-dev \
   pybind11-dev \
-  python3-numpy
+  python3-pip
+WORKDIR /root/.config/pip
+COPY pip.conf pip.conf
 WORKDIR /root
+COPY pyproject.toml /root/
+RUN pip3 install numpy=="$(grep -E "numpy = " pyproject.toml | grep -Eo "[0-9\.]+")"
 RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.113
 COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/gr-iqtlabs
 WORKDIR /root/gr-iqtlabs/build
@@ -37,7 +41,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libunwind8 \
     libvulkan1 \
     python3 \
-    python3-numpy \
     && apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-driver /usr/local /usr/local
