@@ -47,18 +47,18 @@ jobs:
             sudo apt-get install -y --no-install-recommends gnuradio-dev python3-packaging
       - name: Install dependencies
         run: |
-          for repodir in flatbuffers json libsigmf gr-iqtlabs ; do \
-              mkdir -p ${repodir}/build && cd ${repodir}/build && \
-              cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON .. && make -j "$(nproc)" && sudo make install && cd ../.. ; \
-          done && \
-          sudo ldconfig -v && \
           poetry config virtualenvs.create false && \
           poetry install --no-interaction -C gamutrflib && \
           poetry install --no-interaction -C gamutrfwaterfall && \
           poetry install --no-interaction -C utils/mavlink-api && \
           poetry install --no-interaction && \
           sudo pip3 install -U pyserial requests && \
-          sudo dpkg -r --force-depends python3-numpy python3-requests python3-scipy
+          sudo dpkg -r --force-depends python3-numpy python3-requests python3-scipy && \
+          for repodir in flatbuffers json libsigmf gr-iqtlabs ; do \
+              mkdir -p ${repodir}/build && cd ${repodir}/build && \
+              cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON .. && make -j "$(nproc)" && sudo make install && cd ../.. ; \
+          done && \
+          sudo ldconfig -v
       - name: Code Quality - yamllint
         run: |
           yamllint -s *yml
