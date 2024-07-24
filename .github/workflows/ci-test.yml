@@ -58,7 +58,7 @@ jobs:
           poetry install --no-interaction -C utils/mavlink-api && \
           poetry install --no-interaction && \
           sudo pip3 install -U pyserial requests && \
-          sudo dpkg -r --force-depends python3-numpy python3-requests
+          sudo dpkg -r --force-depends python3-numpy python3-requests python3-scipy
       - name: Code Quality - yamllint
         run: |
           yamllint -s *yml
