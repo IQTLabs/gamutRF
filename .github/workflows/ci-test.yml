@@ -80,8 +80,6 @@ jobs:
             pytype -k gamutrflib/ && \
             pytype -k utils/mavlink-api
       - name: Test with pytest
-        env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
         run: |
           ldconfig -p|grep iqtlabs
           poetry run pytest --cov-report term-missing --cov=. --cov-report=xml tests/ gamutrfwaterfall/tests
