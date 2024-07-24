@@ -22,19 +22,15 @@ jobs:
           version: 1.8.3
       - name: Get dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends yamllint
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+            yamllint
       - name: Code Quality - yamllint
         run: |
           yamllint -s *yml
       - name: Install poetry dependencies
         run: |
           poetry config virtualenvs.create false && \
-          poetry install --no-interaction -C gamutrflib && \
-          poetry install --no-interaction -C gamutrfwaterfall && \
-          poetry install --no-interaction -C utils/mavlink-api && \
-          poetry install --no-interaction && \
-          sudo pip3 install -U pyserial requests && \
-          sudo dpkg -r --force-depends python3-numpy python3-requests
+          poetry run pip install black
       - name: Code Quality - Black
         run: |
           poetry run black gamutrf --check
