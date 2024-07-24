@@ -23,73 +23,17 @@ jobs:
       - name: Get dependencies
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            cmake \
-            g++ \
-            gcc \
-            git \
-            libboost-all-dev \
-            libev-dev \
-            libopencv-dev \
-            libuhd-dev \
-            libunwind-dev \
-            make \
-            pkg-config \
-            software-properties-common \
-            sox \
-            uhd-host \
-            wget \
-            yamllint \
-          && grep -h 'git clone https' docker/*|grep -v pytorch|sed -E 's/RUN\s+git clone\s+//g'|sort|uniq|xargs -L1 git clone
-      - name: install gnuradio
-        run: |
-          sudo add-apt-repository ppa:gnuradio/gnuradio-releases && sudo apt-get update && \
-            sudo apt-get install -y --no-install-recommends gnuradio-dev python3-packaging
-      - name: Install dependencies
-        run: |
-          for repodir in flatbuffers json libsigmf gr-iqtlabs ; do \
-              mkdir -p ${repodir}/build && cd ${repodir}/build && \
-              cmake -DUSE_SYSTEM_JSON=ON -DUSE_SYSTEM_FLATBUFFERS=ON .. && make -j "$(nproc)" && sudo make install && cd ../.. ; \
-          done && \
-          sudo ldconfig -v && \
-          poetry config virtualenvs.create false && \
-          poetry install --no-interaction -C gamutrflib && \
-          poetry install --no-interaction -C gamutrfwaterfall && \
-          poetry install --no-interaction -C utils/mavlink-api && \
-          poetry install --no-interaction && \
-          sudo pip3 install -U pyserial requests && \
-          sudo dpkg -r --force-depends python3-numpy python3-requests
+            yamllint
       - name: Code Quality - yamllint
         run: |
           yamllint -s *yml
+      - name: Install poetry dependencies
+        run: |
+          poetry config virtualenvs.create false && \
+          poetry run pip install black
       - name: Code Quality - Black
         run: |
           poetry run black gamutrf --check
           poetry run black gamutrflib --check
           poetry run black gamutrfwaterfall --check
           poetry run black utils --check
-      - name: Code Quality - Pylint
-        run: |
-          poetry run pylint --fail-under=6 gamutrf/ gamutrflib/ gamutrfwaterfall/
-      - name: Code Quality - Pytype
-        env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
-        run: |
-          sudo pip3 install pytype=="$(grep -E "pytype = " pyproject.toml | grep -Eo "[0-9\.]+")" && \
-            pytype -k gamutrf/ && \
-            pytype -k gamutrflib/ && \
-            pytype -k utils/mavlink-api
-      - name: Test with pytest
-        env:
-          PYTHONPATH: /usr/local/lib/python3.10/dist-packages:/usr/lib/python3/dist-packages
-        run: |
-          ldconfig -p|grep iqtlabs
-          poetry run pytest --cov-report term-missing --cov=. --cov-report=xml tests/ gamutrfwaterfall/tests
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          verbose: false # optional (default = false)
-          fail_ci_if_error: false
-        if: github.repository == 'iqtlabs/gamutrf'

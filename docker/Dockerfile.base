@@ -12,8 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libspdlog-dev \
   libuhd-dev \
   libvulkan-dev \
-  pybind11-dev \
-  python3-numpy
+  pybind11-dev
 WORKDIR /root
 RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.113
 COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/gr-iqtlabs
@@ -37,7 +36,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libunwind8 \
     libvulkan1 \
     python3 \
-    python3-numpy \
     && apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
 COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-driver /usr/local /usr/local

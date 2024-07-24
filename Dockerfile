@@ -73,16 +73,20 @@ RUN if [ "$(arch)" = "x86_64" ] ; then /root/install-nv.sh ; fi && \
         libzmq5 \
         mesa-vulkan-drivers \
         python3 \
+        python3-pytest \
         python3-zmq \
         uhd-host \
         wget \
         zstd && \
     apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
+WORKDIR /
 COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/share/uhd/images /usr/share/uhd/images
 COPY --from=installer /usr/local /usr/local
 COPY --from=installer /gamutrf /gamutrf
+COPY tests /tests
 COPY --from=installer /root/.local /root/.local
 RUN ldconfig -v
+RUN pytest tests
 WORKDIR /gamutrf
 RUN echo "$(find /gamutrf/gamutrf -type f -name \*py -print)"|xargs grep -Eh "^(import|from)\s"|grep -Ev "gamutrf"|sort|uniq|python3
 # nosemgrep:github.workflows.config.missing-user
