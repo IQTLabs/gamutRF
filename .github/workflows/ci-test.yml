@@ -44,7 +44,9 @@ jobs:
       - name: install gnuradio
         run: |
           sudo add-apt-repository ppa:gnuradio/gnuradio-releases && sudo apt-get update && \
-            sudo apt-get install -y --no-install-recommends gnuradio-dev python3-packaging
+            sudo apt-get install -y --no-install-recommends gnuradio-dev python3-packaging && \
+            sudo pip3 install -U pyserial requests numpy scipy && \
+            sudo dpkg -r --force-depends python3-numpy python3-requests
       - name: Install dependencies
         run: |
           for repodir in flatbuffers json libsigmf gr-iqtlabs ; do \
@@ -56,9 +58,7 @@ jobs:
           poetry install --no-interaction -C gamutrflib && \
           poetry install --no-interaction -C gamutrfwaterfall && \
           poetry install --no-interaction -C utils/mavlink-api && \
-          poetry install --no-interaction && \
-          sudo pip3 install -U pyserial requests && \
-          sudo dpkg -r --force-depends python3-numpy python3-requests
+          poetry install --no-interaction
       - name: Code Quality - yamllint
         run: |
           yamllint -s *yml
