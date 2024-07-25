@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gamutrflib"
-version = "0.5.63"
+version = "0.5.64"
 description = "gamutrf non-gnuradio common code"
 authors = ["cglewis <clewis@iqt.org>"]
 license = "Apache-2.0"
