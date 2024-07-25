@@ -1,5 +1,5 @@
 FROM ubuntu:24.04 AS gr-iqtlabs-builder
-COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
+COPY --from=iqtlabs/gnuradio:3.10.11.0 /usr/local /usr/local
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libvulkan1 \
     python3 \
     && apt-get -y -q clean && rm -rf /var/lib/apt/lists/*
-COPY --from=iqtlabs/gnuradio:3.10.10.0 /usr/local /usr/local
+COPY --from=iqtlabs/gnuradio:3.10.11.0 /usr/local /usr/local
 COPY --from=iqtlabs/gamutrf-driver /usr/local /usr/local
 COPY --from=gr-iqtlabs-builder /usr/local /usr/local
 RUN ldconfig -v
