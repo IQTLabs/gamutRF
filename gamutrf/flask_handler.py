@@ -42,9 +42,12 @@ class FlaskHandler:
                 continue
             if not hasattr(new_options, arg):
                 return f"no such option {arg}", 400
-            val_type = type(getattr(self.options, arg))
+            val_type = getattr(self.options, arg)
             try:
-                setattr(new_options, arg, val_type(val))
+                if val_type is None:
+                    setattr(new_options, arg, val)
+                else:
+                    setattr(new_options, arg, type(val_type)(val))
             except (TypeError, ValueError) as err:
                 return f"cannot set {arg} = {val}: {err}", 400
         results = self.check_options(new_options)
