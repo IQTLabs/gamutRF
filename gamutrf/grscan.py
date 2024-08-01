@@ -390,9 +390,8 @@ class grscan(gr.top_block):
                     (block, "inference"), (self.inference_output_block, "inference")
                 )
 
-        if not retune_fft_output_block:
-            retune_fft_output_block = blocks.null_sink(gr.sizeof_float * nfft)
-        self.connect((retune_fft, 0), (retune_fft_output_block, 0))
+        if retune_fft_output_block:
+            self.connect((retune_fft, 0), (retune_fft_output_block, 0))
 
         if pretune:
             self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
