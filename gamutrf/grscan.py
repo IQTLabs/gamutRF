@@ -105,10 +105,12 @@ class grscan(gr.top_block):
             description = description.strip('"')
         tune_step_hz = int(samp_rate * tuneoverlap)
         stare = False
+        initial_freq = freq_start
 
         if freq_end == 0:
             stare = True
             freq_end = freq_start + (tune_step_hz - 1)
+            initial_freq += int((freq_end - freq_start) / 2)
             logging.info(
                 f"using stare mode, scan from {freq_start/1e6}MHz to {freq_end/1e6}MHz"
             )
@@ -167,7 +169,7 @@ class grscan(gr.top_block):
             nfft,
             tune_step_fft,
             agc=False,
-            center_freq=freq_start,
+            center_freq=initial_freq,
             sdrargs=sdrargs,
             dc_ettus_auto_offset=dc_ettus_auto_offset,
         )
