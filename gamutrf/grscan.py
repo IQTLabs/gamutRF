@@ -204,6 +204,7 @@ class grscan(gr.top_block):
             if write_fft_points:
                 fft_dir = sample_dir
             Path(sample_dir).mkdir(parents=True, exist_ok=True)
+            samples_vlen = fft_batch_size * nfft
             self.samples_blocks.extend(
                 [
                     # blocks.vector_to_stream(
@@ -215,10 +216,10 @@ class grscan(gr.top_block):
                         "rx_freq",
                         gr.sizeof_gr_complex,
                         "_".join(("cf32", endianstr())),
-                        fft_batch_size * nfft,
+                        samples_vlen,
                         sample_dir,
                         "samples",
-                        write_samples,
+                        int(write_samples / samples_vlen),
                         skip_tune_step,
                         int(samp_rate),
                         rotate_secs,
