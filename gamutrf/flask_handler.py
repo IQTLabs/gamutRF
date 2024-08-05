@@ -8,6 +8,7 @@ class FlaskHandler:
     def __init__(self, options, check_options, banned_args):
         self.check_options = check_options
         self.options = options
+        self.orig_options = copy.deepcopy(self.options)
         self.banned_args = banned_args
         self.reconfigures = 0
         self.app = Flask(__name__)
@@ -42,7 +43,9 @@ class FlaskHandler:
                 continue
             if not hasattr(new_options, arg):
                 return f"no such option {arg}", 400
-            val_type = getattr(self.options, arg)
+            val_type = getattr(self.orig_options, arg)
+            if val == "False":
+                val = False
             try:
                 if val_type is None:
                     setattr(new_options, arg, val)
