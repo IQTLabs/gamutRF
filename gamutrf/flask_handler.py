@@ -8,7 +8,7 @@ class FlaskHandler:
     def __init__(self, options, check_options, banned_args):
         self.check_options = check_options
         self.options = options
-        self.orig_options = copy.deepcopy(self.orig_options)
+        self.orig_options = copy.deepcopy(self.options)
         self.banned_args = banned_args
         self.reconfigures = 0
         self.app = Flask(__name__)
