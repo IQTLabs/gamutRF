@@ -44,6 +44,8 @@ class FlaskHandler:
             if not hasattr(new_options, arg):
                 return f"no such option {arg}", 400
             val_type = getattr(self.orig_options, arg)
+            if val == "False":
+                val = False
             try:
                 if val_type is None:
                     setattr(new_options, arg, val)
