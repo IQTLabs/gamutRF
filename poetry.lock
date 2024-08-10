@@ -1842,13 +1842,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "webcolors"
-version = "24.6.0"
+version = "24.8.0"
 description = "A library for working with the color formats defined by HTML and CSS."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "webcolors-24.6.0-py3-none-any.whl", hash = "sha256:8cf5bc7e28defd1d48b9e83d5fc30741328305a8195c29a8e668fa45586568a1"},
-    {file = "webcolors-24.6.0.tar.gz", hash = "sha256:1d160d1de46b3e81e58d0a280d0c78b467dc80f47294b91b1ad8029d2cedb55b"},
+    {file = "webcolors-24.8.0-py3-none-any.whl", hash = "sha256:fc4c3b59358ada164552084a8ebee637c221e4059267d0f8325b3b560f6c7f0a"},
+    {file = "webcolors-24.8.0.tar.gz", hash = "sha256:08b07af286a01bcd30d583a7acadf629583d1f79bfef27dd2c2c5c263817277d"},
 ]
 
 [package.extras]
@@ -2019,4 +2019,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "da85afff1a838cbf73d7e8fb478f084169855a195f69653d34e4516b775f2e1d"
+content-hash = "7ddbd9f689f91cc7d5492f4cc07fc6c2e16987020fbc8e3e08a6de323593184c"
