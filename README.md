@@ -17,6 +17,10 @@ Distributed under the [Apache 2.0](./LICENSE). See [LICENSE](./LICENSE) for more
 
 See our other projects: [https://github.com/IQTLabs/](https://github.com/IQTLabs/)
 
+## AIR-T support
+
+GamutRF has legacy support for the [Deepwave AIR-T](docs/README-airt.md)
+
 ## Development
 
 Development with GamutRF requires familiarity with gnuradio, an SDR, a x86_64 host running Ubuntu 24.04 with Docker installed (and ideally an nvidia GPU, though this is not required).
