@@ -27,7 +27,7 @@ Development with GamutRF requires familiarity with gnuradio, an SDR, a x86_64 ho
 
 ### Local development
 
-* Install [gnuradio](https://wiki.gnuradio.org/index.php/InstallingGR)
+* Install [gnuradio](https://wiki.gnuradio.org/index.php/InstallingGR), 3.10 or later
 * Install [gr-iqtlabs](https://github.com/IQTLabs/gr-iqtlabs)
 * Make modifications, and install with ```poetry install```
 * Run tests with ```pytest```
