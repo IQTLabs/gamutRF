@@ -16,3 +16,21 @@ Distributed under the [Apache 2.0](./LICENSE). See [LICENSE](./LICENSE) for more
 - Email: info@iqtlabs.org
 
 See our other projects: [https://github.com/IQTLabs/](https://github.com/IQTLabs/)
+
+## Development
+
+Development with GamutRF requires familiarity with gnuradio, an SDR, a x86_64 host running Ubuntu 24.04 with Docker installed (and ideally an nvidia GPU, though this is not required).
+
+### Local development
+
+* Install [gnuradio](https://wiki.gnuradio.org/index.php/InstallingGR)
+* Install [gr-iqtlabs](https://github.com/IQTLabs/gr-iqtlabs)
+* Make modifications, and install with ```poetry install```
+* Run tests with ```pytest```
+
+### Docker development
+
+Follow above local development instructions, and then build containers (tests will be run inside the containers).
+
+* ```docker build -f docker/Dockerfile.base docker -t iqtlabs/gamutrf-base:latest```
+* ```docker build -f Dockerfile . -t iqtlabs/gamutrf:latest```
