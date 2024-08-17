@@ -4,7 +4,7 @@ gamutRF is a gnuradio-based SDR-based scanner, I/Q signal collector and identifi
 
 While it can run on Pi4 and Pi5 machines (and its components can be distributed over a network), it is more typically deployed on a single x86_64 machine with an nvidia GPU (see [deployment instructions](https://github.com/IQTLabs/gamutrf-deploy)).
  
-gamutRF's scanner container connects to a local SDR and sweeps over a configured frequency range or ranges collecting samples. When a configurable number of valid I/Q samples are received the SDR is retuned to a new interval (see [blocks in gr-iqtlabs](https://github.com/IQTLabs/gr-iqtlabs)). The samples are processed and sent to a waterfall container for display, and optionally to a Torchserve instance for identification. Recording, and basic parameters (such as the frequency range to scan) can be controlled from the waterfall container.
+gamutRF's scanner container connects to a local SDR and sweeps over a configured frequency range or ranges collecting samples. When a configurable number of [valid I/Q samples](https://github.com/IQTLabs/gr-iqtlabs/blob/7990932fa871aa3f84e75771052500551f615638/lib/retune_pre_fft_impl.cc#L276) are received the SDR is retuned to a new interval (see [blocks in gr-iqtlabs](https://github.com/IQTLabs/gr-iqtlabs)). The samples are processed and sent to a waterfall container for display, and optionally to a [Torchserve](https://github.com/IQTLabs/torchserve) instance for identification. Recording, and basic parameters (such as the frequency range to scan) can be controlled from the waterfall container.
 
 ## License
 
