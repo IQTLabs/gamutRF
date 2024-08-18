@@ -190,12 +190,10 @@ class grscan(gr.top_block):
             fft_processor_affinity,
             low_power_hold_down,
             slew_rx_time,
+            dc_block_len,
+            dc_block_long,
         )
-        self.fft_blocks = (
-            self.get_dc_blocks(dc_block_len, dc_block_long)
-            + self.fft_blocks
-            + self.get_db_blocks(nfft, samp_rate, scaling)
-        )
+        self.fft_blocks = self.fft_blocks + self.get_db_blocks(nfft, samp_rate, scaling)
         self.last_db_block = self.fft_blocks[-1]
         fft_dir = ""
         self.samples_blocks = []
@@ -360,23 +358,16 @@ class grscan(gr.top_block):
             )
             if self.iq_inference_block:
                 if iq_inference_squelch_db is not None:
-                    squelch_blocks = [
-                        blocks.vector_to_stream(
-                            gr.sizeof_gr_complex,
-                            fft_batch_size * nfft,
-                        ),
+                    squelch_blocks = self.wrap_batch(
                         analog.pwr_squelch_cc(
                             iq_inference_squelch_db,
                             iq_inference_squelch_alpha,
                             0,
                             False,
                         ),
-                        blocks.stream_to_vector(
-                            gr.sizeof_gr_complex,
-                            fft_batch_size * nfft,
-                        ),
-                        self.iq_inference_block,
-                    ]
+                        fft_batch_size,
+                        nfft,
+                    ) + [self.iq_inference_block]
                     self.connect_blocks(self.retune_pre_fft, squelch_blocks)
                 else:
                     self.connect((self.retune_pre_fft, 0), (self.iq_inference_block, 0))
@@ -510,9 +501,33 @@ class grscan(gr.top_block):
             fft_blocks.append(self.iqtlabs.vector_roll(nfft))
         return fft_batch_size, fft_blocks
 
-    def get_dc_blocks(self, dc_block_len, dc_block_long):
+    def wrap_batch(self, block, fft_batch_size, nfft):
+        # We prefer to deal with vector batches for efficiency, but some blocks
+        # handle only single items. Wrap single-item blocks for batch compatibility
+        # for now until batch-friendly blocks are available.
+        return [
+            blocks.vector_to_stream(
+                gr.sizeof_gr_complex,
+                fft_batch_size * nfft,
+            ),
+            block,
+            blocks.stream_to_vector(
+                gr.sizeof_gr_complex,
+                fft_batch_size * nfft,
+            ),
+        ]
+
+    def get_dc_blocks(self, dc_block_len, dc_block_long, fft_batch_size, nfft):
         if dc_block_len:
-            return [grfilter.dc_blocker_cc(dc_block_len, dc_block_long)]
+            logging.info(
+                "using DC block length %u long %s", dc_block_len, dc_block_long
+            )
+            return self.wrap_batch(
+                # grfilter.dc_blocker_cc(dc_block_len, dc_block_long),
+                blocks.correctiq(),
+                fft_batch_size,
+                nfft,
+            )
         return []
 
     def get_fft_blocks(
@@ -532,6 +547,8 @@ class grscan(gr.top_block):
         fft_processor_affinity,
         low_power_hold_down,
         slew_rx_time,
+        dc_block_len,
+        dc_block_long,
     ):
         fft_batch_size, fft_blocks = self.get_offload_fft_blocks(
             vkfft,
@@ -554,7 +571,12 @@ class grscan(gr.top_block):
             low_power_hold_down,
             slew_rx_time,
         )
-        return (fft_batch_size, [self.retune_pre_fft] + fft_blocks)
+        return (
+            fft_batch_size,
+            [self.retune_pre_fft]
+            + self.get_dc_blocks(dc_block_len, dc_block_long, fft_batch_size, nfft)
+            + fft_blocks,
+        )
 
     def start(self):
         super().start()
