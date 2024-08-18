@@ -505,31 +505,31 @@ class grscan(gr.top_block):
             fft_blocks.append(self.iqtlabs.vector_roll(nfft))
         return fft_batch_size, fft_blocks
 
-    def wrap_batch(self, blocks, fft_batch_size, nfft):
+    def wrap_batch(self, wrap_blocks, fft_batch_size, nfft):
         # We prefer to deal with vector batches for efficiency, but some blocks
         # handle only single items. Wrap single-item blocks for batch compatibility
         # for now until batch-friendly blocks are available.
         return (
             [blocks.vector_to_stream(gr.sizeof_gr_complex, fft_batch_size * nfft)]
-            + blocks
+            + wrap_blocks
             + [blocks.stream_to_vector(gr.sizeof_gr_complex, fft_batch_size * nfft)]
         )
 
     def get_dc_blocks(
         self, correct_iq, dc_block_len, dc_block_long, fft_batch_size, nfft
     ):
-        blocks = []
+        dc_blocks = []
         if correct_iq:
             logging.info("using correct I/Q")
-            blocks.append(blocks.correctiq())
+            dc_blocks.append(blocks.correctiq())
         if dc_block_len:
             logging.info(
                 "using DC block length %u long %s", dc_block_len, dc_block_long
             )
-            blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
-        if blocks:
+            dc_blocks.append(grfilter.dc_blocker_cc(dc_block_len, dc_block_long))
+        if dc_blocks:
             return self.wrap_batch(
-                blocks,
+                dc_blocks,
                 fft_batch_size,
                 nfft,
             )
