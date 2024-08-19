@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import sys
+import time
 import pmt
 import zmq
 import zstandard
@@ -40,6 +41,8 @@ class pduzmq(gr.basic_block):
         self.message_port_register_in(pmt.intern("json"))
         self.set_msg_handler(pmt.intern("json"), self.receive_pdu)
         self.context = zstandard.ZstdCompressor()
+        self.last_log = None
+        self.item_counter = 0
 
     def stop(self):
         self.zmq_pub.close()
@@ -52,3 +55,8 @@ class pduzmq(gr.basic_block):
             self.zmq_pub.send(data, flags=zmq.NOBLOCK)
         except zmq.ZMQError as e:
             logging.error(str(e))
+        now = time.time()
+        self.item_counter += 1
+        if self.last_log is None or now - self.last_log > 10:
+            logging.info("sent %u FFT updates", self.item_counter)
+            self.last_log = now
