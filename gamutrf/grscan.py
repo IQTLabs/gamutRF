@@ -347,7 +347,7 @@ class grscan(gr.top_block):
             if self.iq_inference_block:
                 iq_inference_blocks = [self.iq_inference_block]
                 if iq_inference_squelch_db is not None:
-                    self.iq_inference_block = (
+                    iq_inference_blocks = (
                         self.wrap_batch(
                             [
                                 analog.pwr_squelch_cc(
