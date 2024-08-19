@@ -143,22 +143,26 @@ class GrscanTestCase(unittest.TestCase):
                     ]
                 )
                 sdr = "file:" + sdr_file
-            tb = grscan(
-                freq_start=freq_start,
-                freq_end=freq_end,
-                sdr=sdr,
-                samp_rate=samp_rate,
-                tune_step_fft=512,
-                write_samples=write_samples,
-                sample_dir=tempdir,
-                iqtlabs=iqtlabs,
-                wavelearner=wavelearner,
-                rotate_secs=900,
-                db_clamp_floor=-1e6,
-                pretune=pretune,
-                fft_batch_size=4,
-                inference_output_dir=str(tempdir),
-            )
+            try:
+                tb = grscan(
+                    freq_start=freq_start,
+                    freq_end=freq_end,
+                    sdr=sdr,
+                    samp_rate=samp_rate,
+                    tune_step_fft=512,
+                    write_samples=write_samples,
+                    sample_dir=tempdir,
+                    iqtlabs=iqtlabs,
+                    wavelearner=wavelearner,
+                    rotate_secs=900,
+                    db_clamp_floor=-1e6,
+                    pretune=pretune,
+                    fft_batch_size=4,
+                    inference_output_dir=str(tempdir),
+                )
+            except Exception as e:
+                print(e)
+                raise
             tb.start()
             time.sleep(3)
             tb.stop()
