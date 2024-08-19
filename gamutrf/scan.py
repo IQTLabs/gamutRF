@@ -274,6 +274,13 @@ def argument_parser():
         help="Use dc_block_cc long form",
     )
     parser.add_argument(
+        "--correct-iq",
+        dest="correct_iq",
+        default=False,
+        action=BooleanOptionalAction,
+        help="Use correct I/Q",
+    )
+    parser.add_argument(
         "--ettus-dc-offset",
         dest="dc_ettus_auto_offset",
         default=True,
