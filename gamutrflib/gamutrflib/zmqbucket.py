@@ -84,14 +84,27 @@ def fft_proxy(
     compress_context = zstandard.ZstdCompressor()
     decompress_context = zstandard.ZstdDecompressor()
     shutdown = False
+    last_log_time = None
+    last_data_time = None
     while not shutdown:
         with open(tmp_buff_file, "wb") as zbf:
             with compress_context.stream_writer(zbf) as bf:
                 while not shutdown:
                     shutdown = live_file is not None and not live_file.exists()
+                    now = time.time()
                     try:
                         sock_txt = socket.recv(flags=zmq.NOBLOCK)
                     except zmq.error.Again:
+                        if last_log_time is None or now - last_log_time > 10:
+                            if last_data_time is None:
+                                logging.warning("no data yet from %s", zmq_addr)
+                            else:
+                                logging.warning(
+                                    "no data from %s for %u seconds",
+                                    zmq_addr,
+                                    now - last_data_time,
+                                )
+                            last_log_time = now
                         time.sleep(poll_timeout)
                         continue
                     # gamutrf might send compressed message

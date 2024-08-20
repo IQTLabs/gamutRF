@@ -546,6 +546,10 @@ def check_options(options):
     if iq_inference and not options.pretune:
         return "I/Q inference requires pretune"
 
+    dc_block = options.dc_block_len or options.correct_iq
+    if dc_block and not options.pretune:
+        return "DC blocking requires pretune"
+
     return ""
 
 
