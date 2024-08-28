@@ -28,6 +28,7 @@ sigmf = "1.2.2"
 sysrsync = "1.1.1"
 webcolors = "24.8.0"
 zstandard = "0.23.0"
+scipy = "1.13"
 
 [tool.poetry.dev-dependencies]
 attr = "0.3.2"

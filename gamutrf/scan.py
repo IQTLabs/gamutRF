@@ -281,6 +281,20 @@ def argument_parser():
         help="Use correct I/Q",
     )
     parser.add_argument(
+        "--dc_spike_detrend_length",
+        dest="dc_spike_detrend_length",
+        type=int,
+        default=0,
+        help="if > 0, use dc_spike_detrend filter with length",
+    )
+    parser.add_argument(
+        "--dc_spike_remove_ratio",
+        dest="dc_spike_remove_ratio",
+        type=float,
+        default=0.0,
+        help="if > 0, use dc_spike_remove filter with ratio",
+    )
+    parser.add_argument(
         "--ettus-dc-offset",
         dest="dc_ettus_auto_offset",
         default=True,

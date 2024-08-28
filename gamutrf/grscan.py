@@ -23,6 +23,7 @@ except ModuleNotFoundError as err:  # pragma: no cover
     )
     sys.exit(1)
 
+from gamutrf.dc_spike import dc_spike_detrend, dc_spike_remove
 from gamutrf.grsource import get_source
 from gamutrf.grinferenceoutput import inferenceoutput
 from gamutrf.grpduzmq import pduzmq
@@ -40,6 +41,8 @@ class grscan(gr.top_block):
         db_clamp_floor=-200,
         dc_block_len=0,
         dc_block_long=False,
+        dc_spike_detrend_length=0,
+        dc_spike_remove_ratio=0.0,
         dc_ettus_auto_offset=True,
         description="",
         external_gps_server="",
@@ -204,6 +207,8 @@ class grscan(gr.top_block):
             slew_rx_time,
             dc_block_len,
             dc_block_long,
+            dc_spike_detrend_length,
+            dc_spike_remove_ratio,
             correct_iq,
             scaling,
             db_clamp_floor,
@@ -500,9 +505,22 @@ class grscan(gr.top_block):
         )
 
     def get_dc_blocks(
-        self, correct_iq, dc_block_len, dc_block_long, fft_batch_size, nfft
+        self,
+        correct_iq,
+        dc_block_len,
+        dc_block_long,
+        dc_spike_detrend_length,
+        dc_spike_remove_ratio,
+        fft_batch_size,
+        nfft,
     ):
         dc_blocks = []
+        if dc_spike_detrend_length:
+            logging.info(f"using dc_spike_detrend length={dc_spike_detrend_length}")
+            dc_blocks.append(dc_spike_detrend(dc_spike_detrend_length))
+        if dc_spike_remove_ratio:
+            logging.info(f"using dc_spike_remove ratio={dc_spike_remove_ratio}")
+            dc_blocks.append(dc_spike_remove(dc_spike_remove_ratio))
         if correct_iq:
             logging.info("using correct I/Q")
             dc_blocks.append(blocks.correctiq())
@@ -538,6 +556,8 @@ class grscan(gr.top_block):
         slew_rx_time,
         dc_block_len,
         dc_block_long,
+        dc_spike_detrend_length,
+        dc_spike_remove_ratio,
         correct_iq,
         scaling,
         db_clamp_floor,
@@ -595,7 +615,13 @@ class grscan(gr.top_block):
             peak_fft_range=peak_fft_range,
         )
         sample_blocks = [retune_pre_fft] + self.get_dc_blocks(
-            correct_iq, dc_block_len, dc_block_long, fft_batch_size, nfft
+            correct_iq,
+            dc_block_len,
+            dc_block_long,
+            dc_spike_detrend_length,
+            dc_spike_remove_ratio,
+            fft_batch_size,
+            nfft,
         )
         pipeline_blocks = (
             sample_blocks
