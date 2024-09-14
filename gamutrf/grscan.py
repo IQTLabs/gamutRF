@@ -108,16 +108,6 @@ class grscan(gr.top_block):
         if description:
             description = description.strip('"')
         tune_step_hz = int(samp_rate * tuneoverlap)
-        stare = False
-        initial_freq = freq_start
-
-        if freq_end == 0:
-            stare = True
-            freq_end = freq_start + (tune_step_hz - 1)
-            initial_freq += int((freq_end - freq_start) / 2)
-            logging.info(
-                f"using stare mode, scan from {freq_start/1e6}MHz to {freq_end/1e6}MHz"
-            )
 
         ##################################################
         # Parameters
@@ -142,8 +132,10 @@ class grscan(gr.top_block):
             pbr_version = pbr.version.VersionInfo("gamutrf").version_string()
             logging.info(f"gamutrf {pbr_version} with gr-iqtlabs {griqtlabs_path}")
 
-        logging.info(f"will scan from {freq_start} to {freq_end}")
-        freq_range = freq_end - freq_start
+        if freq_end == 0:
+            freq_range = samp_rate
+        else:
+            freq_range = freq_end - freq_start
         fft_rate = int(samp_rate / nfft)
 
         if not tune_step_fft:
@@ -162,27 +154,17 @@ class grscan(gr.top_block):
         logging.info(
             f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
         )
-        if stare and tune_dwell_ms > 1e3:
-            logging.warn(">1s dwell time in stare mode, updates will be slow!")
         peak_fft_range = min(peak_fft_range, tune_step_fft)
 
         fft_dir = ""
         if write_fft_points:
             fft_dir = sample_dir
 
-        self.sources, cmd_port, self.workaround_start_hook = get_source(
-            sdr,
-            samp_rate,
-            igain,
-            nfft,
-            tune_step_fft,
-            agc=False,
-            center_freq=initial_freq,
-            sdrargs=sdrargs,
-            dc_ettus_auto_offset=dc_ettus_auto_offset,
-        )
-
         (
+            freq_start,
+            freq_end,
+            stare,
+            initial_freq,
             fft_batch_size,
             self.retune_pre_fft,
             self.retune_fft,
@@ -223,6 +205,25 @@ class grscan(gr.top_block):
         fft_zmq_block_addr = f"tcp://{fft_zmq_addr}:{fft_zmq_port}"
         self.pduzmq_block = pduzmq(fft_zmq_block_addr)
         logging.info("serving FFT on %s", fft_zmq_block_addr)
+
+        if stare:
+            logging.info(f"staring at {initial_freq/1e6}MHz")
+            if tune_dwell_ms > 1e3:
+                logging.warn(">1s dwell time in stare mode, updates will be slow!")
+        else:
+            logging.info(f"will scan from {freq_start} to {freq_end}")
+
+        self.sources, cmd_port, self.workaround_start_hook = get_source(
+            sdr,
+            samp_rate,
+            igain,
+            nfft,
+            tune_step_fft,
+            agc=False,
+            center_freq=initial_freq,
+            sdrargs=sdrargs,
+            dc_ettus_auto_offset=dc_ettus_auto_offset,
+        )
 
         if iq_zmq_port:
             iq_zmq_block_addr = f"tcp://{iq_zmq_addr}:{iq_zmq_port}"
@@ -614,6 +615,12 @@ class grscan(gr.top_block):
             slew_rx_time=slew_rx_time,
             peak_fft_range=peak_fft_range,
         )
+        try:
+            stare = retune_pre_fft.get_stare_mode()
+            initial_freq = retune_pre_fft.get_tune_freq()
+        except AttributeError:
+            stare = retune_fft.get_stare_mode()
+            initial_freq = retune_fft.get_tune_freq()
         sample_blocks = [retune_pre_fft] + self.get_dc_blocks(
             correct_iq,
             dc_block_len,
@@ -630,6 +637,10 @@ class grscan(gr.top_block):
             + [retune_fft]
         )
         return (
+            retune_fft.get_freq_start(),
+            retune_fft.get_freq_end(),
+            stare,
+            initial_freq,
             fft_batch_size,
             retune_pre_fft,
             retune_fft,
