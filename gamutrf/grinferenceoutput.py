@@ -111,8 +111,8 @@ class inferenceoutput(gr.basic_block):
                 item = self.q.get(block=True, timeout=1)
             except queue.Empty:
                 continue
-            logging.info("inference output %u: %s", self.serialno, item)
             self.serialno += 1
+            logging.info("inference output %u: %s", self.serialno, item)
             if zmq_pub is not None:
                 zmq_pub.send_string(json.dumps(item) + DELIM, flags=zmq.NOBLOCK)
             if mqtt_reporter is not None:
