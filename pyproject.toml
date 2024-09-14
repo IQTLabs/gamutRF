@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gamutrf"
-version = "0.5.69"
+version = "0.5.70"
 description = "An orchestrated SDR scanner"
 authors = ["cglewis <clewis@iqt.org>"]
 license = "Apache-2.0"
