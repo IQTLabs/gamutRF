@@ -108,7 +108,7 @@ class inferenceoutput(gr.basic_block):
             )
         while self.running:
             try:
-                item = self.q.get(block=True, timeout=1)
+                item = self.q.get(block=True, timeout=0.001)
             except queue.Empty:
                 continue
             self.serialno += 1

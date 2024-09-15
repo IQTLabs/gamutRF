@@ -325,8 +325,8 @@ def argument_parser():
     parser.add_argument(
         "--iq_inference_background",
         dest="iq_inference_background",
-        type=bool,
         default=True,
+        action=BooleanOptionalAction,
         help="if True do I/Q inference in the background",
     )
     parser.add_argument(
