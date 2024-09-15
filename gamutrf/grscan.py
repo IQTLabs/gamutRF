@@ -134,7 +134,7 @@ class grscan(gr.top_block):
             logging.info(f"gamutrf {pbr_version} with gr-iqtlabs {griqtlabs_path}")
 
         if stare:
-            freq_end = freq_start + (samp_rate - 1)
+            freq_end = freq_start + (tune_step_hz - 1)
         freq_range = freq_end - freq_start
         fft_rate = int(samp_rate / nfft)
 
