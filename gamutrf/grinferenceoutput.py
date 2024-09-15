@@ -7,6 +7,8 @@ import time
 import pmt
 import zmq
 
+NO_SIGNAL = "No signal"
+
 try:
     from gnuradio import gr  # pytype: disable=import-error
     from gamutrf.mqtt_reporter import MQTTReporter
@@ -71,6 +73,12 @@ class inferenceoutput(gr.basic_block):
     def receive_pdu(self, pdu):
         item = json.loads(bytes(pmt.to_python(pmt.cdr(pdu))).decode("utf8"))
         self.serialno += 1
+        try:
+            predictions = set(item["predictions"].keys())
+            if NO_SIGNAL in predictions:
+                return
+        except KeyError:
+            pass
         logging.info("inference output %u: %s", self.serialno, item)
         if self.zmq_pub is not None:
             self.zmq_pub.send_string(json.dumps(item), flags=zmq.NOBLOCK)
