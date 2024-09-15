@@ -24,7 +24,7 @@ COPY --from=iqtlabs/gamutrf-base:latest /usr/local /usr/local
 WORKDIR /gamutrf
 COPY poetry.lock pyproject.toml README.md /gamutrf/
 # dependency install is cached for faster rebuild, if only gamutrf source changed.
-RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; fi
+RUN if [ "${POETRY_CACHE}" != "" ] ; then echo using cache "${POETRY_CACHE}" ; poetry source add --priority=default local "${POETRY_CACHE}" ; poetry lock ; fi
 # TODO: handle caching
 RUN for i in bjoern falcon-cors gpsd-py3 ; do poetry run pip install --no-cache-dir "$i"=="$(grep $i pyproject.toml | grep -Eo '\"[0-9\.]+' | sed 's/\"//g')" || exit 1 ; done
 RUN poetry install --no-interaction --no-ansi --no-dev --no-root
