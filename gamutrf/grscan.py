@@ -134,9 +134,8 @@ class grscan(gr.top_block):
             logging.info(f"gamutrf {pbr_version} with gr-iqtlabs {griqtlabs_path}")
 
         if stare:
-            freq_range = samp_rate
-        else:
-            freq_range = freq_end - freq_start
+            freq_end = freq_start + (samp_rate - 1)
+        freq_range = freq_end - freq_start
         fft_rate = int(samp_rate / nfft)
 
         if not tune_step_fft:
@@ -227,7 +226,7 @@ class grscan(gr.top_block):
             initial_freq = retune_fft.get_tune_freq()
             stare = retune_fft.get_stare_mode()
         self.last_db_block = self.fft_blocks[-1]
-        logging.info(f"will scan from {freq_start} to {freq_end}")
+        logging.info(f"will scan from {freq_start} to {freq_end} stare {stare}")
         self.sources, cmd_port, self.workaround_start_hook = get_source(
             sdr,
             samp_rate,
