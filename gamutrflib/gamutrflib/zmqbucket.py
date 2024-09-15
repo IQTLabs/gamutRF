@@ -99,11 +99,12 @@ def fft_proxy(
                             if last_data_time is None:
                                 logging.warning("no data yet from %s", zmq_addr)
                             else:
-                                logging.warning(
-                                    "no data from %s for %u seconds",
-                                    zmq_addr,
-                                    now - last_data_time,
-                                )
+                                if now - last_data_time > 10:
+                                    logging.warning(
+                                        "no data from %s for %u seconds",
+                                        zmq_addr,
+                                        now - last_data_time,
+                                    )
                             last_log_time = now
                         time.sleep(poll_timeout)
                         continue
@@ -114,6 +115,7 @@ def fft_proxy(
                         pass
                     bf.write(sock_txt)
                     now = time.time()
+                    last_data_time = now
                     if (
                         shutdown or now - last_packet_sent_time > buffer_time
                     ) and not os.path.exists(buff_file):
