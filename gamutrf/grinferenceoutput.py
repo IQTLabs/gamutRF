@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import queue
 import sys
-import threading
 import time
 import pmt
 import zmq
@@ -18,9 +16,6 @@ except ModuleNotFoundError as err:  # pragma: no cover
         % err
     )
     sys.exit(1)
-
-
-DELIM = "\n\n"
 
 
 class inferenceoutput(gr.basic_block):
@@ -37,66 +32,26 @@ class inferenceoutput(gr.basic_block):
         external_gps_server_port,
         log_path,
     ):
-        self.q = queue.Queue()
-        self.running = True
-        self.serialno = 0
-        self.reporter_thread = threading.Thread(
-            target=self.run_reporter_thread,
-            args=(
-                name,
-                zmq_addr,
-                mqtt_server,
-                gps_server,
-                compass,
-                use_external_gps,
-                use_external_heading,
-                external_gps_server,
-                external_gps_server_port,
-                log_path,
-            ),
-        )
-        self.reporter_thread.start()
         gr.basic_block.__init__(
             self,
             name="inferenceoutput",
             in_sig=None,
             out_sig=None,
         )
-        self.message_port_register_in(pmt.intern("inference"))
-        self.set_msg_handler(pmt.intern("inference"), self.receive_pdu)
-
-    def receive_pdu(self, pdu):
-        self.q.put(json.loads(bytes(pmt.to_python(pmt.cdr(pdu))).decode("utf8")))
-
-    def stop(self):
-        self.running = False
-        self.reporter_thread.join()
-
-    def run_reporter_thread(
-        self,
-        name,
-        zmq_addr,
-        mqtt_server,
-        gps_server,
-        compass,
-        use_external_gps,
-        use_external_heading,
-        external_gps_server,
-        external_gps_server_port,
-        log_path,
-    ):
-        start_time = time.time()
-        zmq_context = None
-        zmq_pub = None
+        self.serialno = 0
+        self.start_time = time.time()
+        self.zmq_context = None
+        self.zmq_pub = None
         if zmq_addr:
-            zmq_context = zmq.Context()
-            zmq_pub = zmq_context.socket(zmq.PUB)
-            zmq_pub.setsockopt(zmq.SNDHWM, 100)
-            zmq_pub.setsockopt(zmq.SNDBUF, 65536)
-            zmq_pub.bind(zmq_addr)
-        mqtt_reporter = None
+            self.zmq_context = zmq.Context()
+            self.zmq_pub = self.zmq_context.socket(zmq.PUB)
+            self.zmq_pub.setsockopt(zmq.SNDHWM, 100)
+            self.zmq_pub.setsockopt(zmq.SNDBUF, 65536)
+            self.zmq_pub.bind(zmq_addr)
+        self.mqtt_reporter = None
+        self.log_path = log_path
         if mqtt_server:
-            mqtt_reporter = MQTTReporter(
+            self.mqtt_reporter = MQTTReporter(
                 name=name,
                 mqtt_server=mqtt_server,
                 gps_server=gps_server,
@@ -106,16 +61,19 @@ class inferenceoutput(gr.basic_block):
                 external_gps_server=external_gps_server,
                 external_gps_server_port=external_gps_server_port,
             )
-        while self.running:
-            try:
-                item = self.q.get(block=True, timeout=0.001)
-            except queue.Empty:
-                continue
-            self.serialno += 1
-            logging.info("inference output %u: %s", self.serialno, item)
-            if zmq_pub is not None:
-                zmq_pub.send_string(json.dumps(item) + DELIM, flags=zmq.NOBLOCK)
-            if mqtt_reporter is not None:
-                mqtt_reporter.publish("gamutrf/inference", item)
-                mqtt_reporter.log(log_path, "inference", start_time, item)
-            self.q.task_done()
+        self.message_port_register_in(pmt.intern("inference"))
+        self.set_msg_handler(pmt.intern("inference"), self.receive_pdu)
+
+    def stop(self):
+        if self.zmq_pub is not None:
+            self.zmq_pub.close()
+
+    def receive_pdu(self, pdu):
+        item = json.loads(bytes(pmt.to_python(pmt.cdr(pdu))).decode("utf8"))
+        self.serialno += 1
+        logging.info("inference output %u: %s", self.serialno, item)
+        if self.zmq_pub is not None:
+            self.zmq_pub.send_string(json.dumps(item), flags=zmq.NOBLOCK)
+        if self.mqtt_reporter is not None:
+            self.mqtt_reporter.publish("gamutrf/inference", item)
+            self.mqtt_reporter.log(self.log_path, "inference", self.start_time, item)

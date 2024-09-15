@@ -637,7 +637,7 @@ class grscan(gr.top_block):
         )
         sample_block = sample_blocks[-1]
         # avoid stalls waiting for batched power data to be correlated with samples.
-        sample_block.set_max_output_buffer(2**15)
+        sample_block.set_min_output_buffer(2**20)
         return (
             retune_fft.get_freq_start(),
             retune_fft.get_freq_end(),
