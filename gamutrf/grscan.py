@@ -23,6 +23,7 @@ except ModuleNotFoundError as err:  # pragma: no cover
     )
     sys.exit(1)
 
+from gamutrf.dc_spike import dc_spike_detrend, dc_spike_remove
 from gamutrf.grsource import get_source
 from gamutrf.grinferenceoutput import inferenceoutput
 from gamutrf.grpduzmq import pduzmq
