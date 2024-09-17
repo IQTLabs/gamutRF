@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libvulkan-dev \
   pybind11-dev
 WORKDIR /root
-RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.121
+RUN git clone https://github.com/iqtlabs/gr-iqtlabs -b 1.0.122
 COPY --from=iqtlabs/gamutrf-vkfft:latest /root /root/gr-iqtlabs
 WORKDIR /root/gr-iqtlabs/build
 COPY --from=iqtlabs/gamutrf-sigmf:latest /usr/local /usr/local

@@ -107,21 +107,12 @@ class grscan(gr.top_block):
 
         if description:
             description = description.strip('"')
-        tune_step_hz = int(samp_rate * tuneoverlap)
-        stare = freq_end == 0
 
         ##################################################
         # Parameters
         ##################################################
-        self.freq_end = freq_end
-        self.freq_start = freq_start
-        self.sweep_sec = sweep_sec
-        self.nfft = nfft
         self.wavelearner = wavelearner
         self.iqtlabs = iqtlabs
-        self.samp_rate = samp_rate
-        self.retune_pre_fft = None
-        self.tag_now = tag_now
 
         ##################################################
         # Blocks
@@ -133,32 +124,18 @@ class grscan(gr.top_block):
             pbr_version = pbr.version.VersionInfo("gamutrf").version_string()
             logging.info(f"gamutrf {pbr_version} with gr-iqtlabs {griqtlabs_path}")
 
-        if stare:
-            freq_end = freq_start + (tune_step_hz - 1)
-        freq_range = freq_end - freq_start
-        fft_rate = int(samp_rate / nfft)
-
-        if not tune_step_fft:
-            if tune_dwell_ms:
-                tune_step_fft = int(fft_rate * (tune_dwell_ms / 1e3))
-            else:
-                target_retune_hz = freq_range / self.sweep_sec / tune_step_hz
-                tune_step_fft = int(fft_rate / target_retune_hz)
-                logging.info(
-                    f"retuning across {freq_range/1e6}MHz in {self.sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
-                )
-        if not tune_step_fft:
-            logging.info("tune_step_fft cannot be 0 - defaulting to nfft")
-            tune_step_fft = nfft
-        tune_dwell_ms = tune_step_fft / fft_rate * 1e3
-        logging.info(
-            f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
+        tune_step_fft, tune_step_hz, peak_fft_range = self.calc_rates(
+            freq_start,
+            freq_end,
+            sweep_sec,
+            samp_rate,
+            nfft,
+            tuneoverlap,
+            tune_dwell_ms,
+            tune_step_fft,
+            peak_fft_range,
         )
-        if stare and tune_dwell_ms > 1e3:
-            logging.warn(">1s dwell time in stare mode, updates will be slow!")
-        peak_fft_range = min(peak_fft_range, tune_step_fft)
-
-        fft_batch_size, self.fft_blocks = self.get_fft_blocks(
+        fft_batch_size, self.retune_pre_fft, self.fft_blocks = self.get_fft_blocks(
             samp_rate,
             tune_jitter_hz,
             vkfft,
@@ -174,6 +151,7 @@ class grscan(gr.top_block):
             fft_processor_affinity,
             low_power_hold_down,
             slew_rx_time,
+            tag_now,
         )
         self.fft_blocks = (
             self.get_dc_blocks(
@@ -210,23 +188,17 @@ class grscan(gr.top_block):
             description=description,
             rotate_secs=rotate_secs,
             pre_fft=pretune,
-            tag_now=self.tag_now,
+            tag_now=tag_now,
             low_power_hold_down=(not pretune and low_power_hold_down),
             slew_rx_time=slew_rx_time,
             peak_fft_range=peak_fft_range,
         )
-        try:
-            freq_start = self.retune_pre_fft.get_freq_start()
-            freq_end = self.retune_pre_fft.get_freq_end()
-            initial_freq = self.retune_pre_fft.get_tune_freq()
-            stare = self.retune_pre_fft.get_stare_mode()
-        except AttributeError:
-            freq_start = retune_fft.get_freq_start()
-            freq_end = retune_fft.get_freq_end()
-            initial_freq = retune_fft.get_tune_freq()
-            stare = retune_fft.get_stare_mode()
-        self.last_db_block = self.fft_blocks[-1]
-        logging.info(f"will scan from {freq_start} to {freq_end} stare {stare}")
+        self.freq_start, self.freq_end, initial_freq, stare = self.get_freqs(
+            self.retune_pre_fft, retune_fft
+        )
+        logging.info(
+            f"will scan from {self.freq_start} to {self.freq_end} stare {stare}"
+        )
         self.sources, cmd_port, self.workaround_start_hook = get_source(
             sdr,
             samp_rate,
@@ -251,6 +223,7 @@ class grscan(gr.top_block):
                 "",
             )
             self.connect((self.retune_pre_fft, 0), (iq_zmq_block, 0))
+        last_db_block = self.fft_blocks[-1]
         self.samples_blocks = []
         self.write_samples_block = None
         if write_samples:
@@ -289,10 +262,88 @@ class grscan(gr.top_block):
         self.pduzmq_block = pduzmq(fft_zmq_block_addr)
         logging.info("serving FFT on %s", fft_zmq_block_addr)
 
-        self.inference_blocks = []
-        self.inference_output_block = None
-        self.image_inference_block = None
-        self.iq_inference_block = None
+        self.image_inference_block, self.iq_inference_block, self.inference_blocks = (
+            self.get_inference(
+                colormap,
+                inference_batch,
+                inference_min_confidence,
+                inference_min_db,
+                inference_model_name,
+                inference_model_server,
+                inference_output_dir,
+                inference_text_color,
+                iq_inference_background,
+                iq_inference_model_name,
+                iq_inference_model_server,
+                iq_power_inference,
+                n_image,
+                n_inference,
+                nfft,
+                rotate_secs,
+                samp_rate,
+                tune_step_fft,
+            )
+        )
+
+        self.inference_output_block = self.connect_inference(
+            compass,
+            external_gps_server,
+            external_gps_server_port,
+            fft_batch_size,
+            gps_server,
+            self.image_inference_block,
+            inference_addr,
+            self.inference_blocks,
+            inference_output_dir,
+            inference_port,
+            self.iq_inference_block,
+            iq_inference_squelch_alpha,
+            iq_inference_squelch_db,
+            last_db_block,
+            mqtt_server,
+            nfft,
+            retune_fft,
+            self.retune_pre_fft,
+            stare,
+            use_external_gps,
+            use_external_heading,
+            self.write_samples_block,
+        )
+
+        if pretune:
+            self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
+            self.msg_connect((self.retune_pre_fft, "tune"), (retune_fft, "cmd"))
+        else:
+            self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
+        self.msg_connect((retune_fft, "json"), (self.pduzmq_block, "json"))
+        self.connect_blocks(self.sources[0], self.sources[1:])
+        self.connect_blocks(self.sources[-1], self.fft_blocks)
+        self.connect_blocks(self.retune_pre_fft, self.samples_blocks)
+
+    def get_inference(
+        self,
+        colormap,
+        inference_batch,
+        inference_min_confidence,
+        inference_min_db,
+        inference_model_name,
+        inference_model_server,
+        inference_output_dir,
+        inference_text_color,
+        iq_inference_background,
+        iq_inference_model_name,
+        iq_inference_model_server,
+        iq_power_inference,
+        n_image,
+        n_inference,
+        nfft,
+        rotate_secs,
+        samp_rate,
+        tune_step_fft,
+    ):
+        inference_blocks = []
+        iq_inference_block = None
+        image_inference_block = None
 
         if inference_output_dir:
             Path(inference_output_dir).mkdir(parents=True, exist_ok=True)
@@ -303,7 +354,7 @@ class grscan(gr.top_block):
                 inference_text_color = ",".join(
                     [str(c) for c in [wc.blue, wc.green, wc.red]]
                 )
-            self.image_inference_block = self.iqtlabs.image_inference(
+            image_inference_block = self.iqtlabs.image_inference(
                 tag="rx_freq",
                 vlen=nfft,
                 x=640,
@@ -327,10 +378,9 @@ class grscan(gr.top_block):
                 samp_rate=int(samp_rate),
                 text_color=inference_text_color,
             )
-            self.inference_blocks.append(self.image_inference_block)
-
+            inference_blocks.append(image_inference_block)
         if iq_inference_model_server and iq_inference_model_name:
-            self.iq_inference_block = iqtlabs.iq_inference(
+            iq_inference_block = self.iqtlabs.iq_inference(
                 tag="rx_freq",
                 vlen=nfft,
                 n_vlen=1,
@@ -345,72 +395,141 @@ class grscan(gr.top_block):
                 background=iq_inference_background,
                 batch=inference_batch,
             )
-            self.inference_blocks.append(self.iq_inference_block)
-            if self.write_samples_block:
+            inference_blocks.append(iq_inference_block)
+        return (image_inference_block, iq_inference_block, inference_blocks)
+
+    def connect_inference(
+        self,
+        compass,
+        external_gps_server,
+        external_gps_server_port,
+        fft_batch_size,
+        gps_server,
+        image_inference_block,
+        inference_addr,
+        inference_blocks,
+        inference_output_dir,
+        inference_port,
+        iq_inference_block,
+        iq_inference_squelch_alpha,
+        iq_inference_squelch_db,
+        last_db_block,
+        mqtt_server,
+        nfft,
+        retune_fft,
+        retune_pre_fft,
+        stare,
+        use_external_gps,
+        use_external_heading,
+        write_samples_block,
+    ):
+        if not inference_blocks:
+            return None
+        inference_zmq_addr = f"tcp://{inference_addr}:{inference_port}"
+        inference_output_block = inferenceoutput(
+            "inferencemqtt",
+            inference_zmq_addr,
+            mqtt_server,
+            compass,
+            gps_server,
+            use_external_gps,
+            use_external_heading,
+            external_gps_server,
+            external_gps_server_port,
+            inference_output_dir,
+        )
+        if iq_inference_block:
+            if iq_inference_squelch_db is not None:
+                squelch_blocks = self.wrap_batch(
+                    [
+                        analog.pwr_squelch_cc(
+                            iq_inference_squelch_db,
+                            iq_inference_squelch_alpha,
+                            0,
+                            False,
+                        )
+                    ],
+                    fft_batch_size,
+                    nfft,
+                ) + [iq_inference_block]
+                self.connect_blocks(retune_pre_fft, squelch_blocks)
+            else:
+                self.connect((retune_pre_fft, 0), (iq_inference_block, 0))
+            self.connect((last_db_block, 0), (iq_inference_block, 1))
+            if write_samples_block:
                 self.msg_connect(
-                    (self.iq_inference_block, "inference"),
-                    (self.write_samples_block, "inference"),
+                    (iq_inference_block, "inference"),
+                    (write_samples_block, "inference"),
                 )
 
-        # TODO: provide new block that receives JSON-over-PMT and outputs to MQTT/zmq.
-        retune_fft_output_block = None
-        if self.inference_blocks:
-            inference_zmq_addr = f"tcp://{inference_addr}:{inference_port}"
-            self.inference_output_block = inferenceoutput(
-                "inferencemqtt",
-                inference_zmq_addr,
-                mqtt_server,
-                compass,
-                gps_server,
-                use_external_gps,
-                use_external_heading,
-                external_gps_server,
-                external_gps_server_port,
-                inference_output_dir,
+        if image_inference_block:
+            if stare:
+                self.connect((last_db_block, 0), (image_inference_block, 0))
+            else:
+                self.connect((retune_fft, 0), (image_inference_block, 0))
+        for block in inference_blocks:
+            self.msg_connect(
+                (block, "inference"), (inference_output_block, "inference")
             )
-            if self.iq_inference_block:
-                if iq_inference_squelch_db is not None:
-                    squelch_blocks = self.wrap_batch(
-                        [
-                            analog.pwr_squelch_cc(
-                                iq_inference_squelch_db,
-                                iq_inference_squelch_alpha,
-                                0,
-                                False,
-                            )
-                        ],
-                        fft_batch_size,
-                        nfft,
-                    ) + [self.iq_inference_block]
-                    self.connect_blocks(self.retune_pre_fft, squelch_blocks)
-                else:
-                    self.connect((self.retune_pre_fft, 0), (self.iq_inference_block, 0))
-                self.connect((self.last_db_block, 0), (self.iq_inference_block, 1))
-            if self.image_inference_block:
-                if stare:
-                    self.connect(
-                        (self.last_db_block, 0), (self.image_inference_block, 0)
-                    )
-                else:
-                    retune_fft_output_block = self.image_inference_block
-            for block in self.inference_blocks:
-                self.msg_connect(
-                    (block, "inference"), (self.inference_output_block, "inference")
-                )
+        return inference_output_block
 
-        if retune_fft_output_block:
-            self.connect((retune_fft, 0), (retune_fft_output_block, 0))
-
-        if pretune:
-            self.msg_connect((self.retune_pre_fft, "tune"), (self.sources[0], cmd_port))
-            self.msg_connect((self.retune_pre_fft, "tune"), (retune_fft, "cmd"))
+    def calc_rates(
+        self,
+        freq_start,
+        freq_end,
+        sweep_sec,
+        samp_rate,
+        nfft,
+        tuneoverlap,
+        tune_dwell_ms,
+        tune_step_fft,
+        peak_fft_range,
+    ):
+        stare = freq_end == 0
+        tune_step_hz = int(samp_rate * tuneoverlap)
+        if stare:
+            freq_range = samp_rate
         else:
-            self.msg_connect((retune_fft, "tune"), (self.sources[0], cmd_port))
-        self.msg_connect((retune_fft, "json"), (self.pduzmq_block, "json"))
-        self.connect_blocks(self.sources[0], self.sources[1:])
+            freq_range = freq_end - freq_start
+        fft_rate = int(samp_rate / nfft)
 
-        self.connect_blocks(self.sources[-1], self.fft_blocks)
-        self.connect_blocks(self.retune_pre_fft, self.samples_blocks)
+        if not tune_step_fft:
+            if tune_dwell_ms:
+                tune_step_fft = int(fft_rate * (tune_dwell_ms / 1e3))
+            else:
+                target_retune_hz = freq_range / sweep_sec / tune_step_hz
+                tune_step_fft = int(fft_rate / target_retune_hz)
+                logging.info(
+                    f"retuning across {freq_range/1e6}MHz in {sweep_sec}s, requires retuning at {target_retune_hz}Hz in {tune_step_hz/1e6}MHz steps ({tune_step_fft} FFTs)"
+                )
+        if not tune_step_fft:
+            logging.info("tune_step_fft cannot be 0 - defaulting to nfft")
+            tune_step_fft = nfft
+        tune_dwell_ms = tune_step_fft / fft_rate * 1e3
+        logging.info(
+            f"requested retuning across {freq_range/1e6}MHz every {tune_step_fft} FFTs, dwell time {tune_dwell_ms}ms"
+        )
+        if stare and tune_dwell_ms > 1e3:
+            logging.warn(">1s dwell time in stare mode, updates will be slow!")
+        peak_fft_range = min(peak_fft_range, tune_step_fft)
+        return (
+            tune_step_hz,
+            tune_step_fft,
+            peak_fft_range,
+        )
+
+    def get_freqs(self, retune_pre_fft, retune_fft):
+        try:
+            freq_start = retune_pre_fft.get_freq_start()
+            freq_end = retune_pre_fft.get_freq_end()
+            initial_freq = retune_pre_fft.get_tune_freq()
+            stare = retune_pre_fft.get_stare_mode()
+        except AttributeError:
+            freq_start = retune_fft.get_freq_start()
+            freq_end = retune_fft.get_freq_end()
+            initial_freq = retune_fft.get_tune_freq()
+            stare = retune_fft.get_stare_mode()
+        return (freq_start, freq_end, initial_freq, stare)
 
     def connect_blocks(self, source, other_blocks, last_block_port=0):
         last_block = source
@@ -449,6 +568,7 @@ class grscan(gr.top_block):
         pretune,
         low_power_hold_down,
         slew_rx_time,
+        tag_now,
     ):
         # if pretuning, the pretune block will also do the batching.
         if pretune:
@@ -464,7 +584,7 @@ class grscan(gr.top_block):
                 tune_step_fft=tune_step_fft,
                 skip_tune_step_fft=skip_tune_step,
                 tuning_ranges=tuning_ranges,
-                tag_now=self.tag_now,
+                tag_now=tag_now,
                 low_power_hold_down=low_power_hold_down,
                 slew_rx_time=slew_rx_time,
             )
@@ -575,6 +695,7 @@ class grscan(gr.top_block):
         fft_processor_affinity,
         low_power_hold_down,
         slew_rx_time,
+        tag_now,
     ):
         fft_batch_size, fft_blocks = self.get_offload_fft_blocks(
             vkfft,
@@ -582,7 +703,7 @@ class grscan(gr.top_block):
             nfft,
             fft_processor_affinity,
         )
-        self.retune_pre_fft = self.get_pretune_block(
+        retune_pre_fft = self.get_pretune_block(
             fft_batch_size,
             nfft,
             samp_rate,
@@ -596,8 +717,9 @@ class grscan(gr.top_block):
             pretune,
             low_power_hold_down,
             slew_rx_time,
+            tag_now,
         )
-        return (fft_batch_size, [self.retune_pre_fft] + fft_blocks)
+        return (fft_batch_size, retune_pre_fft, [retune_pre_fft] + fft_blocks)
 
     def start(self):
         super().start()
