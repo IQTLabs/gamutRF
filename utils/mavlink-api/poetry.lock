@@ -402,13 +402,13 @@ proxy = ["pysocks"]
 
 [[package]]
 name = "pymavlink"
-version = "2.4.41"
+version = "2.4.42"
 description = "Python MAVLink code"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pymavlink-2.4.41-py3-none-any.whl", hash = "sha256:5cbc975a1192359d60ea75bede789486a84e50d2ea07435b33a32ee5cb13c11f"},
-    {file = "pymavlink-2.4.41.tar.gz", hash = "sha256:ed3225ce985d06103aab251afc883d04a98a1d6db5c73995e7de4caacb1f66cd"},
+    {file = "pymavlink-2.4.42-py3-none-any.whl", hash = "sha256:c40f9bd8f39247776afd74de83b93b14e795ee825704e7d3d8d021de3ebf65ad"},
+    {file = "pymavlink-2.4.42.tar.gz", hash = "sha256:dfe04408b57425e26538a6b4bd977f77239bc8ce61886174567b1a243f7c3d76"},
 ]
 
 [package.dependencies]
