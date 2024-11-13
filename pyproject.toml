@@ -26,7 +26,7 @@ pyzmq = "26.2.0"
 requests = "2.32.3"
 sigmf = "1.2.3"
 sysrsync = "1.1.1"
-webcolors = "24.8.0"
+webcolors = "24.11.1"
 zstandard = "0.23.0"
 scipy = "1.14.1"
 
