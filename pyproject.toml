@@ -10,7 +10,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-Flask = "3.0.3"
+Flask = "3.1.0"
 Jinja2 = "3.1.4"
 bjoern = "3.2.2"
 falcon = "4.0.2"
