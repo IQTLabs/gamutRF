@@ -11,7 +11,7 @@ packages = [
 [tool.poetry.dependencies]
 Flask = "3.1.0"
 cairocffi = "1.7.1"
-matplotlib = "3.9.2"
+matplotlib = "3.9.3"
 numpy = "2.1.3"
 pandas = "2.2.3"
 pycairo = "1.27.0"
