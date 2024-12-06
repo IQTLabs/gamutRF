@@ -10,7 +10,7 @@ python = ">=3.10,<3.13"
 Flask = "^3.0.0"
 pymavlink = "^2.4.40"
 pyserial = "^3.5"
-httpx = "0.28.0"
+httpx = "0.28.1"
 paho-mqtt = "^2.0.0"
 
 [build-system]
