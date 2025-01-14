@@ -1826,12 +1826,13 @@ test = ["Cython", "array-api-strict (>=2.0,<2.1.1)", "asv", "gmpy2", "hypothesis
 
 [[package]]
 name = "sigmf"
-version = "1.2.3"
+version = "1.2.6"
 description = "Easily interact with Signal Metadata Format (SigMF) recordings."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sigmf-1.2.3.tar.gz", hash = "sha256:14aa9a72edb2169aab122c30e6f7398ade6a61498361740bda1707e558c98fab"},
+    {file = "SigMF-1.2.6-py3-none-any.whl", hash = "sha256:337b5dab67bcb21084ab97aa5e847f3a68a34ae5464a09aa4237e8610bd62b9e"},
+    {file = "sigmf-1.2.6.tar.gz", hash = "sha256:c9195cf9c193ec9be88478199ff683d8a4fb98eaf5c9f7bee278aa48d025d3c9"},
 ]
 
 [package.dependencies]
@@ -2113,4 +2114,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "13736ff1c024e150aaeb603cba12e996138472c42470bb557114d4fc9bf1ff56"
+content-hash = "a64c86a2af822ba69921d5e82ed60df301d8f8a1362025e97c9d85eb508d4011"
