@@ -32,7 +32,7 @@ scipy = "1.15.1"
 
 [tool.poetry.dev-dependencies]
 attr = "0.3.2"
-attrs = "24.3.0"
+attrs = "25.1.0"
 black = "24.10.0"
 docker = "7.1.0"
 pdbpp = "^0.10.3"
