@@ -11,7 +11,7 @@ packages = [
 
 [tool.poetry.dependencies]
 Flask = "3.1.0"
-Jinja2 = "3.1.5"
+Jinja2 = "3.1.6"
 bjoern = "3.2.2"
 falcon = "4.0.2"
 falcon-cors = "1.1.7"
