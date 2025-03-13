@@ -848,11 +848,7 @@ files = [
 ]
 
 [package.dependencies]
-numpy = [
-    {version = ">=1.22.4", markers = "python_version < \"3.11\""},
-    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
-    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
-]
+numpy = {version = ">=1.26.0", markers = "python_version >= \"3.12\""}
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
 tzdata = ">=2022.7"
@@ -1408,5 +1404,5 @@ cffi = ["cffi (>=1.11)"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.10,<3.13"
-content-hash = "9d99ccbef0999d11681a5d1181988fe08e30a4a2beb85b2a584c969a408e67f9"
+python-versions = ">=3.13,<3.14"
+content-hash = "30a42309e999c3f27e3a533f5122321ffd1e7e15674064faedbf204ffcdf3e9d"
