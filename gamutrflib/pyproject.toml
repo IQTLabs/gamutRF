@@ -12,7 +12,7 @@ packages = [
 numpy = "2.2.4"
 scipy = "1.15.2"
 pandas = "2.2.3"
-python = ">=3.10,<3.13"
+python = ">=3.13,<3.14"
 pyzmq = "26.4.0"
 zstandard = "0.23.0"
 
