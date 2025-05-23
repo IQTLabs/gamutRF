@@ -402,13 +402,36 @@ proxy = ["pysocks"]
 
 [[package]]
 name = "pymavlink"
-version = "2.4.43"
+version = "2.4.47"
 description = "Python MAVLink code"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pymavlink-2.4.43-py3-none-any.whl", hash = "sha256:831e42a7a4b66a01075808dfedd55e5fb199128826cd80ab7e5c287a64639b6c"},
-    {file = "pymavlink-2.4.43.tar.gz", hash = "sha256:21c4a1ba355c05742d2af41510576d6e08dba0d77602e9ea635331cd0755ee76"},
+    {file = "pymavlink-2.4.47-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c4b1660a0b947fc450202d40b48cd70c897335aa7c46f4019841591ae65fccb9"},
+    {file = "pymavlink-2.4.47-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:85b1e3d6e7cbc7f2f67b8b00abe7b5e580737779bd4d77890861a893c0695b2c"},
+    {file = "pymavlink-2.4.47-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:5f4da7f913769bfdd3f707ca7113423b537dab403d8f709f092f5d0f3e07fefd"},
+    {file = "pymavlink-2.4.47-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:95fc5e8b6b64fe27e9c1447b8b5c6a58d4ca5a91752398edecdb493eeed56f14"},
+    {file = "pymavlink-2.4.47-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:79b6981c446bf3429d23158f47875c06337943d0a7941816733020fd0201c25a"},
+    {file = "pymavlink-2.4.47-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:26025e2258149046f5d0c3e916c70059a802aff2332f7fe0535b00a79607e1ac"},
+    {file = "pymavlink-2.4.47-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:2a249d254d410ea8b386786d0889934c1b05aab033fe102316873502d27a7600"},
+    {file = "pymavlink-2.4.47-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:5c06403732129fb14d62620f457b1120528a644636e4a13e692825cfb0eca41a"},
+    {file = "pymavlink-2.4.47-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ad4703aa2ccb9f0e56938b22b3dcfbd03b3b605c4813f0b0aa49fe98341f3a56"},
+    {file = "pymavlink-2.4.47-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:663aab553a396fdb26dead4e2e4ea440d930f6b8235f6011b81e4a2094904d7d"},
+    {file = "pymavlink-2.4.47-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:9b3136aa12704c036127642163b075d5079e582aeef56a5e05da5b3431a3e027"},
+    {file = "pymavlink-2.4.47-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:549902183c4b17fa474432e413d36bb74e22c0b1c27a3ab5832de98c97d1791d"},
+    {file = "pymavlink-2.4.47-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:945df046dee0efbca43ee1ed512dc66c825e158c11e9f8a51d5182fc8dc738a0"},
+    {file = "pymavlink-2.4.47-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:620cee751f0349663ea945de21b12f4ddaca64f7470486c8173426cb7e1d61ca"},
+    {file = "pymavlink-2.4.47-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:ad1b239eceb079e59eacdb3678f3df679bb0d5b195f0b72b9ccef167f89a09c0"},
+    {file = "pymavlink-2.4.47-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:dab3f626052fc1f556998e3e6f312ae876e6a0aa3ace1f2c461023c32c086e6f"},
+    {file = "pymavlink-2.4.47-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:67e081af42415bca352fb2c2bc76d33af3aec749dfb3f94b3c87f5be7a98e163"},
+    {file = "pymavlink-2.4.47-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:4aa473fd6f502903219afecae85425b9445296b457cb547a5c41596e659a7ac9"},
+    {file = "pymavlink-2.4.47-cp38-cp38-musllinux_1_2_i686.whl", hash = "sha256:951ebf4b570c34f4a6384e69cdad385eb388dbdc5f26a55fd005cb83f6f5b67e"},
+    {file = "pymavlink-2.4.47-cp38-cp38-musllinux_1_2_x86_64.whl", hash = "sha256:66b265ea2b0682e0201fe90264c748fbbbaedee250f320180f5dffa69eb4b9d8"},
+    {file = "pymavlink-2.4.47-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c248ad5a735c88ee3d299f9420bc7b5908262abe35adb7350bfbf0f914707b5e"},
+    {file = "pymavlink-2.4.47-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:63c2e0751b9f2414532ca6769a679442523526d94cff2c85b7a0b8d5cad3d0e0"},
+    {file = "pymavlink-2.4.47-cp39-cp39-musllinux_1_2_i686.whl", hash = "sha256:ab330d828c0d55cb261a4f3920027c2eff68e5519b1dcfd9bfd44b7881d0d557"},
+    {file = "pymavlink-2.4.47-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:07d97f6565e38bed1dd36dd4abe798b461f2307a877dbe9ce84a7b3c2b8f6b21"},
+    {file = "pymavlink-2.4.47.tar.gz", hash = "sha256:c34de69f56e535c7fa3c651651b4a2b8e43752b68b7bda6af168dc327f33845d"},
 ]
 
 [package.dependencies]
