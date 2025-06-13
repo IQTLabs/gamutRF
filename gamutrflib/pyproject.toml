@@ -13,7 +13,7 @@ numpy = "2.2.6"
 scipy = "1.15.3"
 pandas = "2.3.0"
 python = ">=3.11,<3.13"
-pyzmq = "26.4.0"
+pyzmq = "27.0.0"
 zstandard = "0.23.0"
 
 [tool.poetry.urls]
