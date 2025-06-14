@@ -9,7 +9,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-numpy = "2.2.6"
+numpy = "2.3.0"
 scipy = "1.15.3"
 pandas = "2.3.0"
 python = ">=3.11,<3.13"
