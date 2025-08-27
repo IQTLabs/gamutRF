@@ -4,7 +4,7 @@ jobs:
   test-gamutrf-extra-images:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: docker build
       run: |
         cd docker
@@ -12,14 +12,14 @@ jobs:
   test-gamutrf-mavlink-api:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: docker build
       run: |
         docker build -f utils/mavlink-api/Dockerfile.mavlink-api utils/mavlink-api -t iqtlabs/gamutrf-mavlink-api:latest
   test-gamutrf-waterfall-images:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: docker build
       run: |
         docker build -f docker/Dockerfile.waterfall . -t iqtlabs/gamutrf-waterfall:latest
@@ -27,7 +27,7 @@ jobs:
   test-gamutrf-images:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: docker build
       run: |
         docker build -f docker/Dockerfile.vkfft . -t iqtlabs/gamutrf-vkfft:latest
